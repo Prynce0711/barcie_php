@@ -1,0 +1,132 @@
+:root {
+    --primary: #0b5d3b;
+    --muted: #f5f6f7;
+    --text: #222;
+}
+
+* {
+    box-sizing: border-box
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #222;
+    background: #f4f6f8;
+    /* default page background */
+
+}
+
+
+header {
+    text-align: center;
+    padding: 60px 20px;
+    background: #005fa3;
+    color: #fff;
+
+
+}
+
+header h1 {
+    font-size: 2.5rem;
+}
+
+header p {
+    margin-top: 10px;
+    font-size: 1.2rem;
+}
+
+
+
+.hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1)), url('../images/barcie-hero.jpg') center/cover no-repeat;
+    height: 320px;
+    display: flex;
+    align-items: center;
+    color: #fff
+}
+
+.rooms .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px
+}
+
+.room-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08)
+}
+
+.room-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 6px
+}
+
+.cta-btn {
+    display: inline-block;
+    margin-top: 30px;
+    padding: 14px 36px;
+    background: #005fa3;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.cta-btn:hover {
+    background: #003e6b;
+}
+
+.content-background {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    animation: slide 25s infinite;
+    padding: 60px 20px;
+    /* spacing around content */
+    margin: 10px auto;
+    box-shadow: 0 50px 24px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes slide {
+    0% {
+        background-image: url("");
+    }
+
+    25% {
+        background-image: url("../images/imageBg/Barcie.jpg");
+    }
+
+    50% {
+        background-image: url("C:\xampp\htdocs\barcie_php\assets\images\imageBg\Cover.jpg");
+    }
+
+    75% {
+        background-image: url("Images/hall.jpg");
+    }
+
+    100% {
+        background-image: url("Images/stage.jpg");
+    }
+}
+
+.main-content {
+    max-width: 700px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.9);
+    /* translucent white */
+    border-radius: 10px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    padding: 40px 30px;
+    text-align: center;
+}
+
+.main-content h2 {
+    color: #005fa3;
+    margin-bottom: 20px;
+}
