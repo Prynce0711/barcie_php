@@ -13,14 +13,18 @@
   <!-- Sidebar -->
   <div class="sidebar guest">
     <h2>Guest Panel</h2>
+    
     <a onclick="showSection('home')">Home</a>
     <a onclick="showSection('rooms')">Rooms</a>
     <a onclick="showSection('facilities')">Facilities</a>
     <a onclick="showSection('contacts')">Contacts</a>
+    <a href="index.php">Back to Homepage</a>
+    
+    
   </div>
 
   <!-- Main Content -->
-  <div class="main-content">
+  <div class="main-content-guest">
     <!-- Home Section -->
     <div id="home" class="content-section active">
       <h1>Welcome to BarCIE International Center</h1>
@@ -87,4 +91,9 @@
     }
   </script>
 </body>
+
+ <footer class="footer">
+    <p>© BarCIE International Center 2025</p>
+  </footer>
+
 </html>
