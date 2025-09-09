@@ -59,14 +59,16 @@ header p {
     transform: translateX(-220px);
     transition: transform 0.3s ease;
     z-index: 1000;
+    
 }
+
 
 .sidebar.active {
     transform: translateX(0);
 }
 
 .sidebar h2 {
-    margin-top: 50;
+    margin-top: 50px;
     text-align: center;
     font-size: 20px;
     margin-bottom: 20px;
@@ -286,6 +288,8 @@ header p {
 }
 
 
+
+
 /* ---------- Guest Page Styles ---------- */
 
 /* Sidebar specifically for guest */
@@ -302,7 +306,7 @@ header p {
 }
 
 /* Main content layout for guest */
-.main-content {
+.main-content-guest{
   margin-left: 240px; /* pushes content so it’s not hidden by sidebar */
   max-width: 1000px;
   background: rgba(255, 255, 255, 0.9);
@@ -310,7 +314,10 @@ header p {
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   padding: 30px;
   min-height: 100vh;
+  text-align: center;
 }
+
+
 
 /* Hide sections by default */
 .content-section {
@@ -370,7 +377,25 @@ header p {
 }
 
 
+/* ---------- Footer Styles ---------- */
+.footer {
+  background: #343a40;
+  color: #f1f1f1;
+  text-align: center;
+  padding: 15px 10px;
+  position: relative;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  font-size: 14px;
+  margin-top: 30px;
+  border-top: 3px solid var(--primary);
+}
 
+.footer p {
+  margin: 0;
+  letter-spacing: 0.5px;
+}
 
 
 
