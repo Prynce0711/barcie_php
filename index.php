@@ -1,3 +1,12 @@
+<?php
+// Start session
+session_start();
+
+// Example: check if user is logged in
+// In real use, you set $_SESSION['user'] after login
+$isLoggedIn = isset($_SESSION['user']);
+$user = $isLoggedIn ? $_SESSION['user'] : null;
+?>
 <!doctype html>
 <html>
 
@@ -12,42 +21,20 @@
   <header class="header">
     <div class="container">
       <h1>BarCIE International Center - Room Booking</h1>
-      <div>
-        <a href="login.php" class="cta-btn">Login</a>
-        <a href="register.php" class="cta-btn">Register</a>
-      </div>
+    
     </div>
   </header>
 
   <section class="content-background">
     <div class="main-content">
       <h2>Welcome to Barcie International Center</h2>
-      <p>
-        Barasoain Center for Innovative Education (BarCIE)
-      </p>
+      <p>Barasoain Center for Innovative Education (BarCIE)</p>
       <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
-        
-    </div>
 
-  </section>
-
-
-  <section class="rooms container">
-    <h2>Available Rooms</h2>
-    <div class="grid">
-
-      <?php foreach ($rooms as $r): ?>
-        <article class="room-card">
-          <img src="assets/images/room-<?= htmlspecialchars($r['id']) ?>.jpg" alt="<?= htmlspecialchars($r['name']) ?>">
-          <h3><?= htmlspecialchars($r['name']) ?></h3>
-          <p><?= htmlspecialchars($r['description']) ?></p>
-          <p class="price">₱<?= number_format($r['price'], 2) ?></p>
-          <a class="btn" href="booking.php?room_id=<?= $r['id'] ?>">Book</a>
-        </article>
-      <?php endforeach; ?>
+      <!-- Get Started Button -->
+      <a href="dashboard.php" class="get-started">Get Started</a>
     </div>
   </section>
-  <script src="assets/js/app.js"></script> -->
+  
 </body>
-
 </html>
