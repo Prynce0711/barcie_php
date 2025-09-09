@@ -19,12 +19,15 @@
   </header>
 
   <div class="dashboard-container">
-    <div class="nav">
-      <a href="rooms.php">Manage Rooms</a>
-      <a href="bookings.php">View Bookings</a>
-      <a href="profile.php">Profile</a>
-      <a href="index.php">Back to Home</a>
-    </div>
+    
+<div class="sidebar-admin">
+  <h2>Admin Panel</h2>
+  <a href="rooms.php">Manage Rooms</a>
+  <a href="bookings.php">View Bookings</a>
+  <a href="profile.php">Profile</a>
+  <a href="index.php">Back to Home</a>
+</div>
+
 
     <div class="card">
       <h2>Quick Stats</h2>
