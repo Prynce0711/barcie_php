@@ -13,19 +13,24 @@
   <!-- Sidebar -->
   <div class="sidebar guest">
     <h2>Guest Panel</h2>
+    
     <a onclick="showSection('home')">Home</a>
     <a onclick="showSection('rooms')">Rooms</a>
     <a onclick="showSection('facilities')">Facilities</a>
     <a onclick="showSection('contacts')">Contacts</a>
+    <a href="index.php">Back to Homepage</a>
+    
+    
   </div>
 
   <!-- Main Content -->
-  <div class="main-content">
+  <div class="main-content-guest">
     <!-- Home Section -->
-    <div id="home" class="content-section active">
-      <h1>Welcome to BarCIE International Center</h1>
-      <p>We are delighted to have you as our guest. Explore our rooms, facilities, and get in touch with us through this guest portal.</p>
-    </div>
+    <header id="header" class="header">
+  <h1>Welcome to BarCIE International Center</h1>
+  <p>We are delighted to have you as our guest. Explore our rooms, facilities, and get in touch with us through this guest portal.</p>
+</header>
+
 
     <!-- Rooms Section -->
     <div id="rooms" class="content-section">
@@ -58,23 +63,28 @@
     </div>
 
     <!-- Contacts Section -->
-    <div id="contacts" class="content-section">
-      <h1>Contact Us</h1>
-      <p><strong>Address:</strong> La Consolacion University Philippines</p>
-      <p><strong>Telephone:</strong> (044) 931 8600</p>
-      <p><strong>Cellphone:</strong> 0919 002 7151 / 0933 611 8059</p>
-      <p><strong>Email:</strong></p>
-      <ul>
-        <li>laconsolacionu@lcup.edu.ph</li>
-        <li>laconsolacionu@email.lcup.edu.ph</li>
-      </ul>
-      <h3>Location Map</h3>
-      <iframe 
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3856.0396081838277!2d120.8130679!3d14.8530896!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x339653da86e2991f%3A0x9fdc1a1d4c59134b!2sLa%20Consolacion%20University%20Philippines!5e0!3m2!1sen!2sph!4v1694232912345!5m2!1sen!2sph" 
-        allowfullscreen=""
-        loading="lazy">
-      </iframe>
-    </div>
+<div id="contacts" class="content-section contacts-section">
+  <h1 >Contact Us</h1>
+  <p><strong>Address:</strong> La Consolacion University Philippines</p>
+  <p><strong>Telephone:</strong> (044) 931 8600</p>
+  <p><strong>Cellphone:</strong> 0919 002 7151 / 0933 611 8059</p>
+  <p><strong>Email:</strong></p>
+  <ul>
+    <li>laconsolacionu@lcup.edu.ph</li>
+    <li>laconsolacionu@email.lcup.edu.ph</li>
+  </ul>
+
+  <h3>Location</h3>
+  <p>
+    <a 
+      href="https://www.google.com/maps/place/Barcie+International+Center/@14.8528398,120.8114192,15.4z/data=!4m6!3m5!1s0x339653da628ae773:0xb35ee8def0552c2!8m2!3d14.8538889!4d120.8125!16s%2Fg%2F1vcl197l?entry=ttu&g_ep=EgoyMDI1MDkwNy4wIKXMDSoASAFQAw%3D%3D" 
+      target="_blank" 
+      class="map-link">
+      Main Campus - Valenzuela St., Capitol View Park Subdivision, Bulihan, City of Malolos, Bulacan 3000 Philippines
+    </a>
+  </p>
+</div>
+
   </div>
 
   <!-- JS for switching sections -->
@@ -87,4 +97,9 @@
     }
   </script>
 </body>
+
+ <footer class="footer">
+    <p>© BarCIE International Center 2025</p>
+  </footer>
+
 </html>
