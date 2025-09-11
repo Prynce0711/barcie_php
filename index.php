@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html>
 
@@ -39,6 +40,8 @@
     </section>
   </div>
 
+  
+
   <script>
     function toggleSidebar() {
       document.getElementById("sidebar").classList.toggle("active");
@@ -46,9 +49,14 @@
   </script>
 </body>
 
- <footer class="footer">
+<!-- Footer Section -->
+<section id="footer-section" class="footer-section">
+  <div class="footer">
     <p>© BarCIE International Center 2025</p>
-  </footer>
+  </div>
+</section>
+
 
 </html>
+
 
