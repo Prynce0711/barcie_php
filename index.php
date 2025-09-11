@@ -47,6 +47,11 @@
       document.getElementById("sidebar").classList.toggle("active");
     }
   </script>
+
+
+
+
+
 </body>
 
 <!-- Footer Section -->
@@ -54,6 +59,29 @@
   <div class="footer">
     <p>© BarCIE International Center 2025</p>
   </div>
+
+
+
+
+  <!-- ✅ Browsersync live reload script (always last, before </body>) -->
+  <script id="__bs_script__">//<![CDATA[
+    (function() {
+      try {
+        var script = document.createElement('script');
+        if ('async') {
+          script.async = true;
+        }
+        script.src = 'http://HOST:3002/browser-sync/browser-sync-client.js?v=3.0.4'.replace("HOST", location.hostname);
+        if (document.body) {
+          document.body.appendChild(script);
+        } else if (document.head) {
+          document.head.appendChild(script);
+        }
+      } catch (e) {
+        console.error("Browsersync: could not append script tag", e);
+      }
+    })()
+  //]]></script>
 </section>
 
 
