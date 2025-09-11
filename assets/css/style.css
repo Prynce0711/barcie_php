@@ -1,3 +1,4 @@
+
 :root {
   --primary: #0b5d3b;
   --muted: #f5f6f7;
@@ -110,7 +111,7 @@ header p {
   position: fixed;
   top: 15px;
   left: 15px;
-  background: #007bff;
+  background: #000000;
   border: none;
   color: white;
   padding: 8px 12px;
@@ -322,18 +323,7 @@ header p {
 /* ---------- Guest Page Styles ---------- */
 
 /* Sidebar specifically for guest */
-.sidebar.guest {
-  transform: translateX(0);
-  /* always visible for guests */
-}
 
-.sidebar.guest h2 {
-  margin-top: 0;
-  text-align: center;
-  font-size: 22px;
-  margin-bottom: 25px;
-  color: #f1f1f1;
-}
 
 /* Main content layout for guest */
 .main-content-guest {
@@ -353,7 +343,7 @@ header p {
 /* Hide sections by default */
 .content-section {
   display: none;
-  animation: fadeIn 0.5s ease;
+  animation: fadeIn 0.5s ease;  
 }
 
 .content-section.active {
@@ -365,6 +355,44 @@ header p {
   color: var(--primary);
   margin-bottom: 20px;
 }
+
+
+/* Reminder Section */
+.reminder-list {
+  list-style: none;         /* remove default bullets */
+  padding: 0;
+  margin: 20px auto;
+  max-width: 600px;
+  background: #f9f9f9;      /* light background */
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 10px;
+}
+
+
+
+.reminder-list li {
+  padding: 10px;
+  margin: 8px 0;
+  border-left: 4px solid #007BFF;  /* blue marker line */
+  background: #ffffff;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.reminder-list li:hover {
+  background: #e9f3ff;      /* highlight on hover */
+}
+
+.reminder-list li::before {
+  content: "🟢";            /* custom emoji bullet */
+  margin-right: 10px;
+}
+
 
 /* Room cards */
 .room-card,
@@ -404,9 +432,6 @@ header p {
 
 }
 
-
-
-
 .contacts-section p,
 .contacts-section li,
 .contacts-section h3 {
@@ -426,21 +451,7 @@ header p {
   font-size: 1.1rem;
 }
 
-/* Clickable map link */
-.map-link {
-  display: inline-block;
-  margin-top: 12px;
-  color: #00aaff;
-  font-weight: bold;
-  font-size: 1.1rem;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
 
-.map-link:hover {
-  color: #ffaa00;
-  text-decoration: underline;
-}
 
 
 /* Smooth fade-in animation */
