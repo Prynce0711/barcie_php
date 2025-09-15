@@ -210,6 +210,40 @@ header p {
   background: #0056b3;
 }
 
+ .content-section { display: none; }
+    .content-section.active { display: block; }
+
+    /* Admin login style */
+    .admin-login-section {
+      text-align: center;
+      padding: 30px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      max-width: 400px;
+      margin: 40px auto;
+    }
+    .admin-login-section h1 { margin-bottom: 20px; }
+    .admin-login-section input {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .admin-login-section button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .admin-login-section button:hover { background: #0056b3; }
+
+
+
 /* ------ dashboard styles --------- */
 
 /* Dashboard specific styles */
@@ -468,23 +502,29 @@ header p {
 }
 
 /* ---------- Footer Styles ---------- */
+/* Make body take full height and push footer down */
+html, body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content expands to fill space */
+.main-content-guest, 
+.main-content {
+  flex: 1;
+}
+
+/* Footer stays at bottom */
+.footer-section {
+  margin-top: auto; /* pushes footer down */
+}
+
 .footer {
   background: #343a40;
   color: #f1f1f1;
   text-align: center;
   padding: 15px 10px;
-  position: relative;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  font-size: 14px;
-  margin-top: 140px;
   border-top: 3px solid var(--primary);
-}
-
-.footer p {
-  margin: 10px;
-  letter-spacing: 0.5px;
-  font-size: 14px;
-  color: #ddd;
 }
