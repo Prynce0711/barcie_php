@@ -2,7 +2,7 @@
 // filepath: c:\xampp\htdocs\barcie_php\admin_login.php
 
 // Include the database connection
-include 'db_connect.php';
+include 'database/db_connect.php';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
