@@ -2,7 +2,7 @@
 // filepath: c:\xampp\htdocs\barcie_php\db_connect.php
 
 // Start session
-session_start();
+
 
 // Database connection details
 $host = "localhost";
