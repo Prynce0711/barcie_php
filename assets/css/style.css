@@ -354,6 +354,30 @@ header p {
   color: #fff;
 }
 
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+table th, table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+table th {
+  background: #eee;
+}
+
+
+
+
+
+
+
+
+
+
 /* ---------- Guest Page Styles ---------- */
 
 /* Sidebar specifically for guest */
@@ -520,6 +544,10 @@ html, body {
 .footer-section {
   margin-top: auto; /* pushes footer down */
 }
+
+
+
+
 
 .footer {
   background: #343a40;

@@ -35,28 +35,27 @@
         <h2>Welcome to Barcie International Center</h2>
         <p>Barasoain Center for Innovative Education (BarCIE)</p>
         <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
-        <a href="Guest.php" class="get-started">Get Started</a>
+        
       </div>
     </section>
   </div>
 
   <!-- ✅ Hidden Admin Login Section (not inside sidebar anymore) -->
-  <!-- Admin Login Section -->
-<section id="admin-login" class="content-section">
+  <section id="admin-login" class="content-section">
     <div class="admin-login-section">
-        <h1>🔐 Admin Login</h1>
-        <form class="login-form" method="post" action="admin_login.php">
-            <label for="username">👤 Username</label>
-            <input type="text" id="username" name="username" placeholder="Enter username" required>
+      <h1>🔐 Admin Login</h1>
+      <form class="login-form" method="post" action="dashboard.php">
+        <label for="username">👤 Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter username" required>
 
-            <label for="password">🔑 Password</label>
-            <input type="password" id="password" name="password" placeholder="Enter password" required>
+        <label for="password">🔑 Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter password" required>
 
-            <button type="submit">➡️ Login</button>
-            <button type="button" onclick="window.location.href='index.php'">⬅️ Back</button>
-        </form>
+        <button type="submit">➡️ Login</button>
+        <button type="button" onclick="window.location.href='index.php'">⬅️ Back</button>
+      </form>
     </div>
-</section>s
+  </section>
   </div>
 
 
