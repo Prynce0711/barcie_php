@@ -13,13 +13,12 @@
 
 
 <body>
-  <!-- Toggle Button -->
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
+  
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar guest">
     <h2>Guest Panel</h2>
     <a onclick="showSection('home')">Home</a>
+     <a onclick="showSection('schedule')">schedule</a>
     <a onclick="showSection('rooms')">Rooms</a>
     <a onclick="showSection('facilities')">Facilities</a>
     <a onclick="showSection('contacts')">Contacts</a>
@@ -37,9 +36,12 @@
         guest portal.</p>
     </header>
 
-    <!-- Home / Reminder Section -->
-    <div id="home" class="content-section">
-      <h1>📝 Reminders</h1>
+   <!-- Home / Reminder Section -->
+<div id="home" class="content-section home-layout">
+  <h1>📝 Reminders</h1>
+  <div class="reminder-container">
+    <!-- Left: Reminder list -->
+    <div class="reminder-left">
       <ul class="reminder-list">
         <li>✅ Please check room availability before booking.</li>
         <li>✅ Facilities are subject to reservation and approval.</li>
@@ -49,53 +51,206 @@
       </ul>
     </div>
 
-
-    <!-- Rooms Section -->
-    <div id="rooms" class="content-section">
-      <h1>Room Viewing & Price Checking</h1>
-      <div class="room-card">
-        <h3>Standard Room</h3>
-        <p>₱1,200 / night</p>
-      </div>
-      <div class="room-card">
-        <h3>Deluxe Room</h3>
-        <p>₱2,000 / night</p>
-      </div>
-      <div class="room-card">
-        <h3>Suite</h3>
-        <p>₱3,500 / night</p>
-      </div>
-    </div>
-
-    <!-- Facilities Section -->
-    <div id="facilities" class="content-section">
-      <h1>Facilities - Hall</h1>
-      <div class="facility-card">
-        <h3>Main Function Hall</h3>
-        <p>Perfect for conferences, seminars, and social gatherings. Capacity: 300 guests.</p>
-      </div>
-      <div class="facility-card">
-        <h3>Mini Hall</h3>
-        <p>Ideal for small events and meetings. Capacity: 80 guests.</p>
-      </div>
-    </div>
-
-    <!-- Contacts Section -->
-    <div id="contacts" class="content-section contacts-section">
-      <h1> Contact Us</h1>
-      <p><strong>📍 Address:</strong> La Consolacion University Philippines</p>
-      <p><strong>☎️ Telephone:</strong> (044) 931 8600</p>
-      <p><strong>📱 Cellphone:</strong> 0919 002 7151 / 0933 611 8059</p>
-      <p><strong>📧 Email:</strong></p>
+    <!-- Right: Steps box -->
+    <div class="reminder-right">
+      <h3>STEPS TO BOOK</h3>
       <ul>
-        <li>✉️ laconsolacionu@lcup.edu.ph</li>
-        <li>✉️ laconsolacionu@email.lcup.edu.ph</li>\ <a
-          href="https://www.google.com/maps/place/Barcie+International+Center/@14.8528398,120.8114192,15.4z/data=!4m6!3m5!1s0x339653da628ae773:0xb35ee8def0552c2!8m2!3d14.8538889!4d120.8125!16s%2Fg%2F1vcl197l?entry=ttu&g_ep=EgoyMDI1MDkwNy4wIKXMDSoASAFQAw%3D%3D"
-          target="_blank" class="map-link">
-          Main Campus - Valenzuela St., Capitol View Park Subdivision, Bulihan, City of Malolos, Bulacan 3000
-          Philippines
+        <li>📅 Check availability of rooms and halls</li>
+        <li>📝 Fill out the reservation form</li>
+        <li>📧 Wait for email confirmation/approval</li>
+        <li>📊 Track your request status from the dashboard</li>
       </ul>
     </div>
+  </div>
+</div>
+
+
+<!-- Schedule Section -->
+<div id="schedule" class="content-section">
+  <h1>Availability of Rooms & Facilities</h1>
+  
+  <!-- Dropdown for selecting room or facility -->
+  <label for="placeSelect">Choose Room / Facility:</label>
+  <select id="placeSelect">
+    <!-- Rooms -->
+    <optgroup label="Rooms">
+      <option value="standard-room">Standard Room</option>
+      <option value="deluxe-room">Deluxe Room</option>
+      <option value="suite-room">Suite</option>
+    </optgroup>
+
+    <!-- Facilities -->
+    <optgroup label="Facilities">
+      <option value="main-hall">Main Function Hall</option>
+      <option value="bayabas-hall">Bayabas Hall</option>
+      <option value="langka-hall">Langka Hall</option>
+      <option value="rambutan-hall">Rambutan Hall</option>
+      <option value="main-lobby">Main Lobby</option>
+      <option value="mini-pool">Mini Pool & Cottage</option>
+    </optgroup>
+  </select>
+
+  <!-- Calendar -->
+  <div id="calendar"></div>
+</div>
+
+
+
+
+    <!-- Rooms Section -->
+<div id="rooms" class="content-section">
+  <h1>Room Viewing & Price Checking</h1>
+
+  <div class="rooms-grid">
+    <!-- Standard Room -->
+    <div class="room-card">
+      <img src="images/standard.jpg" alt="Standard Room">
+      <div class="room-info">
+        <h3>Standard Room</h3>
+        <p>₱1,200 / night</p>
+        <button>Book Now</button>
+      </div>
+    </div>
+
+    <!-- Deluxe Room -->
+    <div class="room-card">
+      <img src="images/deluxe.jpg" alt="Deluxe Room">
+      <div class="room-info">
+        <h3>Deluxe Room</h3>
+        <p>₱2,000 / night</p>
+        <button>Book Now</button>
+      </div>
+    </div>
+
+    <!-- Suite -->
+    <div class="room-card">
+      <img src="images/suite.jpg" alt="Suite">
+      <div class="room-info">
+        <h3>Suite</h3>
+        <p>₱3,500 / night</p>
+        <button>Book Now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+   <!-- Facilities Section -->
+<div id="facilities" class="content-section">
+  <h1>Facilities Viewing</h1>
+  <div class="facilities-container">
+
+    <div class="facility-card">
+      <img src="images/main-hall.jpg" alt="Main Function Hall">
+      <h3>Main Function Hall</h3>
+      <p>Perfect for conferences, seminars, and social gatherings.<br>Capacity: 300 guests.</p>
+      <button class="book-btn">Book Now</button>
+    </div>
+
+    <div class="facility-card">
+      <img src="images/bayabas-hall.jpg" alt="Bayabas Hall">
+      <h3>Bayabas Hall</h3>
+      <p>Spacious hall ideal for medium-sized gatherings and celebrations.</p>
+      <button class="book-btn">Book Now</button>
+    </div>
+
+    <div class="facility-card">
+      <img src="images/langka-hall.jpg" alt="Langka Hall">
+      <h3>Langka Hall</h3>
+      <p>Designed for intimate events, meetings, or small group sessions.</p>
+      <button class="book-btn">Book Now</button>
+    </div>
+
+    <div class="facility-card">
+      <img src="images/rambutan-hall.jpg" alt="Rambutan Hall">
+      <h3>Rambutan Hall</h3>
+      <p>Great for training sessions, workshops, or private functions.</p>
+      <button class="book-btn">Book Now</button>
+    </div>
+
+    <div class="facility-card">
+      <img src="images/main-lobby.jpg" alt="Main Lobby">
+      <h3>Main Lobby</h3>
+      <p>Elegant reception area to welcome your guests in style.</p>
+      <button class="book-btn">Book Now</button>
+    </div>
+
+    <div class="facility-card">
+      <img src="images/pool-cottage.jpg" alt="Mini Pool and Cottage">
+      <h3>Mini Pool & Cottage</h3>
+      <p>Relaxing pool area with cottages, perfect for family bonding and leisure.</p>
+      <button class="book-btn">Book Now</button>
+    </div>
+
+  </div>
+</div>
+
+
+
+    <!-- Contacts Section -->
+<div id="contacts" class="content-section ">
+  <!-- Left Panel -->
+  <div class="contact-info">
+    <h2>Contact Information</h2>
+    <p>We’d love to hear from you! Reach out through any of these channels.</p>
+
+    <div class="info-item">
+      <i class="fas fa-phone"></i>
+      <span>(044) 931 8600</span>
+    </div>
+    <div class="info-item">
+      <i class="fas fa-mobile-alt"></i>
+      <span>0919 002 7151 / 0933 611 8059</span>
+    </div>
+    <div class="info-item">
+      <i class="fas fa-envelope"></i>
+      <span>laconsolacionu@lcup.edu.ph</span><br>
+      <span>laconsolacionu@email.lcup.edu.ph</span>
+    </div>
+    <div class="info-item">
+      <i class="fas fa-map-marker-alt"></i>
+      <a href="https://www.google.com/maps/place/Barcie+International+Center/@14.8528398,120.8114192,15.4z"
+         target="_blank">
+        Main Campus - Valenzuela St., Capitol View Park Subdivision, Bulihan, City of Malolos, Bulacan 3000
+      </a>
+    </div>
+
+    <div class="social-icons">
+      <a href="#"><i class="fab fa-facebook"></i></a>
+      <a href="#"><i class="fab fa-instagram"></i></a>
+      <a href="#"><i class="fab fa-twitter"></i></a>
+    </div>
+  </div>
+
+  <!-- Right Panel (Form) -->
+  <div class="contact-form">
+    <form>
+      <div class="form-row">
+        <input type="text" placeholder="First Name" required>
+        <input type="text" placeholder="Last Name" required>
+      </div>
+      <div class="form-row">
+        <input type="email" placeholder="Email" required>
+        <input type="text" placeholder="Phone Number">
+      </div>
+
+      <label>Select Subject:</label>
+      <div class="subjects">
+        <label><input type="radio" name="subject" checked> General Inquiry</label>
+        <label><input type="radio" name="subject"> Room Booking</label>
+        <label><input type="radio" name="subject"> Facilities</label>
+        <label><input type="radio" name="subject"> Others</label>
+      </div>
+
+      <textarea placeholder="Write your message.." rows="5"></textarea>
+
+      <button type="submit" class="send-btn">Send Message</button>
+    </form>
+  </div>
+</div>
+
+
+    
 
   </div>
 
@@ -124,11 +279,53 @@
     };
   </script>
 
-  <script>
-    function toggleSidebar() {
-      document.getElementById("sidebar").classList.toggle("active");
-    }
-  </script>
+
+<!-- FullCalendar CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+ 
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    let calendarEl = document.getElementById('calendar');
+
+    let calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      events: [] // initially empty
+    });
+
+    calendar.render();
+
+    // Dropdown change listener
+    document.getElementById('placeSelect').addEventListener('change', function () {
+      let place = this.value;
+      calendar.removeAllEvents();
+
+      // Example schedules (replace with backend data later)
+      if (place === 'standard-room') {
+        calendar.addEvent({ title: 'Booked: Guest Stay', start: '2023-09-22T14:00:00', end: '2023-09-24T10:00:00', color: 'green' });
+      } else if (place === 'deluxe-room') {
+        calendar.addEvent({ title: 'Pending: Reservation', start: '2023-09-25', color: 'orange' });
+      } else if (place === 'suite-room') {
+        calendar.addEvent({ title: 'Blocked: Cleaning', start: '2023-09-27', color: 'red' });
+      } else if (place === 'main-hall') {
+        calendar.addEvent({ title: 'Approved: Conference', start: '2023-09-20T09:00:00', end: '2023-09-20T12:00:00', color: 'green' });
+      } else if (place === 'bayabas-hall') {
+        calendar.addEvent({ title: 'Pending: Seminar', start: '2023-09-23', color: 'orange' });
+      } else if (place === 'langka-hall') {
+        calendar.addEvent({ title: 'Blocked: Maintenance', start: '2023-09-26', color: 'red' });
+      } else if (place === 'rambutan-hall') {
+        calendar.addEvent({ title: 'Approved: Wedding', start: '2023-09-29', color: 'green' });
+      }
+    });
+  });
+</script>
+
+
+  
 
 </body>
 
