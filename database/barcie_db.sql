@@ -21,7 +21,15 @@ CREATE TABLE IF NOT EXISTS rooms (
     room_number VARCHAR(50) NOT NULL,
     type VARCHAR(100),
     status VARCHAR(50) DEFAULT 'available'
+    
+    
 );
+
+ALTER TABLE rooms {
+ADD COLUMN notes TEXT NULL,
+ADD COLUMN image VARCHAR(255) NULL,
+MODIFY status ENUM('available','occupied','maintenance') DEFAULT 'available';
+};
 
 CREATE TABLE IF NOT EXISTS bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -39,4 +47,6 @@ CREATE TABLE IF NOT EXISTS facilities (
     capacity INT,
     price DECIMAL(10,2)
 );
+
+
 
