@@ -4,7 +4,7 @@ require "database/db_connect.php";  // <-- fixed path
 
 // protect page (only for logged in admins)
 if (!isset($_SESSION['admin_id'])) {
-  header("Location: admin_login.php");
+  header("Location: index.php");
   exit;
 }
 ?>
