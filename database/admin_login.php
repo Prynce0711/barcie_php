@@ -1,12 +1,12 @@
 <?php
-// filepath: c:\xampp\htdocs\barcie_php\admin_login.php
+session_start(); // start session
 
-// Include the database connection
-include 'database/db_connect.php';
+// ✅ include database connection (make sure db_connect.php is inside /database)
+include __DIR__ . '/db_connect.php';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = trim($_POST['username']);
+    $username = trim($_POST['username']);  
     $password = trim($_POST['password']);
 
     // Validate input fields
@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    // Query the database for the user
+    // ✅ Query the database for the user by username
     $stmt = $conn->prepare("SELECT id, password FROM admins WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
@@ -25,12 +25,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bind_result($id, $storedPassword);
         $stmt->fetch();
 
-        // Verify the plain text password
+        // ✅ If passwords are stored as plain text (not recommended)
         if ($password === $storedPassword) {
             // Set session variables and redirect to the dashboard
             $_SESSION['admin_id'] = $id;
             $_SESSION['admin_username'] = $username;
-            header("Location: dashboard.php");
+            header("Location: ../dashboard.php");
             exit;
         } else {
             echo "<script>alert('Invalid password.'); window.history.back();</script>";
