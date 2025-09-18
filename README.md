@@ -2,12 +2,20 @@
 
 this is for Capstone Project
 
-Languages
-CSS
-50.1%
+Group 6 
+Leader: Prynce Carlo Clemente (Full stack developer)
+Roxanne Gonzales: Research paper Specialist
  
-PHP
-46.7%
- 
-JavaScript
-3.2%
+Front End : HTML, Css
+Backend: PHP, Javascript, Node JS, Json,  
+Database: Xampp (mySql)
+
+Project Start Date Sept 1, 2025
+
+
+
+
+
+
+
+
