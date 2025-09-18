@@ -324,6 +324,25 @@
   });
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var calendarEl = document.getElementById('calendar');
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth'
+    // Add your options here
+  });
+
+  // Initial render (optional if container is hidden)
+  // calendar.render();
+
+  // Example: show schedule and render calendar when tab/button clicked
+  document.getElementById('showScheduleBtn').addEventListener('click', function() {
+    document.getElementById('schedule').style.display = 'block';
+    calendar.render(); // force FullCalendar to render correctly
+  });
+});
+</script>
+
 
   
 

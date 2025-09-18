@@ -1,6 +1,6 @@
-
 * {
   box-sizing: border-box;
+  padding: auto;
 }
 
 body {
@@ -14,8 +14,10 @@ body {
   overflow-y: auto; /* vertical scrollbar */
   margin: 0;
   padding: 0;
-  height: 100vh;
+  height: 100%;
   width: 100vw;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Style scrollbars (modern browsers) */
@@ -141,14 +143,16 @@ header p {
 /* Main Content Styles */
 
 .main-content {
+
   max-width: 700px;
   margin: 200px auto 40px;
   background: rgba(255, 255, 255, 0.807);
   /* translucent white */
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-    padding: 40px 30px;
+  padding: 40px 30px;
   text-align: center;
+  flex: 1;
 }
 
 .main-content h2 {
@@ -162,8 +166,6 @@ header p {
   background-repeat: no-repeat;
   padding: 40px 30px;
   margin-top: 10px auto;
-  box-shadow: 0 50px 24px rgba(0, 0, 0, 0.15);
-  
 }
 
 @keyframes slide {
@@ -214,184 +216,168 @@ header p {
 
 /* Admin login style */
 .admin-login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-    }
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding-top: 100px;
+}
 
-    .unique-card {
-        background: rgba(1, 1, 1, 0.15); /* Semi-transparent white */
-        backdrop-filter: blur(15px); /* Frosted glass effect */
-        -webkit-backdrop-filter: blur(15px);
-        padding: 50px 40px;
-        border-radius: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Softer shadow */
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        text-align: center;
-        width: 380px;
-        color: #fff;
-        position: relative;
-        overflow: hidden;
-        animation: card-entry 1s ease-out;
-    }
+.unique-card {
+  background: rgba(0, 0, 0, 0.521); /* Semi-transparent white */
+  backdrop-filter: blur(15px); /* Frosted glass effect */
+  -webkit-backdrop-filter: blur(15px);
+  padding: 50px 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Softer shadow */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+  width: 380px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  animation: card-entry 1s ease-out;
+}
 
-    @keyframes card-entry {
-        from {
-            opacity: 0;
-            transform: scale(0.9) translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
-    }
-
-   .unique-card {
-    /* Slightly less transparent background for better contrast */
-    background: rgba(0, 0, 0, 0.5); /* Increased opacity from 0.15 to 0.25 */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    
-    padding: 30px 35px;
-    border-radius: 15px;
-    box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.3); /* Made border more visible */
-    text-align: center;
-    width: 350px;
-    color: #fff;
-    position: relative;
-    overflow: hidden;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .logo-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .stax-logo-icon {
-    display: none;
+  display: none;
 }
 
 .card-title {
-    color: #fff; /* Solid white for clear visibility */
-    font-size: 1.8rem;
-    margin-bottom: 5px;
-    font-weight: 600;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4); /* Added a subtle text shadow for extra readability */
-    white-space: nowrap;
+  color: #fff; /* Solid white for clear visibility */
+  font-size: 1.8rem;
+  margin-bottom: 5px;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4); /* Added a subtle text shadow for extra readability */
+  white-space: nowrap;
 }
 
 .card-subtitle {
-    color: #f0f0f0; /* Lighter color for better readability */
-    font-size: 0.85rem;
-    margin-bottom: 25px;
-    line-height: 1.4;
+  color: #f0f0f0; /* Lighter color for better readability */
+  font-size: 0.85rem;
+  margin-bottom: 25px;
+  line-height: 1.4;
 }
 
 .input-group {
-    margin-bottom: 20px;
-    text-align: left;
+  margin-bottom: 20px;
+  text-align: left;
 }
 
 .unique-card label {
-    display: block;
-    font-size: 0.8rem;
-    color: #fff; /* Solid white for clear labels */
-    margin-bottom: 6px;
-    font-weight: 500;
+  display: block;
+  font-size: 0.8rem;
+  color: #fff; /* Solid white for clear labels */
+  margin-bottom: 6px;
+  font-weight: 500;
 }
 
 .unique-card input {
-    width: 100%;
-    padding: 10px 12px;
-    border: none;
-    background: rgba(255, 255, 255, 0.3); /* More opaque input background */
-    border-radius: 6px;
-    font-size: 0.95rem;
-    color: #fff; /* Solid white text input */
-    box-sizing: border-box;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.3); /* More opaque input background */
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #fff; /* Solid white text input */
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .unique-card input::placeholder {
-    color: #dcdcdc; /* Lighter placeholder color for better visibility */
-    opacity: 0.9; /* Increased opacity to prevent it from being invisible */
+  color: #dcdcdc; /* Lighter placeholder color for better visibility */
+  opacity: 0.9; /* Increased opacity to prevent it from being invisible */
 }
 
 .unique-card input:focus {
-    outline: none;
-    background: rgba(255, 255, 255, 0.4); /* Input background gets even lighter on focus */
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4) /* Changed focus ring to accent yellow */
+  outline: none;
+  background: rgba(
+    255,
+    255,
+    255,
+    0.4
+  ); /* Input background gets even lighter on focus */
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); /* Changed focus ring to accent yellow */
 }
 
 .password-container {
-    position: relative;
+  position: relative;
 }
 
 .password-toggle-icon {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    filter: invert(0.9); /* Almost fully inverted to pure white */
-    width: 18px;
-    height: 18px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 4.5c-6.627 0-12 7.042-12 7.042s5.373 7.042 12 7.042 12-7.042 12-7.042-5.373-7.042-12-7.042zm0 12c-2.485 0-4.5-2.015-4.5-4.5s2.015-4.5 4.5-4.5 4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5zm0-7c-1.381 0-2.5 1.119-2.5 2.5s1.119 2.5 2.5 2.5 2.5-1.119 2.5-2.5-1.119-2.5-2.5-2.5z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-size: contain;
-    transition: transform 0.2s ease;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  filter: invert(0.9); /* Almost fully inverted to pure white */
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 4.5c-6.627 0-12 7.042-12 7.042s5.373 7.042 12 7.042 12-7.042 12-7.042-5.373-7.042-12-7.042zm0 12c-2.485 0-4.5-2.015-4.5-4.5s2.015-4.5 4.5-4.5 4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5zm0-7c-1.381 0-2.5 1.119-2.5 2.5s1.119 2.5 2.5 2.5 2.5-1.119 2.5-2.5-1.119-2.5-2.5-2.5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  transition: transform 0.2s ease;
 }
 
 .password-toggle-icon:hover {
-    transform: translateY(-50%) scale(1.1);
+  transform: translateY(-50%) scale(1.1);
 }
 
 .forgot-password {
-    display: block;
-    text-align: right;
-    font-size: 0.75rem;
-    color: #87ceeb; /* A brighter light blue */
-    text-decoration: none;
-    margin-top: -10px;
-    margin-bottom: 20px;
-    transition: color 0.3s ease;
+  display: block;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #87ceeb; /* A brighter light blue */
+  text-decoration: none;
+  margin-top: -10px;
+  margin-bottom: 20px;
+  transition: color 0.3s ease;
 }
 
 .forgot-password:hover {
-    color: #fff;
-    text-decoration: underline;
+  color: #fff;
+  text-decoration: underline;
 }
 
 .unique-sign-in-button {
-    background-color: #ffffff;
-    color: #333; /* Dark text on bright button */
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-    width: 100%;
-    letter-spacing: 0.5px;
+  background-color: #ffffff;
+  color: #333; /* Dark text on bright button */
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  letter-spacing: 0.5px;
 }
 
 .unique-sign-in-button:hover {
-    background-color: #fffdf6;
+  background-color: #fffdf6;
 }
 
 .card-footer {
-    display: none;
+  display: none;
 }
 
 /* ------ dashboard styles --------- */
@@ -522,12 +508,11 @@ table th {
 
 /* ---------- Guest Page Styles ---------- */
 
-
 /* Guest Sidebar - fixed and unique */
 .sidebar.guest {
   position: fixed;
   top: 0;
-  left: 250px;
+  left: 219px;
   width: 240px;
   height: 100vh;
   background: linear-gradient(180deg, #1e3c72, #2a5298); /* unique gradient */
@@ -535,7 +520,7 @@ table th {
   padding: 20px 10px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+
   box-shadow: 3px 0 8px rgba(0, 0, 0, 0.2);
   z-index: 1000;
 }
@@ -568,7 +553,6 @@ table th {
   font-weight: bold;
   transform: translateX(5px);
 }
-
 
 /* Home/Reminder Layout */
 .home-layout {
@@ -608,7 +592,6 @@ table th {
 .reminder-right li {
   margin-bottom: 8px;
 }
-
 
 /* Main content layout for guest */
 .main-content-guest {
@@ -672,17 +655,15 @@ table th {
 .reminder-list li::before {
   content: "🟢"; /* custom emoji bullet */
   margin-right: 10px;
-
-
-  
 }
-
 
 #schedule {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 950px;
+   margin: 0 auto 30px;
 }
 
 #placeSelect {
@@ -690,6 +671,7 @@ table th {
   margin-bottom: 15px;
   border-radius: 5px;
   border: 1px solid #ccc;
+    width: 100%;
 }
 
 #calendar {
@@ -697,7 +679,7 @@ table th {
   margin: 0 auto;
 }
 
-/* Room cards */
+
 /* Rooms Section */
 #rooms {
   padding: 30px;
@@ -722,7 +704,7 @@ table th {
   background: #fff;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -730,7 +712,7 @@ table th {
 
 .room-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
 .room-card img {
@@ -769,10 +751,7 @@ table th {
   background: #1e3c72;
 }
 
-
-
 /* Contacts Section Styles */
-/* Contact Section Layout */
 .contacts-container {
   display: flex;
   gap: 30px;
@@ -827,7 +806,7 @@ table th {
   background: #fff;
   padding: 30px;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .contact-form form {
@@ -845,7 +824,8 @@ table th {
   flex: 1;
 }
 
-input, textarea {
+input,
+textarea {
   width: 100%;
   padding: 10px;
   border: none;
@@ -854,7 +834,8 @@ input, textarea {
   transition: border-color 0.3s;
 }
 
-input:focus, textarea:focus {
+input:focus,
+textarea:focus {
   border-color: #00c3ff;
 }
 
@@ -889,7 +870,7 @@ input:focus, textarea:focus {
   background: #fff;
   border-radius: 10px;
   padding: 15px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
   transition: transform 0.3s;
 }
@@ -933,7 +914,6 @@ input:focus, textarea:focus {
   background-color: #08306b;
 }
 
-
 /* Smooth fade-in animation */
 @keyframes fadeIn {
   from {
@@ -948,30 +928,35 @@ input:focus, textarea:focus {
 }
 
 /* ---------- Footer Styles ---------- */
-/* Make body take full height and push footer down */
-html,
-body {
-  height: 100%;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Main content expands to fill space */
-.main-content-guest,
-.main-content {
-  flex: 1;
-}
 
 /* Footer stays at bottom */
 .footer-section {
   margin-top: auto; /* pushes footer down */
 }
 
+/* Footer stays at bottom */
 .footer {
   background: #343a40;
   color: #f1f1f1;
   text-align: center;
+  border-top: 3px solid var(--primary); /* fixed */
+  margin-left: 100px;
+  margin-top: 100px;
   padding: 15px 10px;
-  border-top: 3px solid var(--primary);
 }
+
+
+
+.footer-section-land {
+  margin-top: auto; /* pushes footer down */
+}
+
+/* Footer stays at bottom */
+.footer-land {
+  background: #343a40;
+  color: #f1f1f1;
+  text-align: center;
+  border-top: 3px solid var(--primary); /* fixed */
+  padding: 15px 10px;
+}
+

@@ -11,7 +11,6 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
 }
 ?>
 
-<a href="logout.php">Logout</a>
 
 
 <!doctype html>
@@ -147,8 +146,8 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
   </script>
 
   <!-- Footer -->
-  <section id="footer-section" class="footer-section">
-    <div class="footer">
+  <section id="footer-section-land" class="footer-section-land">
+    <div class="footer-land">
       <p>© BarCIE International Center 2025</p>
     </div>
   </section>
