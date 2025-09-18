@@ -147,7 +147,7 @@ header p {
   /* translucent white */
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-  padding: 40px 30px;
+    padding: 40px 30px;
   text-align: center;
 }
 
@@ -213,36 +213,185 @@ header p {
 }
 
 /* Admin login style */
-.admin-login-section {
-  text-align: center;
-  padding: 30px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  max-width: 400px;
-  margin: 40px auto;
+.admin-login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .unique-card {
+        background: rgba(1, 1, 1, 0.15); /* Semi-transparent white */
+        backdrop-filter: blur(15px); /* Frosted glass effect */
+        -webkit-backdrop-filter: blur(15px);
+        padding: 50px 40px;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Softer shadow */
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        text-align: center;
+        width: 380px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        animation: card-entry 1s ease-out;
+    }
+
+    @keyframes card-entry {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+   .unique-card {
+    /* Slightly less transparent background for better contrast */
+    background: rgba(0, 0, 0, 0.5); /* Increased opacity from 0.15 to 0.25 */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    
+    padding: 30px 35px;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3); /* Made border more visible */
+    text-align: center;
+    width: 350px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
 }
-.admin-login-section h1 {
-  margin-bottom: 20px;
+
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px;
 }
-.admin-login-section input {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+
+.stax-logo-icon {
+    display: none;
 }
-.admin-login-section button {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  cursor: pointer;
-  border-radius: 5px;
+
+.card-title {
+    color: #fff; /* Solid white for clear visibility */
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4); /* Added a subtle text shadow for extra readability */
+    white-space: nowrap;
 }
-.admin-login-section button:hover {
-  background: #0056b3;
+
+.card-subtitle {
+    color: #f0f0f0; /* Lighter color for better readability */
+    font-size: 0.85rem;
+    margin-bottom: 25px;
+    line-height: 1.4;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.unique-card label {
+    display: block;
+    font-size: 0.8rem;
+    color: #fff; /* Solid white for clear labels */
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.unique-card input {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.3); /* More opaque input background */
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #fff; /* Solid white text input */
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.unique-card input::placeholder {
+    color: #dcdcdc; /* Lighter placeholder color for better visibility */
+    opacity: 0.9; /* Increased opacity to prevent it from being invisible */
+}
+
+.unique-card input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.4); /* Input background gets even lighter on focus */
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4) /* Changed focus ring to accent yellow */
+}
+
+.password-container {
+    position: relative;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    filter: invert(0.9); /* Almost fully inverted to pure white */
+    width: 18px;
+    height: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 4.5c-6.627 0-12 7.042-12 7.042s5.373 7.042 12 7.042 12-7.042 12-7.042-5.373-7.042-12-7.042zm0 12c-2.485 0-4.5-2.015-4.5-4.5s2.015-4.5 4.5-4.5 4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5zm0-7c-1.381 0-2.5 1.119-2.5 2.5s1.119 2.5 2.5 2.5 2.5-1.119 2.5-2.5-1.119-2.5-2.5-2.5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+    transition: transform 0.2s ease;
+}
+
+.password-toggle-icon:hover {
+    transform: translateY(-50%) scale(1.1);
+}
+
+.forgot-password {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    color: #87ceeb; /* A brighter light blue */
+    text-decoration: none;
+    margin-top: -10px;
+    margin-bottom: 20px;
+    transition: color 0.3s ease;
+}
+
+.forgot-password:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.unique-sign-in-button {
+    background-color: #ffffff;
+    color: #333; /* Dark text on bright button */
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    letter-spacing: 0.5px;
+}
+
+.unique-sign-in-button:hover {
+    background-color: #fffdf6;
+}
+
+.card-footer {
+    display: none;
 }
 
 /* ------ dashboard styles --------- */

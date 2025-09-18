@@ -1,13 +1,18 @@
+
+
+
 <?php
 session_start();
-require "database/db_connect.php";  // <-- fixed path
+require __DIR__ . "/database/db_connect.php"; // ✅ fixed path
 
-// protect page (only for logged in admins)
-if (!isset($_SESSION['admin_id'])) {
-  header("Location: index.php");
-  exit;
+if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
+    header("Location: index.php");
+    exit;
 }
 ?>
+
+<a href="logout.php">Logout</a>
+
 
 <!doctype html>
 <html lang="en">
