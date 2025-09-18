@@ -78,7 +78,7 @@
 </body>
 
 <!-- Footer Section -->
-<section id="footer-section" class="footer-section">
+<section id="footer-section-land" class="footer-section-land">
   <div class="footer">
     <p>© BarCIE International Center 2025</p>
   </div>
