@@ -1,6 +1,8 @@
 # barcie_php
 
 this is for Capstone Project
+BSIT 4B
+LA CONSOLACION UNIVERSITY PHILIPPINES
 
 Group 6 
 Leader: Prynce Carlo Clemente (Full stack developer)
