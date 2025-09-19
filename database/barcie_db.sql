@@ -1,7 +1,5 @@
--- Create the database
-CREATE DATABASE IF NOT EXISTS barcie_db;
 
--- Use the database
+CREATE DATABASE IF NOT EXISTS barcie_db;
 USE barcie_db;
 
 -- Create the admins table
@@ -16,37 +14,19 @@ CREATE TABLE IF NOT EXISTS admins (
 INSERT INTO admins (username, password)
 VALUES ('admin', 'password123'); -- Replace 'password123' with your desired password
 
-CREATE TABLE IF NOT EXISTS rooms (
+
+CREATE DATABASE IF NOT EXISTS barcie;
+USE barcie;
+
+CREATE TABLE reservations (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_number VARCHAR(50) NOT NULL,
-    type VARCHAR(100),
-    status VARCHAR(50) DEFAULT 'available'
-    
-    
+    guest_name VARCHAR(100) NOT NULL,
+    contact_number VARCHAR(20) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    room_type VARCHAR(50) NOT NULL,
+    checkin DATETIME NOT NULL,
+    checkout DATETIME NOT NULL,
+    occupants INT NOT NULL,
+    company_affiliation VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE rooms {
-ADD COLUMN notes TEXT NULL,
-ADD COLUMN image VARCHAR(255) NULL,
-MODIFY status ENUM('available','occupied','maintenance') DEFAULT 'available';
-};
-
-CREATE TABLE IF NOT EXISTS bookings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT,
-    guest_name VARCHAR(100),
-    check_in DATE,
-    check_out DATE,
-    status VARCHAR(50) DEFAULT 'active',
-    FOREIGN KEY (room_id) REFERENCES rooms(id)
-);
-
-CREATE TABLE IF NOT EXISTS facilities (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    capacity INT,
-    price DECIMAL(10,2)
-);
-
-
-

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 </head>
-
+2
 
 <body>
 
@@ -22,7 +22,9 @@
     <a onclick="showSection('schedule')">schedule</a>
     <a onclick="showSection('rooms')">Rooms</a>
     <a onclick="showSection('facilities')">Facilities</a>
+    <a onclick="showSection('Booking')">Booking</a>
     <a onclick="showSection('contacts')">Contacts</a>
+
     <a href="index.php">Back to Homepage</a>
   </div>
 
@@ -37,7 +39,6 @@
         guest portal.</p>
     </header>
 
-    <!-- Home / Reminder Section -->
     <div id="home" class="content-section home-layout">
       <h1>📝 Reminders</h1>
       <div class="reminder-container">
@@ -61,9 +62,12 @@
             <li>📧 Wait for email confirmation/approval</li>
             <li>📊 Track your request status from the dashboard</li>
           </ul>
+
+          <!-- Book Now Button -->
+          <a href="booking.php" class="book-btn">📌 Book Now</a>
         </div>
       </div>
-    </div>
+    </div>ew124rgt35
 
 
     <!-- Schedule Section -->
@@ -186,6 +190,45 @@
       </div>
     </div>
 
+
+
+
+    <!-- Booking Section -->
+    <div id="Booking" class="content-section">
+      <h1>📅 Reservation Form</h1>
+
+      <form method="POST" action="reservation_process.php">
+        <label>Guest Name:</label>
+        <input type="text" name="guest_name" required>
+
+        <label>Contact Number:</label>
+        <input type="text" name="contact_number" required>
+
+        <label>Email Address:</label>
+        <input type="email" name="email" required>
+
+        <label>Room Type:</label>
+        <select name="room_type" required>
+          <option value="Standard">Standard Room</option>
+          <option value="Deluxe">Deluxe Room</option>
+          <option value="Suite">Suite</option>
+        </select>
+
+        <label>Check-in Date & Time:</label>
+        <input type="datetime-local" name="checkin" required>
+
+        <label>Checkout Date & Time:</label>
+        <input type="datetime-local" name="checkout" required>
+
+        <label>Number of Occupants:</label>
+        <input type="number" name="occupants" required>
+
+        <label>Company Affiliation (if any):</label>
+        <input type="text" name="company">
+
+        <button type="submit">Submit Reservation</button>
+      </form>
+    </div>
 
 
     <!-- Contacts Section -->
