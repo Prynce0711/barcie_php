@@ -78,6 +78,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 })();
 
+
+
+
+
+//--------------------------------------------------
+//--------------------------------------------------
+
+
+
+
  // Toggle Room/Facility section
   document.querySelectorAll('input[name="manageType"]').forEach(radio => {
     radio.addEventListener('change', function() {
@@ -85,3 +95,67 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("facility-form").style.display = this.value === "facility" ? "block" : "none";
     });
   });
+
+
+  // Show booking form on button click
+
+
+function showBookingForm() {
+  const bookingSection = document.getElementById('bookingFormSection');
+  bookingSection.style.display = 'block';
+
+  // Scroll to the booking form
+  bookingSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+
+
+// Select all Book Now buttons across all sections
+const bookNowButtons = document.querySelectorAll('.book-now-btn');
+
+bookNowButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    // Show the booking form section
+    const bookingForm = document.getElementById('bookingFormSection');
+    bookingForm.style.display = 'block';
+
+    // Optional: scroll smoothly to the form
+    bookingForm.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// Toggle Pencil/Reservation fields
+document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    if(this.value === 'pencil') {
+      document.getElementById('pencilFields').style.display = 'block';
+      document.getElementById('reservationFields').style.display = 'none';
+    } else {
+      document.getElementById('pencilFields').style.display = 'none';
+      document.getElementById('reservationFields').style.display = 'block';
+    }
+  });
+});
+
+
+//=================================================
+
+// Filter rooms and facilities based on radio buttons
+document.querySelectorAll('input[name="typeFilter"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    const value = this.value;
+
+    document.querySelectorAll('.type-room').forEach(el => {
+      el.style.display = (value === 'room' || value === 'all') ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.type-facility').forEach(el => {
+      el.style.display = (value === 'facility' || value === 'all') ? 'block' : 'none';
+    });
+  });
+});
+
+// Initialize filter on page load
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelector('input[name="typeFilter"]:checked').dispatchEvent(new Event('change'));
+});
