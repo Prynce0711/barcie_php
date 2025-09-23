@@ -38,7 +38,7 @@
     </header>
 
     <!-- Home / Reminder Section -->
-    <div id="home" class="content-section home-layout">
+    <div id="home" class="content-section active card">
       <h1>📝 Reminders</h1>
       <div class="reminder-container">
         <!-- Left: Reminder list -->
@@ -64,6 +64,7 @@
         </div>
       </div>
     </div>
+
 
 
     <!-- Schedule Section -->
