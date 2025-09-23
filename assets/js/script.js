@@ -77,3 +77,11 @@ document.addEventListener("DOMContentLoaded", function () {
     console.error("Browsersync: could not append script tag", e);
   }
 })();
+
+ // Toggle Room/Facility section
+  document.querySelectorAll('input[name="manageType"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      document.getElementById("room-form").style.display = this.value === "room" ? "block" : "none";
+      document.getElementById("facility-form").style.display = this.value === "facility" ? "block" : "none";
+    });
+  });

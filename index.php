@@ -1,6 +1,3 @@
-
-
-
 <!doctype html>
 <html>
 
@@ -42,7 +39,7 @@
     </section>
   </div>
 
-  <section id="admin-login" class="content-section" style="display:none;">
+  <section id="admin-login" class="content-section" >
     <div class="admin-login-container">
       <div class="login-card unique-card">
         <div class="logo-container">
