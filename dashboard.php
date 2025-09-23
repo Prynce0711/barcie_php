@@ -83,8 +83,31 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
         </table>
       </section>
 
+      <!-- Manage Facilities -->
+      <section id="manage-facilities" class="content-section card">
+        <h2>Manage Facilities</h2>
+        <form method="post" action="facility_add.php">
+          <input type="text" name="name" placeholder="Facility Name" required>
+          <input type="number" name="capacity" placeholder="Capacity">
+          <input type="number" step="0.01" name="price" placeholder="Price">
+          <button type="submit">➕ Add Facility</button>
+        </form>
+        <h3>Facilities List</h3>
+        <table>
+          <tr>
+            <th>Name</th>
+            <th>Capacity</th>
+            <th>Price</th>
+          </tr>
+      
+        </table>
+      </section>
+
+    </main>
+  </div>
+
       <!-- Manage Bookings -->
-      <section id="manage-booking" class="content-section card">
+      <section id="manage-booking" class="content-section main-content card">
         <h2>Manage Bookings</h2>
         <h3>Recent Bookings</h3>
         <table>
@@ -111,33 +134,7 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
         </table>
       </section>
 
-      <!-- Manage Facilities -->
-      <section id="manage-facilities" class="content-section card">
-        <h2>Manage Facilities</h2>
-        <form method="post" action="facility_add.php">
-          <input type="text" name="name" placeholder="Facility Name" required>
-          <input type="number" name="capacity" placeholder="Capacity">
-          <input type="number" step="0.01" name="price" placeholder="Price">
-          <button type="submit">➕ Add Facility</button>
-        </form>
-        <h3>Facilities List</h3>
-        <table>
-          <tr>
-            <th>Name</th>
-            <th>Capacity</th>
-            <th>Price</th>
-          </tr>
-          <?php
-          $facilities = $conn->query("SELECT * FROM facilities");
-          while ($f = $facilities->fetch_assoc()) {
-            echo "<tr><td>{$f['name']}</td><td>{$f['capacity']}</td><td>{$f['price']}</td></tr>";
-          }
-          ?>
-        </table>
-      </section>
-
-    </main>
-  </div>
+      
 
 
   <section id="footer-section-land" class="footer-section-land">

@@ -881,62 +881,103 @@ textarea:focus {
 
 
 /* Booking Section Style */
-#Booking {
-  max-width: 600px;
-  margin: 40px auto;
-  background: #ffffff;
-  padding: 30px;
+
+/* General Booking Form Section */
+#bookingFormSection {
+   display: none;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
   border-radius: 12px;
+  padding: 20px;
+  max-width: 700px;
+  margin: 20px auto;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   font-family: Arial, sans-serif;
 }
 
-#Booking h1 {
+/* Section Title */
+#bookingFormSection h2 {
   text-align: center;
+  margin-bottom: 15px;
   color: #333;
-  margin-bottom: 25px;
 }
 
-#Booking form {
-  display: flex;
-  flex-direction: column;
-}
-
-#Booking label {
+/* Radio Buttons */
+#bookingFormSection label {
+  display: inline-block;
+  margin-right: 20px;
   font-weight: bold;
-  margin-bottom: 5px;
-  color: #444;
+  cursor: pointer;
 }
 
-#Booking input,
-#Booking select {
-  padding: 10px;
+#bookingFormSection input[type="radio"] {
+  margin-right: 5px;
+  transform: scale(1.2);
+}
+
+/* Form Fields */
+#bookingForm input[type="text"],
+#bookingForm input[type="number"],
+#bookingForm input[type="date"],
+#bookingForm input[type="time"],
+#bookingForm input[type="datetime-local"],
+#bookingForm textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin: 6px 0 12px 0;
   border: 1px solid #ccc;
-  border-radius: 8px;
-  margin-bottom: 18px;
+  border-radius: 6px;
+  box-sizing: border-box;
   font-size: 14px;
 }
 
-#Booking input:focus,
-#Booking select:focus {
-  border-color: #007bff;
-  outline: none;
-  box-shadow: 0 0 4px rgba(0,123,255,0.4);
+/* Textarea Special Request */
+#bookingForm textarea {
+  min-height: 60px;
+  resize: vertical;
 }
 
-#Booking button {
-  padding: 12px;
+/* Form Buttons */
+#bookingForm button[type="submit"] {
+  display: block;
+  width: 100%;
+  background-color: #007bff;
+  color: #fff;
   border: none;
+  padding: 12px;
   border-radius: 8px;
-  background: #007bff;
-  color: white;
   font-size: 16px;
   cursor: pointer;
-  transition: background 0.3s;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
 }
 
-#Booking button:hover {
-  background: #0056b3;
+#bookingForm button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+/* Pencil Booking Reminder */
+#pencilFields p {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffeeba;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  color: #856404;
+}
+
+/* Responsive Layout */
+@media (max-width: 768px) {
+  #bookingFormSection {
+    padding: 15px;
+    margin: 15px;
+  }
+
+  #bookingFormSection label {
+    display: block;
+    margin-bottom: 8px;
+  }
 }
 
 
