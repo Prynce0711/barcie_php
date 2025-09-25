@@ -1,9 +1,15 @@
-this is for Capstone Project BSIT 4B LA CONSOLACION UNIVERSITY PHILIPPINES
+# barcie_php
 
-Group 6 Leader: Prynce Carlo Clemente (Full stack developer) Roxanne Gonzales: Research paper Specialist
+This is for Capstone Project
+BSIT 4B
+LA CONSOLACION UNIVERSITY PHILIPPINES
 
-Front End : HTML, Css Backend: PHP, Javascript, Node JS, Json,
-Database: Xampp (mySql)
+Group 6
+Leader: Prynce Carlo Clemente (Full Stack Developer)
+Roxanne Gonzales: Research Paper Specialist
 
-Project Start Date Sept 1, 2025
+Front End: HTML, CSS
+Backend: PHP, Javascript, Node JS, JSON
+Database: XAMPP (MySQL)
 
+Project Start Date: Sept 1, 2025
