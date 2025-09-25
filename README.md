@@ -5,4 +5,4 @@ Group 6 Leader: Prynce Carlo Clemente (Full stack developer) Roxanne Gonzales: R
 Front End : HTML, Css Backend: PHP, Javascript, Node JS, Json,
 Database: Xampp (mySql)
 
-Project Start Date Sept 1, 2025s
+Project Start Date Sept 1, 2025
