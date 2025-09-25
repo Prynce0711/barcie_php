@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require __DIR__ . "/database/db_connect.php"; // ✅ fixed path
@@ -48,7 +47,7 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
     <main class="main-content">
 
       <!-- Home Section -->
-      <section id="home" class="content-section-admin active card">
+      <section id="home" class="content-section active card">
         <h2>Quick Stats</h2>
         <?php
         $totalRooms = $conn->query("SELECT COUNT(*) AS total FROM rooms")->fetch_assoc()['total'] ?? 0;
@@ -101,75 +100,57 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
       
         </table>
       </section>
+  <!-- Manage Bookings -->
+      <section id="manage-booking" class="content-section card">
+        <h2>Manage Bookings</h2>
+        
+        <!-- Add Booking Form -->
+        <form method="post" action="booking_handler.php">
+          <input type="text" name="customer_name" placeholder="Customer Name" required>
+          <input type="text" name="room_number" placeholder="Room Number" required>
+          <input type="date" name="check_in_date" placeholder="Check-in Date" required>
+          <input type="date" name="check_out_date" placeholder="Check-out Date" required>
+          <select name="status" required>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button type="submit">➕ Add Booking</button>
+        </form>
+
+        <!-- Booking List -->
+        <h3>Booking List</h3>
+        <table>
+          <tr>
+            <th>Booking ID</th>
+            <th>Customer Name</th>
+            <th>Room Number</th>
+            <th>Check-in Date</th>
+            <th>Check-out Date</th>
+            <th>Status</th>
+          </tr>
+          <?php
+          $bookings = $conn->query("SELECT * FROM bookings");
+          while ($b = $bookings->fetch_assoc()) {
+            echo "<tr>
+                    <td>{$b['id']}</td>
+                    <td>{$b['customer_name']}</td>
+                    <td>{$b['room_number']}</td>
+                    <td>{$b['check_in_date']}</td>
+                    <td>{$b['check_out_date']}</td>
+                    <td>{$b['status']}</td>
+                  </tr>";
+          }
+          ?>
+        </table>
+      </section>
 
     </main>
   </div>
 
-      <!-- Manage Bookings -->
-       <!-- Rooms & Facilities -->
-  <div id="rooms-facilities" class="content-section">
-    <h1>Rooms & Facilities</h1>
-    <div class="filter-options">
-      <label><input type="radio" name="typeFilter" value="room" checked> Rooms</label>
-      <label><input type="radio" name="typeFilter" value="facility"> Facilities</label>
-      <label><input type="radio" name="typeFilter" value="all"> Show All</label>
-    </div>
-
-    <div class="cards-grid">
-      <!-- Example: you can also fetch rooms dynamically -->
-      <div class="room-card type-room">
-        <img src="images/standard.jpg" alt="Standard Room">
-        <div class="room-info">
-          <h3>Standard Room</h3>
-          <p>₱1,200 / night</p>
-          <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Booking Form -->
-  <section id="bookingFormSection" class="content-section" style="display:none;">
-    <h2>Booking Form</h2>
-    <form id="bookingForm" method="POST" action="database/booking_handler.php">
-      <label><input type="radio" name="bookingType" value="pencil" checked> Pencil Booking Slip</label>
-      <label><input type="radio" name="bookingType" value="reservation"> Reservation Form</label>
-
-      
-      <!-- Pencil -->
-      <div id="pencilFields">
-        <label>Event Type: <input type="text" name="event_type"></label><br>
-        <label>Function Hall: <input type="text" name="function_hall"></label><br>
-        <label>Number of Pax: <input type="number" name="num_pax"></label><br>
-        <label>Date of Event: <input type="date" name="event_date"></label><br>
-        <label>Time From: <input type="time" name="time_from"></label><br>
-        <label>Time To: <input type="time" name="time_to"></label><br>
-        <label>Caterer: <input type="text" name="caterer"></label><br>
-        <label>Contact Person: <input type="text" name="contact_person"></label><br>
-        <label>Contact Numbers: <input type="text" name="contact_numbers"></label><br>
-        <label>Company Affiliation: <input type="text" name="company_affiliation"></label><br>
-        <label>Company Contact Number: <input type="text" name="company_contact_number"></label><br>
-        <label>Front Desk Officer: <input type="text" name="front_desk_officer"></label><br>
-      </div>
-
-      <!-- Reservation -->
-      <div id="reservationFields" style="display:none;">
-        <label>Guest Name: <input type="text" name="guest_name"></label><br>
-        <label>Contact Number: <input type="text" name="guest_contact"></label><br>
-        <label>Check-in: <input type="datetime-local" name="check_in"></label><br>
-        <label>Check-out: <input type="datetime-local" name="check_out"></label><br>
-        <label>Occupants: <input type="number" name="num_occupants"></label><br>
-        <label>Company Affiliation: <input type="text" name="company_affiliation"></label><br>
-        <label>Company Contact Number: <input type="text" name="company_contact_number"></label><br>
-        <label>Front Desk Officer: <input type="text" name="front_desk_officer"></label><br>
-        <label>Official Receipt: <input type="text" name="official_receipt" value="0001"></label><br>
-        <label>Special Request: <textarea name="special_request"></textarea></label><br>
-      </div>
-
-      <button type="submit">Submit Booking</button>
-    </form>
-  </section>
-
+ 
+    
+   
       
 
 

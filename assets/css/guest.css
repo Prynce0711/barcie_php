@@ -1,0 +1,210 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  display: flex;
+  min-height: 100vh;
+  background: #f5f6fa;
+  color: #333;
+}
+
+/* Sidebar */
+.sidebar-guest {
+  width: 240px;
+  background: #2c3e50;
+  color: #fff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.sidebar-guest h2 {
+  text-align: center;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 10px;
+}
+
+.sidebar-guest button,
+.sidebar-guest a {
+  margin: 8px 0;
+  padding: 10px 15px;
+  border: none;
+  background: #34495e;
+  color: #fff;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.3s ease;
+}
+
+.sidebar-guest button:hover,
+.sidebar-guest a:hover {
+  background: #1abc9c;
+}
+
+.sidebar-guest a {
+  text-decoration: none;
+  display: block;
+}
+
+/* Main Content */
+.main-content {
+  margin-left: 260px; /* leave space for sidebar */
+  padding: 20px;
+  flex-grow: 1;
+}
+
+header {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+header h1 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+}
+
+header p {
+  margin-top: 5px;
+  color: #666;
+}
+
+/* Sections */
+.content-section {
+  display: none;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.content-section.active {
+  display: block;
+}
+
+.content-section h2 {
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-size: 1.4rem;
+}
+
+p {
+  margin-bottom: 10px;
+  color: #444;
+}
+
+/* Filters / Forms */
+.filter-bar {
+  display: flex;
+  gap: 15px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+}
+
+.filter-bar label {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+form label {
+  display: block;
+  margin: 10px 0;
+}
+
+form input,
+form select,
+form textarea,
+form button {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+
+form textarea {
+  resize: vertical;
+}
+
+form button {
+  background: #1abc9c;
+  color: #fff;
+  border: none;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+form button:hover {
+  background: #16a085;
+}
+
+/* Cards / Grid */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.card {
+  background: #fdfdfd;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+/* Table (Reports) */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table th, table td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+table th {
+  background: #2c3e50;
+  color: #fff;
+}
+
+/* Booking summary */
+.booking-summary {
+  margin-top: 15px;
+  background: #ecf0f1;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+/* Feedback */
+#feedback textarea {
+  min-height: 120px;
+}
