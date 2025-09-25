@@ -1,6 +1,3 @@
-<?php
-// guest.php
-?>
 <!doctype html>
 <html lang="en">
 
@@ -22,9 +19,9 @@
     <a onclick="showSection('schedule')">schedule</a>
     <a onclick="showSection('rooms-facilities')">Rooms</a>
     <a onclick="showSection('contacts')">Contacts</a>
-    <a href = "index.php" >Go back to homepage</a>
+    <a href="index.php">Go back to homepage</a>
   </div>
- 
+
 
   <!-- Main Content -->
   <div class="main-content-guest">
@@ -100,91 +97,99 @@
 
 
 
-  
+
     <!-- Rooms & Facilities Section -->
-<div id="rooms-facilities" class="content-section">
-  <h1>Rooms & Facilities</h1>
+    <div id="rooms-facilities" class="content-section">
+      <h1>Rooms & Facilities</h1>
 
-  <!-- Radio buttons to filter -->
-  <div class="filter-options">
-    <label><input type="radio" name="typeFilter" value="room" checked> Rooms</label>
-    <label><input type="radio" name="typeFilter" value="facility"> Facilities</label>
-    <label><input type="radio" name="typeFilter" value="all"> Show All</label>
-  </div>
+      <!-- Radio buttons to filter -->
+      <div class="filter-options">
+        <label><input type="radio" name="typeFilter" value="room" checked> Rooms</label>
+        <label><input type="radio" name="typeFilter" value="facility"> Facilities</label>
+        <label><input type="radio" name="typeFilter" value="all"> Show All</label>
+      </div>
 
-  <div class="cards-grid">
-    <!-- Rooms -->
-    <div class="room-card type-room">
-      <img src="images/standard.jpg" alt="Standard Room">
-      <div class="room-info">
-        <h3>Standard Room</h3>
-        <p>₱1,200 / night</p>
-        <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+      <div class="cards-grid">
+        <!-- Rooms -->
+        <div class="room-card type-room">
+          <img src="images/standard.jpg" alt="Standard Room">
+          <div class="room-info">
+            <h3>Standard Room</h3>
+            <p>₱1,200 / night</p>
+            <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+          </div>
+        </div>
+
+        <div class="room-card type-room">
+          <img src="images/deluxe.jpg" alt="Deluxe Room">
+          <div class="room-info">
+            <h3>Deluxe Room</h3>
+            <p>₱2,000 / night</p>
+            <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+          </div>
+        </div>
+
+        <div class="room-card type-room">
+          <img src="images/suite.jpg" alt="Suite">
+          <div class="room-info">
+            <h3>Suite</h3>
+            <p>₱3,500 / night</p>
+            <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+          </div>
+        </div>
+
+        <!-- Facilities -->
+        <div class="facility-card type-facility">
+          <img src="images/main-hall.jpg" alt="Main Function Hall">
+          <h3>Main Function Hall</h3>
+          <p>Perfect for conferences, seminars, and social gatherings.<br>Capacity: 300 guests.</p>
+          <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+        </div>
+
+        <div class="facility-card type-facility">
+          <img src="images/bayabas-hall.jpg" alt="Bayabas Hall">
+          <h3>Bayabas Hall</h3>
+          <p>Spacious hall ideal for medium-sized gatherings and celebrations.</p>
+          <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+        </div>
+
+        <div class="facility-card type-facility">
+          <img src="images/langka-hall.jpg" alt="Langka Hall">
+          <h3>Langka Hall</h3>
+          <p>Designed for intimate events, meetings, or small group sessions.</p>
+          <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+        </div>
+
+        <div class="facility-card type-facility">
+          <img src="images/rambutan-hall.jpg" alt="Rambutan Hall">
+          <h3>Rambutan Hall</h3>
+          <p>Great for training sessions, workshops, or private functions.</p>
+          <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+        </div>
+
+        <div class="facility-card type-facility">
+          <img src="images/main-lobby.jpg" alt="Main Lobby">
+          <h3>Main Lobby</h3>
+          <p>Elegant reception area to welcome your guests in style.</p>
+          <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+        </div>
+
+        <div class="facility-card type-facility">
+          <img src="images/pool-cottage.jpg" alt="Mini Pool & Cottage">
+          <h3>Mini Pool & Cottage</h3>
+          <p>Relaxing pool area with cottages, perfect for family bonding and leisure.</p>
+          <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
+        </div>
       </div>
     </div>
 
-    <div class="room-card type-room">
-      <img src="images/deluxe.jpg" alt="Deluxe Room">
-      <div class="room-info">
-        <h3>Deluxe Room</h3>
-        <p>₱2,000 / night</p>
-        <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-      </div>
-    </div>
+     <!-- ALERT MESSAGES -->
+  <?php if (isset($_GET['success'])): ?>
+    <div class="alert success">✅ Booking submitted successfully!</div>
+  <?php elseif (isset($_GET['error'])): ?>
+    <div class="alert error">❌ Something went wrong. Please try again.</div>
+  <?php endif; ?>
 
-    <div class="room-card type-room">
-      <img src="images/suite.jpg" alt="Suite">
-      <div class="room-info">
-        <h3>Suite</h3>
-        <p>₱3,500 / night</p>
-        <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-      </div>
-    </div>
-
-    <!-- Facilities -->
-    <div class="facility-card type-facility">
-      <img src="images/main-hall.jpg" alt="Main Function Hall">
-      <h3>Main Function Hall</h3>
-      <p>Perfect for conferences, seminars, and social gatherings.<br>Capacity: 300 guests.</p>
-      <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-    </div>
-
-    <div class="facility-card type-facility">
-      <img src="images/bayabas-hall.jpg" alt="Bayabas Hall">
-      <h3>Bayabas Hall</h3>
-      <p>Spacious hall ideal for medium-sized gatherings and celebrations.</p>
-      <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-    </div>
-
-    <div class="facility-card type-facility">
-      <img src="images/langka-hall.jpg" alt="Langka Hall">
-      <h3>Langka Hall</h3>
-      <p>Designed for intimate events, meetings, or small group sessions.</p>
-      <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-    </div>
-
-    <div class="facility-card type-facility">
-      <img src="images/rambutan-hall.jpg" alt="Rambutan Hall">
-      <h3>Rambutan Hall</h3>
-      <p>Great for training sessions, workshops, or private functions.</p>
-      <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-    </div>
-
-    <div class="facility-card type-facility">
-      <img src="images/main-lobby.jpg" alt="Main Lobby">
-      <h3>Main Lobby</h3>
-      <p>Elegant reception area to welcome your guests in style.</p>
-      <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-    </div>
-
-    <div class="facility-card type-facility">
-      <img src="images/pool-cottage.jpg" alt="Mini Pool & Cottage">
-      <h3>Mini Pool & Cottage</h3>
-      <p>Relaxing pool area with cottages, perfect for family bonding and leisure.</p>
-      <button class="book-now-btn" onclick="showBookingForm()">Book Now</button>
-    </div>
-  </div>
-</div>
 
 
 
@@ -200,9 +205,10 @@
         <input type="radio" name="bookingType" value="reservation"> Reservation Form
       </label>
 
-      <form id="bookingForm">
+      <form id="bookingForm" action="database/booking_handler.php" method="POST">
         <!-- Pencil Booking Fields -->
         <div id="pencilFields">
+          <input type="hidden" name="form_type" value="pencil">
           <label>Date of Pencil: <input type="date" name="pencil_date" required></label><br>
           <label>Event Type: <input type="text" name="event_type" required></label><br>
           <label>Function Hall: <input type="text" name="function_hall" required></label><br>
@@ -216,12 +222,11 @@
           <label>Company Affiliation (if any): <input type="text" name="company_affiliation"></label><br>
           <label>Company Contact Number: <input type="text" name="company_contact_number"></label><br>
           <label>Front Desk Officer: <input type="text" name="front_desk_officer"></label><br>
-          <p><strong>Reminder:</strong> We only allow two (2) weeks to pencil book. If we have not heard back from you
-            after two weeks, your pencil booking will become null and void and deleted from our system.</p>
         </div>
 
         <!-- Reservation Form Fields -->
         <div id="reservationFields" style="display:none;">
+          <input type="hidden" name="form_type" value="reservation">
           <label>Date: <input type="date" name="res_date" required></label><br>
           <label>Guest Name: <input type="text" name="guest_name" required></label><br>
           <label>Contact Number: <input type="text" name="guest_contact" required></label><br>
@@ -235,8 +240,9 @@
           <label>Special Request: <textarea name="special_request"></textarea></label><br>
         </div>
 
-        <button type="submit">Submit Booking</button>
+        <button type="submit" id="bookingSubmiBtn">Submit Booking</button>
       </form>
+
     </section>
 
 
