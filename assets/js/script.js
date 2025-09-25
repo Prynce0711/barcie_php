@@ -1,11 +1,15 @@
-// Function to toggle the sidebar
+// ==========================================
+// SIDEBAR TOGGLE
+// ==========================================
 function toggleSidebar() {
   document.getElementById("sidebar").classList.toggle("active");
 }
 
-// Function to show a specific content section
+// ==========================================
+// SECTION DISPLAY HANDLING
+// ==========================================
 function showSection(sectionId) {
-  // Hide all sections first
+  // Hide all content sections first
   document.querySelectorAll(".content-section, .main-content-area, .content-background").forEach(sec => {
     sec.style.display = 'none';
   });
@@ -13,24 +17,27 @@ function showSection(sectionId) {
   // Show the requested section
   document.getElementById(sectionId).style.display = 'block';
 
-  // Special case: "Get Started" shows the main content area
+  // Special case: "Get Started" section
   if (sectionId === 'mainContent') {
     document.getElementById('mainContent').style.display = 'block';
   }
 }
 
-// Password visibility toggle
+// ==========================================
+// PASSWORD VISIBILITY TOGGLE
+// ==========================================
 function togglePasswordVisibility() {
   const passwordInput = document.getElementById("password");
   const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
   passwordInput.setAttribute("type", type);
 }
 
-// Initialize FullCalendar on DOM content load
+// ==========================================
+// FULLCALENDAR INITIALIZATION
+// ==========================================
 document.addEventListener("DOMContentLoaded", function () {
   const calendarEl = document.getElementById("calendar");
   
-  // Only initialize the calendar if the element exists on the page
   if (calendarEl) {
     const calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: "dayGridMonth",
@@ -42,17 +49,29 @@ document.addEventListener("DOMContentLoaded", function () {
       events: [],
     });
 
-    // Handle dropdown changes to load different events
+    // Handle dropdown changes to load events
     document.getElementById("placeSelect").addEventListener("change", function () {
       const place = this.value;
       calendar.removeAllEvents();
 
-      // Sample events
       let events = [];
       if (place === "standard-room") {
-        events = [{ title: "Booked: Guest Stay", start: "2023-09-22T14:00:00", end: "2023-09-24T10:00:00", color: "green" }];
+        events = [
+          { 
+            title: "Booked: Guest Stay", 
+            start: "2023-09-22T14:00:00", 
+            end: "2023-09-24T10:00:00", 
+            color: "green" 
+          }
+        ];
       } else if (place === "deluxe-room") {
-        events = [{ title: "Pending: Reservation", start: "2023-09-25", color: "orange" }];
+        events = [
+          { 
+            title: "Pending: Reservation", 
+            start: "2023-09-25", 
+            color: "orange" 
+          }
+        ];
       }
       
       events.forEach(event => calendar.addEvent(event));
@@ -62,12 +81,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// A self-executing function for browser-sync
+// ==========================================
+// BROWSERSYNC (DEV ONLY)
+// ==========================================
 (function () {
   try {
     const script = document.createElement("script");
     script.async = true;
-    script.src = "http://HOST:3002/browser-sync/browser-sync-client.js?v=3.0.4".replace("HOST", location.hostname);
+    script.src = "http://HOST:3002/browser-sync/browser-sync-client.js?v=3.0.4"
+      .replace("HOST", location.hostname);
+
     if (document.body) {
       document.body.appendChild(script);
     } else if (document.head) {
@@ -78,56 +101,41 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 })();
 
-
-
-
-
-//--------------------------------------------------
-//--------------------------------------------------
-
-
-
-
- // Toggle Room/Facility section
-  document.querySelectorAll('input[name="manageType"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-      document.getElementById("room-form").style.display = this.value === "room" ? "block" : "none";
-      document.getElementById("facility-form").style.display = this.value === "facility" ? "block" : "none";
-    });
+// ==========================================
+// ADMIN PANEL: MANAGE ROOM/FACILITY FORMS
+// ==========================================
+document.querySelectorAll('input[name="manageType"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    document.getElementById("room-form").style.display = this.value === "room" ? "block" : "none";
+    document.getElementById("facility-form").style.display = this.value === "facility" ? "block" : "none";
   });
+});
 
-
-  // Show booking form on button click
-
-
+// ==========================================
+// BOOKING FORM HANDLING
+// ==========================================
 function showBookingForm() {
   const bookingSection = document.getElementById('bookingFormSection');
   bookingSection.style.display = 'block';
-
-  // Scroll to the booking form
-  bookingSection.scrollIntoView({ behavior: 'smooth' });
+  bookingSection.scrollIntoView({ behavior: 'smooth' }); // scroll smoothly
 }
 
-
-
-// Select all Book Now buttons across all sections
+// Attach booking form display to all "Book Now" buttons
 const bookNowButtons = document.querySelectorAll('.book-now-btn');
-
 bookNowButtons.forEach(btn => {
   btn.addEventListener('click', () => {
-    // Show the booking form section
     const bookingForm = document.getElementById('bookingFormSection');
     bookingForm.style.display = 'block';
-
-    // Optional: scroll smoothly to the form
     bookingForm.scrollIntoView({ behavior: 'smooth' });
   });
 });
 
-// Toggle Pencil/Reservation fields
+// ==========================================
+// BOOKING TYPE: PENCIL vs RESERVATION
+// ==========================================
 document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
   radio.addEventListener('change', function() {
-    if(this.value === 'pencil') {
+    if (this.value === 'pencil') {
       document.getElementById('pencilFields').style.display = 'block';
       document.getElementById('reservationFields').style.display = 'none';
     } else {
@@ -137,10 +145,9 @@ document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
   });
 });
 
-
-//=================================================
-
-// Filter rooms and facilities based on radio buttons
+// ==========================================
+// ROOMS & FACILITIES FILTERING
+// ==========================================
 document.querySelectorAll('input[name="typeFilter"]').forEach(radio => {
   radio.addEventListener('change', function() {
     const value = this.value;
@@ -157,5 +164,35 @@ document.querySelectorAll('input[name="typeFilter"]').forEach(radio => {
 
 // Initialize filter on page load
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('input[name="typeFilter"]:checked').dispatchEvent(new Event('change'));
+  document.querySelector('input[name="typeFilter"]:checked')
+    .dispatchEvent(new Event('change'));
+});
+
+// ==========================================
+// BOOKING FORM SUBMISSION
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+  const bookingForm = document.getElementById("bookingForm");
+
+  if (bookingForm) {
+    bookingForm.addEventListener("submit", function (e) {
+      // Optional: Prevent empty submission
+      const bookingType = document.querySelector('input[name="bookingType"]:checked');
+      if (!bookingType) {
+        e.preventDefault();
+        alert("⚠️ Please select a booking type.");
+        return;
+      }
+
+
+      
+      // Show a temporary "Submitting..." message
+      const submitBtn = bookingForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      // Let the form submit normally (to PHP)
+      // PHP will redirect back with ?success=1 or ?error=1
+    });
+  }
 });

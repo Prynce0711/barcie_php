@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BarCIE Rooms</title>
+  <title>Barcie internation Center</title>
   <link rel="stylesheet" href="assets/css/style.css">
 
 </head>
@@ -55,6 +55,7 @@
     <input type="text" id="username" name="username" placeholder="admin" required>
   </div>
 
+  
   <div class="input-group">
     <label for="password">Password</label>
     <input type="password" id="password" name="password" placeholder="••••••••" required>
