@@ -135,6 +135,7 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
       <label><input type="radio" name="bookingType" value="pencil" checked> Pencil Booking Slip</label>
       <label><input type="radio" name="bookingType" value="reservation"> Reservation Form</label>
 
+      
       <!-- Pencil -->
       <div id="pencilFields">
         <label>Event Type: <input type="text" name="event_type"></label><br>
