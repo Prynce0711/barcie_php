@@ -33,7 +33,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_POST['front_desk_officer']
         );
 
-
         // ===============================
         // CASE 2: Reservation Booking
         // ===============================

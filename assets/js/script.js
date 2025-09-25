@@ -184,6 +184,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+
+      
       // Show a temporary "Submitting..." message
       const submitBtn = bookingForm.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
