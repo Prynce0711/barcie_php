@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require __DIR__ . "/database/db_connect.php"; // ✅ fixed path
@@ -8,7 +7,6 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
   exit;
 }
 ?>
-
 
 
 <!doctype html>
@@ -102,31 +100,44 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
       
         </table>
       </section>
-
-    </main>
-  </div>
-
-      <!-- Manage Bookings -->
-      <section id="manage-booking" class="content-section main-content card">
+  <!-- Manage Bookings -->
+      <section id="manage-booking" class="content-section card">
         <h2>Manage Bookings</h2>
-        <h3>Recent Bookings</h3>
+        
+        <!-- Add Booking Form -->
+        <form method="post" action="booking_handler.php">
+          <input type="text" name="customer_name" placeholder="Customer Name" required>
+          <input type="text" name="room_number" placeholder="Room Number" required>
+          <input type="date" name="check_in_date" placeholder="Check-in Date" required>
+          <input type="date" name="check_out_date" placeholder="Check-out Date" required>
+          <select name="status" required>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button type="submit">➕ Add Booking</button>
+        </form>
+
+        <!-- Booking List -->
+        <h3>Booking List</h3>
         <table>
           <tr>
-            <th>Guest</th>
-            <th>Room</th>
-            <th>Check-in</th>
-            <th>Check-out</th>
+            <th>Booking ID</th>
+            <th>Customer Name</th>
+            <th>Room Number</th>
+            <th>Check-in Date</th>
+            <th>Check-out Date</th>
             <th>Status</th>
           </tr>
           <?php
-          $bookings = $conn->query("SELECT b.*, r.room_number FROM bookings b 
-                                   JOIN rooms r ON b.room_id = r.id ORDER BY b.id DESC LIMIT 5");
+          $bookings = $conn->query("SELECT * FROM bookings");
           while ($b = $bookings->fetch_assoc()) {
             echo "<tr>
-                    <td>{$b['guest_name']}</td>
+                    <td>{$b['id']}</td>
+                    <td>{$b['customer_name']}</td>
                     <td>{$b['room_number']}</td>
-                    <td>{$b['check_in']}</td>
-                    <td>{$b['check_out']}</td>
+                    <td>{$b['check_in_date']}</td>
+                    <td>{$b['check_out_date']}</td>
                     <td>{$b['status']}</td>
                   </tr>";
           }
@@ -134,6 +145,12 @@ if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
         </table>
       </section>
 
+    </main>
+  </div>
+
+ 
+    
+   
       
 
 
