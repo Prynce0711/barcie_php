@@ -1,167 +1,244 @@
 <?php
+// Dashboard page (Admin Panel)
 session_start();
-require __DIR__ . "/database/db_connect.php"; // ✅ fixed path
 
-if (!isset($_SESSION['admin_id'])) { // ✅ fixed session check
-  header("Location: index.php");
-  exit;
-}
+// TODO: Add authentication check
+// if (!isset($_SESSION['admin_logged_in'])) {
+//     header("Location: login.php");
+//     exit;
+// }
 ?>
-
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - BarCIE</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <title>Hotel Admin Dashboard</title>
+  <link rel="stylesheet" href="assets/css/dashboard.css">
+
+  <!-- FullCalendar CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 </head>
-
 <body>
-  <!-- Header -->
-  <header>
-    <h1>BarCIE Admin Dashboard</h1>
-  </header>
 
-  <!-- Dashboard Container -->
-  <div class="dashboard-container">
+<!-- Dark Mode Toggle -->
 
-    <!-- Toggle Button -->
-    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+<button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
 
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar">
-      <h2>Admin Panel</h2>
-      <a href="#" data-section="home" onclick="showSection('home'); return false;">Home</a>
-      <a href="#" data-section="manage-room" onclick="showSection('manage-room'); return false;">Manage Room</a>
-      <a href="#" data-section="manage-booking" onclick="showSection('manage-booking'); return false;">Manage
-        Booking</a>
-      <a href="#" data-section="manage-facilities" onclick="showSection('manage-facilities'); return false;">Manage
-        Facilities</a>
-      <a href="index.php">Logout</a>
-    </div>
-
-    <!-- Main Content Area -->
-    <main class="main-content">
-
-      <!-- Home Section -->
-      <section id="home" class="content-section active card">
-        <h2>Quick Stats</h2>
-        <?php
-        $totalRooms = $conn->query("SELECT COUNT(*) AS total FROM rooms")->fetch_assoc()['total'] ?? 0;
-        $activeBookings = $conn->query("SELECT COUNT(*) AS total FROM bookings WHERE status='active'")->fetch_assoc()['total'] ?? 0;
-        ?>
-        <p>Total Rooms: <?php echo $totalRooms; ?></p>
-        <p>Active Bookings: <?php echo $activeBookings; ?></p>
-      </section>
-
-      <!-- Manage Rooms -->
-      <section id="manage-room" class="content-section card">
-        <h2>Manage Rooms</h2>
-        <form method="post" action="room_add.php">
-          <input type="text" name="room_number" placeholder="Room Number" required>
-          <input type="text" name="type" placeholder="Room Type">
-          <button type="submit">➕ Add Room</button>
-        </form>
-        <h3>Room List</h3>
-        <table>
-          <tr>
-            <th>Room</th>
-            <th>Type</th>
-            <th>Status</th>
-          </tr>
-          <?php
-          $rooms = $conn->query("SELECT * FROM rooms");
-          while ($r = $rooms->fetch_assoc()) {
-            echo "<tr><td>{$r['room_number']}</td><td>{$r['type']}</td><td>{$r['status']}</td></tr>";
-          }
-          ?>
-        </table>
-      </section>
-
-      <!-- Manage Facilities -->
-      <section id="manage-facilities" class="content-section card">
-        <h2>Manage Facilities</h2>
-        <form method="post" action="facility_add.php">
-          <input type="text" name="name" placeholder="Facility Name" required>
-          <input type="number" name="capacity" placeholder="Capacity">
-          <input type="number" step="0.01" name="price" placeholder="Price">
-          <button type="submit">➕ Add Facility</button>
-        </form>
-        <h3>Facilities List</h3>
-        <table>
-          <tr>
-            <th>Name</th>
-            <th>Capacity</th>
-            <th>Price</th>
-          </tr>
-      
-        </table>
-      </section>
-  <!-- Manage Bookings -->
-      <section id="manage-booking" class="content-section card">
-        <h2>Manage Bookings</h2>
-        
-        <!-- Add Booking Form -->
-        <form method="post" action="booking_handler.php">
-          <input type="text" name="customer_name" placeholder="Customer Name" required>
-          <input type="text" name="room_number" placeholder="Room Number" required>
-          <input type="date" name="check_in_date" placeholder="Check-in Date" required>
-          <input type="date" name="check_out_date" placeholder="Check-out Date" required>
-          <select name="status" required>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <button type="submit">➕ Add Booking</button>
-        </form>
-
-        <!-- Booking List -->
-        <h3>Booking List</h3>
-        <table>
-          <tr>
-            <th>Booking ID</th>
-            <th>Customer Name</th>
-            <th>Room Number</th>
-            <th>Check-in Date</th>
-            <th>Check-out Date</th>
-            <th>Status</th>
-          </tr>
-          <?php
-          $bookings = $conn->query("SELECT * FROM bookings");
-          while ($b = $bookings->fetch_assoc()) {
-            echo "<tr>
-                    <td>{$b['id']}</td>
-                    <td>{$b['customer_name']}</td>
-                    <td>{$b['room_number']}</td>
-                    <td>{$b['check_in_date']}</td>
-                    <td>{$b['check_out_date']}</td>
-                    <td>{$b['status']}</td>
-                  </tr>";
-          }
-          ?>
-        </table>
-      </section>
-
-    </main>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Hotel Admin</h2>
+    <a href="#" class="nav-link active" data-section="dashboard">Dashboard</a>
+    <a href="#" class="nav-link" data-section="rooms">Rooms & Facilities</a>
+    <a href="#" class="nav-link" data-section="bookings">Bookings</a>
+    <a href="#" class="nav-link" data-section="payments">Payments</a>
+    <a href="#" class="nav-link" data-section="users">Users</a>
+    <a href="#" class="nav-link" data-section="reports">Reports</a>
+    <a href="#" class="nav-link" data-section="communication">Communication</a>
+    <a href="#" class="nav-link" data-section="others">Other Features</a>
   </div>
 
- 
+
+  <!-- Main Content -->
+  <div class="main-content">
     
-   
-      
+    <!-- Header -->
+    <header>
+      <h1>Hotel Management Dashboard</h1>
+      <p>Welcome back, Admin!</p>
+    </header>
 
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="content-section active">
+  <h2>Dashboard Overview</h2>
+  <div class="overview-grid">
+    
+    <!-- Left Side -->
+    <div class="overview-left">
+      <div class="card">
+        <h3>Quick Stats</h3>
+        <p>Total Rooms: 20</p>
+        <p>Active Bookings: 5</p>
+        <p>Pending Approvals: 3</p>
+      </div>
 
-  <section id="footer-section-land" class="footer-section-land">
-    <div class="footer-land">
-      <p>© BarCIE International Center 2025</p>
+      <div class="card booking-summary">
+        <h3>Recent Activity</h3>
+        <ul>
+          <li>John Doe booked Room 101</li>
+          <li>Maria checked out Room 202</li>
+          <li>2 Pending feedbacks</li>
+        </ul>
+      </div>
     </div>
-  </section>
+
+    <!-- Right Side (Mini Calendar) -->
+    <div class="overview-right">
+      <div class="calendar-container">
+        <h3>Availability Calendar</h3>
+        <div id="miniCalendar"></div>
+      </div>
+    </div>
+    
+  </div>
+</section>
 
 
-  <script src="/barcie_php/assets/js/script.js"></script>
+    <!-- Rooms & Facilities -->
+    <section id="rooms" class="content-section">
+      <h2>Rooms & Facilities</h2>
+      <form>
+        <label>Room Name:</label>
+        <input type="text" placeholder="Enter room name">
+        <label>Price:</label>
+        <input type="number" placeholder="Enter price">
+        <button type="submit" class="add">Add Room</button>
+      </form>
+      <table>
+        <tr><th>Room</th><th>Price</th><th>Status</th></tr>
+        <tr><td>Deluxe Suite</td><td>$200</td><td>Available</td></tr>
+      </table>
+    </section>
+
+    <!-- Bookings -->
+    <section id="bookings" class="content-section">
+      <h2>Bookings</h2>
+      <table>
+        <tr>
+          <th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Action</th>
+        </tr>
+        <tr>
+          <td>John Doe</td><td>Deluxe Suite</td><td>2025-10-05</td><td>2025-10-08</td>
+          <td>
+            <button class="approve">Approve</button>
+            <button class="reject">Reject</button>
+          </td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- Payments -->
+    <section id="payments" class="content-section">
+      <h2>Payments</h2>
+      <table>
+        <tr><th>Guest</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+        <tr>
+          <td>Mary Smith</td><td>$300</td><td>Pending</td>
+          <td><button class="approve">Mark Paid</button></td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- Users -->
+    <section id="users" class="content-section">
+      <h2>User Management</h2>
+      <form>
+        <label>Username:</label>
+        <input type="text" placeholder="Enter username">
+        <label>Email:</label>
+        <input type="email" placeholder="Enter email">
+        <button type="submit" class="add">Add User</button>
+      </form>
+      <table>
+        <tr><th>Username</th><th>Email</th><th>Role</th></tr>
+        <tr><td>admin</td><td>admin@example.com</td><td>Administrator</td></tr>
+      </table>
+    </section>
+
+    <!-- Reports -->
+    <section id="reports" class="content-section">
+      <h2>Reports & Analytics</h2>
+      <canvas id="reportChart"></canvas>
+    </section>
+
+    <!-- Communication -->
+    <section id="communication" class="content-section">
+      <h2>Communication</h2>
+      <form id="feedback">
+        <label>Message:</label>
+        <textarea rows="4" placeholder="Enter your message"></textarea>
+        <button type="submit" class="add">Send</button>
+      </form>
+    </section>
+
+    <!-- Other Features -->
+    <section id="others" class="content-section">
+      <h2>Other Features</h2>
+      <p>Manage staff, system settings, and more here.</p>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
+  </div>
+
+<script>
+/* Sidebar toggle */
+function toggleSidebar() {
+  document.querySelector(".sidebar").classList.toggle("active");
+  document.querySelector(".main-content").classList.toggle("active");
+}
+
+/* Navigation */
+document.querySelectorAll(".nav-link").forEach(link => {
+  link.addEventListener("click", e => {
+    e.preventDefault();
+    document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+    link.classList.add("active");
+    let section = link.dataset.section;
+    document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
+    document.getElementById(section).classList.add("active");
+  });
+});
+
+/* Chart.js Reports */
+const ctx = document.getElementById('reportChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+    datasets: [{
+      label: 'Bookings',
+      data: [12, 19, 7, 15, 20],
+      backgroundColor: '#1abc9c'
+    }]
+  }
+});
+
+
+
+
+// Load saved theme
+window.onload = () => {
+  if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark-mode");
+  }
+};
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var calendarEl = document.getElementById('miniCalendar');
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    height: 400,
+    headerToolbar: {
+      left: 'prev,next',
+      center: 'title',
+      right: ''
+    },
+    events: [
+      { title: 'Room 101 - Booked', start: '2025-09-26' },
+      { title: 'Room 202 - Checkout', start: '2025-09-28' },
+      { title: 'Room 303 - Reserved', start: '2025-10-01' }
+    ]
+  });
+  calendar.render();
+});
+</script>
+
+
 </body>
-
 </html>
