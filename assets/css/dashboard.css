@@ -1,0 +1,372 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f5f6fa;
+  color: #333;
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0056b3;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: #2c3e50;
+  color: #fff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  transition: transform 0.3s ease, background 0.3s;
+  z-index: 1000;
+}
+
+.sidebar h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 10px;
+}
+
+.sidebar a {
+  display: block;
+  padding: 10px 15px;
+  margin: 8px 0;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+  background: #1abc9c;
+}
+
+/* Toggle Button */
+.toggle-btn {
+  position: fixed;
+  top: 15px;
+  left: 250px;
+  font-size: 1.5rem;
+  background: #1abc9c;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: left 0.3s;
+  z-index: 1100;
+}
+
+/* Dark Mode Toggle Button */
+.dark-toggle {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  font-size: 1.3rem;
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1200;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.dark-toggle:hover {
+  background: #1abc9c;
+  transform: rotate(20deg);
+}
+
+/* Main content */
+.main-content {
+  margin-left: 250px;
+  padding: 20px;
+  transition: margin-left 0.3s;
+}
+
+header {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-left: 5px;
+  margin-right: 20px;
+  margin-top: 20px;
+  transition: background 0.3s, color 0.3s;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+header p {
+  color: #666;
+  margin-top: 5px;
+}
+
+/* Sections */
+.content-section {
+  display: none;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  transition: background 0.3s, color 0.3s;
+}
+
+.content-section.active {
+  display: block;
+}
+
+.content-section h2 {
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+/* Cards */
+.card {
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: #fff;
+  margin-bottom: 20px;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Forms */
+form input, form select, form textarea, form button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+
+form button {
+  background: #1abc9c;
+  color: #fff;
+  border: none;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+form button:hover {
+  background: #16a085;
+  transform: scale(1.02);
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table th, table td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+table th {
+  background: #2c3e50;
+  color: #fff;
+}
+
+table tr:nth-child(even) {
+  background: #f2f2f2;
+}
+
+table tr:hover {
+  background: #eafaf1;
+}
+
+/* Action Buttons */
+button.approve { background: #28a745; color: #fff; }
+button.reject { background: #e74c3c; color: #fff; }
+button.checkin { background: #3498db; color: #fff; }
+button.checkout { background: #9b59b6; color: #fff; }
+button.cancel { background: #c0392b; color: #fff; }
+button.modify { background: #f39c12; color: #fff; }
+button.add { background: #1abc9c; color: #fff; }
+
+button.approve:hover { background: #218838; }
+button.reject:hover { background: #c0392b; }
+button.checkin:hover { background: #2980b9; }
+button.checkout:hover { background: #8e44ad; }
+button.cancel:hover { background: #922b21; }
+button.modify:hover { background: #d68910; }
+button.add:hover { background: #16a085; }
+
+/* Calendar container styling */
+.calendar-container {
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Mini Calendar Styling */
+#miniCalendar {
+  max-width: 100%;
+  font-size: 0.85rem;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.fc .fc-daygrid-day-number {
+  font-weight: bold;
+  color: #34495e;
+}
+
+.fc .fc-event {
+  background: #1abc9c;
+  border: none;
+  color: white;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+
+/* Reports */
+#reportChart {
+  max-width: 100%;
+  height: 350px;
+}
+
+/* Booking summary */
+.booking-summary, #feedback textarea {
+  background: #ecf0f1;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+/* Footer */
+.footer {
+  background: #343a40;
+  color: #f1f1f1;
+  text-align: center;
+  border-top: 3px solid #007bff;
+  padding: 15px 10px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Responsive */
+@media(max-width: 768px){
+  .sidebar {
+    transform: translateX(-260px);
+  }
+  .sidebar.active {
+    transform: translateX(0);
+  }
+  .toggle-btn {
+    left: 10px;
+  }
+  .main-content {
+    margin-left: 0;
+  }
+  header {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+}
+
+/* ---------------- DARK MODE ---------------- */
+body.dark-mode {
+  background: #181a1b;
+  color: #eaeaea;
+}
+
+body.dark-mode header,
+body.dark-mode .content-section,
+body.dark-mode .card {
+  background: #222;
+  color: #eaeaea;
+}
+
+body.dark-mode .sidebar {
+  background: #111;
+}
+
+body.dark-mode .sidebar a {
+  color: #ddd;
+}
+
+body.dark-mode .sidebar a:hover,
+body.dark-mode .sidebar a.active {
+  background: #16a085;
+}
+
+body.dark-mode table th {
+  background: #111;
+}
+
+body.dark-mode table tr:nth-child(even) {
+  background: #2a2a2a;
+}
+
+body.dark-mode table tr:hover {
+  background: #333;
+}
+
+body.dark-mode .calendar-container {
+  background: #222;
+  border-color: #444;
+}
+
+body.dark-mode .day {
+  background: #333;
+  color: #eee;
+}
+
+body.dark-mode .day:hover {
+  background: #444;
+}
+
+body.dark-mode .footer {
+  background: #111;
+  color: #bbb;
+}

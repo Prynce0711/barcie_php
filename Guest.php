@@ -1,11 +1,9 @@
 <?php
 session_start();
-// Example session check
-// if (!isset($_SESSION['user_id'])) {
-//   header("Location: login.php");
-//   exit;
-// }
-
+if (!isset($_SESSION['user_id'])) {
+  header("Location: index.php"); // change this to your login page
+  exit;
+}
 
 ?>
 
@@ -14,28 +12,52 @@ session_start();
 include __DIR__ . '/database/db_connect.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['message'])) {
-    $message = $conn->real_escape_string($_POST['message']);
+  $message = $conn->real_escape_string($_POST['message']);
 
-    $sql = "INSERT INTO feedback (message) VALUES ('$message')";
-    if ($conn->query($sql)) {
-        echo "<script>
+  $sql = "INSERT INTO feedback (message) VALUES ('$message')";
+  if ($conn->query($sql)) {
+    echo "<script>
                 if (confirm('Feedback submitted successfully! Click OK to go to Home page, Cancel to stay.')) {
                     window.location.href = 'index.php'; // change to your home page
                 } else {
                     window.location.href = window.location.pathname + '#feedback';
                 }
               </script>";
-        exit;
-    } else {
-        echo "<script>
+    exit;
+  } else {
+    echo "<script>
                 if (confirm('Error: " . addslashes($conn->error) . " Click OK to go back, Cancel to stay.')) {
                     window.location.href = window.location.pathname + '#feedback';
                 }
               </script>";
-        exit;
-    }
+    exit;
+  }
 }
 ?>
+
+<?php
+
+include 'database/db_connect.php';
+
+// ✅ Ensure user is logged in
+if (!isset($_SESSION['user_id'])) {
+  die("You must be logged in to view this page.");
+}
+
+$user_id = $_SESSION['user_id'];
+
+// ✅ Fetch current user details
+$stmt = $conn->prepare("SELECT username, email FROM users WHERE id=?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($username, $email);
+$stmt->fetch();
+$stmt->close();
+$conn->close();
+?>
+
+
+
 
 
 
@@ -106,11 +128,72 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['message'])) {
     <section id="rooms" class="content-section">
       <h2>Rooms & Facilities</h2>
       <p>Check availability by date and view details.</p>
+
+      <!-- Date Selection -->
       <label>Select Date: <input type="date"></label>
+
+      <!-- Radio Button Selection -->
+      <div class="selection-type">
+        <p>Select Type:</p>
+        <label>
+          <input type="radio" name="type" value="room" checked> Room
+        </label>
+        <label>
+          <input type="radio" name="type" value="facility"> Facility
+        </label>
+      </div>
+
+      <!-- Cards Grid -->
       <div class="cards-grid">
-        <div class="card">Room/Facility Availability Card</div>
+        <!-- Room Card Example -->
+        <div class="card" data-type="room">
+          <h3>Deluxe Room</h3>
+          <p>Capacity: 2 persons</p>
+          <p>Price: $100/night</p>
+          <button>Select for Booking</button>
+        </div>
+
+        <div class="card" data-type="room">
+          <h3>Deluxe Room</h3>
+          <p>Capacity: 2 persons</p>
+          <p>Price: $100/night</p>
+          <button>Select for Booking</button>
+        </div>
+        <div class="card" data-type="room">
+          <h3>Deluxe Room</h3>
+          <p>Capacity: 2 persons</p>
+          <p>Price: $100/night</p>
+          <button>Select for Booking</button>
+        </div>
+
+        <!-- Facility Card Example -->
+        <div class="card" data-type="facility">
+          <h3>Conference Hall</h3>
+          <p>Capacity: 50 people</p>
+          <p>Price: $200/day</p>
+          <button>Select for Booking</button>
+        </div>
+
+
+        <div class="card" data-type="facility">
+          <h3>Conference Hall</h3>
+          <p>Capacity: 50 people</p>
+          <p>Price: $200/day</p>
+          <button>Select for Booking</button>
+        </div>
+
+        <div class="card" data-type="facility">
+          <h3>Conference Hall</h3>
+          <p>Capacity: 50 people</p>
+          <p>Price: $200/day</p>
+          <button>Select for Booking</button>
+        </div>
       </div>
     </section>
+
+
+
+
     <!-- Booking -->
     <section id="booking" class="content-section">
       <h2>Booking & Reservation</h2>
@@ -174,10 +257,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['message'])) {
 
     <!-- User Management -->
     <section id="user" class="content-section">
-      <h2>User Management</h2>
-      <form>
-        <label>Full Name: <input type="text" value="John Doe"></label>
-        <label>Email: <input type="email" value="guest@example.com"></label>
+      <form action="database/user_auth.php" method="POST">
+        <input type="hidden" name="action" value="update">
+
+        <label>Username:
+          <input type="text" name="username" value="<?php echo htmlspecialchars($username); ?>" required>
+        </label>
+
+        <label>Email:
+          <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
+        </label>
+
+        <label>New Password (leave blank if unchanged):
+          <input type="password" name="password">
+        </label>
+
         <button type="submit">Update Profile</button>
       </form>
       <h3>Your Bookings</h3>
@@ -249,8 +343,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['message'])) {
     <section id="communication" class="content-section">
       <h2>Communication</h2>
       <p>Contact us via:</p>
-      
-     
+
+
       <ul>
         <li>Email: guest@example.com ✅</li>
         <li>SMS: +63 912 345 6789 ✅</li>
@@ -260,48 +354,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['message'])) {
 
 
     <!-- Feedback Section -->
-<section id="feedback" class="content-section">
-    <h2>Feedback</h2>
+    <section id="feedback" class="content-section">
+      <h2>Feedback</h2>
 
-    <?php
-    if (!empty($success)) {
+      <?php
+      if (!empty($success)) {
         echo "<p style='color:green;'>$success</p>";
-    } elseif (!empty($error)) {
+      } elseif (!empty($error)) {
         echo "<p style='color:red;'>$error</p>";
-    }
-    ?>
+      }
+      ?>
 
-    <form method="post" action="">
+      <form method="post" action="">
         <textarea name="message" rows="5" placeholder="Write your feedback..." required></textarea><br><br>
         <button type="submit">Submit Feedback</button>
-    </form>
-</section>
+      </form>
+    </section>
 
 
   </main>
 
 
+   <footer class="footer">
+    <p>© BarCIE International Center 2025</p>
+  </footer>
 
-  <script>
-    function toggleBookingForm() {
-      const type = document.querySelector('input[name="bookingType"]:checked').value;
-      document.getElementById('reservationForm').style.display = (type === 'reservation') ? 'block' : 'none';
-      document.getElementById('pencilForm').style.display = (type === 'pencil') ? 'block' : 'none';
-    }
 
-    function pencilReminder() {
-      alert("Reminder: We only allow two (2) weeks to pencil book. If we have not heard back from you after two weeks, your pencil booking will become null and void and deleted from our system.");
-      return true;
-    }
 
-    function reservationReminder() {
-      alert("Reminder: We only alloW one (1) week to pencil book. If we have not heard back from you after one week, your reservation will become null and void and deleted from our system. CONFIRMED ROOM RESERVATION IS NON-REFUNDABLE.");
-      return true;
-    }
-  </script>
 
-  <script src="assets/js/guest.js" ></script>
+
+  <script src="assets/js/guest.js"></script>
 
 </body>
+
+
 
 </html>
