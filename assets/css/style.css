@@ -1,95 +1,81 @@
+/* Reset / Base */
 * {
   box-sizing: border-box;
-  padding: auto;
-}
-
-body {
-  font-family: "Segoe UI", Arial, sans-serif;
-  color: #222;
-  background: #f4f6f8;
-  background: url("/barcie_php/assets/images/imageBg/Lcup-background.jpg")
-    no-repeat center center fixed;
-  background-size: cover; /* makes it cover the whole screen */
-  overflow-x: auto; /* horizontal scrollbar at bottom */
-  overflow-y: auto; /* vertical scrollbar */
   margin: 0;
   padding: 0;
-  height: 100%;
-  width: 100vw;
+}
+
+body, html {
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #222;
+  background: url("/barcie_php/assets/images/imageBg/Lcup-background.jpg")
+    no-repeat center center fixed;
+  background-size: cover;
+  overflow-x: auto;
+  overflow-y: auto;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height : 100%;
+  margin : 0;
+
+
 }
 
-/* Style scrollbars (modern browsers) */
+/* Scrollbars */
 ::-webkit-scrollbar {
-  width: 10px; /* vertical bar width */
-  height: 10px; /* horizontal bar height */
+  width: 10px;
+  height: 10px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #f1f1f1; /* scrollbar track */
+  background: #f1f1f1;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #007bff; /* scrollbar handle */
+  background: #007bff;
   border-radius: 6px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #0056b3; /* darker on hover */
+  background: #0056b3;
 }
 
-/* Header styles */
-
+/* Header */
 header {
-  text-align:center;
-  padding: 10px 20px;
+  text-align: center;
+  padding: 15px 20px;
   background: #005fa3;
   color: #fff;
-  background-size: cover;
-  background-position: center;
 }
-
 header h1 {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
 }
 
-header p {
-  margin-top: 10px;
-  font-size: 1.2rem;
-}
-
-/* Sidebar  Styles*/
+/* Sidebar */
 .sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 220px;
-  height: 100%;
-  background: #343a40;
-  color: white;
+  width: 240px;
+  background: #2c3e50;
+  color: #fff;
   padding: 20px;
-  box-sizing: border-box;
-  transform: translateX(-220px);
-  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: fixed;
+  left: -260px;
+  top: 0;
+  transition: transform 0.3s ease, left 0.3s ease;
   z-index: 1000;
 }
-
 .sidebar.active {
-  transform: translateX(0);
+  transform: translateX(260spx);
   left: 0;
 }
-
 .sidebar h2 {
-  margin-top: 50px;
+  margin: 50px 0 20px;
   text-align: center;
   font-size: 20px;
-  margin-bottom: 20px;
 }
-
 .sidebar a {
   display: block;
-  color: white;
+  color: #fff;
   text-decoration: none;
   padding: 10px;
   margin: 8px 0;
@@ -98,116 +84,69 @@ header p {
   text-align: center;
   transition: background 0.3s ease;
 }
-
 .sidebar a:hover {
   background: #0056b3;
 }
 
-/* Toggle button */
+/* Toggle Button */
 .toggle-btn {
   position: fixed;
   top: 15px;
   left: 15px;
-  background: #000000;
+  background: #000;
   border: none;
-  color: white;
+  color: #fff;
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
   z-index: 1100;
   transition: background 0.3s ease;
 }
-
 .toggle-btn:hover {
   background: #0056b3;
 }
 
-/*button Styles*/
-
-.cta-btn {
+/* CTA Button */
+.cta-btn,
+.get-started {
   display: inline-block;
-  margin-top: 30px;
-  padding: 14px 36px;
-  background: #005fa3;
+  margin-top: 20px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
   color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 1.1rem;
+  background: #007bff;
   text-decoration: none;
-  transition: background 0.2s;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+.cta-btn:hover,
+.get-started:hover {
+  background: #0056b3;
 }
 
-.cta-btn:hover {
-  background: #003e6b;
-}
-
-/* Main Content Styles */
-
+/* Main Content */
 .main-content {
-
   max-width: 700px;
   margin: 200px auto 40px;
-  background: rgba(255, 255, 255, 0.807);
-  /* translucent white */
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
   padding: 40px 30px;
   text-align: center;
   flex: 1;
 }
-
 .main-content h2 {
   color: #005fa3;
   margin-bottom: 20px;
 }
-
 .content-background {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   padding: 40px 30px;
-  margin-top: 10px auto;
 }
 
-@keyframes slide {
-  0% {
-    background-image: url("");
-  }
-
-  25% {
-    background-image: url("../images/imageBg/Barcie.jpg");
-  }
-
-  50% {
-    background-image: url("C:/xampph/htdocs/barcie_php/assets/images/imageBg/Cover.jpg");
-  }
-
-  75% {
-    background-image: url("Images/hall.jpg");
-  }
-
-  100% {
-    background-image: url("Images/stage.jpg");
-  }
-}
-
-.get-started {
-  display: inline-block;
-  margin-top: 20px;
-  padding: 12px 24px;
-  font-size: 18px;
-  font-weight: bold;
-  color: white;
-  background: #007bff;
-  text-decoration: none;
-  border-radius: 8px;
-  transition: background 0.3s ease;
-}
-
-.get-started:hover {
-  background: #0056b3;
-}
-
+/* Sections */
 .content-section {
   display: none;
 }
@@ -215,40 +154,39 @@ header p {
   display: block;
 }
 
-/* Admin login style */
-.admin-login-container {
+/* Login / Signup Cards */
+.admin-login-container,
+.user-auth-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 100%;
   padding-top: 100px;
+}
+#user-signup-form {
+  display: none;
 }
 
 .unique-card {
-  background: rgba(0, 0, 0, 0.521); /* Semi-transparent white */
-  backdrop-filter: blur(15px); /* Frosted glass effect */
-  -webkit-backdrop-filter: blur(15px);
-  padding: 50px 40px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(15px);
+  padding: 40px 30px;
   border-radius: 20px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Softer shadow */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
   text-align: center;
   width: 380px;
   color: #fff;
-  position: relative;
-  overflow: hidden;
-  animation: card-entry 1s ease-out;
+  animation: fadeIn 0.8s ease-out;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0);
   }
 }
 
@@ -259,352 +197,77 @@ header p {
   margin-bottom: 15px;
 }
 
-.stax-logo-icon {
-  display: none;
-}
-
-.card-title {
-  color: #fff; /* Solid white for clear visibility */
-  font-size: 1.8rem;
-  margin-bottom: 5px;
-  font-weight: 600;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4); /* Added a subtle text shadow for extra readability */
-  white-space: nowrap;
-}
-
-.card-subtitle {
-  color: #f0f0f0; /* Lighter color for better readability */
-  font-size: 0.85rem;
-  margin-bottom: 25px;
-  line-height: 1.4;
-}
-
+/* Forms */
 .input-group {
-  margin-bottom: 20px;
   text-align: left;
+  margin-bottom: 15px;
 }
-
-.unique-card label {
+.input-group label {
   display: block;
-  font-size: 0.8rem;
-  color: #fff; /* Solid white for clear labels */
-  margin-bottom: 6px;
-  font-weight: 500;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
 }
-
-.unique-card input {
+.input-group input {
   width: 100%;
-  padding: 10px 12px;
-  border: none;
-  background: rgba(255, 255, 255, 0.3); /* More opaque input background */
+  padding: 10px;
   border-radius: 6px;
-  font-size: 0.95rem;
-  color: #fff; /* Solid white text input */
-  box-sizing: border-box;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #ccc;
+  font-size: 1rem;
 }
 
-.unique-card input::placeholder {
-  color: #dcdcdc; /* Lighter placeholder color for better visibility */
-  opacity: 0.9; /* Increased opacity to prevent it from being invisible */
-}
-
-.unique-card input:focus {
-  outline: none;
-  background: rgba(
-    255,
-    255,
-    255,
-    0.4
-  ); /* Input background gets even lighter on focus */
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); /* Changed focus ring to accent yellow */
-}
-
-.password-container {
-  position: relative;
-}
-
-.password-toggle-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  filter: invert(0.9); /* Almost fully inverted to pure white */
-  width: 18px;
-  height: 18px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 4.5c-6.627 0-12 7.042-12 7.042s5.373 7.042 12 7.042 12-7.042 12-7.042-5.373-7.042-12-7.042zm0 12c-2.485 0-4.5-2.015-4.5-4.5s2.015-4.5 4.5-4.5 4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5zm0-7c-1.381 0-2.5 1.119-2.5 2.5s1.119 2.5 2.5 2.5 2.5-1.119 2.5-2.5-1.119-2.5-2.5-2.5z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-size: contain;
-  transition: transform 0.2s ease;
-}
-
-.password-toggle-icon:hover {
-  transform: translateY(-50%) scale(1.1);
-}
-
-.forgot-password {
-  display: block;
-  text-align: right;
-  font-size: 0.75rem;
-  color: #87ceeb; /* A brighter light blue */
-  text-decoration: none;
-  margin-top: -10px;
-  margin-bottom: 20px;
-  transition: color 0.3s ease;
-}
-
-.forgot-password:hover {
-  color: #fff;
-  text-decoration: underline;
-}
-
-.unique-sign-in-button {
-  background-color: #ffffff;
-  color: #333; /* Dark text on bright button */
+button[type="submit"] {
+  background: #fff;
+  color: #333;
   padding: 12px;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
   font-weight: bold;
-  transition: background-color 0.3s ease;
-  width: 100%;
-  letter-spacing: 0.5px;
-}
-
-.unique-sign-in-button:hover {
-  background-color: #fffdf6;
-}
-
-.card-footer {
-  display: none;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Dashboard specific styles */
-
-
-/* ===== MAIN CONTENT ===== */
-.dashboard-container {
-  display: flex;
-  flex: 1;
-}
-
-
-
-.sidebar.active  {
-  margin-left: 5px; /* push content when sidebar opens */
-}
-
-/* ===== CARDS & SECTIONS ===== */
-.card {
-  background: white;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.content-section {
-  display: none;
-}
-
-.content-section.active {
-  display: block;
-}
-
-h2 {
-  margin-bottom: 15px;
-  color: #343a40;
-}
-
-/* ===== TABLES ===== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-
-table th, table td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: left;
-}
-
-table th {
-  background: #343a40;
-  color: white;
-}
-
-table tr:nth-child(even) {
-  background: #f8f9fa;
-}
-
-/* ===== FORMS ===== */
-form input, form button {
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-form button {
-  background: #343a40;
-  color: white;
-  cursor: pointer;
-  border: none;
   transition: background 0.3s ease;
+  width: 100%;
+}
+button[type="submit"]:hover {
+  background: #f4f4f4;
 }
 
-form button:hover {
-  background: #495057;
+.redirect-text {
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+.redirect-text a {
+  color: #87ceeb;
+  text-decoration: none;
+}
+.redirect-text a:hover {
+  text-decoration: underline;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* ---------- Footer Styles ---------- */
-
-/* Footer stays at bottom */
-.footer-section {
-  margin-top: auto; /* pushes footer down */
+.back-button {
+  display: block;
+  margin-top: 20px;
+  color: #87ceeb;
+  text-decoration: none;
+}
+.back-button:hover {
+  text-decoration: underline;
 }
 
-/* Footer stays at bottom */
 .footer {
   background: #343a40;
   color: #f1f1f1;
   text-align: center;
-  border-top: 3px solid var(--primary); /* fixed */
-  margin-left: 100px;
-  margin-top: 100px;
+  border-top: 3px solid #007bff;
   padding: 15px 10px;
+
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
 }
 
-
-
-.footer-section-land {
-  margin-top: auto; /* pushes footer down */
+.footer p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #ccc;
 }
-
-/* Footer stays at bottom */
-.footer-land {
-  background: #343a40;
-  color: #f1f1f1;
-  text-align: center;
-  border-top: 3px solid var(--primary); /* fixed */
-  padding: 15px 10px;
-}
-
