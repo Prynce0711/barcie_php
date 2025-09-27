@@ -17,14 +17,15 @@ if ($action === 'signup') {
     $confirm_password = $_POST['confirm_password'];
 
     if ($password !== $confirm_password) {
-        echo "❌ Passwords do not match. Please try again.";
+        $_SESSION['signup_error'] = "Passwords do not match. Please try again.";
+        header("Location: ../index.php");
         exit;
     }
 
-    // Check if username or email exists
     $stmt = $conn->prepare("SELECT id FROM users WHERE username=? OR email=?");
     if (!$stmt) {
-        echo "Something went wrong. Please try again later.";
+        $_SESSION['signup_error'] = "Something went wrong. Please try again later.";
+        header("Location: ../index.php");
         exit;
     }
     $stmt->bind_param("ss", $username, $email);
@@ -32,29 +33,33 @@ if ($action === 'signup') {
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
-        $stmt->close();
-        echo "⚠️ Username or email already registered.";
+        $_SESSION['signup_error'] = "Username or email already registered.";
+        if ($stmt) $stmt->close();
+        $conn->close();
+        header("Location: ../index.php");
         exit;
     }
-    $stmt->close();
+    if ($stmt) $stmt->close();
 
     // Insert new user
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
     if (!$stmt) {
-        echo "Something went wrong. Please try again later.";
+        $_SESSION['signup_error'] = "Something went wrong. Please try again later.";
+        header("Location: ../index.php");
         exit;
     }
     $stmt->bind_param("sss", $username, $email, $hashed_password);
 
     if ($stmt->execute()) {
-        echo "✅ Signup successful! You can now login.";
+        $_SESSION['signup_success'] = "Signup successful! You can now login.";
     } else {
-        echo "⚠️ Error creating account. Please try again.";
+        $_SESSION['signup_error'] = "Error creating account. Please try again.";
     }
 
-    $stmt->close();
+    if ($stmt) $stmt->close();
     $conn->close();
+    header("Location: ../index.php");
     exit;
 }
 
@@ -65,7 +70,8 @@ elseif ($action === 'login') {
 
     $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username=?");
     if (!$stmt) {
-        echo "Something went wrong. Please try again later.";
+        $_SESSION['login_error'] = "Something went wrong. Please try again later.";
+        header("Location: ../index.php");
         exit;
     }
     $stmt->bind_param("s", $username);
@@ -76,29 +82,24 @@ elseif ($action === 'login') {
     if ($stmt->num_rows === 1) {
         $stmt->fetch();
         if (password_verify($password, $hashed_password)) {
-            // Store session
             $_SESSION['user_id'] = $id;
             $_SESSION['username'] = $user;
-
-            $stmt->close();
+            if ($stmt) $stmt->close();
             $conn->close();
-
-            // ✅ Redirect to Guest.php
             header("Location: ../Guest.php");
             exit;
         } else {
-            echo "❌ Incorrect password. Please try again.";
+            $_SESSION['login_error'] = "Incorrect password. Please try again.";
         }
     } else {
-        echo "⚠️ User not found. Please check your username.";
+        $_SESSION['login_error'] = "Invalid username. Please try again.";
     }
 
-    $stmt->close();
+    if ($stmt) $stmt->close();
     $conn->close();
+    header("Location: ../index.php");
+    exit;
 }
-
-
-
 
 // ---------- UPDATE PROFILE ----------
 elseif ($action === 'update_profile') {
@@ -121,20 +122,19 @@ elseif ($action === 'update_profile') {
     }
 
     if ($stmt->execute()) {
-        $_SESSION['username'] = $username; // update session
+        $_SESSION['username'] = $username;
         header("Location: ../Guest.php?updated=5");
         exit;
     } else {
-        echo "Error: " . $stmt->error;
+        $_SESSION['profile_error'] = "Error updating profile. Please try again.";
+        header("Location: ../Guest.php");
+        exit;
     }
 
-    $stmt->close();
+    if ($stmt) $stmt->close();
     $conn->close();
     exit;
 }
-
-
-
 
 // ---------- INVALID ACTION ----------
 else {

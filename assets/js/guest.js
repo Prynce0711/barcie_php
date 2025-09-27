@@ -44,4 +44,3 @@
   window.addEventListener('DOMContentLoaded', () => {
     document.querySelector('input[name="type"]:checked').dispatchEvent(new Event('change'));
   });
-
