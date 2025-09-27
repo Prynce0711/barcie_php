@@ -381,6 +381,35 @@ $conn->close();
 
 
 
+  <script>function showSection(sectionId, button) {
+  // Hide all sections
+  document.querySelectorAll('.content-section').forEach(sec => {
+    sec.classList.remove('active');
+  });
+
+  // Show the clicked section
+  const section = document.getElementById(sectionId);
+  if (section) {
+    section.classList.add('active');
+  }
+
+  // Remove active class from all sidebar buttons
+  document.querySelectorAll('.sidebar-guest button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  // Highlight the clicked button
+  if (button) {
+    button.classList.add('active');
+  }
+}
+
+// ✅ Set "Overview" as default section when page loads
+document.addEventListener("DOMContentLoaded", () => {
+  showSection('overview', document.querySelector('.sidebar-guest button'));
+});
+</script>
+
 
 
   <script src="assets/js/guest.js"></script>
