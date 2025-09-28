@@ -127,9 +127,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <a href="#" class="nav-link" data-section="bookings">Bookings</a>
     <a href="#" class="nav-link" data-section="payments">Payments</a>
     <a href="#" class="nav-link" data-section="users">Users</a>
-    <a href="#" class="nav-link" data-section="reports">Reports</a>
     <a href="#" class="nav-link" data-section="communication">Communication</a>
-    <a href="#" class="nav-link" data-section="others">Other Features</a>
+
     <a href="index.php" style="color: #e74c3c;">Logout</a>
   </div>
 
@@ -157,7 +156,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <p>Pending Approvals: 3</p>
           </div>
 
-          <div class="card booking-summary">
+          <div class="card ">
             <h3>Recent Activity</h3>
             <ul>
               <li>John Doe booked Room 101</li>
@@ -177,6 +176,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
       </div>
     </section>
+
+    <?php
+    // ✅ Load booking events for calendar
+    $events = [];
+    $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
+    while ($row = $result->fetch_assoc()) {
+      $events[] = [
+        'id' => $row['id'],
+        'title' => "Room " . $row['details'] . " (" . $row['type'] . ")",
+        'start' => $row['checkin'],
+        'end' => $row['checkout'],
+        'status' => $row['status']
+      ];
+    }
+    ?>
+    <script>
+      const bookingEvents = <?php echo json_encode($events); ?>;
+    </script>
+
 
 
     <section id="rooms" class="content-section">
@@ -324,135 +342,198 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <!-- Users -->
     <section id="users" class="content-section">
       <h2>User Management</h2>
-      <form>
-        <label>Username:</label>
-        <input type="text" placeholder="Enter username">
-        <label>Email:</label>
-        <input type="email" placeholder="Enter email">
-        <button type="submit" class="add">Add User</button>
-      </form>
+
+      <!-- ✅ Table of Registered Users -->
       <table>
         <tr>
+          <th>ID</th>
           <th>Username</th>
           <th>Email</th>
-          <th>Role</th>
+          <th>Created At</th>
+          <th>Actions</th>
         </tr>
-        <tr>
-          <td>admin</td>
-          <td>admin@example.com</td>
-          <td>Administrator</td>
-        </tr>
+
+        <?php
+
+        $sql = "SELECT id, username, email, created_at FROM users ORDER BY created_at DESC";
+        $result = $conn->query($sql);
+
+        if ($result->num_rows > 0):
+          while ($row = $result->fetch_assoc()):
+            ?>
+            <tr>
+              <td><?= $row['id'] ?></td>
+              <td><?= htmlspecialchars($row['username']) ?></td>
+              <td><?= htmlspecialchars($row['email']) ?></td>
+              <td><?= $row['created_at'] ?></td>
+              <td>
+                <!-- ✅ Inline Edit Form -->
+                <form method="post" action="database/user_auth.php" style="display:inline-block;">
+                  <input type="hidden" name="action" value="edit_user">
+                  <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                  <input type="text" name="username" value="<?= htmlspecialchars($row['username']) ?>" required>
+                  <input type="email" name="email" value="<?= htmlspecialchars($row['email']) ?>" required>
+                  <button type="submit" class="action-btn edit">Save</button>
+                </form>
+
+                <!-- ✅ Delete Form -->
+                <form method="post" action="database/user_auth.php" style="display:inline-block;"
+                  onsubmit="return confirm('Are you sure you want to delete this user?');">
+                  <input type="hidden" name="action" value="delete_user">
+                  <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                  <button type="submit" class="action-btn delete">Delete</button>
+                </form>
+              </td>
+            </tr>
+            <?php
+          endwhile;
+        else:
+          ?>
+          <tr>
+            <td colspan="5">No users found.</td>
+          </tr>
+        <?php endif; ?>
       </table>
     </section>
 
-    <!-- Reports -->
-    <section id="reports" class="content-section">
-      <h2>Reports & Analytics</h2>
-      <canvas id="reportChart"></canvas>
-    </section>
+
 
     <!-- Communication -->
     <section id="communication" class="content-section">
       <h2>Communication</h2>
-      <form id="feedback">
-        <label>Message:</label>
-        <textarea rows="4" placeholder="Enter your message"></textarea>
+
+      <!-- Chat messages -->
+      <div id="chat-box" class="chat-box">
+        <div id="messages"></div>
+      </div>
+
+      <!-- Chat input -->
+      <form id="chat-form">
+        <input type="text" id="chat-input" placeholder="Type a message..." required />
         <button type="submit" class="add">Send</button>
       </form>
+
+      <!-- Call controls -->
+      <div class="call-controls">
+        <button id="voice-call">📞 Voice Call</button>
+        <button id="video-call">🎥 Video Call</button>
+        <button id="end-call" style="display:none;">❌ End Call</button>
+      </div>
+
+      <!-- Video area -->
+      <div class="video-container" style="display:none;">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+      </div>
     </section>
 
-    <!-- Other Features -->
-    <section id="others" class="content-section">
-      <h2>Other Features</h2>
-      <p>Manage staff, system settings, and more here.</p>
-    </section>
-  </div>
 
-  <!-- Footer -->
-  <div class="footer">
-    <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
-  </div>
 
-  <script>
-    /* Sidebar toggle */
-    function toggleSidebar() {
-      document.querySelector(".sidebar").classList.toggle("active");
-      document.querySelector(".main-content").classList.toggle("active");
-    }
+    <!-- Footer -->
+    <div class="footer">
+      <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
+    </div>
 
-    /* Navigation */
-    document.querySelectorAll(".nav-link").forEach(link => {
-      link.addEventListener("click", e => {
-        e.preventDefault();
-        document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-        link.classList.add("active");
-        let section = link.dataset.section;
-        document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
-        document.getElementById(section).classList.add("active");
-      });
-    });
-
-    /* Chart.js Reports */
-    const ctx = document.getElementById('reportChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-        datasets: [{
-          label: 'Bookings',
-          data: [12, 19, 7, 15, 20],
-          backgroundColor: '#1abc9c'
-        }]
+    <script>
+      /* Sidebar toggle */
+      function toggleSidebar() {
+        document.querySelector(".sidebar").classList.toggle("active");
+        document.querySelector(".main-content").classList.toggle("active");
       }
-    });
 
-
-
-
-    // Load saved theme
-    window.onload = () => {
-      if (localStorage.getItem("theme") === "dark") {
-        document.body.classList.add("dark-mode");
-      }
-    };
-  </script>
-
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      var calendarEl = document.getElementById('miniCalendar');
-      var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        height: 400,
-        headerToolbar: {
-          left: 'prev,next',
-          center: 'title',
-          right: ''
-        },
-        events: [
-          { title: 'Room 101 - Booked', start: '2025-09-26' },
-          { title: 'Room 202 - Checkout', start: '2025-09-28' },
-          { title: 'Room 303 - Reserved', start: '2025-10-01' }
-        ]
+      /* Navigation */
+      document.querySelectorAll(".nav-link").forEach(link => {
+        link.addEventListener("click", e => {
+          e.preventDefault();
+          document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+          link.classList.add("active");
+          let section = link.dataset.section;
+          document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
+          document.getElementById(section).classList.add("active");
+        });
       });
-      calendar.render();
-    });
-  </script>
+
+      /* Chart.js Reports */
+      const ctx = document.getElementById('reportChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+          datasets: [{
+            label: 'Bookings',
+            data: [12, 19, 7, 15, 20],
+            backgroundColor: '#1abc9c'
+          }]
+        }
+      });
 
 
 
 
-  <script>
-    async function loadItems() {
-      const res = await fetch('database/fetch_items.php');
-      const items = await res.json();
-      const container = document.getElementById('cards-grid');
-      container.innerHTML = '';
-      items.forEach(item => {
-        const card = document.createElement('div');
-        card.classList.add('card');
-        card.dataset.type = item.item_type;
-        card.innerHTML = `
+      // Load saved theme
+      window.onload = () => {
+        if (localStorage.getItem("theme") === "dark") {
+          document.body.classList.add("dark-mode");
+        }
+      };
+    </script>
+
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('miniCalendar');
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          height: 300, // smaller height
+          contentHeight: 250, // shrink content space
+          aspectRatio: 1.2,   // makes it more compact
+          headerToolbar: {
+            left: 'prev,next',
+            center: 'title',
+            right: ''
+          },
+          events: bookingEvents.map(event => ({
+            id: event.id,
+            title: event.title + " | " + event.status,
+            start: event.start,
+            end: event.end,
+            color:
+              event.status === 'approved'
+                ? 'green'
+                : event.status === 'pending'
+                  ? 'orange'
+                  : 'red'
+          })),
+          eventClick: function (info) {
+            alert(
+              "Booking ID: " + info.event.id +
+              "\nDetails: " + info.event.title +
+              "\nStart: " + info.event.start.toLocaleString() +
+              "\nEnd: " + (info.event.end ? info.event.end.toLocaleString() : "N/A")
+            );
+          }
+        });
+
+        calendar.render();
+      });
+    </script>
+
+
+
+
+
+    <script>
+      async function loadItems() {
+        const res = await fetch('database/fetch_items.php');
+        const items = await res.json();
+        const container = document.getElementById('cards-grid');
+        container.innerHTML = '';
+        items.forEach(item => {
+          const card = document.createElement('div');
+          card.classList.add('card');
+          card.dataset.type = item.item_type;
+          card.innerHTML = `
 ${item.image ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">` : ''}
 <h3>${item.name}</h3>
 ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
@@ -460,39 +541,130 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
 <p>Price: $${item.price}${item.item_type === 'room' ? '/night' : '/day'}</p>
 <p>${item.description}</p>
 `;
-        container.appendChild(card);
-      });
-      filterItems();
-    }
-
-
-  </script>
-
-  <!-- ✅ Script for toggling edit form -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      document.querySelectorAll(".toggle-edit").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const form = btn.nextElementSibling;
-          form.style.display = (form.style.display === "none" || form.style.display === "")
-            ? "block"
-            : "none";
+          container.appendChild(card);
         });
-      });
-
-      // Filter cards by type
-      function filterItems() {
-        const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
-        document.querySelectorAll('.card').forEach(card => {
-          card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
-        });
+        filterItems();
       }
-      document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
-        radio.addEventListener('change', filterItems);
+
+
+    </script>
+
+    <!-- ✅ Script for toggling edit form -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".toggle-edit").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const form = btn.nextElementSibling;
+            form.style.display = (form.style.display === "none" || form.style.display === "")
+              ? "block"
+              : "none";
+          });
+        });
+
+        // Filter cards by type
+        function filterItems() {
+          const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
+          document.querySelectorAll('.card').forEach(card => {
+            card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
+          });
+        }
+        document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
+          radio.addEventListener('change', filterItems);
+        });
+        filterItems(); // run once
       });
-      filterItems(); // run once
-    });
-  </script>
+    </script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io(); // connect to server
+
+      // ---- Chat ----
+      const chatForm = document.getElementById("chat-form");
+      const chatInput = document.getElementById("chat-input");
+      const messagesDiv = document.getElementById("messages");
+
+      chatForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const msg = chatInput.value;
+        socket.emit("chatMessage", msg); // send to server
+        chatInput.value = "";
+      });
+
+      socket.on("chatMessage", (msg) => {
+        const p = document.createElement("p");
+        p.textContent = msg;
+        messagesDiv.appendChild(p);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+
+      // ---- WebRTC (Voice/Video Call) ----
+      let localStream, peerConnection;
+      const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+      const voiceBtn = document.getElementById("voice-call");
+      const videoBtn = document.getElementById("video-call");
+      const endBtn = document.getElementById("end-call");
+      const localVideo = document.getElementById("localVideo");
+      const remoteVideo = document.getElementById("remoteVideo");
+      const videoContainer = document.querySelector(".video-container");
+
+      async function startCall(video = false) {
+        localStream = await navigator.mediaDevices.getUserMedia({ video, audio: true });
+        localVideo.srcObject = localStream;
+        videoContainer.style.display = "flex";
+        endBtn.style.display = "inline-block";
+
+        peerConnection = new RTCPeerConnection(config);
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        peerConnection.ontrack = (event) => {
+          remoteVideo.srcObject = event.streams[0];
+        };
+
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) socket.emit("candidate", event.candidate);
+        };
+
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        socket.emit("offer", offer);
+      }
+
+      voiceBtn.onclick = () => startCall(false);
+      videoBtn.onclick = () => startCall(true);
+      endBtn.onclick = () => {
+        peerConnection.close();
+        localStream.getTracks().forEach(track => track.stop());
+        videoContainer.style.display = "none";
+        endBtn.style.display = "none";
+      };
+
+      socket.on("offer", async (offer) => {
+        peerConnection = new RTCPeerConnection(config);
+        peerConnection.ontrack = (event) => remoteVideo.srcObject = event.streams[0];
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) socket.emit("candidate", event.candidate);
+        };
+
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        localVideo.srcObject = localStream;
+
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit("answer", answer);
+      });
+
+      socket.on("answer", (answer) => {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      });
+
+      socket.on("candidate", (candidate) => {
+        peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      });
+    </script>
 
 
 
