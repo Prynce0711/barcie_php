@@ -125,70 +125,15 @@ $conn->close();
     </section>
 
     <!-- Rooms & Facilities -->
-    <section id="rooms" class="content-section">
+    <section id="rooms" class="content-section active">
       <h2>Rooms & Facilities</h2>
-      <p>Check availability by date and view details.</p>
 
-      <!-- Date Selection -->
-      <label>Select Date: <input type="date"></label>
+      <label>Filter Type:
+        <input type="radio" name="type" value="room" checked> Room
+        <input type="radio" name="type" value="facility"> Facility
+      </label>
 
-      <!-- Radio Button Selection -->
-      <div class="selection-type">
-        <p>Select Type:</p>
-        <label>
-          <input type="radio" name="type" value="room" checked> Room
-        </label>
-        <label>
-          <input type="radio" name="type" value="facility"> Facility
-        </label>
-      </div>
-
-      <!-- Cards Grid -->
-      <div class="cards-grid">
-        <!-- Room Card Example -->
-        <div class="card" data-type="room">
-          <h3>Deluxe Room</h3>
-          <p>Capacity: 2 persons</p>
-          <p>Price: $100/night</p>
-          <button>Select for Booking</button>
-        </div>
-
-        <div class="card" data-type="room">
-          <h3>Deluxe Room</h3>
-          <p>Capacity: 2 persons</p>
-          <p>Price: $100/night</p>
-          <button>Select for Booking</button>
-        </div>
-        <div class="card" data-type="room">
-          <h3>Deluxe Room</h3>
-          <p>Capacity: 2 persons</p>
-          <p>Price: $100/night</p>
-          <button>Select for Booking</button>
-        </div>
-
-        <!-- Facility Card Example -->
-        <div class="card" data-type="facility">
-          <h3>Conference Hall</h3>
-          <p>Capacity: 50 people</p>
-          <p>Price: $200/day</p>
-          <button>Select for Booking</button>
-        </div>
-
-
-        <div class="card" data-type="facility">
-          <h3>Conference Hall</h3>
-          <p>Capacity: 50 people</p>
-          <p>Price: $200/day</p>
-          <button>Select for Booking</button>
-        </div>
-
-        <div class="card" data-type="facility">
-          <h3>Conference Hall</h3>
-          <p>Capacity: 50 people</p>
-          <p>Price: $200/day</p>
-          <button>Select for Booking</button>
-        </div>
-      </div>
+      <div class="cards-grid" id="cards-grid"></div>
     </section>
 
 
@@ -375,40 +320,76 @@ $conn->close();
   </main>
 
 
-   <footer class="footer">
+  <footer class="footer">
     <p>© BarCIE International Center 2025</p>
   </footer>
 
 
 
   <script>function showSection(sectionId, button) {
-  // Hide all sections
-  document.querySelectorAll('.content-section').forEach(sec => {
-    sec.classList.remove('active');
-  });
+      // Hide all sections
+      document.querySelectorAll('.content-section').forEach(sec => {
+        sec.classList.remove('active');
+      });
 
-  // Show the clicked section
-  const section = document.getElementById(sectionId);
-  if (section) {
-    section.classList.add('active');
-  }
+      // Show the clicked section
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.classList.add('active');
+      }
 
-  // Remove active class from all sidebar buttons
-  document.querySelectorAll('.sidebar-guest button').forEach(btn => {
-    btn.classList.remove('active');
-  });
+      // Remove active class from all sidebar buttons
+      document.querySelectorAll('.sidebar-guest button').forEach(btn => {
+        btn.classList.remove('active');
+      });
 
-  // Highlight the clicked button
-  if (button) {
-    button.classList.add('active');
-  }
-}
+      // Highlight the clicked button
+      if (button) {
+        button.classList.add('active');
+      }
+    }
 
-// ✅ Set "Overview" as default section when page loads
-document.addEventListener("DOMContentLoaded", () => {
-  showSection('overview', document.querySelector('.sidebar-guest button'));
-});
-</script>
+    // ✅ Set "Overview" as default section when page loads
+    document.addEventListener("DOMContentLoaded", () => {
+      showSection('overview', document.querySelector('.sidebar-guest button'));
+    });
+  </script>
+
+  <script>
+    async function loadItems() {
+      const res = await fetch('database/fetch_items.php');
+      const items = await res.json();
+      const container = document.getElementById('cards-grid');
+      container.innerHTML = '';
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.type = item.item_type;
+        card.innerHTML = `
+${item.image ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">` : ''}
+<h3>${item.name}</h3>
+${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
+<p>Capacity: ${item.capacity} ${item.item_type === 'room' ? 'persons' : 'people'}</p>
+<p>Price: $${item.price}${item.item_type === 'room' ? '/night' : '/day'}</p>
+<p>${item.description}</p>
+`;
+        container.appendChild(card);
+      });
+      filterItems();
+    }
+
+    function filterItems() {
+      const selectedType = document.querySelector('input[name="type"]:checked').value;
+      document.querySelectorAll('.card').forEach(card => {
+        card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
+      });
+    }
+
+    document.querySelectorAll('input[name="type"]').forEach(radio => {
+      radio.addEventListener('change', filterItems);
+    });
+    window.onload = loadItems;
+  </script>
 
 
 

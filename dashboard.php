@@ -7,6 +7,98 @@ session_start();
 //     header("Location: login.php");
 //     exit;
 // }
+
+
+include __DIR__ . '/database/db_connect.php';
+
+
+// Handle Add/Update/Delete
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+  if (isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    // DELETE
+    if ($action === "delete" && isset($_POST['id'])) {
+      $id = intval($_POST['id']);
+      // Delete image if exists
+      $stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
+      $stmt->bind_param("i", $id);
+      $stmt->execute();
+      $stmt->bind_result($img);
+      $stmt->fetch();
+      $stmt->close();
+      if ($img && file_exists($img))
+        unlink($img);
+
+      $stmt = $conn->prepare("DELETE FROM items WHERE id=?");
+      $stmt->bind_param("i", $id);
+      $stmt->execute();
+      $stmt->close();
+      header("Location: dashboard.php#rooms");
+      exit;
+    }
+
+    // UPDATE
+    if ($action === "update" && isset($_POST['id'])) {
+      $id = intval($_POST['id']);
+      $name = $_POST['name'];
+      $type = $_POST['item_type'];
+      $room_number = $_POST['room_number'] ?: null;
+      $description = $_POST['description'] ?: null;
+      $capacity = $_POST['capacity'] ?: 0;
+      $price = $_POST['price'] ?: 0;
+
+      $image_path = $_POST['old_image'] ?? null;
+      if (!empty($_FILES['image']['name'])) {
+        $target_dir = "uploads/";
+        if (!file_exists($target_dir))
+          mkdir($target_dir, 0777, true);
+        $target_file = $target_dir . time() . "_" . basename($_FILES["image"]["name"]);
+        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+          $image_path = $target_file;
+          // Delete old image
+          if (!empty($_POST['old_image']) && file_exists($_POST['old_image']))
+            unlink($_POST['old_image']);
+        }
+      }
+
+      $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=? WHERE id=?");
+      $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $id);
+      $stmt->execute();
+      $stmt->close();
+      header("Location: dashboard.php#rooms");
+      exit;
+    }
+  }
+
+  // ADD NEW
+  if (isset($_POST['add_item'])) {
+    $name = $_POST['name'];
+    $type = $_POST['item_type'];
+    $room_number = $_POST['room_number'] ?: null;
+    $description = $_POST['description'] ?: null;
+    $capacity = $_POST['capacity'] ?: 0;
+    $price = $_POST['price'] ?: 0;
+
+    $image_path = null;
+    if (!empty($_FILES['image']['name'])) {
+      $target_dir = "uploads/";
+      if (!file_exists($target_dir))
+        mkdir($target_dir, 0777, true);
+      $target_file = $target_dir . time() . "_" . basename($_FILES["image"]["name"]);
+      if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+        $image_path = $target_file;
+      }
+    }
+
+    $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt->bind_param("ssssids", $name, $type, $room_number, $description, $capacity, $price, $image_path);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: dashboard.php#rooms");
+    exit;
+  }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -88,27 +180,75 @@ session_start();
 
 
     <!-- Rooms & Facilities -->
-    <section id="rooms" class="content-section">
-      <h2>Rooms & Facilities</h2>
-      <form>
-        <label>Room Name:</label>
-        <input type="text" placeholder="Enter room name">
-        <label>Price:</label>
-        <input type="number" placeholder="Enter price">
-        <button type="submit" class="add">Add Room</button>
+    <h1>Rooms & Facilities Management</h1>
+    </header>
+
+    <section id="rooms">
+      <h2>Add Room / Facility</h2>
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="add_item" value="1">
+        <label>Name:</label><input type="text" name="name" required>
+        <label>Type:</label>
+        <select name="item_type" required>
+          <option value="room">Room</option>
+          <option value="facility">Facility</option>
+        </select>
+        <label>Room Number (optional):</label><input type="text" name="room_number">
+        <label>Description:</label><textarea name="description"></textarea>
+        <label>Capacity:</label><input type="number" name="capacity" required>
+        <label>Price:</label><input type="number" step="0.01" name="price" required>
+        <label>Image (optional):</label><input type="file" name="image" accept="image/*">
+        <button type="submit">Add Item</button>
       </form>
-      <table>
-        <tr>
-          <th>Room</th>
-          <th>Price</th>
-          <th>Status</th>
-        </tr>
-        <tr>
-          <td>Deluxe Suite</td>
-          <td>$200</td>
-          <td>Available</td>
-        </tr>
-      </table>
+
+      <h2>Current Items</h2>
+      <label>Filter Type:
+        <input type="radio" name="type_filter" value="room" checked> Room
+        <input type="radio" name="type_filter" value="facility"> Facility
+      </label>
+
+      <div class="cards-grid" id="cards-grid">
+        <?php
+        $res = $conn->query("SELECT * FROM items ORDER BY created_at DESC");
+        while ($item = $res->fetch_assoc()): ?>
+          <div class="card" data-type="<?= $item['item_type'] ?>">
+            <?php if ($item['image']): ?><img src="<?= $item['image'] ?>"
+                style="width:100%;height:150px;object-fit:cover;"><?php endif; ?>
+            <h3><?= $item['name'] ?></h3>
+            <?= $item['room_number'] ? "<p>Room Number: " . $item['room_number'] . "</p>" : "" ?>
+            <p>Capacity: <?= $item['capacity'] ?>   <?= $item['item_type'] === 'room' ? 'persons' : 'people' ?></p>
+            <p>Price: $<?= $item['price'] ?><?= $item['item_type'] === 'room' ? '/night' : '/day' ?></p>
+            <p><?= $item['description'] ?></p>
+
+            <!-- Edit / Delete Forms -->
+            <form method="POST" enctype="multipart/form-data">
+              <input type="hidden" name="action" value="update">
+              <input type="hidden" name="id" value="<?= $item['id'] ?>">
+              <input type="hidden" name="old_image" value="<?= $item['image'] ?>">
+              <label>Name: <input type="text" name="name" value="<?= $item['name'] ?>" required></label>
+              <label>Type:
+                <select name="item_type">
+                  <option value="room" <?= $item['item_type'] == 'room' ? 'selected' : '' ?>>Room</option>
+                  <option value="facility" <?= $item['item_type'] == 'facility' ? 'selected' : '' ?>>Facility</option>
+                </select>
+              </label>
+              <label>Room Number: <input type="text" name="room_number" value="<?= $item['room_number'] ?>"></label>
+              <label>Description: <textarea name="description"><?= $item['description'] ?></textarea></label>
+              <label>Capacity: <input type="number" name="capacity" value="<?= $item['capacity'] ?>" required></label>
+              <label>Price: <input type="number" step="0.01" name="price" value="<?= $item['price'] ?>" required></label>
+              <label>Change Image: <input type="file" name="image"></label>
+              <button type="submit">Update</button>
+            </form>
+
+            <form method="POST">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id" value="<?= $item['id'] ?>">
+              <button type="submit" style="background:red;color:white;">Delete</button>
+            </form>
+
+          </div>
+        <?php endwhile; ?>
+      </div>
     </section>
 
     <!-- Bookings -->
@@ -293,6 +433,55 @@ session_start();
     });
   </script>
 
+
+<script>
+function filterItems() {
+const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
+document.querySelectorAll('.card').forEach(card => {
+card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
+});
+}
+document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
+radio.addEventListener('change', filterItems);
+});
+window.onload = filterItems;
+</script>
+
+<script>
+async function loadItems(){
+const res = await fetch('database/fetch_items.php');
+const items = await res.json();
+const container = document.getElementById('cards-grid');
+container.innerHTML = '';
+items.forEach(item=>{
+const card=document.createElement('div');
+card.classList.add('card');
+card.dataset.type=item.item_type;
+card.innerHTML=`
+${item.image? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">`:''}
+<h3>${item.name}</h3>
+${item.room_number? `<p>Room Number: ${item.room_number}</p>` : ''}
+<p>Capacity: ${item.capacity} ${item.item_type==='room'?'persons':'people'}</p>
+<p>Price: $${item.price}${item.item_type==='room'?'/night':'/day'}</p>
+<p>${item.description}</p>
+`;
+container.appendChild(card);
+});
+filterItems();
+}
+
+function filterItems(){
+const selectedType=document.querySelector('input[name="type"]:checked').value;
+document.querySelectorAll('.card').forEach(card=>{
+card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
+});
+}
+
+document.querySelectorAll('input[name="type"]').forEach(radio=>{
+radio.addEventListener('change', filterItems);
+});
+window.onload=loadItems;
+</script>
 
 </body>
 
