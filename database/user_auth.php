@@ -23,32 +23,21 @@ if ($action === 'signup') {
     }
 
     $stmt = $conn->prepare("SELECT id FROM users WHERE username=? OR email=?");
-    if (!$stmt) {
-        $_SESSION['signup_error'] = "Something went wrong. Please try again later.";
-        header("Location: ../index.php");
-        exit;
-    }
     $stmt->bind_param("ss", $username, $email);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
         $_SESSION['signup_error'] = "Username or email already registered.";
-        if ($stmt) $stmt->close();
+        $stmt->close();
         $conn->close();
         header("Location: ../index.php");
         exit;
     }
-    if ($stmt) $stmt->close();
+    $stmt->close();
 
-    // Insert new user
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-    if (!$stmt) {
-        $_SESSION['signup_error'] = "Something went wrong. Please try again later.";
-        header("Location: ../index.php");
-        exit;
-    }
     $stmt->bind_param("sss", $username, $email, $hashed_password);
 
     if ($stmt->execute()) {
@@ -57,7 +46,7 @@ if ($action === 'signup') {
         $_SESSION['signup_error'] = "Error creating account. Please try again.";
     }
 
-    if ($stmt) $stmt->close();
+    $stmt->close();
     $conn->close();
     header("Location: ../index.php");
     exit;
@@ -69,11 +58,6 @@ elseif ($action === 'login') {
     $password = $_POST['password'];
 
     $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username=?");
-    if (!$stmt) {
-        $_SESSION['login_error'] = "Something went wrong. Please try again later.";
-        header("Location: ../index.php");
-        exit;
-    }
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $stmt->store_result();
@@ -84,9 +68,16 @@ elseif ($action === 'login') {
         if (password_verify($password, $hashed_password)) {
             $_SESSION['user_id'] = $id;
             $_SESSION['username'] = $user;
-            if ($stmt) $stmt->close();
+
+            $stmt->close();
             $conn->close();
-            header("Location: ../Guest.php");
+
+            // ✅ If admin logs in, go to dashboard
+            if ($user === 'admin') {
+                header("Location: ../dashboard.php");
+            } else {
+                header("Location: ../Guest.php");
+            }
             exit;
         } else {
             $_SESSION['login_error'] = "Incorrect password. Please try again.";
@@ -95,13 +86,13 @@ elseif ($action === 'login') {
         $_SESSION['login_error'] = "Invalid username. Please try again.";
     }
 
-    if ($stmt) $stmt->close();
+    $stmt->close();
     $conn->close();
     header("Location: ../index.php");
     exit;
 }
 
-// ---------- UPDATE PROFILE ----------
+// ---------- UPDATE PROFILE (User Self) ----------
 elseif ($action === 'update_profile') {
     if (!isset($_SESSION['user_id'])) {
         die("You must be logged in to update your profile.");
@@ -123,15 +114,64 @@ elseif ($action === 'update_profile') {
 
     if ($stmt->execute()) {
         $_SESSION['username'] = $username;
-        header("Location: ../Guest.php?updated=5");
-        exit;
+        header("Location: ../Guest.php?updated=1");
     } else {
         $_SESSION['profile_error'] = "Error updating profile. Please try again.";
         header("Location: ../Guest.php");
-        exit;
     }
 
-    if ($stmt) $stmt->close();
+    $stmt->close();
+    $conn->close();
+    exit;
+}
+
+// ---------- ADMIN: EDIT USER ----------
+elseif ($action === 'edit_user') {
+    if (!isset($_SESSION['user_id']) || $_SESSION['username'] !== 'admin') {
+        die("Access denied.");
+    }
+
+    $user_id = intval($_POST['id']);
+    $username = trim($_POST['username']);
+    $email = trim($_POST['email']);
+
+    $stmt = $conn->prepare("UPDATE users SET username=?, email=? WHERE id=?");
+    $stmt->bind_param("ssi", $username, $email, $user_id);
+
+    if ($stmt->execute()) {
+        header("Location: ../dashboard.php?updated=1");
+    } else {
+        header("Location: ../dashboard.php?error=1");
+    }
+
+    $stmt->close();
+    $conn->close();
+    exit;
+}
+
+// ---------- ADMIN: DELETE USER ----------
+elseif ($action === 'delete_user') {
+    if (!isset($_SESSION['user_id']) || $_SESSION['username'] !== 'admin') {
+        die("Access denied.");
+    }
+
+    $user_id = intval($_POST['id']);
+
+    // prevent admin from deleting themselves
+    if ($user_id == $_SESSION['user_id']) {
+        die("You cannot delete your own admin account.");
+    }
+
+    $stmt = $conn->prepare("DELETE FROM users WHERE id=?");
+    $stmt->bind_param("i", $user_id);
+
+    if ($stmt->execute()) {
+        header("Location: ../dashboard.php?deleted=1");
+    } else {
+        header("Location: ../dashboard.php?error=1");
+    }
+
+    $stmt->close();
     $conn->close();
     exit;
 }
