@@ -179,11 +179,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </section>
 
 
-    <!-- Rooms & Facilities -->
-    <h1>Rooms & Facilities Management</h1>
-    </header>
-
-    <section id="rooms">
+    <section id="rooms" class="content-section">
+      <!-- ✅ Add Item Form -->
       <h2>Add Room / Facility</h2>
       <form method="POST" enctype="multipart/form-data">
         <input type="hidden" name="add_item" value="1">
@@ -201,7 +198,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <button type="submit">Add Item</button>
       </form>
 
-      <h2>Current Items</h2>
+      <!-- ✅ Existing Items -->
+      <h2>Existing Items</h2>
       <label>Filter Type:
         <input type="radio" name="type_filter" value="room" checked> Room
         <input type="radio" name="type_filter" value="facility"> Facility
@@ -212,19 +210,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $res = $conn->query("SELECT * FROM items ORDER BY created_at DESC");
         while ($item = $res->fetch_assoc()): ?>
           <div class="card" data-type="<?= $item['item_type'] ?>">
-            <?php if ($item['image']): ?><img src="<?= $item['image'] ?>"
-                style="width:100%;height:150px;object-fit:cover;"><?php endif; ?>
+            <?php if ($item['image']): ?>
+              <img src="<?= $item['image'] ?>" style="width:100%;height:150px;object-fit:cover;">
+            <?php endif; ?>
+
             <h3><?= $item['name'] ?></h3>
             <?= $item['room_number'] ? "<p>Room Number: " . $item['room_number'] . "</p>" : "" ?>
             <p>Capacity: <?= $item['capacity'] ?>   <?= $item['item_type'] === 'room' ? 'persons' : 'people' ?></p>
             <p>Price: $<?= $item['price'] ?><?= $item['item_type'] === 'room' ? '/night' : '/day' ?></p>
             <p><?= $item['description'] ?></p>
 
-            <!-- Edit / Delete Forms -->
-            <form method="POST" enctype="multipart/form-data">
+            <!-- ✅ Edit Toggle Button -->
+            <button type="button" class="toggle-edit">Edit</button>
+
+            <!-- ✅ Edit Form (hidden by default) -->
+            <form method="POST" enctype="multipart/form-data" class="edit-form" style="display:none;">
               <input type="hidden" name="action" value="update">
               <input type="hidden" name="id" value="<?= $item['id'] ?>">
               <input type="hidden" name="old_image" value="<?= $item['image'] ?>">
+
               <label>Name: <input type="text" name="name" value="<?= $item['name'] ?>" required></label>
               <label>Type:
                 <select name="item_type">
@@ -240,16 +244,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
               <button type="submit">Update</button>
             </form>
 
+            <!-- ✅ Delete Form -->
             <form method="POST">
               <input type="hidden" name="action" value="delete">
               <input type="hidden" name="id" value="<?= $item['id'] ?>">
               <button type="submit" style="background:red;color:white;">Delete</button>
             </form>
-
           </div>
         <?php endwhile; ?>
       </div>
     </section>
+
+
 
     <!-- Bookings -->
 
@@ -434,54 +440,63 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   </script>
 
 
-<script>
-function filterItems() {
-const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
-document.querySelectorAll('.card').forEach(card => {
-card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
-});
-}
-document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
-radio.addEventListener('change', filterItems);
-});
-window.onload = filterItems;
-</script>
 
-<script>
-async function loadItems(){
-const res = await fetch('database/fetch_items.php');
-const items = await res.json();
-const container = document.getElementById('cards-grid');
-container.innerHTML = '';
-items.forEach(item=>{
-const card=document.createElement('div');
-card.classList.add('card');
-card.dataset.type=item.item_type;
-card.innerHTML=`
-${item.image? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">`:''}
+
+  <script>
+    async function loadItems() {
+      const res = await fetch('database/fetch_items.php');
+      const items = await res.json();
+      const container = document.getElementById('cards-grid');
+      container.innerHTML = '';
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.type = item.item_type;
+        card.innerHTML = `
+${item.image ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">` : ''}
 <h3>${item.name}</h3>
-${item.room_number? `<p>Room Number: ${item.room_number}</p>` : ''}
-<p>Capacity: ${item.capacity} ${item.item_type==='room'?'persons':'people'}</p>
-<p>Price: $${item.price}${item.item_type==='room'?'/night':'/day'}</p>
+${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
+<p>Capacity: ${item.capacity} ${item.item_type === 'room' ? 'persons' : 'people'}</p>
+<p>Price: $${item.price}${item.item_type === 'room' ? '/night' : '/day'}</p>
 <p>${item.description}</p>
 `;
-container.appendChild(card);
-});
-filterItems();
-}
+        container.appendChild(card);
+      });
+      filterItems();
+    }
 
-function filterItems(){
-const selectedType=document.querySelector('input[name="type"]:checked').value;
-document.querySelectorAll('.card').forEach(card=>{
-card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
-});
-}
 
-document.querySelectorAll('input[name="type"]').forEach(radio=>{
-radio.addEventListener('change', filterItems);
-});
-window.onload=loadItems;
-</script>
+  </script>
+
+  <!-- ✅ Script for toggling edit form -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll(".toggle-edit").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const form = btn.nextElementSibling;
+          form.style.display = (form.style.display === "none" || form.style.display === "")
+            ? "block"
+            : "none";
+        });
+      });
+
+      // Filter cards by type
+      function filterItems() {
+        const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
+        document.querySelectorAll('.card').forEach(card => {
+          card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
+        });
+      }
+      document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
+        radio.addEventListener('change', filterItems);
+      });
+      filterItems(); // run once
+    });
+  </script>
+
+
+
+
 
 </body>
 
