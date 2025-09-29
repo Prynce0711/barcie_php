@@ -1,21 +1,21 @@
 <?php
-session_start(); // start session
+session_start();
+header('Content-Type: application/json'); // Ensure response is JSON
 
-// ✅ include database connection (make sure db_connect.php is inside /database)
 include __DIR__ . '/db_connect.php';
 
-// Handle form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = trim($_POST['username']);  
-    $password = trim($_POST['password']);
+$response = ['success' => false, 'message' => 'Invalid request.'];
 
-    // Validate input fields
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+
     if (empty($username) || empty($password)) {
-        echo "<script>alert('Please fill in all fields.'); window.history.back();</script>";
+        $response['message'] = 'Please fill in all fields.';
+        echo json_encode($response);
         exit;
     }
 
-    // ✅ Query the database for the user by username
     $stmt = $conn->prepare("SELECT id, password FROM admins WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
@@ -25,30 +25,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bind_result($id, $storedPassword);
         $stmt->fetch();
 
-        // ✅ If passwords are stored as plain text (not recommended)
+        // If passwords are hashed in DB, use: password_verify($password, $storedPassword)
         if ($password === $storedPassword) {
-            // Set session variables and redirect to the dashboard
-
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_id'] = $id;
             $_SESSION['admin_username'] = $username;
 
-
-            header("Location: ../dashboard.php");
-            exit;
+            $response['success'] = true;
+            $response['message'] = 'Login successful.';
         } else {
-            echo "<script>alert('Invalid password.'); window.history.back();</script>";
+            $response['message'] = 'Invalid password.';
         }
     } else {
-        echo "<script>alert('Username not found.'); window.history.back();</script>";
+        $response['message'] = 'Username not found.';
     }
 
-    
     $stmt->close();
 }
 
 $conn->close();
-
-
-
-
+echo json_encode($response);
+exit;

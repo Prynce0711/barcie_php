@@ -92,16 +92,20 @@ if ($action === 'signup') {
 /* ---------------------------
    LOGIN
    --------------------------- */
+
+$action = $_POST['action'] ?? '';
+
 if ($action === 'login') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
     if ($username === '' || $password === '') {
         $_SESSION['login_error'] = "Fill both username and password.";
-        redirect('../index.php');
+        header('Location: ../index.php'); // optional if you want to reload
+        exit;
     }
 
-    // Try users table
+    // Check users table
     $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = ? LIMIT 1");
     $stmt->bind_param("s", $username);
     $stmt->execute();
@@ -113,7 +117,7 @@ if ($action === 'login') {
         $_SESSION['user_id'] = (int)$user['id'];
         $_SESSION['username'] = $user['username'];
 
-        // Check admins table
+        // Check admin status
         $stmt = $conn->prepare("SELECT id FROM admins WHERE username = ? LIMIT 1");
         $stmt->bind_param("s", $username);
         $stmt->execute();
@@ -121,21 +125,15 @@ if ($action === 'login') {
         $_SESSION['is_admin'] = ($stmt->num_rows > 0);
         $stmt->close();
 
-        if ($_SESSION['is_admin']) redirect('../dashboard.php');
-        redirect('../Guest.php');
+        echo json_encode(['success' => true]); // return JSON success
+        exit;
     }
 
-    // Fallback: admins table only
-    $stmt = $conn->prepare("SELECT id, username, password FROM admins WHERE username = ? LIMIT 1");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $admin = $res->fetch_assoc();
-    $stmt->close();
-
     $_SESSION['login_error'] = "Invalid username or password.";
-    redirect('../index.php');
+    echo json_encode(['success' => false, 'error' => $_SESSION['login_error']]);
+    exit;
 }
+
 
 /* ---------------------------
    LOGOUT
