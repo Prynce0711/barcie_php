@@ -193,18 +193,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
           <!-- Recent Activity Card -->
           <div class="dashboard-card activity-card">
-            <h3 class="card-title"><i class="fa-solid fa-clock"></i> Recent Activity</h3>
-            <ul class="activity-list">
-              <?php foreach ($recent_activities as $activity): ?>
-                <li>
-                  <?php echo htmlspecialchars($activity['type']); ?>:
-                  <?php echo htmlspecialchars($activity['details']); ?>
-                  <span
-                    style="color:#888;font-size:0.85rem;">(<?php echo date('M d, Y', strtotime($activity['created_at'])); ?>)</span>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          </div>
+  <h3 class="card-title"><i class="fa-solid fa-clock"></i> Recent Activity</h3>
+  
+  <table class="activity-table">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Details</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($recent_activities as $activity): ?>
+        <tr>
+          <td><?php echo htmlspecialchars($activity['type']); ?></td>
+          <td><?php echo htmlspecialchars($activity['details']); ?></td>
+          <td><?php echo date('M d, Y', strtotime($activity['created_at'])); ?></td>
+        </tr>
+      <?php endforeach; ?>
+    </tbody>
+  </table>
+</div>
         </div>
 
       </div>
@@ -355,7 +364,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       </form>
 
 
-      
+
       <h2>Bookings</h2>
       <table>
         <tr>
@@ -650,29 +659,49 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
 
     <!-- ✅ Script for toggling edit form -->
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll(".toggle-edit").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const form = btn.nextElementSibling;
-            form.style.display = (form.style.display === "none" || form.style.display === "")
-              ? "block"
-              : "none";
-          });
-        });
+document.addEventListener("DOMContentLoaded", () => {
+  /* ---------------- Booking Type Toggle ---------------- */
+  function toggleBookingForm() {
+    const selectedType = document.querySelector('input[name="bookingType"]:checked').value;
+    const reservationForm = document.getElementById("reservationForm");
+    const pencilForm = document.getElementById("pencilForm");
 
-        // Filter cards by type
-        function filterItems() {
-          const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
-          document.querySelectorAll('.card').forEach(card => {
-            card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
-          });
-        }
-        document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
-          radio.addEventListener('change', filterItems);
-        });
-        filterItems(); // run once
-      });
-    </script>
+    if (selectedType === "reservation") {
+      reservationForm.style.display = "block";
+      pencilForm.style.display = "none";
+    } else {
+      reservationForm.style.display = "none";
+      pencilForm.style.display = "block";
+    }
+  }
+
+  // Init booking form display
+  toggleBookingForm();
+
+  // Attach listeners
+  document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
+    radio.addEventListener("change", toggleBookingForm);
+  });
+
+
+  /* ---------------- Item Filter Toggle ---------------- */
+  function filterItems() {
+    const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
+    document.querySelectorAll(".card").forEach(card => {
+      card.style.display = (card.dataset.type === selectedType) ? "block" : "none";
+    });
+  }
+
+  // Init filtering
+  filterItems();
+
+  // Attach listeners
+  document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
+    radio.addEventListener("change", filterItems);
+  });
+});
+</script>
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
