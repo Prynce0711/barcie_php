@@ -147,7 +147,7 @@ $conn->close();
       <!-- Reservation Form -->
       <form id="reservationForm" method="POST" action="database/save_booking.php">
         <h3>Reservation Form</h3>
-        <label>Official Receipt No.: <input type="text" name="receipt_no" value="AUTO" readonly></label>
+        <label>Official Receipt No.: <input type="text" name="receipt_no" readonly></label>
         <label>Guest Name: <input type="text" name="guest_name" required></label>
         <label>Contact Number: <input type="text" name="contact_number" required></label>
         <label>Email Address: <input type="email" name="email" required></label>
@@ -321,34 +321,34 @@ $conn->close();
 
 
 
-  <script>function showSection(sectionId, button) {
-      // Hide all sections
-      document.querySelectorAll('.content-section').forEach(sec => {
-        sec.classList.remove('active');
-      });
+    <script>function showSection(sectionId, button) {
+        // Hide all sections
+        document.querySelectorAll('.content-section').forEach(sec => {
+          sec.classList.remove('active');
+        });
 
-      // Show the clicked section
-      const section = document.getElementById(sectionId);
-      if (section) {
-        section.classList.add('active');
+        // Show the clicked section
+        const section = document.getElementById(sectionId);
+        if (section) {
+          section.classList.add('active');
+        }
+
+        // Remove active class from all sidebar buttons
+        document.querySelectorAll('.sidebar-guest button').forEach(btn => {
+          btn.classList.remove('active');
+        });
+
+        // Highlight the clicked button
+        if (button) {
+          button.classList.add('active');
+        }
       }
 
-      // Remove active class from all sidebar buttons
-      document.querySelectorAll('.sidebar-guest button').forEach(btn => {
-        btn.classList.remove('active');
+      // ✅ Set "Overview" as default section when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        showSection('overview', document.querySelector('.sidebar-guest button'));
       });
-
-      // Highlight the clicked button
-      if (button) {
-        button.classList.add('active');
-      }
-    }
-
-    // ✅ Set "Overview" as default section when page loads
-    document.addEventListener("DOMContentLoaded", () => {
-      showSection('overview', document.querySelector('.sidebar-guest button'));
-    });
-  </script>
+    </script>
 
   <script>
     async function loadItems() {
