@@ -1,112 +1,181 @@
 <?php
 session_start();
-include 'db_connect.php';
+include __DIR__ . '/db_connect.php';
 
-// Ensure form submitted
-if (!isset($_POST['action'])) {
-    die("Invalid request.");
+// Helper function for redirect
+function redirect($url) {
+    header("Location: $url");
+    exit;
 }
 
-$action = $_POST['action'];
+/* ---------------------------
+   GET: fetch_items (JSON)
+   Usage: database/user_auth.php?action=fetch_items
+   --------------------------- */
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
-// ---------- SIGNUP ----------
-if ($action === 'signup') {
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-
-    if ($password !== $confirm_password) {
-        $_SESSION['signup_error'] = "Passwords do not match. Please try again.";
-        header("Location: ../index.php");
+    if ($_GET['action'] === 'fetch_items') {
+        header('Content-Type: application/json');
+        $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image FROM items ORDER BY created_at DESC";
+        $res = $conn->query($sql);
+        $items = [];
+        while ($r = $res->fetch_assoc()) $items[] = $r;
+        echo json_encode($items);
+        $conn->close();
         exit;
     }
 
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username=? OR email=?");
+    if ($_GET['action'] === 'get_receipt_no') {
+        // Generate next reservation receipt number
+        $result = $conn->query("SELECT MAX(id) AS max_id FROM bookings WHERE type='reservation'");
+        $row = $result->fetch_assoc();
+        $nextId = ($row['max_id'] ?? 0) + 1;
+        $receipt_no = str_pad($nextId, 4, "0", STR_PAD_LEFT);
+        header('Content-Type: application/json');
+        echo json_encode(['receipt_no' => $receipt_no]);
+        $conn->close();
+        exit;
+    }
+}
+
+/* ---------------------------
+   POST actions
+   --------------------------- */
+$action = $_POST['action'] ?? '';
+
+/* ---------------------------
+   SIGNUP
+   --------------------------- */
+if ($action === 'signup') {
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm = $_POST['confirm_password'] ?? '';
+
+    if ($username === '' || $email === '' || $password === '') {
+        $_SESSION['signup_error'] = "Please fill required fields.";
+        redirect('../index.php');
+    }
+    if ($password !== $confirm) {
+        $_SESSION['signup_error'] = "Passwords do not match.";
+        redirect('../index.php');
+    }
+
+    $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1");
     $stmt->bind_param("ss", $username, $email);
     $stmt->execute();
     $stmt->store_result();
-
     if ($stmt->num_rows > 0) {
-        $_SESSION['signup_error'] = "Username or email already registered.";
+        $_SESSION['signup_error'] = "Username or email already exists.";
         $stmt->close();
-        $conn->close();
-        header("Location: ../index.php");
-        exit;
+        redirect('../index.php');
     }
     $stmt->close();
 
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    $hashed = password_hash($password, PASSWORD_DEFAULT);
     $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $username, $email, $hashed_password);
+    $stmt->bind_param("sss", $username, $email, $hashed);
 
     if ($stmt->execute()) {
-        $_SESSION['signup_success'] = "Signup successful! You can now login.";
+        $newUserId = $stmt->insert_id;
+        $_SESSION['user_id'] = $newUserId;
+        $_SESSION['username'] = $username;
+        $_SESSION['is_admin'] = false;
+        $_SESSION['signup_success'] = "Signup successful. You are now logged in.";
+        redirect('../Guest.php');
     } else {
-        $_SESSION['signup_error'] = "Error creating account. Please try again.";
+        $_SESSION['signup_error'] = "Error creating account.";
+        redirect('../index.php');
     }
-
-    $stmt->close();
-    $conn->close();
-    header("Location: ../index.php");
-    exit;
 }
 
-// ---------- LOGIN ----------
-elseif ($action === 'login') {
-    $username = trim($_POST['username']);
-    $password = $_POST['password'];
+/* ---------------------------
+   LOGIN
+   --------------------------- */
+if ($action === 'login') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username=?");
+    if ($username === '' || $password === '') {
+        $_SESSION['login_error'] = "Fill both username and password.";
+        redirect('../index.php');
+    }
+
+    // Try users table
+    $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = ? LIMIT 1");
     $stmt->bind_param("s", $username);
     $stmt->execute();
-    $stmt->store_result();
-    $stmt->bind_result($id, $user, $hashed_password);
+    $res = $stmt->get_result();
+    $user = $res->fetch_assoc();
+    $stmt->close();
 
-    if ($stmt->num_rows === 1) {
-        $stmt->fetch();
-        if (password_verify($password, $hashed_password)) {
-            $_SESSION['user_id'] = $id;
-            $_SESSION['username'] = $user;
+    if ($user && password_verify($password, $user['password'])) {
+        $_SESSION['user_id'] = (int)$user['id'];
+        $_SESSION['username'] = $user['username'];
 
-            $stmt->close();
-            $conn->close();
+        // Check admins table
+        $stmt = $conn->prepare("SELECT id FROM admins WHERE username = ? LIMIT 1");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $stmt->store_result();
+        $_SESSION['is_admin'] = ($stmt->num_rows > 0);
+        $stmt->close();
 
-            // ✅ If admin logs in, go to dashboard
-            if ($user === 'admin') {
-                header("Location: ../dashboard.php");
-            } else {
-                header("Location: ../Guest.php");
-            }
-            exit;
-        } else {
-            $_SESSION['login_error'] = "Incorrect password. Please try again.";
-        }
-    } else {
-        $_SESSION['login_error'] = "Invalid username. Please try again.";
+        if ($_SESSION['is_admin']) redirect('../dashboard.php');
+        redirect('../Guest.php');
     }
 
+    // Fallback: admins table only
+    $stmt = $conn->prepare("SELECT id, username, password FROM admins WHERE username = ? LIMIT 1");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $admin = $res->fetch_assoc();
     $stmt->close();
-    $conn->close();
-    header("Location: ../index.php");
-    exit;
+
+    $_SESSION['login_error'] = "Invalid username or password.";
+    redirect('../index.php');
 }
 
-// ---------- UPDATE PROFILE (User Self) ----------
-elseif ($action === 'update_profile') {
-    if (!isset($_SESSION['user_id'])) {
-        die("You must be logged in to update your profile.");
+/* ---------------------------
+   LOGOUT
+   --------------------------- */
+if ($action === 'logout') {
+    session_unset();
+    session_destroy();
+    redirect('../index.php');
+}
+
+/* ---------------------------
+   UPDATE PROFILE
+   --------------------------- */
+if ($action === 'update_profile') {
+    if (!isset($_SESSION['user_id'])) die("You must be logged in.");
+    $user_id = (int)$_SESSION['user_id'];
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if ($username === '' || $email === '') {
+        $_SESSION['profile_error'] = "Username and email cannot be empty.";
+        redirect('../Guest.php');
     }
 
-    $user_id = $_SESSION['user_id'];
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
+    $stmt = $conn->prepare("SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ? LIMIT 1");
+    $stmt->bind_param("ssi", $username, $email, $user_id);
+    $stmt->execute();
+    $stmt->store_result();
+    if ($stmt->num_rows > 0) {
+        $_SESSION['profile_error'] = "Username or email already used by another account.";
+        $stmt->close();
+        redirect('../Guest.php');
+    }
+    $stmt->close();
 
     if (!empty($password)) {
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $hashed = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("UPDATE users SET username=?, email=?, password=? WHERE id=?");
-        $stmt->bind_param("sssi", $username, $email, $hashed_password, $user_id);
+        $stmt->bind_param("sssi", $username, $email, $hashed, $user_id);
     } else {
         $stmt = $conn->prepare("UPDATE users SET username=?, email=? WHERE id=?");
         $stmt->bind_param("ssi", $username, $email, $user_id);
@@ -114,71 +183,159 @@ elseif ($action === 'update_profile') {
 
     if ($stmt->execute()) {
         $_SESSION['username'] = $username;
-        header("Location: ../Guest.php?updated=1");
+        $_SESSION['profile_success'] = "Profile updated.";
     } else {
-        $_SESSION['profile_error'] = "Error updating profile. Please try again.";
-        header("Location: ../Guest.php");
+        $_SESSION['profile_error'] = "Error updating profile.";
     }
-
     $stmt->close();
-    $conn->close();
-    exit;
+    redirect('../Guest.php');
 }
 
-// ---------- ADMIN: EDIT USER ----------
-elseif ($action === 'edit_user') {
-    if (!isset($_SESSION['user_id']) || $_SESSION['username'] !== 'admin') {
-        die("Access denied.");
-    }
+/* ---------------------------
+   CREATE BOOKING
+   --------------------------- */
+if ($action === 'create_booking') {
+    if (!isset($_SESSION['user_id'])) die("You must be logged in to book.");
+    $user_id = (int)$_SESSION['user_id'];
+    $type = $_POST['booking_type'] ?? '';
+    $status = "pending";
 
-    $user_id = intval($_POST['id']);
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
+    if ($type === 'reservation') {
+        // Generate receipt no
+        $result = $conn->query("SELECT MAX(id) AS max_id FROM bookings WHERE type='reservation'");
+        $row = $result->fetch_assoc();
+        $receipt_no = str_pad((($row['max_id'] ?? 0) + 1), 4, "0", STR_PAD_LEFT);
 
-    $stmt = $conn->prepare("UPDATE users SET username=?, email=? WHERE id=?");
-    $stmt->bind_param("ssi", $username, $email, $user_id);
+        $guest_name = $conn->real_escape_string($_POST['guest_name'] ?? '');
+        $contact = $conn->real_escape_string($_POST['contact_number'] ?? '');
+        $email = $conn->real_escape_string($_POST['email'] ?? '');
+        $checkin = $_POST['checkin'] ?? null;
+        $checkout = $_POST['checkout'] ?? null;
+        $occupants = (int)($_POST['occupants'] ?? 1);
+        $company = $conn->real_escape_string($_POST['company'] ?? '');
 
-    if ($stmt->execute()) {
-        header("Location: ../dashboard.php?updated=1");
+        $details = "Receipt: $receipt_no | Guest: $guest_name | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company";
+
+        $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssss", $user_id, $type, $details, $status, $checkin, $checkout);
+        $_SESSION['booking_msg'] = $stmt->execute() ? "Reservation saved." : "Error: " . $stmt->error;
+        $stmt->close();
+    } elseif ($type === 'pencil') {
+        $pencil_date = $_POST['pencil_date'] ?? null;
+        $event = $conn->real_escape_string($_POST['event_type'] ?? '');
+        $hall = $conn->real_escape_string($_POST['hall'] ?? '');
+        $pax = (int)($_POST['pax'] ?? 1);
+        $time_from = $_POST['time_from'] ?? '';
+        $time_to = $_POST['time_to'] ?? '';
+        $caterer = $conn->real_escape_string($_POST['caterer'] ?? '');
+        $contact_person = $conn->real_escape_string($_POST['contact_person'] ?? '');
+        $contact_number = $conn->real_escape_string($_POST['contact_number'] ?? '');
+        $company = $conn->real_escape_string($_POST['company'] ?? '');
+
+        $details = "Pencil Booking | Date: $pencil_date | Event: $event | Hall: $hall | Pax: $pax | Time: $time_from-$time_to | Caterer: $caterer | Contact: $contact_person ($contact_number) | Company: $company";
+
+        $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, details, status, checkin) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("issss", $user_id, $type, $details, $status, $pencil_date);
+        $_SESSION['booking_msg'] = $stmt->execute() ? "Pencil booking saved." : "Error: " . $stmt->error;
+        $stmt->close();
     } else {
-        header("Location: ../dashboard.php?error=1");
+        $_SESSION['booking_msg'] = "Unknown booking type.";
     }
 
+    redirect('../Guest.php');
+}
+
+/* ---------------------------
+   SUBMIT FEEDBACK
+   --------------------------- */
+if ($action === 'submit_feedback') {
+    if (!isset($_SESSION['user_id'])) die("You must be logged in to submit feedback.");
+    $user_id = (int)$_SESSION['user_id'];
+    $message = trim($_POST['message'] ?? '');
+    if ($message === '') {
+        $_SESSION['feedback_error'] = "Feedback cannot be empty.";
+        redirect('../Guest.php#feedback');
+    }
+    $stmt = $conn->prepare("INSERT INTO feedback (user_id, message) VALUES (?, ?)");
+    $stmt->bind_param("is", $user_id, $message);
+    $_SESSION['feedback_success'] = $stmt->execute() ? "Feedback submitted. Thank you." : "Error: " . $stmt->error;
     $stmt->close();
-    $conn->close();
-    exit;
+    redirect('../Guest.php#feedback');
 }
 
-// ---------- ADMIN: DELETE USER ----------
-elseif ($action === 'delete_user') {
-    if (!isset($_SESSION['user_id']) || $_SESSION['username'] !== 'admin') {
-        die("Access denied.");
+/* ---------------------------
+   ADMIN: update booking
+   --------------------------- */
+if ($action === 'admin_update_booking') {
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        die("Access denied. Admin login required.");
     }
 
-    $user_id = intval($_POST['id']);
+    $bookingId = (int)($_POST['booking_id'] ?? 0);
+    $adminAction = $_POST['admin_action'] ?? '';
 
-    // prevent admin from deleting themselves
-    if ($user_id == $_SESSION['user_id']) {
-        die("You cannot delete your own admin account.");
+    $statusMap = [
+        "approve" => "confirmed",
+        "reject"  => "rejected",
+        "checkin" => "checked_in",
+        "checkout"=> "checked_out",
+        "cancel"  => "cancelled"
+    ];
+
+    if (!array_key_exists($adminAction, $statusMap)) {
+        $_SESSION['msg'] = "Unknown admin action.";
+        redirect('../dashboard.php');
     }
 
-    $stmt = $conn->prepare("DELETE FROM users WHERE id=?");
-    $stmt->bind_param("i", $user_id);
-
-    if ($stmt->execute()) {
-        header("Location: ../dashboard.php?deleted=1");
-    } else {
-        header("Location: ../dashboard.php?error=1");
-    }
-
+    $stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+    $newStatus = $statusMap[$adminAction];
+    $stmt->bind_param("si", $newStatus, $bookingId);
+    $_SESSION['msg'] = $stmt->execute() ? "Booking #$bookingId updated." : "Error updating booking.";
     $stmt->close();
-    $conn->close();
-    exit;
+    redirect('../dashboard.php');
 }
 
-// ---------- INVALID ACTION ----------
-else {
-    $conn->close();
-    die("Invalid action.");
+/* ---------------------------
+   ADMIN: delete booking
+   --------------------------- */
+if ($action === 'admin_delete_booking') {
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        die("Access denied. Admin login required.");
+    }
+
+    $bookingId = (int)($_POST['booking_id'] ?? 0);
+    $stmt = $conn->prepare("DELETE FROM bookings WHERE id = ?");
+    $stmt->bind_param("i", $bookingId);
+    $stmt->execute();
+    $stmt->close();
+    $_SESSION['msg'] = "Booking deleted.";
+    redirect('../dashboard.php');
 }
+
+/* ---------------------------
+   ADMIN: delete user
+   --------------------------- */
+if ($action === 'admin_delete_user') {
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        die("Access denied. Admin login required.");
+    }
+
+    $userId = (int)($_POST['user_id'] ?? 0);
+
+    if (isset($_SESSION['admin_id']) && $userId === (int)$_SESSION['admin_id']) {
+        $_SESSION['msg'] = "You cannot delete your own account.";
+        redirect('../dashboard.php');
+    }
+
+    $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $stmt->close();
+    $_SESSION['msg'] = "User deleted.";
+    redirect('../dashboard.php');
+}
+
+
+$conn->close();
+die("Invalid request.");
 ?>

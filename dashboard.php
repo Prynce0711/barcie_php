@@ -1,32 +1,30 @@
 <?php
-// Dashboard page (Admin Panel)
+// dashboard.php
 session_start();
+require __DIR__ . '/database/db_connect.php';
 
-// TODO: Add authentication check
-// if (!isset($_SESSION['admin_logged_in'])) {
-//     header("Location: login.php");
-//     exit;
-// }
-
-
-include __DIR__ . '/database/db_connect.php';
+// ✅ Auth check: only admins can access
+if (!isset($_SESSION['admin_id'])) {
+  header("Location: admin_login.php");
+  exit;
+}
 
 
-// Handle Add/Update/Delete
+// ------------------ HANDLE ITEM ADD/UPDATE/DELETE ------------------
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   if (isset($_POST['action'])) {
     $action = $_POST['action'];
 
-    // DELETE
+    // DELETE ITEM
     if ($action === "delete" && isset($_POST['id'])) {
       $id = intval($_POST['id']);
-      // Delete image if exists
       $stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
       $stmt->bind_param("i", $id);
       $stmt->execute();
       $stmt->bind_result($img);
       $stmt->fetch();
       $stmt->close();
+
       if ($img && file_exists($img))
         unlink($img);
 
@@ -38,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       exit;
     }
 
-    // UPDATE
+    // UPDATE ITEM
     if ($action === "update" && isset($_POST['id'])) {
       $id = intval($_POST['id']);
       $name = $_POST['name'];
@@ -56,7 +54,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $target_file = $target_dir . time() . "_" . basename($_FILES["image"]["name"]);
         if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
           $image_path = $target_file;
-          // Delete old image
           if (!empty($_POST['old_image']) && file_exists($_POST['old_image']))
             unlink($_POST['old_image']);
         }
@@ -71,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
   }
 
-  // ADD NEW
+  // ADD ITEM
   if (isset($_POST['add_item'])) {
     $name = $_POST['name'];
     $type = $_POST['item_type'];
@@ -99,7 +96,41 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     exit;
   }
 }
+
+// ------------------ DASHBOARD DATA ------------------
+// Total Rooms
+$total_rooms = 20;
+
+// Active Bookings
+$active_bookings = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='approved'")->fetch_assoc()['count'];
+
+// Pending Approvals
+$pending_approvals = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='pending'")->fetch_assoc()['count'];
+
+// Recent Activities
+$recent_activity_result = $conn->query("SELECT b.type, b.details, b.created_at, u.username 
+    FROM bookings b 
+    JOIN users u ON b.user_id = u.id 
+    ORDER BY b.created_at DESC LIMIT 5");
+$recent_activities = [];
+while ($row = $recent_activity_result->fetch_assoc()) {
+  $recent_activities[] = $row;
+}
+
+// Calendar Events
+$events = [];
+$result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
+while ($row = $result->fetch_assoc()) {
+  $events[] = [
+    'id' => $row['id'],
+    'title' => "Room " . $row['details'] . " (" . $row['type'] . ")",
+    'start' => $row['checkin'],
+    'end' => $row['checkout'],
+    'status' => $row['status']
+  ];
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -193,27 +224,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
           <!-- Recent Activity Card -->
           <div class="dashboard-card activity-card">
-  <h3 class="card-title"><i class="fa-solid fa-clock"></i> Recent Activity</h3>
-  
-  <table class="activity-table">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Details</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach ($recent_activities as $activity): ?>
-        <tr>
-          <td><?php echo htmlspecialchars($activity['type']); ?></td>
-          <td><?php echo htmlspecialchars($activity['details']); ?></td>
-          <td><?php echo date('M d, Y', strtotime($activity['created_at'])); ?></td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
-</div>
+            <h3 class="card-title"><i class="fa-solid fa-clock"></i> Recent Activity</h3>
+
+            <table class="activity-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Details</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($recent_activities as $activity): ?>
+                  <tr>
+                    <td><?php echo htmlspecialchars($activity['type']); ?></td>
+                    <td><?php echo htmlspecialchars($activity['details']); ?></td>
+                    <td><?php echo date('M d, Y', strtotime($activity['created_at'])); ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -328,8 +359,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       <label><input type="radio" name="bookingType" value="pencil" onchange="toggleBookingForm()"> Pencil Booking
         (Function Hall)</label>
 
-      <!-- Reservation Form -->
-      <form id="reservationForm" method="POST" action="database/save_booking.php">
+      <form id="reservationForm" method="POST" action="database/user_auth.php">
+        <input type="hidden" name="action" value="create_booking">
+        <input type="hidden" name="booking_type" value="reservation">
+
+
+
         <h3>Reservation Form</h3>
         <label>Official Receipt No.: <input type="text" name="receipt_no" readonly></label>
         <label>Guest Name: <input type="text" name="guest_name" required></label>
@@ -345,7 +380,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       </form>
 
       <!-- Pencil Booking Form -->
-      <form id="pencilForm" method="POST" action="database/save_booking.php" style="display:none;">
+      <form id="pencilForm" method="POST" action="database/user_auth.php" style="display:none;">
+        <input type="hidden" name="action" value="create_booking">
+        <input type="hidden" name="booking_type" value="pencil">
+
         <h3>Pencil Booking Form (Function Hall)</h3>
         <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>"
             readonly></label>
@@ -377,29 +415,36 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </tr>
 
         <?php
-        include __DIR__ . '/database/db_connect.php';
+include __DIR__ . '/database/db_connect.php';
 
-        $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
-        while ($row = $result->fetch_assoc()) {
-          echo "<tr>
-                <td>{$row['id']}</td>
-                <td>{$row['type']}</td>
-                <td>{$row['details']}</td>
-                <td>{$row['created_at']}</td>
-                <td>{$row['status']}</td>
-                <td>
-                    <form method='POST' action='database/save_booking.php' style='display:inline;'>
-                        <input type='hidden' name='booking_id' value='{$row['id']}'>
-                        <button type='submit' name='action' value='approve' class='approve'>Approve</button>
-                    </form>
-                    <form method='POST' action='database/save_booking.php' style='display:inline;'>
-                        <input type='hidden' name='booking_id' value='{$row['id']}'>
-                        <button type='submit' name='action' value='reject' class='reject'>Reject</button>
-                    </form>
-                </td>
-              </tr>";
-        }
-        ?>
+$result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
+while ($row = $result->fetch_assoc()) {
+    $status = $row['status'];
+    echo "<tr>
+        <td>{$row['id']}</td>
+        <td>{$row['type']}</td>
+        <td>{$row['details']}</td>
+        <td>{$row['created_at']}</td>
+        <td>{$status}</td>
+        <td>
+            <form method='POST' action='database/user_auth.php' style='display:inline;'>
+                <input type='hidden' name='booking_id' value='{$row['id']}'>
+                <input type='hidden' name='action' value='admin_update_booking'>
+                <input type='hidden' name='admin_action' value='approve'>
+                <button type='submit' class='approve' ".(in_array($status, ['confirmed', 'rejected', 'checked_in', 'checked_out', 'cancelled']) ? 'disabled' : '').">Approve</button>
+            </form>
+
+            <form method='POST' action='database/user_auth.php' style='display:inline;'>
+                <input type='hidden' name='booking_id' value='{$row['id']}'>
+                <input type='hidden' name='action' value='admin_update_booking'>
+                <input type='hidden' name='admin_action' value='reject'>
+                <button type='submit' class='reject' ".($status === 'rejected' ? 'disabled' : '').">Reject</button>
+            </form>
+        </td>
+    </tr>";
+}
+?>
+
       </table>
     </section>
 
@@ -659,48 +704,48 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
 
     <!-- ✅ Script for toggling edit form -->
     <script>
-document.addEventListener("DOMContentLoaded", () => {
-  /* ---------------- Booking Type Toggle ---------------- */
-  function toggleBookingForm() {
-    const selectedType = document.querySelector('input[name="bookingType"]:checked').value;
-    const reservationForm = document.getElementById("reservationForm");
-    const pencilForm = document.getElementById("pencilForm");
+      document.addEventListener("DOMContentLoaded", () => {
+        /* ---------------- Booking Type Toggle ---------------- */
+        function toggleBookingForm() {
+          const selectedType = document.querySelector('input[name="bookingType"]:checked').value;
+          const reservationForm = document.getElementById("reservationForm");
+          const pencilForm = document.getElementById("pencilForm");
 
-    if (selectedType === "reservation") {
-      reservationForm.style.display = "block";
-      pencilForm.style.display = "none";
-    } else {
-      reservationForm.style.display = "none";
-      pencilForm.style.display = "block";
-    }
-  }
+          if (selectedType === "reservation") {
+            reservationForm.style.display = "block";
+            pencilForm.style.display = "none";
+          } else {
+            reservationForm.style.display = "none";
+            pencilForm.style.display = "block";
+          }
+        }
 
-  // Init booking form display
-  toggleBookingForm();
+        // Init booking form display
+        toggleBookingForm();
 
-  // Attach listeners
-  document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
-    radio.addEventListener("change", toggleBookingForm);
-  });
+        // Attach listeners
+        document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
+          radio.addEventListener("change", toggleBookingForm);
+        });
 
 
-  /* ---------------- Item Filter Toggle ---------------- */
-  function filterItems() {
-    const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
-    document.querySelectorAll(".card").forEach(card => {
-      card.style.display = (card.dataset.type === selectedType) ? "block" : "none";
-    });
-  }
+        /* ---------------- Item Filter Toggle ---------------- */
+        function filterItems() {
+          const selectedType = document.querySelector('input[name="type_filter"]:checked').value;
+          document.querySelectorAll(".card").forEach(card => {
+            card.style.display = (card.dataset.type === selectedType) ? "block" : "none";
+          });
+        }
 
-  // Init filtering
-  filterItems();
+        // Init filtering
+        filterItems();
 
-  // Attach listeners
-  document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
-    radio.addEventListener("change", filterItems);
-  });
-});
-</script>
+        // Attach listeners
+        document.querySelectorAll('input[name="type_filter"]').forEach(radio => {
+          radio.addEventListener("change", filterItems);
+        });
+      });
+    </script>
 
 
     <script src="/socket.io/socket.io.js"></script>
