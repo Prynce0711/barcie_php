@@ -207,12 +207,30 @@ header p { margin-top: 8px; color: #3a4a63; font-style: italic; }
 }
 
 /* Activity card fills right column */
-.activity-card {
-  grid-column: 2;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 0.95rem;
 }
+
+.activity-table th, 
+.activity-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.activity-table th {
+  background: #f5f7fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.activity-table tr:hover {
+  background: #f0f8ff;
+}
+
 
 /* Responsive: stack layout, remove divider & padding */
 @media (max-width: 992px) {

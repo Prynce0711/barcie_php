@@ -216,28 +216,29 @@ $conn->close();
       </form>
       <h3>Your Bookings</h3>
       <ul>
-        <tr>
-          <th>ID</th>
-          <th>Type</th>
-          <th>Details</th>
-          <th>Date</th>
-          <th>Status</th>
-        </tr>
+        <table border="1">
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Details</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
 
-        <?php
-        include __DIR__ . '/database/db_connect.php';
+          <?php
+          include __DIR__ . '/database/db_connect.php';
 
-        $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
-        while ($row = $result->fetch_assoc()) {
-          echo "<tr>
+          $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
+          while ($row = $result->fetch_assoc()) {
+            echo "<tr>
                 <td>{$row['id']}</td>
                 <td>{$row['type']}</td>
                 <td>{$row['details']}</td>
                 <td>{$row['created_at']}</td>
                 <td>{$row['status']}</td>
               </tr>";
-        }
-        ?>
+          }
+          ?>
         </table>
 
 
@@ -321,34 +322,34 @@ $conn->close();
 
 
 
-    <script>function showSection(sectionId, button) {
-        // Hide all sections
-        document.querySelectorAll('.content-section').forEach(sec => {
-          sec.classList.remove('active');
-        });
+  <script>function showSection(sectionId, button) {
+      // Hide all sections
+      document.querySelectorAll('.content-section').forEach(sec => {
+        sec.classList.remove('active');
+      });
 
-        // Show the clicked section
-        const section = document.getElementById(sectionId);
-        if (section) {
-          section.classList.add('active');
-        }
-
-        // Remove active class from all sidebar buttons
-        document.querySelectorAll('.sidebar-guest button').forEach(btn => {
-          btn.classList.remove('active');
-        });
-
-        // Highlight the clicked button
-        if (button) {
-          button.classList.add('active');
-        }
+      // Show the clicked section
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.classList.add('active');
       }
 
-      // ✅ Set "Overview" as default section when page loads
-      document.addEventListener("DOMContentLoaded", () => {
-        showSection('overview', document.querySelector('.sidebar-guest button'));
+      // Remove active class from all sidebar buttons
+      document.querySelectorAll('.sidebar-guest button').forEach(btn => {
+        btn.classList.remove('active');
       });
-    </script>
+
+      // Highlight the clicked button
+      if (button) {
+        button.classList.add('active');
+      }
+    }
+
+    // ✅ Set "Overview" as default section when page loads
+    document.addEventListener("DOMContentLoaded", () => {
+      showSection('overview', document.querySelector('.sidebar-guest button'));
+    });
+  </script>
 
   <script>
     async function loadItems() {
