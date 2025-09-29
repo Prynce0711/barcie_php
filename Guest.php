@@ -95,6 +95,9 @@ $stmt->close();
       </div>
     </section>
 
+
+
+
     <!-- Rooms & Facilities -->
     <section id="rooms" class="content-section active">
       <h2>Rooms & Facilities</h2>
@@ -106,6 +109,13 @@ $stmt->close();
 
       <div class="cards-grid" id="cards-grid"></div>
     </section>
+
+
+
+
+
+
+
 
      <!-- Booking -->
     <section id="booking" class="content-section">
@@ -300,7 +310,7 @@ $stmt->close();
           <h3>${item.name}</h3>
           ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
           <p>Capacity: ${item.capacity} ${item.item_type === 'room' ? 'persons' : 'people'}</p>
-          <p>Price: $${item.price}${item.item_type === 'room' ? '/night' : '/day'}</p>
+          <p>Price: P${item.price}${item.item_type === 'room' ? '/night' : '/day'}</p>
           <p>${item.description}</p>
         `;
         container.appendChild(card);

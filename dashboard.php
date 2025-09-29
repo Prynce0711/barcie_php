@@ -284,7 +284,7 @@ while ($row = $result->fetch_assoc()) {
         <label>Room Number (optional):</label><input type="text" name="room_number">
         <label>Description:</label><textarea name="description"></textarea>
         <label>Capacity:</label><input type="number" name="capacity" required>
-        <label>Price:</label><input type="number" step="0.01" name="price" required>
+        <label>Price:</label><input type="number" step="1" name="price" required>
         <label>Image (optional):</label><input type="file" name="image" accept="image/*">
         <button type="submit">Add Item</button>
       </form>
@@ -308,7 +308,7 @@ while ($row = $result->fetch_assoc()) {
             <h3><?= $item['name'] ?></h3>
             <?= $item['room_number'] ? "<p>Room Number: " . $item['room_number'] . "</p>" : "" ?>
             <p>Capacity: <?= $item['capacity'] ?>   <?= $item['item_type'] === 'room' ? 'persons' : 'people' ?></p>
-            <p>Price: $<?= $item['price'] ?><?= $item['item_type'] === 'room' ? '/night' : '/day' ?></p>
+            <p>Price: P<?= $item['price'] ?><?= $item['item_type'] === 'room' ? '/night' : '/day' ?></p>
             <p><?= $item['description'] ?></p>
 
             <!-- ✅ Edit Toggle Button -->
@@ -330,7 +330,7 @@ while ($row = $result->fetch_assoc()) {
               <label>Room Number: <input type="text" name="room_number" value="<?= $item['room_number'] ?>"></label>
               <label>Description: <textarea name="description"><?= $item['description'] ?></textarea></label>
               <label>Capacity: <input type="number" name="capacity" value="<?= $item['capacity'] ?>" required></label>
-              <label>Price: <input type="number" step="0.01" name="price" value="<?= $item['price'] ?>" required></label>
+              <label>Price: <input type="number" step="1" name="price" value="<?= $item['price'] ?>" required></label>
               <label>Change Image: <input type="file" name="image"></label>
               <button type="submit">Update</button>
             </form>
