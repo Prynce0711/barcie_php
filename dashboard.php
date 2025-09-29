@@ -431,7 +431,7 @@ while ($row = $result->fetch_assoc()) {
                 <input type='hidden' name='booking_id' value='{$row['id']}'>
                 <input type='hidden' name='action' value='admin_update_booking'>
                 <input type='hidden' name='admin_action' value='approve'>
-                <button type='submit' class='approve' ".($status === 'confirmed' ? 'disabled' : '').">Approve</button>
+                <button type='submit' class='approve' ".(in_array($status, ['confirmed', 'rejected', 'checked_in', 'checked_out', 'cancelled']) ? 'disabled' : '').">Approve</button>
             </form>
 
             <form method='POST' action='database/user_auth.php' style='display:inline;'>
