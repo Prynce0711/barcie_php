@@ -28,8 +28,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // ✅ If passwords are stored as plain text (not recommended)
         if ($password === $storedPassword) {
             // Set session variables and redirect to the dashboard
+
+            $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_id'] = $id;
             $_SESSION['admin_username'] = $username;
+
+
             header("Location: ../dashboard.php");
             exit;
         } else {

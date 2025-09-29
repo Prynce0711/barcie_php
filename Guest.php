@@ -1,50 +1,30 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-  header("Location: index.php"); // change this to your login page
+  header("Location: index.php");
   exit;
 }
 
-?>
-
-
-<?php
 include __DIR__ . '/database/db_connect.php';
+$user_id = $_SESSION['user_id'];
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['message'])) {
-  $message = $conn->real_escape_string($_POST['message']);
+$success = $error = "";
 
-  $sql = "INSERT INTO feedback (message) VALUES ('$message')";
-  if ($conn->query($sql)) {
-    echo "<script>
-                if (confirm('Feedback submitted successfully! Click OK to go to Home page, Cancel to stay.')) {
-                    window.location.href = 'index.php'; // change to your home page
-                } else {
-                    window.location.href = window.location.pathname + '#feedback';
-                }
-              </script>";
-    exit;
+// ✅ Handle Feedback Submission
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === "feedback") {
+  $message = trim($_POST['message']);
+  if (!empty($message)) {
+    $stmt = $conn->prepare("INSERT INTO feedback (user_id, message) VALUES (?, ?)");
+    $stmt->bind_param("is", $user_id, $message);
+    if ($stmt->execute()) {
+      $success = "Feedback submitted successfully!";
+    } else {
+      $error = "Error: " . $stmt->error;
+    }
   } else {
-    echo "<script>
-                if (confirm('Error: " . addslashes($conn->error) . " Click OK to go back, Cancel to stay.')) {
-                    window.location.href = window.location.pathname + '#feedback';
-                }
-              </script>";
-    exit;
+    $error = "Feedback cannot be empty.";
   }
 }
-?>
-
-<?php
-
-include 'database/db_connect.php';
-
-// ✅ Ensure user is logged in
-if (!isset($_SESSION['user_id'])) {
-  die("You must be logged in to view this page.");
-}
-
-$user_id = $_SESSION['user_id'];
 
 // ✅ Fetch current user details
 $stmt = $conn->prepare("SELECT username, email FROM users WHERE id=?");
@@ -53,10 +33,7 @@ $stmt->execute();
 $stmt->bind_result($username, $email);
 $stmt->fetch();
 $stmt->close();
-$conn->close();
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -68,7 +45,6 @@ $conn->close();
 </head>
 
 <body>
-
 
   <!-- Sidebar -->
   <aside class="sidebar-guest">
@@ -131,10 +107,7 @@ $conn->close();
       <div class="cards-grid" id="cards-grid"></div>
     </section>
 
-
-
-
-    <!-- Booking -->
+     <!-- Booking -->
     <section id="booking" class="content-section">
       <h2>Booking & Reservation</h2>
 
@@ -144,44 +117,47 @@ $conn->close();
       <label><input type="radio" name="bookingType" value="pencil" onchange="toggleBookingForm()"> Pencil Booking
         (Function Hall)</label>
 
-      <!-- Reservation Form -->
-      <form id="reservationForm" method="POST" action="database/save_booking.php">
-        <h3>Reservation Form</h3>
-        <label>Official Receipt No.: <input type="text" name="receipt_no" readonly></label>
-        <label>Guest Name: <input type="text" name="guest_name" required></label>
-        <label>Contact Number: <input type="text" name="contact_number" required></label>
-        <label>Email Address: <input type="email" name="email" required></label>
-        <label>Check-in Date & Time: <input type="datetime-local" name="checkin" required></label>
-        <label>Check-out Date & Time: <input type="datetime-local" name="checkout" required></label>
-        <label>Number of Occupants: <input type="number" name="occupants" min="1" required></label>
-        <label>Company Affiliation (optional): <input type="text" name="company"></label>
-        <label>Company Contact Number (optional): <input type="text" name="company_contact"></label>
-        <input type="hidden" name="type" value="reservation">
-        <button type="submit">Confirm Reservation</button>
-      </form>
+      <<!-- Reservation Form -->
+<form id="reservationForm" method="POST" action="database/user_auth.php">
+  <h3>Reservation Form</h3>
+  <input type="hidden" name="action" value="create_booking">
+  <input type="hidden" name="booking_type" value="reservation">
 
-      <!-- Pencil Booking Form -->
-      <form id="pencilForm" method="POST" action="database/save_booking.php" style="display:none;">
-        <h3>Pencil Booking Form (Function Hall)</h3>
-        <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>"
-            readonly></label>
-        <label>Event Type: <input type="text" name="event_type" required></label>
-        <label>Function Hall: <input type="text" name="hall" required></label>
-        <label>Number of Pax: <input type="number" name="pax" min="1" required></label>
-        <label>Time of Event (From): <input type="time" name="time_from" required></label>
-        <label>Time of Event (To): <input type="time" name="time_to" required></label>
-        <label>Food Provider/Caterer: <input type="text" name="caterer" required></label>
-        <label>Contact Person: <input type="text" name="contact_person" required></label>
-        <label>Contact Number: <input type="text" name="contact_number" required></label>
-        <label>Company Affiliation (optional): <input type="text" name="company"></label>
-        <label>Company Number (optional): <input type="text" name="company_number"></label>
-        <input type="hidden" name="type" value="pencil">
-        <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
-      </form>
+  <label>Official Receipt No.: 
+    <input type="text" name="receipt_no" id="receipt_no" readonly>
+  </label>
+  <label>Guest Name: <input type="text" name="guest_name" required></label>
+  <label>Contact Number: <input type="text" name="contact_number" required></label>
+  <label>Email Address: <input type="email" name="email" required></label>
+  <label>Check-in Date & Time: <input type="datetime-local" name="checkin" required></label>
+  <label>Check-out Date & Time: <input type="datetime-local" name="checkout" required></label>
+  <label>Number of Occupants: <input type="number" name="occupants" min="1" required></label>
+  <label>Company Affiliation (optional): <input type="text" name="company"></label>
+  <label>Company Contact Number (optional): <input type="text" name="company_contact"></label>
+  <button type="submit">Confirm Reservation</button>
+</form>
+
+<!-- Pencil Booking Form -->
+<form id="pencilForm" method="POST" action="database/user_auth.php" style="display:none;">
+  <h3>Pencil Booking Form (Function Hall)</h3>
+  <input type="hidden" name="action" value="create_booking">
+  <input type="hidden" name="booking_type" value="pencil">
+
+  <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>" readonly></label>
+  <label>Event Type: <input type="text" name="event_type" required></label>
+  <label>Function Hall: <input type="text" name="hall" required></label>
+  <label>Number of Pax: <input type="number" name="pax" min="1" required></label>
+  <label>Time of Event (From): <input type="time" name="time_from" required></label>
+  <label>Time of Event (To): <input type="time" name="time_to" required></label>
+  <label>Food Provider/Caterer: <input type="text" name="caterer" required></label>
+  <label>Contact Person: <input type="text" name="contact_person" required></label>
+  <label>Contact Number: <input type="text" name="contact_number" required></label>
+  <label>Company Affiliation (optional): <input type="text" name="company"></label>
+  <label>Company Number (optional): <input type="text" name="company_number"></label>
+  <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
+</form>
+
     </section>
-
-
-
 
     <!-- Payments -->
     <section id="payments" class="content-section">
@@ -199,55 +175,44 @@ $conn->close();
     <section id="user" class="content-section">
       <form action="database/user_auth.php" method="POST">
         <input type="hidden" name="action" value="update">
-
         <label>Username:
           <input type="text" name="username" value="<?php echo htmlspecialchars($username); ?>" required>
         </label>
-
         <label>Email:
           <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
         </label>
-
         <label>New Password (leave blank if unchanged):
           <input type="password" name="password">
         </label>
-
         <button type="submit">Update Profile</button>
       </form>
+
       <h3>Your Bookings</h3>
-      <ul>
-        <table border="1">
-          <tr>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Details</th>
-            <th>Date</th>
-            <th>Status</th>
-          </tr>
-
-          <?php
-          include __DIR__ . '/database/db_connect.php';
-
-          $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
-          while ($row = $result->fetch_assoc()) {
-            echo "<tr>
-                <td>{$row['id']}</td>
-                <td>{$row['type']}</td>
-                <td>{$row['details']}</td>
-                <td>{$row['created_at']}</td>
-                <td>{$row['status']}</td>
-              </tr>";
-          }
-          ?>
-        </table>
-
-
-
-
-      </ul>
+      <table border="1">
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Details</th>
+          <th>Date</th>
+          <th>Status</th>
+        </tr>
+        <?php
+        $stmt = $conn->prepare("SELECT id, type, details, created_at, status FROM bookings WHERE user_id=? ORDER BY id DESC");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+          echo "<tr>
+                  <td>{$row['id']}</td>
+                  <td>{$row['type']}</td>
+                  <td>{$row['details']}</td>
+                  <td>{$row['created_at']}</td>
+                  <td>{$row['status']}</td>
+                </tr>";
+        }
+        ?>
+      </table>
     </section>
-
-
 
     <!-- Reports -->
     <section id="reports" class="content-section">
@@ -261,91 +226,60 @@ $conn->close();
           <th>Date</th>
           <th>Status</th>
         </tr>
-
         <?php
-        include __DIR__ . '/database/db_connect.php';
-
-        $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
+        $stmt = $conn->prepare("SELECT id, type, details, created_at, status FROM bookings WHERE user_id=? ORDER BY id DESC");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
           echo "<tr>
-                <td>{$row['id']}</td>
-                <td>{$row['type']}</td>
-                <td>{$row['details']}</td>
-                <td>{$row['created_at']}</td>
-                <td>{$row['status']}</td>
-              </tr>";
+                  <td>{$row['id']}</td>
+                  <td>{$row['type']}</td>
+                  <td>{$row['details']}</td>
+                  <td>{$row['created_at']}</td>
+                  <td>{$row['status']}</td>
+                </tr>";
         }
         ?>
       </table>
     </section>
 
-
     <!-- Communication -->
     <section id="communication" class="content-section">
       <h2>Communication</h2>
-      <p>Contact us via:</p>
-
-
       <ul>
         <li>Email: guest@example.com ✅</li>
         <li>SMS: +63 912 345 6789 ✅</li>
       </ul>
     </section>
 
-
-
-    <!-- Feedback Section -->
+    <!-- Feedback -->
     <section id="feedback" class="content-section">
       <h2>Feedback</h2>
-
       <?php
-      if (!empty($success)) {
-        echo "<p style='color:green;'>$success</p>";
-      } elseif (!empty($error)) {
-        echo "<p style='color:red;'>$error</p>";
-      }
+      if (!empty($success)) echo "<p style='color:green;'>$success</p>";
+      if (!empty($error)) echo "<p style='color:red;'>$error</p>";
       ?>
-
-      <form method="post" action="">
+      <form method="post">
+        <input type="hidden" name="action" value="feedback">
         <textarea name="message" rows="5" placeholder="Write your feedback..." required></textarea><br><br>
         <button type="submit">Submit Feedback</button>
       </form>
     </section>
-
-
   </main>
-
 
   <footer class="footer">
     <p>© BarCIE International Center 2025</p>
   </footer>
 
-
-
-  <script>function showSection(sectionId, button) {
-      // Hide all sections
-      document.querySelectorAll('.content-section').forEach(sec => {
-        sec.classList.remove('active');
-      });
-
-      // Show the clicked section
+  <script>
+    function showSection(sectionId, button) {
+      document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
       const section = document.getElementById(sectionId);
-      if (section) {
-        section.classList.add('active');
-      }
-
-      // Remove active class from all sidebar buttons
-      document.querySelectorAll('.sidebar-guest button').forEach(btn => {
-        btn.classList.remove('active');
-      });
-
-      // Highlight the clicked button
-      if (button) {
-        button.classList.add('active');
-      }
+      if (section) section.classList.add('active');
+      document.querySelectorAll('.sidebar-guest button').forEach(btn => btn.classList.remove('active'));
+      if (button) button.classList.add('active');
     }
-
-    // ✅ Set "Overview" as default section when page loads
     document.addEventListener("DOMContentLoaded", () => {
       showSection('overview', document.querySelector('.sidebar-guest button'));
     });
@@ -362,37 +296,29 @@ $conn->close();
         card.classList.add('card');
         card.dataset.type = item.item_type;
         card.innerHTML = `
-${item.image ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">` : ''}
-<h3>${item.name}</h3>
-${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
-<p>Capacity: ${item.capacity} ${item.item_type === 'room' ? 'persons' : 'people'}</p>
-<p>Price: $${item.price}${item.item_type === 'room' ? '/night' : '/day'}</p>
-<p>${item.description}</p>
-`;
+          ${item.image ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">` : ''}
+          <h3>${item.name}</h3>
+          ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
+          <p>Capacity: ${item.capacity} ${item.item_type === 'room' ? 'persons' : 'people'}</p>
+          <p>Price: $${item.price}${item.item_type === 'room' ? '/night' : '/day'}</p>
+          <p>${item.description}</p>
+        `;
         container.appendChild(card);
       });
       filterItems();
     }
-
     function filterItems() {
       const selectedType = document.querySelector('input[name="type"]:checked').value;
       document.querySelectorAll('.card').forEach(card => {
         card.style.display = card.dataset.type === selectedType ? 'block' : 'none';
       });
     }
-
     document.querySelectorAll('input[name="type"]').forEach(radio => {
       radio.addEventListener('change', filterItems);
     });
     window.onload = loadItems;
   </script>
 
-
-
   <script src="assets/js/guest.js"></script>
-
 </body>
-
-
-
 </html>
