@@ -95,13 +95,13 @@
       </header>
 
       <section class="flex justify-center items-center h-[calc(100vh-160px)] px-6 relative z-20">
-        <div
-          class="glass-card p-10 text-center max-w-xl space-y-4 transition transform hover:-translate-y-2">
+        <div class="glass-card p-10 text-center max-w-xl space-y-4 transition transform hover:-translate-y-2">
           <h2 class="text-3xl font-bold text-yellow-400">Welcome to Barcie International Center</h2>
           <p>Barasoain Center for Innovative Education (BarCIE)</p>
           <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
           <button onclick="showSection('user-auth')"
-            class="btn mt-4 px-6 py-2 rounded-md font-bold bg-yellow-400 text-black hover:shadow-xl">Get Started</button>
+            class="btn mt-4 px-6 py-2 rounded-md font-bold bg-yellow-400 text-black hover:shadow-xl">Get
+            Started</button>
         </div>
       </section>
     </div>
@@ -113,6 +113,7 @@
       <div class="glass-card p-8 max-w-md shadow-lg space-y-6 w-full relative">
         <button onclick="closeSection('user-auth')"
           class="absolute top-3 right-3 text-white text-xl font-bold hover:text-yellow-400 transition">✕</button>
+
         <div class="text-center space-y-2">
           <span class="block w-16 h-16 bg-yellow-400 rounded-full mx-auto"></span>
           <h2 class="text-xl font-bold">User Portal</h2>
@@ -120,140 +121,292 @@
         </div>
 
         <!-- Login Form -->
-        <form id="user-login-form" action="database/user_auth.php" method="post" class="space-y-4">
+        <form id="user-login-form" class="space-y-4">
           <input type="hidden" name="action" value="login">
           <h3 class="text-lg font-bold">Login</h3>
+          <div id="login-error" class="p-2 bg-red-500/20 text-red-700 rounded-md text-sm hidden"></div>
+
           <div class="flex flex-col">
             <label for="user-login-username" class="mb-1">Username</label>
             <input type="text" id="user-login-username" name="username" placeholder="Enter username" required
               class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
           </div>
-          <div class="flex flex-col">
+
+          <div class="flex flex-col relative">
             <label for="user-login-password" class="mb-1">Password</label>
             <input type="password" id="user-login-password" name="password" placeholder="••••••••" required
               class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <span class="absolute right-2 top-9 cursor-pointer text-white"
+              onclick="togglePassword('user-login-password')">👁️</span>
           </div>
+
           <button type="submit"
             class="btn w-full py-2 bg-yellow-400 text-black font-bold rounded-md hover:shadow-xl">Login</button>
-          <p class="text-center">Don't have an account? <a href="#user-signup-form"
-              class="signup-link text-yellow-400 hover:underline cursor-pointer">Sign Up</a></p>
+
+          <p class="text-center">
+            Don't have an account?
+            <a href="#" class="signup-link text-yellow-400 hover:underline cursor-pointer">Sign Up</a>
+          </p>
         </form>
 
         <hr class="border-white/30">
 
         <!-- Signup Form -->
-        <form id="user-signup-form" action="database/user_auth.php" method="post" class="space-y-4 hidden">
+        <form id="user-signup-form" class="space-y-4 hidden" method="post" action="database/user_auth.php">
           <input type="hidden" name="action" value="signup">
           <h3 class="text-lg font-bold">Sign Up</h3>
+
           <div class="flex flex-col">
             <label for="user-signup-username" class="mb-1">Username</label>
             <input type="text" id="user-signup-username" name="username" placeholder="Enter username" required
               class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
           </div>
+
           <div class="flex flex-col">
             <label for="user-signup-email" class="mb-1">Email</label>
             <input type="email" id="user-signup-email" name="email" placeholder="Enter email" required
               class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <span id="email-msg" class="text-red-400 text-sm mt-1 hidden"></span>
           </div>
-          <div class="flex flex-col">
+
+          <div class="flex flex-col relative">
             <label for="user-signup-password" class="mb-1">Password</label>
             <input type="password" id="user-signup-password" name="password" placeholder="••••••••" required
               class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <span class="absolute right-2 top-9 cursor-pointer text-white"
+              onclick="togglePassword('user-signup-password')">👁️</span>
+            <span id="password-msg" class="text-red-400 text-sm mt-1 hidden"></span>
           </div>
-          <div class="flex flex-col">
+
+          <div class="flex flex-col relative">
             <label for="user-signup-confirm" class="mb-1">Confirm Password</label>
             <input type="password" id="user-signup-confirm" name="confirm_password" placeholder="••••••••" required
               class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <span class="absolute right-2 top-9 cursor-pointer text-white"
+              onclick="togglePassword('user-signup-confirm')">👁️</span>
+            <span id="confirm-msg" class="text-red-400 text-sm mt-1 hidden"></span>
           </div>
+
           <button type="submit"
             class="btn w-full py-2 bg-yellow-400 text-black font-bold rounded-md hover:shadow-xl">Sign Up</button>
-          <p class="text-center">Already have an account? <a href="#user-login-form"
-              class="login-link text-yellow-400 hover:underline cursor-pointer">Login</a></p>
+
+          <p class="text-center">
+            Already have an account?
+            <a href="#" class="login-link text-yellow-400 hover:underline cursor-pointer">Login</a>
+          </p>
         </form>
 
-        <a href="index.php" class="block text-center mt-4 text-yellow-400 hover:underline cursor-pointer">Back to Homepage</a>
+        <a href="index.php" class="block text-center mt-4 text-yellow-400 hover:underline cursor-pointer">Back to
+          Homepage</a>
       </div>
     </div>
   </section>
+
+
+
 
   <!-- Admin Login Modal -->
-  <section id="admin-login" class="content-section hidden">
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
-      <div class="glass-card p-8 max-w-md shadow-lg space-y-6 w-full relative">
-        <button onclick="closeSection('admin-login')"
-          class="absolute top-3 right-3 text-white text-xl font-bold hover:text-yellow-400 transition">✕</button>
-        <div class="text-center space-y-2">
-          <span class="block w-16 h-16 bg-yellow-400 rounded-full mx-auto"></span>
-          <h2 class="text-xl font-bold">Barcie Admin Login</h2>
-          <p>Access your unique admin portal</p>
-        </div>
-        <form action="database/admin_login.php" method="post" class="space-y-4">
-          <div class="flex flex-col">
-            <label for="username" class="mb-1">Username</label>
-            <input type="text" id="username" name="username" placeholder="admin" required
-              class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
-          </div>
-          <div class="flex flex-col">
-            <label for="password" class="mb-1">Password</label>
-            <input type="password" id="password" name="password" placeholder="••••••••" required
-              class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
-          </div>
-          <button type="submit"
-            class="btn w-full py-2 bg-yellow-400 text-black font-bold rounded-md hover:shadow-xl">Sign In</button>
-        </form>
+<section id="admin-login" class="content-section hidden">
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+    <div class="glass-card p-8 max-w-md shadow-lg space-y-6 w-full relative">
+      <button onclick="closeSection('admin-login')"
+        class="absolute top-3 right-3 text-white text-xl font-bold hover:text-yellow-400 transition">✕</button>
+
+      <div class="text-center space-y-2">
+        <span class="block w-16 h-16 bg-yellow-400 rounded-full mx-auto"></span>
+        <h2 class="text-xl font-bold">Barcie Admin Login</h2>
+        <p>Access your unique admin portal</p>
       </div>
+
+      <div id="admin-login-error" class="p-2 bg-red-500/20 text-red-700 rounded-md text-sm hidden"></div>
+
+      <form id="admin-login-form" class="space-y-4">
+        <div class="flex flex-col">
+          <label for="admin-username" class="mb-1">Username</label>
+          <input type="text" id="admin-username" name="username" placeholder="admin" required
+            class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
+        </div>
+        <div class="flex flex-col relative">
+          <label for="admin-password" class="mb-1">Password</label>
+          <input type="password" id="admin-password" name="password" placeholder="••••••••" required
+            class="p-2 rounded-md bg-white/20 placeholder-white/60 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 pr-10">
+          <button type="button" id="toggleAdminPassword"
+            class="absolute right-2 top-9 text-white/70 hover:text-yellow-400 focus:outline-none">👁️</button>
+        </div>
+        <button type="submit"
+          class="btn w-full py-2 bg-yellow-400 text-black font-bold rounded-md hover:shadow-xl">Sign In</button>
+      </form>
     </div>
-  </section>
+  </div>
+</section>
+
 
   <!-- Footer -->
   <footer class="bg-black/50 backdrop-blur-lg text-center py-4 relative z-20">
     <p>© BarCIE International Center 2025</p>
   </footer>
 
+
   <!-- Scripts -->
-  <script>
-    const sidebar = document.getElementById('sidebar');
-    const mainWrapper = document.getElementById('mainContentWrapper');
-    const sidebarToggle = document.getElementById('sidebarToggle');
+<script>
+  // ---------------- Sidebar Toggle ----------------
+  const sidebar = document.getElementById('sidebar');
+  const mainWrapper = document.getElementById('mainContentWrapper');
+  const sidebarToggle = document.getElementById('sidebarToggle');
 
-    function toggleSidebar() {
-      sidebar.classList.toggle('-translate-x-64');
-      if (!sidebar.classList.contains('-translate-x-64')) {
-        mainWrapper.style.transform = "translateX(250px)";
-        sidebarToggle.style.transform = "translateX(250px) rotate(180deg)";
+  function toggleSidebar() {
+    sidebar.classList.toggle('-translate-x-64');
+    if (!sidebar.classList.contains('-translate-x-64')) {
+      mainWrapper.style.transform = "translateX(250px)";
+      sidebarToggle.style.transform = "translateX(250px) rotate(180deg)";
+    } else {
+      mainWrapper.style.transform = "translateX(0)";
+      sidebarToggle.style.transform = "translateX(0) rotate(0deg)";
+    }
+  }
+
+  // ---------------- Show/Hide Sections ----------------
+  function closeSection(id) { document.getElementById(id).classList.add('hidden'); }
+  function showSection(id) {
+    document.querySelectorAll('.content-section').forEach(sec => sec.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  // ---------------- Password Toggle ----------------
+  function togglePassword(id) {
+    const input = document.getElementById(id);
+    input.type = input.type === "password" ? "text" : "password";
+  }
+
+  // ---------------- Login/Signup Toggle ----------------
+  const loginForm = document.getElementById('user-login-form');
+  const signupForm = document.getElementById('user-signup-form');
+
+  document.querySelectorAll('.login-link').forEach(el => el.addEventListener('click', e => {
+    e.preventDefault();
+    signupForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+  }));
+
+  document.querySelectorAll('.signup-link').forEach(el => el.addEventListener('click', e => {
+    e.preventDefault();
+    loginForm.classList.add('hidden');
+    signupForm.classList.remove('hidden');
+  }));
+
+  // ---------------- Real-time Signup Validation ----------------
+  const emailInput = document.getElementById('user-signup-email');
+  const passwordInput = document.getElementById('user-signup-password');
+  const confirmInput = document.getElementById('user-signup-confirm');
+  const emailMsg = document.getElementById('email-msg');
+  const passwordMsg = document.getElementById('password-msg');
+  const confirmMsg = document.getElementById('confirm-msg');
+
+  emailInput.addEventListener('input', () => {
+    if (!/@email\.lcup\.edu\.ph$/.test(emailInput.value)) {
+      emailMsg.textContent = "Email must end with @email.lcup.edu.ph";
+      emailMsg.classList.remove('hidden');
+    } else emailMsg.classList.add('hidden');
+  });
+
+  passwordInput.addEventListener('input', () => {
+    const val = passwordInput.value;
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(val)) {
+      passwordMsg.textContent = "Password must be 8+ chars, letters & numbers";
+      passwordMsg.classList.remove('hidden');
+    } else passwordMsg.classList.add('hidden');
+
+    if (confirmInput.value && confirmInput.value !== val) {
+      confirmMsg.textContent = "Passwords do not match";
+      confirmMsg.classList.remove('hidden');
+    } else confirmMsg.classList.add('hidden');
+  });
+
+  confirmInput.addEventListener('input', () => {
+    if (confirmInput.value !== passwordInput.value) {
+      confirmMsg.textContent = "Passwords do not match";
+      confirmMsg.classList.remove('hidden');
+    } else confirmMsg.classList.add('hidden');
+  });
+
+  // ---------------- User AJAX Login ----------------
+  const loginErrorEl = document.getElementById('login-error');
+  loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    loginErrorEl.classList.add('hidden');
+    loginErrorEl.textContent = "";
+
+    const formData = new FormData(loginForm);
+    fetch('database/user_auth.php', { method: 'POST', body: formData })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = data.is_admin ? 'dashboard.php' : 'Guest.php';
+        } else {
+          loginErrorEl.textContent = data.error || "Login failed.";
+          loginErrorEl.classList.remove('hidden');
+        }
+      })
+      .catch(() => {
+        loginErrorEl.textContent = "An unexpected error occurred.";
+        loginErrorEl.classList.remove('hidden');
+      });
+  });
+
+  // ---------------- User Signup Validation Before Submit ----------------
+  signupForm.addEventListener('submit', e => {
+    const emailVal = emailInput.value;
+    const passVal = passwordInput.value;
+    const confirmVal = confirmInput.value;
+
+    if (!/@email\.lcup\.edu\.ph$/.test(emailVal) ||
+        !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(passVal) ||
+        passVal !== confirmVal) {
+      e.preventDefault();
+      alert("Please fix signup errors before submitting.");
+    }
+  });
+
+  // ---------------- Admin AJAX Login ----------------
+  const adminForm = document.getElementById('admin-login-form');
+  const adminError = document.getElementById('admin-login-error');
+  const toggleAdminPasswordBtn = document.getElementById('toggleAdminPassword');
+  const adminPasswordInput = document.getElementById('admin-password');
+
+  toggleAdminPasswordBtn.addEventListener('click', () => {
+    if (adminPasswordInput.type === 'password') {
+      adminPasswordInput.type = 'text';
+      toggleAdminPasswordBtn.textContent = '🙈';
+    } else {
+      adminPasswordInput.type = 'password';
+      toggleAdminPasswordBtn.textContent = '👁️';
+    }
+  });
+
+  adminForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    adminError.classList.add('hidden');
+    adminError.textContent = '';
+
+    const formData = new FormData(adminForm);
+
+    try {
+      const res = await fetch('database/admin_login.php', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.success) {
+        window.location.href = 'dashboard.php';
       } else {
-        mainWrapper.style.transform = "translateX(0)";
-        sidebarToggle.style.transform = "translateX(0) rotate(0deg)";
+        adminError.textContent = data.message || 'Login failed.';
+        adminError.classList.remove('hidden');
       }
+    } catch {
+      adminError.textContent = 'Something went wrong. Try again.';
+      adminError.classList.remove('hidden');
     }
+  });
+</script>
 
-    function closeSection(id) {
-      document.getElementById(id).classList.add('hidden');
-    }
-
-    function showSection(id) {
-      document.querySelectorAll('.content-section').forEach(section => section.classList.add('hidden'));
-      document.getElementById(id).classList.remove('hidden');
-    }
-
-    // Login/signup toggle
-    const loginForm = document.getElementById('user-login-form');
-    const signupForm = document.getElementById('user-signup-form');
-    const signupLink = document.querySelector('.signup-link');
-    const loginLink = document.querySelector('.login-link');
-
-    signupLink.addEventListener('click', function (e) {
-      e.preventDefault();
-      loginForm.classList.add('hidden');
-      signupForm.classList.remove('hidden');
-    });
-
-    loginLink.addEventListener('click', function (e) {
-      e.preventDefault();
-      signupForm.classList.add('hidden');
-      loginForm.classList.remove('hidden');
-    });
-  </script>
 
 </body>
 
