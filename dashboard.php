@@ -122,7 +122,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <!-- Sidebar -->
   <div class="sidebar">
     <h2>Hotel Admin</h2>
-    <a href="#" class="nav-link active" data-section="dashboard">Dashboard</a>
+    <a href="#" class="nav-link" data-section="dashboard-section">Dashboard</a>
     <a href="#" class="nav-link" data-section="rooms">Rooms & Facilities</a>
     <a href="#" class="nav-link" data-section="bookings">Bookings</a>
     <a href="#" class="nav-link" data-section="payments">Payments</a>
@@ -143,34 +143,67 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </header>
 
     <!-- Dashboard Section -->
-    <section id="dashboard" class="content-section active">
-      <h2>Dashboard Overview</h2>
-      <div class="overview-grid">
+    <section id="dashboard-section" class="content-section active">
+      <h2 class="dashboard-section-title">Dashboard Overview</h2>
 
-        <!-- Left Side -->
-        <div class="overview-left">
-          <div class="card">
-            <h3>Quick Stats</h3>
-            <p>Total Rooms: 20</p>
-            <p>Active Bookings: 5</p>
-            <p>Pending Approvals: 3</p>
-          </div>
+      <div class="dashboard-grid-container">
 
-          <div class="card ">
-            <h3>Recent Activity</h3>
-            <ul>
-              <li>John Doe booked Room 101</li>
-              <li>Maria checked out Room 202</li>
-              <li>2 Pending feedbacks</li>
-            </ul>
+        <!-- Left Column: Mini Calendar -->
+        <div class="dashboard-left">
+          <div class="dashboard-card calendar-card">
+            <h3 class="card-title"><i class="fa-solid fa-calendar-days"></i> Availability Calendar</h3>
+            <div id="dashboardCalendar"></div>
           </div>
         </div>
 
-        <!-- Right Side (Mini Calendar) -->
-        <div class="overview-right">
-          <div class="calendar-container">
-            <h3>Availability Calendar</h3>
-            <div id="miniCalendar"></div>
+        <?php
+
+
+        // Total Rooms (you can keep this static if rooms are fixed)
+        $total_rooms = 20;
+
+        // Active Bookings
+        $active_bookings_result = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='approved'");
+        $active_bookings = $active_bookings_result->fetch_assoc()['count'];
+
+        // Pending Approvals
+        $pending_approvals_result = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='pending'");
+        $pending_approvals = $pending_approvals_result->fetch_assoc()['count'];
+
+        // Recent Activities (latest 5)
+        $recent_activity_result = $conn->query("SELECT type, details, created_at FROM bookings ORDER BY created_at DESC LIMIT 5");
+        $recent_activities = [];
+        while ($row = $recent_activity_result->fetch_assoc()) {
+          $recent_activities[] = $row;
+        }
+        ?>
+
+
+        <!-- Right Column: Stats & Activity -->
+        <div class="dashboard-right">
+          <!-- Quick Stats Card -->
+          <div class="dashboard-card stats-card">
+            <h3 class="card-title"><i class="fa-solid fa-chart-simple"></i> Quick Stats</h3>
+            <ul class="stats-list">
+              <li>Total Rooms: <strong><?php echo $total_rooms; ?></strong></li>
+              <li>Active Bookings: <strong><?php echo $active_bookings; ?></strong></li>
+              <li>Pending Approvals: <strong><?php echo $pending_approvals; ?></strong></li>
+            </ul>
+          </div>
+
+          <!-- Recent Activity Card -->
+          <div class="dashboard-card activity-card">
+            <h3 class="card-title"><i class="fa-solid fa-clock"></i> Recent Activity</h3>
+            <ul class="activity-list">
+              <?php foreach ($recent_activities as $activity): ?>
+                <li>
+                  <?php echo htmlspecialchars($activity['type']); ?>:
+                  <?php echo htmlspecialchars($activity['details']); ?>
+                  <span
+                    style="color:#888;font-size:0.85rem;">(<?php echo date('M d, Y', strtotime($activity['created_at'])); ?>)</span>
+                </li>
+              <?php endforeach; ?>
+            </ul>
           </div>
         </div>
 
@@ -434,24 +467,50 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
     </div>
 
-    <script>
-      /* Sidebar toggle */
-      function toggleSidebar() {
-        document.querySelector(".sidebar").classList.toggle("active");
-        document.querySelector(".main-content").classList.toggle("active");
-      }
 
-      /* Navigation */
-      document.querySelectorAll(".nav-link").forEach(link => {
-        link.addEventListener("click", e => {
-          e.preventDefault();
-          document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-          link.classList.add("active");
-          let section = link.dataset.section;
-          document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
-          document.getElementById(section).classList.add("active");
+    <script>
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const navLinks = document.querySelectorAll(".nav-link");
+        const sections = document.querySelectorAll(".content-section");
+
+        // Load last active section from localStorage
+        let lastSectionId = localStorage.getItem("activeSection") || "dashboard-section";
+
+        function showSection(sectionId) {
+          // Remove 'active' from all links
+          navLinks.forEach(l => l.classList.remove("active"));
+          // Remove 'active' from all sections
+          sections.forEach(sec => sec.classList.remove("active"));
+
+          // Add 'active' to selected link
+          const activeLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+          if (activeLink) activeLink.classList.add("active");
+
+          // Show selected section
+          const section = document.getElementById(sectionId);
+          if (section) section.classList.add("active");
+
+          // Save current section to localStorage
+          localStorage.setItem("activeSection", sectionId);
+        }
+
+        // Initialize the page with last active section
+        showSection(lastSectionId);
+
+        // Add click listeners
+        navLinks.forEach(link => {
+          link.addEventListener("click", e => {
+            e.preventDefault();
+            const sectionId = link.dataset.section;
+            showSection(sectionId);
+          });
         });
       });
+
+      /* Navigation */
+
+
 
       /* Chart.js Reports */
       const ctx = document.getElementById('reportChart').getContext('2d');
@@ -467,61 +526,58 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
       });
 
-
-
-
-      // Load saved theme
-      window.onload = () => {
-        if (localStorage.getItem("theme") === "dark") {
-          document.body.classList.add("dark-mode");
-        }
-      };
     </script>
 
-
+    <!-- ✅ FullCalendar Initialization -->
     <script>
       document.addEventListener('DOMContentLoaded', function () {
-        var calendarEl = document.getElementById('miniCalendar');
+        const calendarEl = document.getElementById('dashboardCalendar');
 
-        var calendar = new FullCalendar.Calendar(calendarEl, {
+        const calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: 'dayGridMonth',
-          height: 300, // smaller height
-          contentHeight: 250, // shrink content space
-          aspectRatio: 1.2,   // makes it more compact
-          headerToolbar: {
-            left: 'prev,next',
-            center: 'title',
-            right: ''
-          },
+          height: 300,
+          headerToolbar: { left: 'prev,next', center: 'title', right: '' },
           events: bookingEvents.map(event => ({
             id: event.id,
-            title: event.title + " | " + event.status,
+            title: `${event.title} | ${event.status}`,
             start: event.start,
             end: event.end,
             color:
-              event.status === 'approved'
-                ? 'green'
-                : event.status === 'pending'
-                  ? 'orange'
-                  : 'red'
+              event.status === 'approved' ? 'green' :
+                event.status === 'pending' ? 'orange' : 'red'
           })),
           eventClick: function (info) {
-            alert(
-              "Booking ID: " + info.event.id +
-              "\nDetails: " + info.event.title +
-              "\nStart: " + info.event.start.toLocaleString() +
-              "\nEnd: " + (info.event.end ? info.event.end.toLocaleString() : "N/A")
-            );
+            alert(`Booking ID: ${info.event.id}\nDetails: ${info.event.title}\nStart: ${info.event.start.toLocaleString()}\nEnd: ${info.event.end ? info.event.end.toLocaleString() : "N/A"}`);
           }
         });
 
         calendar.render();
       });
+
     </script>
 
+    <!-- ✅ Dark Mode Toggle Script -->
+    <script>
+      function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
 
+        // Save preference
+        if (document.body.classList.contains("dark-mode")) {
+          localStorage.setItem("theme", "dark");
+        } else {
+          localStorage.setItem("theme", "light");
+        }
+      }
 
+      // Load saved theme on page load
+      window.addEventListener("DOMContentLoaded", () => {
+        if (localStorage.getItem("theme") === "dark") {
+          document.body.classList.add("dark-mode");
+        }
+      });
+    </script>
 
+    <!-- ✅ Script to load items dynamically -->
 
     <script>
       async function loadItems() {
@@ -545,7 +601,6 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
         });
         filterItems();
       }
-
 
     </script>
 
@@ -665,9 +720,6 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
         peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
       });
     </script>
-
-
-
 
 
 </body>
