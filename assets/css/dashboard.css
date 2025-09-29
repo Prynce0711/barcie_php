@@ -139,19 +139,172 @@ header p { margin-top: 8px; color: #3a4a63; font-style: italic; }
 .content-section h2 { margin-bottom: 25px; font-size: 1.8rem; color: #1b2838; text-shadow: 0 0 10px rgba(52,152,219,0.5); }
 
 /* ---------------- CARDS ---------------- */
-.dashboard-card, .card {
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(15px);
-  padding: 25px;
-  border-radius: 25px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
-  
+/* Dashboard Grid */
+.dashboard-grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Left + Right */
+  gap: 2rem;
+  margin-top: 1.5rem;
+  align-items: stretch;
+  position: relative; /* needed for divider */
 }
-.dashboard-card:hover, .card:hover {
-  transform: translateY(-12px) scale(1.03);
-  box-shadow: 0 30px 60px rgba(52,152,219,0.6);
+
+/* Solid vertical divider */
+.dashboard-grid-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: #ccc; /* solid gray divider */
+  pointer-events: none;
 }
+
+/* Left column */
+.dashboard-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+  padding-right: 1rem; /* space from divider */
+}
+
+/* Right column */
+.dashboard-right {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-left: 1rem; /* space from divider */
+}
+
+/* Calendar card stretches */
+.calendar-card {
+  flex: 1;
+   display: flex;
+  flex-direction: column;
+  height: 300px;
+}
+.dashboardCalendar {
+  height: 400px;
+  max-height: 100px;
+  min-height: 300px;
+  overflow-y: auto;
+}
+
+
+
+#dashboardCalendar {
+  flex: 1;            /* take remaining space */
+  min-height: 250px;  /* don’t collapse too small */
+}
+
+/* Quick Stats compact under Calendar */
+.stats-card {
+  order: -1;
+  grid-column: 1;
+  flex: 0 0 auto;
+}
+
+/* Activity card fills right column */
+.activity-card {
+  grid-column: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive: stack layout, remove divider & padding */
+@media (max-width: 992px) {
+  .dashboard-grid-container {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-grid-container::after {
+    display: none; /* hide divider on mobile */
+  }
+  .dashboard-left,
+  .dashboard-right {
+    padding: 0; /* remove extra spacing */
+  }
+  .stats-card, .activity-card {
+    grid-column: 1;
+    order: unset;
+    flex: unset;
+  }
+}
+
+/* ---------------- ITEMS GRID ---------------- */
+#cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+#cards-grid .card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+#cards-grid .card:hover {
+  transform: translateY(-4px);
+}
+
+/* Images inside cards */
+#cards-grid .card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 0.8rem;
+}
+
+/* Titles and text */
+#cards-grid .card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+
+#cards-grid .card p {
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+  line-height: 1.3;
+}
+
+/* Buttons */
+#cards-grid .card button {
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #0e6efd;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#cards-grid .card button:hover {
+  background: #084298;
+}
+
+/* Delete button */
+#cards-grid .card form button[style*="background:red"] {
+  background: #dc3545 !important;
+}
+
+#cards-grid .card form button[style*="background:red"]:hover {
+  background: #a71d2a !important;
+}
+
+
 
 /* ---------------- TABLES ---------------- */
 table th, table td { transition: all 0.3s ease; }
@@ -454,4 +607,31 @@ body.dark-mode .footer { background: #111; color: #bbb; box-shadow: 0 -10px 40px
   .toggle-btn { left: 10px; }
   .main-content { margin-left: 0; }
   header { margin: 10px; }
+}
+/* ---------------- FORMS ---------------- */
+form {
+  margin-top: 1rem;
+}
+
+form input,
+form select,
+form textarea,
+form button {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+form button {
+  background: #0e6efd;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+form button:hover {
+  background: #084298;
 }

@@ -312,6 +312,50 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
     <section id="bookings" class="content-section">
+
+      <!-- Select Booking Type -->
+      <label><input type="radio" name="bookingType" value="reservation" checked onchange="toggleBookingForm()">
+        Reservation</label>
+      <label><input type="radio" name="bookingType" value="pencil" onchange="toggleBookingForm()"> Pencil Booking
+        (Function Hall)</label>
+
+      <!-- Reservation Form -->
+      <form id="reservationForm" method="POST" action="database/save_booking.php">
+        <h3>Reservation Form</h3>
+        <label>Official Receipt No.: <input type="text" name="receipt_no" readonly></label>
+        <label>Guest Name: <input type="text" name="guest_name" required></label>
+        <label>Contact Number: <input type="text" name="contact_number" required></label>
+        <label>Email Address: <input type="email" name="email" required></label>
+        <label>Check-in Date & Time: <input type="datetime-local" name="checkin" required></label>
+        <label>Check-out Date & Time: <input type="datetime-local" name="checkout" required></label>
+        <label>Number of Occupants: <input type="number" name="occupants" min="1" required></label>
+        <label>Company Affiliation (optional): <input type="text" name="company"></label>
+        <label>Company Contact Number (optional): <input type="text" name="company_contact"></label>
+        <input type="hidden" name="type" value="reservation">
+        <button type="submit">Confirm Reservation</button>
+      </form>
+
+      <!-- Pencil Booking Form -->
+      <form id="pencilForm" method="POST" action="database/save_booking.php" style="display:none;">
+        <h3>Pencil Booking Form (Function Hall)</h3>
+        <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>"
+            readonly></label>
+        <label>Event Type: <input type="text" name="event_type" required></label>
+        <label>Function Hall: <input type="text" name="hall" required></label>
+        <label>Number of Pax: <input type="number" name="pax" min="1" required></label>
+        <label>Time of Event (From): <input type="time" name="time_from" required></label>
+        <label>Time of Event (To): <input type="time" name="time_to" required></label>
+        <label>Food Provider/Caterer: <input type="text" name="caterer" required></label>
+        <label>Contact Person: <input type="text" name="contact_person" required></label>
+        <label>Contact Number: <input type="text" name="contact_number" required></label>
+        <label>Company Affiliation (optional): <input type="text" name="company"></label>
+        <label>Company Number (optional): <input type="text" name="company_number"></label>
+        <input type="hidden" name="type" value="pencil">
+        <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
+      </form>
+
+
+      
       <h2>Bookings</h2>
       <table>
         <tr>
