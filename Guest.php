@@ -39,6 +39,7 @@ $stmt->close();
 
 <head>
   <meta charset="UTF-8">
+   <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Guest Portal</title>
   <link rel="stylesheet" href="assets/css/guest.css">
   <script src="assets/js/script.js" defer></script>
