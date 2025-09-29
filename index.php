@@ -65,7 +65,7 @@
 </head>
 
 <body class="min-h-screen text-white font-sans relative overflow-x-hidden"
-  style="background: url('assets/images/imageBg/Lcup-background.jpg') no-repeat center center fixed; background-size: cover;">
+  style="background: url('assets/images/imageBg/BarCIE-0.jpg') no-repeat center center fixed; background-size: cover;">
 
   <!-- Gradient overlay -->
   <div class="absolute inset-0 animated-overlay z-0"></div>
