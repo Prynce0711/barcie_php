@@ -639,3 +639,20 @@ form button {
 form button:hover {
   background: #084298;
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 180px;       /* slimmer sidebar */
+    transform: none;    /* keep it visible */
+  }
+
+  .main-content {
+    margin-left: 190px; /* leave space for sidebar */
+    width: calc(100% - 190px);
+    padding: 20px;
+  }
+
+  header {
+    margin: 10px;
+  }
+}
