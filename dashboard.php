@@ -313,7 +313,7 @@ while ($row = $result->fetch_assoc()) {
             <p><?= $item['description'] ?></p>
 
             <!-- ✅ Edit Toggle Button -->
-            <button type="button" class="toggle-edit">Edit</button>
+            <button type="button" class="edit-form">Edit</button>
 
             <!-- ✅ Edit Form (hidden by default) -->
             <form method="POST" enctype="multipart/form-data" class="edit-form" style="display:none;">
@@ -345,6 +345,7 @@ while ($row = $result->fetch_assoc()) {
           </div>
         <?php endwhile; ?>
       </div>
+      
     </section>
 
 
@@ -876,6 +877,29 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
         peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
       });
     </script>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Handle edit form toggle
+    document.querySelectorAll(".card").forEach(card => {
+      const toggleBtn = card.querySelector("button.edit-form"); // the toggle button
+      const editForm = card.querySelector("form.edit-form");    // the hidden form
+
+      if (toggleBtn && editForm) {
+        toggleBtn.addEventListener("click", () => {
+          if (editForm.style.display === "none" || editForm.style.display === "") {
+            editForm.style.display = "block";
+            toggleBtn.textContent = "Close Edit";
+          } else {
+            editForm.style.display = "none";
+            toggleBtn.textContent = "Edit";
+          }
+        });
+      }
+    });
+  });
+</script>
 
 
 </body>
