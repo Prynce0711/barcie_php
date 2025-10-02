@@ -55,7 +55,6 @@ $stmt->close();
     <button onclick="showSection('booking')">Booking & Reservation</button>
     <button onclick="showSection('payments')">Payments</button>
     <button onclick="showSection('user')">User Management</button>
-    <button onclick="showSection('reports')">Report & Analytics</button>
     <button onclick="showSection('communication')">Communication</button>
     <button onclick="showSection('feedback')">Feedback</button>
     <a href="index.php">Back to Homepage</a>
@@ -227,35 +226,7 @@ $stmt->close();
       </table>
     </section>
 
-    <!-- Reports -->
-    <section id="reports" class="content-section">
-      <h2>Report & Analytics</h2>
-      <p>View your personal booking history.</p>
-      <table border="1">
-        <tr>
-          <th>ID</th>
-          <th>Type</th>
-          <th>Details</th>
-          <th>Date</th>
-          <th>Status</th>
-        </tr>
-        <?php
-        $stmt = $conn->prepare("SELECT id, type, details, created_at, status FROM bookings WHERE user_id=? ORDER BY id DESC");
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        while ($row = $result->fetch_assoc()) {
-          echo "<tr>
-                  <td>{$row['id']}</td>
-                  <td>{$row['type']}</td>
-                  <td>{$row['details']}</td>
-                  <td>{$row['created_at']}</td>
-                  <td>{$row['status']}</td>
-                </tr>";
-        }
-        ?>
-      </table>
-    </section>
+  
 
     <!-- Communication -->
     <section id="communication" class="content-section">
