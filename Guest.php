@@ -109,6 +109,8 @@ $stmt->close();
       </label>
 
       <div class="cards-grid" id="cards-grid"></div>
+
+      
     </section>
 
 
