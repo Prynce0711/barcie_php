@@ -240,6 +240,46 @@
   </div>
 </section>
 
+  <!-- Contact Us Section -->
+  <section id="contact" class="relative z-20 py-16 bg-gradient-to-r from-black/70 via-black/50 to-black/70 text-white">
+    <div class="max-w-4xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-yellow-400 mb-10">Contact Us</h2>
+
+      <div class="space-y-6 text-lg">
+        <p class="flex items-center space-x-3">
+          <i class="fa-brands fa-viber text-yellow-400 text-2xl"></i>
+          <span>Viber: 
+            <a href="viber://chat?number=+639399057425" class="hover:text-yellow-300">0939 905 7425</a>
+          </span>
+        </p>
+
+        <p class="flex items-center space-x-3">
+          <i class="fa-solid fa-phone text-yellow-400 text-2xl"></i>
+          <span>
+            Telephone: 
+            <a href="tel:+63447917424" class="hover:text-yellow-300">044 791 7424</a> / 
+            <a href="tel:+63449198410" class="hover:text-yellow-300">044 919 8410</a>
+          </span>
+        </p>
+
+        <p class="flex items-start space-x-3">
+          <i class="fa-solid fa-envelope text-yellow-400 text-2xl"></i>
+          <span>
+            <a href="mailto:barcieinternationalcenter@gmail.com" class="hover:text-yellow-300">barcieinternationalcenter@gmail.com</a><br>
+            <a href="mailto:barcie@lcup.edu.ph" class="hover:text-yellow-300">barcie@lcup.edu.ph</a>
+          </span>
+        </p>
+
+        <p class="flex items-center space-x-3">
+          <i class="fa-solid fa-map-location-dot text-yellow-400 text-2xl"></i>
+          <span>
+            <a href="https://maps.app.goo.gl/qcmi2CzQz7pCHiav6" target="_blank" class="hover:text-yellow-300">valenzuela st. Capitol View Park Subd. Brgy. Bulihan, City of Malolos, Bulacan 3000</a>
+          </span>
+        </p>
+      </div>
+    </div>
+  </section>
+
 
   <!-- Footer -->
   <footer class="bg-black/50 backdrop-blur-lg text-center py-4 relative z-20">

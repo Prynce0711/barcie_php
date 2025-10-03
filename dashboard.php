@@ -432,14 +432,27 @@ while ($row = $result->fetch_assoc()) {
                 <input type='hidden' name='booking_id' value='{$row['id']}'>
                 <input type='hidden' name='action' value='admin_update_booking'>
                 <input type='hidden' name='admin_action' value='approve'>
-                <button type='submit' class='approve' ".(in_array($status, ['confirmed', 'rejected', 'checked_in', 'checked_out', 'cancelled']) ? 'disabled' : '').">Approve</button>
+                <button type='submit' class='approve' ".( $status === 'confirmed' ? '' : '').">Approve</button>
             </form>
 
             <form method='POST' action='database/user_auth.php' style='display:inline;'>
                 <input type='hidden' name='booking_id' value='{$row['id']}'>
                 <input type='hidden' name='action' value='admin_update_booking'>
                 <input type='hidden' name='admin_action' value='reject'>
-                <button type='submit' class='reject' ".($status === 'rejected' ? 'disabled' : '').">Reject</button>
+                <button type='submit' class='reject' ".($status === 'rejected' ? 'disabled' : ''  ).">Reject</button>
+            </form>
+            <form method='POST' action='database/user_auth.php' style='display:inline;'>
+                <input type='hidden' name='booking_id' value='{$row['id']}'>
+                <input type='hidden' name='action' value='admin_update_booking'>
+                <input type='hidden' name='admin_action' value='checkin'>
+                <button type='submit' class='checkin' ".( $status === 'checked_in' ? '' : '').">checked_in</button>
+            </form>
+
+            <form method='POST' action='database/user_auth.php' style='display:inline;'>
+                <input type='hidden' name='booking_id' value='{$row['id']}'>
+                <input type='hidden' name='action' value='admin_update_booking'>
+                <input type='hidden' name='admin_action' value='checkout'>
+                <button type='submit' class='checkout' ".( $status === 'checked_out' ? '' : '').">checked_out</button>
             </form>
         </td>
     </tr>";
@@ -511,8 +524,8 @@ while ($row = $result->fetch_assoc()) {
                 <!-- ✅ Delete Form -->
                 <form method="post" action="database/user_auth.php" style="display:inline-block;"
                   onsubmit="return confirm('Are you sure you want to delete this user?');">
-                  <input type="hidden" name="action" value="delete_user">
-                  <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                  <input type="hidden" name="action" value="admin_delete_user">
+                  <input type="hidden" name="user_id" value="<?= $row['id'] ?>">
                   <button type="submit" class="action-btn delete">Delete</button>
                 </form>
               </td>
@@ -704,6 +717,25 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
     </script>
 
     <!-- ✅ Script for toggling edit form -->
+
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Attach toggle functionality to edit buttons
+  document.querySelectorAll(".toggle-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const form = btn.nextElementSibling; // the edit-form right after button
+      if (form.style.display === "none" || form.style.display === "") {
+        form.style.display = "block";
+        btn.textContent = "Cancel";
+      } else {
+        form.style.display = "none";
+        btn.textContent = "Edit";
+      }
+    });
+  });
+});
+</script>
+
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         /* ---------------- Booking Type Toggle ---------------- */
@@ -721,6 +753,10 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
           }
         }
 
+    
+    
+        
+
         // Init booking form display
         toggleBookingForm();
 
@@ -728,6 +764,7 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
         document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
           radio.addEventListener("change", toggleBookingForm);
         });
+        
 
 
         /* ---------------- Item Filter Toggle ---------------- */
