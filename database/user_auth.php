@@ -294,23 +294,6 @@ if ($action === 'admin_update_booking') {
 }
 
 /* ---------------------------
-   ADMIN: delete booking
-   --------------------------- */
-if ($action === 'admin_delete_booking') {
-    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        die("Access denied. Admin login required.");
-    }
-
-    $bookingId = (int)($_POST['booking_id'] ?? 0);
-    $stmt = $conn->prepare("DELETE FROM bookings WHERE id = ?");
-    $stmt->bind_param("i", $bookingId);
-    $stmt->execute();
-    $stmt->close();
-    $_SESSION['msg'] = "Booking deleted.";
-    redirect('../dashboard.php');
-}
-
-/* ---------------------------
    ADMIN: delete user
    --------------------------- */
 if ($action === 'admin_delete_user') {

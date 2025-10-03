@@ -549,8 +549,8 @@ while ($row = $result->fetch_assoc()) {
                 <!-- ✅ Delete Form -->
                 <form method="post" action="database/user_auth.php" style="display:inline-block;"
                   onsubmit="return confirm('Are you sure you want to delete this user?');">
-                  <input type="hidden" name="action" value="delete_user">
-                  <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                  <input type="hidden" name="action" value="admin_delete_user">
+                  <input type="hidden" name="user_id" value="<?= $row['id'] ?>">
                   <button type="submit" class="action-btn delete">Delete</button>
                 </form>
               </td>
@@ -742,6 +742,25 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
     </script>
 
     <!-- ✅ Script for toggling edit form -->
+
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Attach toggle functionality to edit buttons
+  document.querySelectorAll(".toggle-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const form = btn.nextElementSibling; // the edit-form right after button
+      if (form.style.display === "none" || form.style.display === "") {
+        form.style.display = "block";
+        btn.textContent = "Cancel";
+      } else {
+        form.style.display = "none";
+        btn.textContent = "Edit";
+      }
+    });
+  });
+});
+</script>
+
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         /* ---------------- Booking Type Toggle ---------------- */
@@ -759,6 +778,10 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
           }
         }
 
+    
+    
+        
+
         // Init booking form display
         toggleBookingForm();
 
@@ -766,6 +789,7 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
         document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
           radio.addEventListener("change", toggleBookingForm);
         });
+        
 
 
         /* ---------------- Item Filter Toggle ---------------- */
