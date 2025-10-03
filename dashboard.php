@@ -136,7 +136,7 @@ while ($row = $result->fetch_assoc()) {
 
 <head>
   <meta charset="UTF-8">
-   <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Admin Dashboard</title>
   <link rel="stylesheet" href="assets/css/dashboard.css">
 
@@ -313,7 +313,7 @@ while ($row = $result->fetch_assoc()) {
             <p><?= $item['description'] ?></p>
 
             <!-- ✅ Edit Toggle Button -->
-            <button type="button" class="toggle-edit">Edit</button>
+            <button type="button" class="edit-form">Edit</button>
 
             <!-- ✅ Edit Form (hidden by default) -->
             <form method="POST" enctype="multipart/form-data" class="edit-form" style="display:none;">
@@ -345,6 +345,7 @@ while ($row = $result->fetch_assoc()) {
           </div>
         <?php endwhile; ?>
       </div>
+      
     </section>
 
 
@@ -405,6 +406,7 @@ while ($row = $result->fetch_assoc()) {
 
 
       <h2>Bookings</h2>
+      <h2>Bookings</h2>
       <table>
         <tr>
           <th>ID</th>
@@ -412,54 +414,77 @@ while ($row = $result->fetch_assoc()) {
           <th>Details</th>
           <th>Date</th>
           <th>Status</th>
-          <th>Action</th>
+          <th>Actions</th>
         </tr>
 
         <?php
-include __DIR__ . '/database/db_connect.php';
+        include __DIR__ . '/database/db_connect.php';
 
-$result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
-while ($row = $result->fetch_assoc()) {
-    $status = $row['status'];
-    echo "<tr>
-        <td>{$row['id']}</td>
-        <td>{$row['type']}</td>
-        <td>{$row['details']}</td>
-        <td>{$row['created_at']}</td>
-        <td>{$status}</td>
-        <td>
-            <form method='POST' action='database/user_auth.php' style='display:inline;'>
-                <input type='hidden' name='booking_id' value='{$row['id']}'>
-                <input type='hidden' name='action' value='admin_update_booking'>
-                <input type='hidden' name='admin_action' value='approve'>
-                <button type='submit' class='approve' ".( $status === 'confirmed' ? '' : '').">Approve</button>
-            </form>
+        $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
+        while ($row = $result->fetch_assoc()):
+          $status = $row['status'];
+          ?>
+          <tr>
+            <td><?= htmlspecialchars($row['id']) ?></td>
+            <td><?= htmlspecialchars($row['type']) ?></td>
+            <td><?= htmlspecialchars($row['details']) ?></td>
+            <td><?= htmlspecialchars($row['created_at']) ?></td>
+            <td><?= htmlspecialchars($status) ?></td>
+            <td>
+              <!-- Approve -->
+              <form method="POST" action="database/user_auth.php" style="display:inline;">
+                <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
+                <input type="hidden" name="action" value="admin_update_booking">
+                <input type="hidden" name="admin_action" value="approve">
+                <button type="submit" class="approve" <?= in_array($status, ['confirmed', 'rejected', 'checked_in', 'checked_out', 'cancelled']) ? 'disabled' : '' ?>>
+                  Approve
+                </button>
+              </form>
 
-            <form method='POST' action='database/user_auth.php' style='display:inline;'>
-                <input type='hidden' name='booking_id' value='{$row['id']}'>
-                <input type='hidden' name='action' value='admin_update_booking'>
-                <input type='hidden' name='admin_action' value='reject'>
-                <button type='submit' class='reject' ".($status === 'rejected' ? 'disabled' : ''  ).">Reject</button>
-            </form>
-            <form method='POST' action='database/user_auth.php' style='display:inline;'>
-                <input type='hidden' name='booking_id' value='{$row['id']}'>
-                <input type='hidden' name='action' value='admin_update_booking'>
-                <input type='hidden' name='admin_action' value='checkin'>
-                <button type='submit' class='checkin' ".( $status === 'checked_in' ? '' : '').">checked_in</button>
-            </form>
+              <!-- Reject -->
+              <form method="POST" action="database/user_auth.php" style="display:inline;">
+                <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
+                <input type="hidden" name="action" value="admin_update_booking">
+                <input type="hidden" name="admin_action" value="reject">
+                <button type="submit" class="reject" <?= $status === 'rejected' ? 'disabled' : '' ?>>
+                  Reject
+                </button>
+              </form>
 
-            <form method='POST' action='database/user_auth.php' style='display:inline;'>
-                <input type='hidden' name='booking_id' value='{$row['id']}'>
-                <input type='hidden' name='action' value='admin_update_booking'>
-                <input type='hidden' name='admin_action' value='checkout'>
-                <button type='submit' class='checkout' ".( $status === 'checked_out' ? '' : '').">checked_out</button>
-            </form>
-        </td>
-    </tr>";
-}
-?>
+              <!-- Check In -->
+              <form method="POST" action="database/user_auth.php" style="display:inline;">
+                <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
+                <input type="hidden" name="action" value="admin_update_booking">
+                <input type="hidden" name="admin_action" value="checkin">
+                <button type="submit" class="checkin" <?= in_array($status, ['checked_in', 'checked_out', 'cancelled', 'rejected']) ? 'disabled' : '' ?>>
+                  Check In
+                </button>
+              </form>
 
+              <!-- Check Out -->
+              <form method="POST" action="database/user_auth.php" style="display:inline;">
+                <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
+                <input type="hidden" name="action" value="admin_update_booking">
+                <input type="hidden" name="admin_action" value="checkout">
+                <button type="submit" class="checkout" <?= in_array($status, ['checked_out', 'cancelled', 'rejected']) ? 'disabled' : '' ?>>
+                  Check Out
+                </button>
+              </form>
+
+              <!-- Cancel -->
+              <form method="POST" action="database/user_auth.php" style="display:inline;">
+                <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
+                <input type="hidden" name="action" value="admin_update_booking">
+                <input type="hidden" name="admin_action" value="cancel">
+                <button type="submit" class="cancel" <?= in_array($status, ['cancelled', 'rejected', 'checked_out']) ? 'disabled' : '' ?>>
+                  Cancel
+                </button>
+              </form>
+            </td>
+          </tr>
+        <?php endwhile; ?>
       </table>
+
     </section>
 
 
@@ -876,6 +901,29 @@ document.addEventListener("DOMContentLoaded", () => {
         peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
       });
     </script>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Handle edit form toggle
+    document.querySelectorAll(".card").forEach(card => {
+      const toggleBtn = card.querySelector("button.edit-form"); // the toggle button
+      const editForm = card.querySelector("form.edit-form");    // the hidden form
+
+      if (toggleBtn && editForm) {
+        toggleBtn.addEventListener("click", () => {
+          if (editForm.style.display === "none" || editForm.style.display === "") {
+            editForm.style.display = "block";
+            toggleBtn.textContent = "Close Edit";
+          } else {
+            editForm.style.display = "none";
+            toggleBtn.textContent = "Edit";
+          }
+        });
+      }
+    });
+  });
+</script>
 
 
 </body>

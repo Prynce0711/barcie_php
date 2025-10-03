@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Barcie International Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     /* ---------------- Animated Gradient Overlay ---------------- */
     @keyframes gradientOverlay {
@@ -240,7 +241,7 @@
   </div>
 </section>
 
-  <!-- Contact Us Section -->
+    <!-- Contact Us Section -->
   <section id="contact" class="relative z-20 py-16 bg-gradient-to-r from-black/70 via-black/50 to-black/70 text-white">
     <div class="max-w-4xl mx-auto px-6">
       <h2 class="text-3xl font-bold text-center text-yellow-400 mb-10">Contact Us</h2>
@@ -279,6 +280,7 @@
       </div>
     </div>
   </section>
+
 
 
   <!-- Footer -->
