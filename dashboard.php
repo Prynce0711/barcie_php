@@ -407,8 +407,7 @@ while ($row = $result->fetch_assoc()) {
       </form>
 
 
-
-      <h2>Bookings</h2>
+            
       <h2>Bookings</h2>
       <table>
         <tr>
