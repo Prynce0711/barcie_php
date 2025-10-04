@@ -1,0 +1,9 @@
+node_modules
+vendor
+.git
+.gitignore
+uploads
+README.md
+README_DOCKER.md
+docker-compose.yml
+Dockerfile
