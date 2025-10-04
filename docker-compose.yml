@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    image: carlxd0711/barcie:latest
     ports:
       - "7080:80"
     environment:
