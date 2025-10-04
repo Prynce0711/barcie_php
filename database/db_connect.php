@@ -4,11 +4,11 @@
 // Start session
 
 
-// Database connection details
-$host = "localhost";
-$user = "root";       // Default username in XAMPP
-$pass = "";           // Default password in XAMPP
-$dbname = "barcie_db";
+// Database connection details (allow environment overrides for Docker)
+$host = getenv('DB_HOST') ?: "localhost";
+$user = getenv('DB_USER') ?: "root";       // Default username in XAMPP / Docker
+$pass = getenv('DB_PASS') ?: "";           // Default password in XAMPP / Docker
+$dbname = getenv('DB_NAME') ?: "barcie_db";
 
 
 // Create connection
