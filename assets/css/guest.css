@@ -292,18 +292,20 @@ footer p { margin: 0; font-size: 0.9rem; }
 
 /* ---------------- RESPONSIVE ---------------- */
 @media (max-width: 768px) {
-  .main-content {
-    margin-left: 0;
+.main-content {
+    margin-left: 190px;
+    width: calc(100% - 190px);
     padding: 20px;
-    width: 100%; /* Ensure it takes full width */
   }
   .sidebar-guest {
-    width: 200px;
-    position: absolute; /* Prevent overlap by making it absolute */
+    width: 180px;
+    transform: none;
   }
+  @media (max-width: 900px) {
   .cards-grid {
-    grid-template-columns: 1fr; /* Single column on mobile */
+    flex-direction: column;
   }
+}
   .card {
     height: 180px;
   }
