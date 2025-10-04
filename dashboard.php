@@ -211,6 +211,10 @@ while ($row = $result->fetch_assoc()) {
         ?>
 
 
+
+        <title>Helloooooooooo</title>
+
+
         <!-- Right Column: Stats & Activity -->
         <div class="dashboard-right">
           <!-- Quick Stats Card -->
@@ -345,7 +349,7 @@ while ($row = $result->fetch_assoc()) {
           </div>
         <?php endwhile; ?>
       </div>
-      
+
     </section>
 
 
@@ -744,22 +748,22 @@ ${item.room_number ? `<p>Room Number: ${item.room_number}</p>` : ''}
     <!-- ✅ Script for toggling edit form -->
 
     <script>
-document.addEventListener("DOMContentLoaded", () => {
-  // Attach toggle functionality to edit buttons
-  document.querySelectorAll(".toggle-edit").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const form = btn.nextElementSibling; // the edit-form right after button
-      if (form.style.display === "none" || form.style.display === "") {
-        form.style.display = "block";
-        btn.textContent = "Cancel";
-      } else {
-        form.style.display = "none";
-        btn.textContent = "Edit";
-      }
-    });
-  });
-});
-</script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Attach toggle functionality to edit buttons
+        document.querySelectorAll(".toggle-edit").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const form = btn.nextElementSibling; // the edit-form right after button
+            if (form.style.display === "none" || form.style.display === "") {
+              form.style.display = "block";
+              btn.textContent = "Cancel";
+            } else {
+              form.style.display = "none";
+              btn.textContent = "Edit";
+            }
+          });
+        });
+      });
+    </script>
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -778,9 +782,9 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-    
-    
-        
+
+
+
 
         // Init booking form display
         toggleBookingForm();
@@ -789,7 +793,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
           radio.addEventListener("change", toggleBookingForm);
         });
-        
+
 
 
         /* ---------------- Item Filter Toggle ---------------- */
@@ -903,27 +907,27 @@ document.addEventListener("DOMContentLoaded", () => {
     </script>
 
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // Handle edit form toggle
-    document.querySelectorAll(".card").forEach(card => {
-      const toggleBtn = card.querySelector("button.edit-form"); // the toggle button
-      const editForm = card.querySelector("form.edit-form");    // the hidden form
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Handle edit form toggle
+        document.querySelectorAll(".card").forEach(card => {
+          const toggleBtn = card.querySelector("button.edit-form"); // the toggle button
+          const editForm = card.querySelector("form.edit-form");    // the hidden form
 
-      if (toggleBtn && editForm) {
-        toggleBtn.addEventListener("click", () => {
-          if (editForm.style.display === "none" || editForm.style.display === "") {
-            editForm.style.display = "block";
-            toggleBtn.textContent = "Close Edit";
-          } else {
-            editForm.style.display = "none";
-            toggleBtn.textContent = "Edit";
+          if (toggleBtn && editForm) {
+            toggleBtn.addEventListener("click", () => {
+              if (editForm.style.display === "none" || editForm.style.display === "") {
+                editForm.style.display = "block";
+                toggleBtn.textContent = "Close Edit";
+              } else {
+                editForm.style.display = "none";
+                toggleBtn.textContent = "Edit";
+              }
+            });
           }
         });
-      }
-    });
-  });
-</script>
+      });
+    </script>
 
 
 </body>
