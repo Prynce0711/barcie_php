@@ -4,27 +4,81 @@ services:
   web:
     build: .
     ports:
-      - "8080:80"
+      - "7080:80"
     volumes:
       - ./:/var/www/html
     environment:
       - DB_HOST=db
       - DB_USER=${DB_USER:-root}
-      - DB_PASS=${DB_PASS:-}
+      - DB_PASS=${DB_PASS:-root}
       - DB_NAME=${DB_NAME:-barcie_db}
     depends_on:
       - db
+    networks:
+      app_net:
+        ipv4_address: 10.20.0.3
 
   db:
     image: mariadb:10.4
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASS:-}
-      MYSQL_DATABASE: ${DB_NAME:-barcie_db}
-      MYSQL_USER: ${DB_USER:-root}
-      MYSQL_PASSWORD: ${DB_PASS:-}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS:-root}
+      MARIADB_DATABASE: ${DB_NAME:-barcie_db}
+      MARIADB_USER: ${DB_USER:-prynce}
+      MARIADB_PASSWORD: ${DB_PASS:-root}
+      
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      app_net:
+        ipv4_address: 10.20.0.2
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    ports:
+      - "7081:80"
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+      - PMA_ARBITRARY=1
+      # Optionally set blowfish secret via env: PMA_BLOWFISH_SECRET=some_secret
+    depends_on:
+      - db
+    networks:
+      app_net:
+        ipv4_address: 10.20.0.4
+
+  tailscale-barcie:
+    image: tailscale/tailscale:latest
+    hostname: phpmyadmin
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_EXTRA_ARGS=--advertise-tags=tag:container --advertise-routes=10.20.0.0/24
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    volumes:
+      - ${PWD}/tailscale-nginx/state:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+    restart: unless-stopped
+    networks:
+      app_net:
+        ipv4_address: 10.20.0.5
+  
 
 volumes:
   db_data:
+  tailscale_state:
+
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.20.0.0/24
+          gateway: 10.20.0.1
+
