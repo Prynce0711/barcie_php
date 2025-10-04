@@ -212,7 +212,6 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-        <title>Helloooooooooo</title>
 
 
         <!-- Right Column: Stats & Activity -->
@@ -574,7 +573,10 @@ while ($row = $result->fetch_assoc()) {
 
     <!-- Communication -->
     <section id="communication" class="content-section">
-      <h2>Communication</h2>
+      <h2>Communication
+
+      GG erp
+      </h2>
 
       <!-- Chat messages -->
       <div id="chat-box" class="chat-box">
