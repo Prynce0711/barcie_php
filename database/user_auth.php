@@ -26,13 +26,105 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'get_receipt_no') {
-        // Generate next reservation receipt number
-        $result = $conn->query("SELECT MAX(id) AS max_id FROM bookings WHERE type='reservation'");
-        $row = $result->fetch_assoc();
-        $nextId = ($row['max_id'] ?? 0) + 1;
-        $receipt_no = str_pad($nextId, 4, "0", STR_PAD_LEFT);
         header('Content-Type: application/json');
-        echo json_encode(['receipt_no' => $receipt_no]);
+        try {
+            // Get the current date for receipt format
+            $currentDate = date('Ymd');
+            
+            // Check if receipt_no column exists and its type
+            $checkColumn = $conn->query("SHOW COLUMNS FROM bookings LIKE 'receipt_no'");
+            if ($checkColumn->num_rows == 0) {
+                // Add receipt_no column as VARCHAR
+                $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
+            } else {
+                // Check if it's the wrong type and fix it
+                $columnInfo = $checkColumn->fetch_assoc();
+                if (strpos(strtolower($columnInfo['Type']), 'int') !== false) {
+                    // Drop and recreate as VARCHAR
+                    $conn->query("ALTER TABLE bookings DROP COLUMN receipt_no");
+                    $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
+                }
+            }
+            
+            // Get the highest receipt number for today from receipt_no column
+            $stmt = $conn->prepare("SELECT receipt_no FROM bookings WHERE receipt_no LIKE ? ORDER BY receipt_no DESC LIMIT 1");
+            $datePattern = "BARCIE-{$currentDate}-%";
+            $stmt->bind_param("s", $datePattern);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                // Extract the last number from existing receipt
+                $lastReceipt = $row['receipt_no'];
+                $parts = explode('-', $lastReceipt);
+                $lastNumber = isset($parts[2]) ? intval($parts[2]) : 0;
+                $nextNumber = $lastNumber + 1;
+            } else {
+                // First receipt of the day
+                $nextNumber = 1;
+            }
+            
+            // Format with leading zeros (e.g., 0001, 0002, etc.)
+            $formattedNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            
+            // Create receipt number: BARCIE-YYYYMMDD-0001
+            $receiptNumber = "BARCIE-{$currentDate}-{$formattedNumber}";
+            
+            echo json_encode([
+                'success' => true,
+                'receipt_no' => $receiptNumber,
+                'next_number' => $nextNumber,
+                'date' => $currentDate
+            ]);
+            
+            $stmt->close();
+            
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+        $conn->close();
+        exit;
+    }
+
+    if ($_GET['action'] === 'fix_receipt_db') {
+        header('Content-Type: application/json');
+        try {
+            echo json_encode(['message' => 'Checking bookings table structure...']);
+            
+            // Get current table structure
+            $result = $conn->query('DESCRIBE bookings');
+            $columns = [];
+            while ($row = $result->fetch_assoc()) {
+                $columns[] = $row['Field'] . ' - ' . $row['Type'];
+            }
+            
+            // Fix receipt_no column
+            $conn->query('ALTER TABLE bookings DROP COLUMN IF EXISTS receipt_no');
+            $conn->query('ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id');
+            
+            // Get updated structure
+            $result = $conn->query('DESCRIBE bookings');
+            $updatedColumns = [];
+            while ($row = $result->fetch_assoc()) {
+                $updatedColumns[] = $row['Field'] . ' - ' . $row['Type'];
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Database schema fixed successfully!',
+                'before' => $columns,
+                'after' => $updatedColumns
+            ]);
+            
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
         $conn->close();
         exit;
     }
@@ -199,10 +291,31 @@ if ($action === 'create_booking') {
     $status = "pending";
 
     if ($type === 'reservation') {
-        // Generate receipt no
-        $result = $conn->query("SELECT MAX(id) AS max_id FROM bookings WHERE type='reservation'");
-        $row = $result->fetch_assoc();
-        $receipt_no = str_pad((($row['max_id'] ?? 0) + 1), 4, "0", STR_PAD_LEFT);
+        // Get the receipt number from the form
+        $receipt_no = $_POST['receipt_no'] ?? '';
+        
+        // If no receipt number provided, generate one
+        if (empty($receipt_no)) {
+            $currentDate = date('Ymd');
+            $stmt = $conn->prepare("SELECT receipt_no FROM bookings WHERE receipt_no LIKE ? ORDER BY receipt_no DESC LIMIT 1");
+            $datePattern = "BARCIE-{$currentDate}-%";
+            $stmt->bind_param("s", $datePattern);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $lastReceipt = $row['receipt_no'];
+                $parts = explode('-', $lastReceipt);
+                $lastNumber = isset($parts[2]) ? intval($parts[2]) : 0;
+                $nextNumber = $lastNumber + 1;
+            } else {
+                $nextNumber = 1;
+            }
+            
+            $formattedNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            $receipt_no = "BARCIE-{$currentDate}-{$formattedNumber}";
+            $stmt->close();
+        }
 
         $guest_name = $conn->real_escape_string($_POST['guest_name'] ?? '');
         $contact = $conn->real_escape_string($_POST['contact_number'] ?? '');
@@ -214,9 +327,35 @@ if ($action === 'create_booking') {
 
         $details = "Receipt: $receipt_no | Guest: $guest_name | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company";
 
-        $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssss", $user_id, $type, $details, $status, $checkin, $checkout);
-        $_SESSION['booking_msg'] = $stmt->execute() ? "Reservation saved." : "Error: " . $stmt->error;
+        // Try to insert with receipt_no column, fallback if column doesn't exist
+        try {
+            $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, receipt_no, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("issssss", $user_id, $type, $receipt_no, $details, $status, $checkin, $checkout);
+            $success = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            // If receipt_no column doesn't exist or is wrong type, try to fix it
+            if (strpos($e->getMessage(), 'receipt_no') !== false) {
+                try {
+                    // Try to add/fix the column
+                    $conn->query("ALTER TABLE bookings DROP COLUMN IF EXISTS receipt_no");
+                    $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
+                    
+                    // Retry the insert
+                    $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, receipt_no, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("issssss", $user_id, $type, $receipt_no, $details, $status, $checkin, $checkout);
+                    $success = $stmt->execute();
+                } catch (Exception $e2) {
+                    // Fallback to original format without receipt_no column
+                    $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("isssss", $user_id, $type, $details, $status, $checkin, $checkout);
+                    $success = $stmt->execute();
+                }
+            } else {
+                throw $e;
+            }
+        }
+        
+        $_SESSION['booking_msg'] = $success ? "Reservation saved with receipt number: $receipt_no" : "Error: " . $stmt->error;
         $stmt->close();
     } elseif ($type === 'pencil') {
         $pencil_date = $_POST['pencil_date'] ?? null;
