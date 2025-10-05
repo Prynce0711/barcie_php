@@ -98,7 +98,7 @@
       <section class="flex justify-center items-center h-[calc(100vh-160px)] px-6 relative z-20">
         <div class="glass-card p-10 text-center max-w-xl space-y-4 transition transform hover:-translate-y-2">
           <h2 class="text-3xl font-bold text-yellow-400">Welcome to Barcie International Center</h2>
-          <p>Barasoain Center for Innovative Education (BarCIE)</p>
+    
            <p>Barasoain Center for Innovative Education (BarCIE)</p>
           <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
           <button onclick="showSection('user-auth')"
