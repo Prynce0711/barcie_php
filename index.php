@@ -100,6 +100,10 @@
           <h2 class="text-3xl font-bold text-yellow-400">Welcome to Barcie International Center</h2>
     
            <p>Barasoain Center for Innovative Education (BarCIE)</p>
+           <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
+           <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
+           <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
+           <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
           <p>LCUP's Laboratory Facility for BS Tourism Mana</p>
           <button onclick="showSection('user-auth')"
             class="btn mt-4 px-6 py-2 rounded-md font-bold bg-yellow-400 text-black hover:shadow-xl">Get
