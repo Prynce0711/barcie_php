@@ -57,7 +57,7 @@ $stmt->close();
     <button onclick="showSection('user')">User Management</button>
     <button onclick="showSection('communication')">Communication</button>
     <button onclick="showSection('feedback')">Feedback</button>
-    <a href="index.php">Back to Homepage</a>
+    <a href="index.php">Log out</a>
   </aside>
 
   <!-- Main Content -->
@@ -124,44 +124,147 @@ $stmt->close();
         (Function Hall)</label>
 
       <!-- Reservation Form -->
-      <form id="reservationForm" method="POST" action="database/user_auth.php">
+      <form id="reservationForm" method="POST" action="database/user_auth.php" class="compact-form">
         <h3>Reservation Form</h3>
         <input type="hidden" name="action" value="create_booking">
         <input type="hidden" name="booking_type" value="reservation">
 
-        <label>Official Receipt No.:
-          <input type="text" name="receipt_no" id="receipt_no" readonly>
-        </label>
-        <label>Guest Name: <input type="text" name="guest_name" required></label>
-        <label>Contact Number: <input type="text" name="contact_number" required></label>
-        <label>Email Address: <input type="email" name="email" required></label>
-        <label>Check-in Date & Time: <input type="datetime-local" name="checkin" required></label>
-        <label>Check-out Date & Time: <input type="datetime-local" name="checkout" required></label>
-        <label>Number of Occupants: <input type="number" name="occupants" min="1" required></label>
-        <label>Company Affiliation (optional): <input type="text" name="company"></label>
-        <label>Company Contact Number (optional): <input type="text" name="company_contact"></label>
-        <button type="submit">Confirm Reservation</button>
+        <div class="form-grid">
+          <label class="full-width">
+            <span class="label-text">Official Receipt No.:</span>
+            <input type="text" name="receipt_no" id="receipt_no" readonly>
+          </label>
+          
+          <label class="full-width">
+            <span class="label-text">Select Room *</span>
+            <select name="room_id" id="room_select" required>
+              <option value="">Choose a room...</option>
+              <?php
+              // Fetch available rooms from database
+              $room_stmt = $conn->prepare("SELECT id, name, room_number, capacity, price FROM items WHERE item_type = 'room' ORDER BY name");
+              $room_stmt->execute();
+              $room_result = $room_stmt->get_result();
+              while ($room = $room_result->fetch_assoc()) {
+                $room_display = $room['name'];
+                if ($room['room_number']) {
+                  $room_display .= " (Room #" . $room['room_number'] . ")";
+                }
+                $room_display .= " - " . $room['capacity'] . " persons - ₱" . number_format($room['price']) . "/night";
+                echo "<option value='" . $room['id'] . "'>" . htmlspecialchars($room_display) . "</option>";
+              }
+              $room_stmt->close();
+              ?>
+            </select>
+          </label>
+          
+          <label>
+            <span class="label-text">Guest Name *</span>
+            <input type="text" name="guest_name" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Contact Number *</span>
+            <input type="text" name="contact_number" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Email Address *</span>
+            <input type="email" name="email" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Check-in Date & Time *</span>
+            <input type="datetime-local" name="checkin" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Check-out Date & Time *</span>
+            <input type="datetime-local" name="checkout" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Number of Occupants *</span>
+            <input type="number" name="occupants" min="1" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Company Affiliation</span>
+            <input type="text" name="company" placeholder="Optional">
+          </label>
+          
+          <label>
+            <span class="label-text">Company Contact</span>
+            <input type="text" name="company_contact" placeholder="Optional">
+          </label>
+          
+          <button type="submit">Confirm Reservation</button>
+        </div>
       </form>
 
       <!-- Pencil Booking Form -->
-      <form id="pencilForm" method="POST" action="database/user_auth.php" style="display:none;">
+      <form id="pencilForm" method="POST" action="database/user_auth.php" class="compact-form" style="display:none;">
         <h3>Pencil Booking Form (Function Hall)</h3>
         <input type="hidden" name="action" value="create_booking">
         <input type="hidden" name="booking_type" value="pencil">
 
-        <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>"
-            readonly></label>
-        <label>Event Type: <input type="text" name="event_type" required></label>
-        <label>Function Hall: <input type="text" name="hall" required></label>
-        <label>Number of Pax: <input type="number" name="pax" min="1" required></label>
-        <label>Time of Event (From): <input type="time" name="time_from" required></label>
-        <label>Time of Event (To): <input type="time" name="time_to" required></label>
-        <label>Food Provider/Caterer: <input type="text" name="caterer" required></label>
-        <label>Contact Person: <input type="text" name="contact_person" required></label>
-        <label>Contact Number: <input type="text" name="contact_number" required></label>
-        <label>Company Affiliation (optional): <input type="text" name="company"></label>
-        <label>Company Number (optional): <input type="text" name="company_number"></label>
-        <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
+        <div class="form-grid">
+          <label class="full-width">
+            <span class="label-text">Date of Pencil Booking:</span>
+            <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>" readonly>
+          </label>
+          
+          <label>
+            <span class="label-text">Event Type *</span>
+            <input type="text" name="event_type" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Function Hall *</span>
+            <input type="text" name="hall" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Number of Pax *</span>
+            <input type="number" name="pax" min="1" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Time From *</span>
+            <input type="time" name="time_from" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Time To *</span>
+            <input type="time" name="time_to" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Food Provider/Caterer *</span>
+            <input type="text" name="caterer" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Contact Person *</span>
+            <input type="text" name="contact_person" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Contact Number *</span>
+            <input type="text" name="contact_number" required>
+          </label>
+          
+          <label>
+            <span class="label-text">Company Affiliation</span>
+            <input type="text" name="company" placeholder="Optional">
+          </label>
+          
+          <label>
+            <span class="label-text">Company Number</span>
+            <input type="text" name="company_number" placeholder="Optional">
+          </label>
+          
+          <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
+        </div>
       </form>
 
     </section>
@@ -180,45 +283,116 @@ $stmt->close();
 
     <!-- User Management -->
     <section id="user" class="content-section">
+      <h2>User Management</h2>
+      
       <form action="database/user_auth.php" method="POST">
+        <h3>Update Profile</h3>
         <input type="hidden" name="action" value="update">
+        
         <label>Username:
           <input type="text" name="username" value="<?php echo htmlspecialchars($username); ?>" required>
         </label>
+        
         <label>Email:
           <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
         </label>
+        
         <label>New Password (leave blank if unchanged):
-          <input type="password" name="password">
+          <input type="password" name="password" placeholder="Enter new password or leave blank">
         </label>
+        
         <button type="submit">Update Profile</button>
       </form>
 
-      <h3>Your Bookings</h3>
-      <table border="1">
-        <tr>
-          <th>ID</th>
-          <th>Type</th>
-          <th>Details</th>
-          <th>Date</th>
-          <th>Status</th>
-        </tr>
+      <div class="bookings-section">
+        <h3>📋 Your Bookings</h3>
         <?php
         $stmt = $conn->prepare("SELECT id, type, details, created_at, status FROM bookings WHERE user_id=? ORDER BY id DESC");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        while ($row = $result->fetch_assoc()) {
-          echo "<tr>
-                  <td>{$row['id']}</td>
-                  <td>{$row['type']}</td>
-                  <td>{$row['details']}</td>
-                  <td>{$row['created_at']}</td>
-                  <td>{$row['status']}</td>
-                </tr>";
+        
+        if ($result->num_rows > 0) {
+        ?>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Date Created</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              while ($row = $result->fetch_assoc()) {
+                $statusClass = 'status-' . strtolower($row['status']);
+                $bookingType = ucfirst($row['type']);
+                $formattedDate = date('M d, Y g:i A', strtotime($row['created_at']));
+                
+                // Parse and format booking details with labels
+                $details = $row['details'];
+                $formattedDetails = '';
+                
+                // Try to parse JSON details first
+                $detailsArray = json_decode($details, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($detailsArray)) {
+                  // If it's JSON, format with labels
+                  foreach ($detailsArray as $key => $value) {
+                    if (!empty($value)) {
+                      $label = ucwords(str_replace('_', ' ', $key));
+                      $formattedDetails .= "<div class='detail-item'><span class='detail-label'>{$label}:</span><span class='detail-value'>{$value}</span></div>";
+                    }
+                  }
+                } else {
+                  // If it's plain text, try to extract common patterns
+                  $lines = explode(',', $details);
+                  foreach ($lines as $line) {
+                    $line = trim($line);
+                    if (!empty($line)) {
+                      if (strpos($line, ':') !== false) {
+                        // Already has label
+                        list($label, $value) = explode(':', $line, 2);
+                        $formattedDetails .= "<div class='detail-item'><span class='detail-label'>" . trim($label) . ":</span><span class='detail-value'>" . trim($value) . "</span></div>";
+                      } else {
+                        // Plain text, add as general info
+                        $formattedDetails .= "<div class='detail-item'><span class='detail-label'>Info:</span><span class='detail-value'>{$line}</span></div>";
+                      }
+                    }
+                  }
+                }
+                
+                // If no formatted details, show original
+                if (empty($formattedDetails)) {
+                  $formattedDetails = "<div class='detail-item'><span class='detail-label'>Details:</span><span class='detail-value'>{$details}</span></div>";
+                }
+                
+                echo "<tr>
+                        <td><strong>#{$row['id']}</strong></td>
+                        <td><span class='booking-type'>{$bookingType}</span></td>
+                        <td><div class='booking-details'>{$formattedDetails}</div></td>
+                        <td><span class='booking-date'>{$formattedDate}</span></td>
+                        <td><span class='status-badge {$statusClass}'>{$row['status']}</span></td>
+                      </tr>";
+              }
+              ?>
+            </tbody>
+          </table>
+        </div>
+        <?php
+        } else {
+        ?>
+        <div class="no-bookings">
+          <i>📅</i>
+          <p>You don't have any bookings yet.</p>
+          <p>Visit the <a href="#" onclick="showSection('booking', this)" style="color: #3498db;">Booking & Reservation</a> section to make your first booking!</p>
+        </div>
+        <?php
         }
         ?>
-      </table>
+      </div>
     </section>
 
 
