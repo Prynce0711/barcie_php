@@ -52,9 +52,10 @@ BarCIE Hotel Management System is a full-featured web application designed to st
 ## 🛠️ Technology Stack
 
 ### Backend
-- **PHP 8.x**: Server-side logic and database interactions
-- **MySQL**: Relational database for data storage
+- **PHP 8.2**: Server-side logic and database interactions
+- **MySQL/MariaDB**: Relational database for data storage
 - **Session Management**: PHP sessions for authentication
+- **Apache**: Web server with mod_rewrite enabled
 
 ### Frontend
 - **HTML5 & CSS3**: Modern markup and styling
@@ -64,8 +65,12 @@ BarCIE Hotel Management System is a full-featured web application designed to st
 - **Font Awesome**: Icon library
 - **Responsive Design**: Mobile-first approach
 
-### Development Environment
-- **XAMPP**: Local development server
+### Development & Deployment
+- **Docker**: Containerized deployment with PHP 8.2-Apache
+- **Docker Compose**: Multi-container orchestration
+- **XAMPP**: Alternative local development server
+- **GitHub Actions**: Automated CI/CD pipeline
+- **Docker Hub**: Container image registry
 - **Browser Sync**: Live reloading during development
 - **Git**: Version control
 
@@ -78,9 +83,19 @@ barcie_php/
 ├── 📄 Guest.php              # Guest portal interface
 ├── 📄 package.json           # Project dependencies
 ├── 📄 README.md              # Project documentation
+├── 📄 README_DOCKER.md       # Docker deployment guide
+├── 📄 Dockerfile             # Docker container configuration
+├── 📄 docker-compose.yml     # Multi-container orchestration
+├── 📄 .env.example           # Environment variables template
+├── 📄 .gitignore             # Git ignore patterns
+├── 📄 .dockerignore          # Docker ignore patterns
+│
+├── 📂 .github/
+│   └── 📂 workflows/
+│       └── 📄 build-docker.yaml # CI/CD pipeline for Docker Hub
 │
 ├── 📂 database/
-│   ├── 📄 db_connect.php     # Database connection
+│   ├── 📄 db_connect.php     # Database connection with env support
 │   ├── 📄 user_auth.php      # Authentication & user management
 │   ├── 📄 admin_login.php    # Admin authentication
 │   └── 📄 fetch_items.php    # Room/facility data API
@@ -168,12 +183,52 @@ CREATE TABLE feedback (
 
 ## 🚀 Installation & Setup
 
-### Prerequisites
-- **XAMPP** (Apache, MySQL, PHP)
+### 🐳 Docker Deployment (Recommended)
+
+**Prerequisites**
+- Docker and Docker Compose installed
+- Git (optional, for cloning)
+
+**Quick Start**
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/Prynce0711/barcie_php.git
+   cd barcie_php
+   ```
+
+2. **Configure Environment**
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+   
+   # Edit .env file with your database credentials
+   # Default values work for Docker setup
+   ```
+
+3. **Build and Start Containers**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Access the Application**
+   ```
+   http://localhost:8080
+   ```
+
+5. **Import Database (if needed)**
+   ```bash
+   # Import your SQL dump
+   docker exec -i $(docker-compose ps -q db) mysql -u root -p barcie_db < your_dump.sql
+   ```
+
+### 🖥️ Traditional XAMPP Setup
+
+**Prerequisites**
+- **XAMPP** (Apache, MySQL, PHP 8.x)
 - **Web Browser** (Chrome, Firefox, Safari)
 - **Git** (optional, for cloning)
 
-### Step-by-Step Installation
+**Step-by-Step Installation**
 
 1. **Download & Install XAMPP**
    ```bash
@@ -205,7 +260,8 @@ CREATE TABLE feedback (
 
 5. **Configure Database Connection**
    ```php
-   // Verify database/db_connect.php settings
+   // Create .env file from .env.example
+   // Update database/db_connect.php settings if needed
    $host = "localhost";
    $user = "root";
    $pass = "";
@@ -245,6 +301,18 @@ CREATE TABLE feedback (
 
 ## 🔧 Configuration
 
+### Environment Variables
+```bash
+# Database Configuration (.env file)
+DB_HOST=localhost          # Database host (use 'db' for Docker)
+DB_USER=root              # Database username
+DB_PASS=                  # Database password (empty for XAMPP)
+DB_NAME=barcie_db         # Database name
+
+# Tailscale Configuration (optional)
+TS_AUTHKEY=your_authkey   # For VPN networking
+```
+
 ### Email Validation
 ```javascript
 // Email must end with @email.lcup.edu.ph
@@ -262,6 +330,21 @@ const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
 // Maximum file size for image uploads
 $maxFileSize = 5 * 1024 * 1024; // 5MB
 $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+```
+
+### Docker Configuration
+```yaml
+# docker-compose.yml services
+services:
+  web:                    # PHP 8.2 Apache container
+    build: .
+    ports: ["8080:80"]
+    
+  db:                     # MariaDB database container
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_DATABASE: barcie_db
 ```
 
 ## 🎨 Customization
@@ -291,23 +374,63 @@ $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
 
 1. **Database Connection Failed**
    ```
-   Solution: Check XAMPP MySQL service and database credentials
+   XAMPP: Check MySQL service and database credentials in .env
+   Docker: Ensure containers are running with docker-compose ps
    ```
 
 2. **Images Not Loading**
    ```
    Solution: Verify uploads folder permissions and file paths
+   Docker: Check volume mounts in docker-compose.yml
    ```
 
 3. **Session Issues**
    ```
    Solution: Check PHP session configuration and cookies
+   Clear browser cache and restart containers if using Docker
    ```
 
 4. **Email Validation Errors**
    ```
    Solution: Ensure email follows @email.lcup.edu.ph format
    ```
+
+5. **Docker Build Issues**
+   ```
+   # Clear Docker cache and rebuild
+   docker-compose down
+   docker system prune -a
+   docker-compose up --build
+   ```
+
+6. **Port Conflicts**
+   ```
+   # If port 8080 is busy, change in docker-compose.yml
+   ports: ["8081:80"]  # Use port 8081 instead
+   ```
+
+### Docker-Specific Troubleshooting
+
+**Container Logs**
+```bash
+# Check web container logs
+docker-compose logs web
+
+# Check database container logs
+docker-compose logs db
+```
+
+**Database Access**
+```bash
+# Connect to database container
+docker-compose exec db mysql -u root -p barcie_db
+```
+
+**File Permissions**
+```bash
+# Fix file permissions in container
+docker-compose exec web chown -R www-data:www-data /var/www/html
+```
 
 ## 📞 Contact Information
 
@@ -328,9 +451,45 @@ $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
 - ✅ **Guest Portal**
 - ✅ **Database Integration**
 - ✅ **Responsive Design**
+- ✅ **Docker Containerization**
+- ✅ **CI/CD Pipeline (GitHub Actions)**
+- ✅ **Environment Configuration**
 - 🔄 **Payment Integration** (In Progress)
 - 🔄 **Advanced Reporting** (Planned)
 - 🔄 **API Development** (Planned)
+
+## 🚀 Deployment & DevOps
+
+### Docker Hub Registry
+- **Image**: `carlxd0711/barcie:latest`
+- **Auto-build**: Triggered on main branch commits
+- **Registry**: Docker Hub public repository
+
+### CI/CD Pipeline
+- **GitHub Actions**: Automated build and push to Docker Hub
+- **Triggers**: Push to main branch, pull requests, manual dispatch
+- **Build Environment**: Ubuntu latest with Docker
+- **Security**: Docker Hub credentials stored as GitHub secrets
+
+### Production Deployment Options
+
+1. **Docker Hub Pull**
+   ```bash
+   docker pull carlxd0711/barcie:latest
+   docker run -d -p 8080:80 carlxd0711/barcie:latest
+   ```
+
+2. **Docker Compose Production**
+   ```bash
+   # Use production docker-compose.yml
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+3. **Manual Build**
+   ```bash
+   docker build -t barcie-php .
+   docker run -d -p 8080:80 barcie-php
+   ```
 
 ## 🎓 Academic Information
 
@@ -363,15 +522,25 @@ This project is developed as part of a capstone project for educational purposes
 
 ## 🔄 Version History
 
+- **v2.0.0** - Docker deployment and CI/CD integration
+  - Added Docker containerization with PHP 8.2-Apache
+  - Implemented Docker Compose for multi-container setup
+  - GitHub Actions CI/CD pipeline for automated builds
+  - Environment variable configuration support
+  - Docker Hub registry integration
+  - Enhanced database connection with environment variables
+
 - **v1.0.0** - Initial release with core functionality
-- **Features**: Authentication, booking system, admin dashboard
-- **Database**: MySQL with complete schema
-- **UI/UX**: Responsive design with dark mode
+  - Authentication system with dual login
+  - Room and booking management
+  - Admin dashboard with calendar integration
+  - Guest portal with responsive design
+  - MySQL database with complete schema
+  - UI/UX with dark mode support
 
 ---
 
 **Built with ❤️ for BarCIE International Center**
 
 *Barasoain Center for Innovative Education - Your gateway to hospitality excellence*
-
 
