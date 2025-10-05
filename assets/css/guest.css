@@ -363,6 +363,8 @@ table tr:hover {
   border: 1px solid rgba(52,152,219,0.3);
 }
 
+
+
 /* ---------------- VIDEO ---------------- */
 .video-container { margin-top: 20px; display: flex; gap: 15px; }
 video {
