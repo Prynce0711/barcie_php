@@ -39,7 +39,7 @@ $stmt->close();
 
 <head>
   <meta charset="UTF-8">
-   <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Guest Portal</title>
   <link rel="stylesheet" href="assets/css/guest.css">
   <script src="assets/js/script.js" defer></script>
@@ -109,17 +109,11 @@ $stmt->close();
 
       <div class="cards-grid" id="cards-grid"></div>
 
-      
+
     </section>
 
 
-
-
-
-
-
-
-     <!-- Booking -->
+    <!-- Booking -->
     <section id="booking" class="content-section">
       <h2>Booking & Reservation</h2>
 
@@ -129,45 +123,46 @@ $stmt->close();
       <label><input type="radio" name="bookingType" value="pencil" onchange="toggleBookingForm()"> Pencil Booking
         (Function Hall)</label>
 
-      <<!-- Reservation Form -->
-<form id="reservationForm" method="POST" action="database/user_auth.php">
-  <h3>Reservation Form</h3>
-  <input type="hidden" name="action" value="create_booking">
-  <input type="hidden" name="booking_type" value="reservation">
+      <!-- Reservation Form -->
+      <form id="reservationForm" method="POST" action="database/user_auth.php">
+        <h3>Reservation Form</h3>
+        <input type="hidden" name="action" value="create_booking">
+        <input type="hidden" name="booking_type" value="reservation">
 
-  <label>Official Receipt No.: 
-    <input type="text" name="receipt_no" id="receipt_no" readonly>
-  </label>
-  <label>Guest Name: <input type="text" name="guest_name" required></label>
-  <label>Contact Number: <input type="text" name="contact_number" required></label>
-  <label>Email Address: <input type="email" name="email" required></label>
-  <label>Check-in Date & Time: <input type="datetime-local" name="checkin" required></label>
-  <label>Check-out Date & Time: <input type="datetime-local" name="checkout" required></label>
-  <label>Number of Occupants: <input type="number" name="occupants" min="1" required></label>
-  <label>Company Affiliation (optional): <input type="text" name="company"></label>
-  <label>Company Contact Number (optional): <input type="text" name="company_contact"></label>
-  <button type="submit">Confirm Reservation</button>
-</form>
+        <label>Official Receipt No.:
+          <input type="text" name="receipt_no" id="receipt_no" readonly>
+        </label>
+        <label>Guest Name: <input type="text" name="guest_name" required></label>
+        <label>Contact Number: <input type="text" name="contact_number" required></label>
+        <label>Email Address: <input type="email" name="email" required></label>
+        <label>Check-in Date & Time: <input type="datetime-local" name="checkin" required></label>
+        <label>Check-out Date & Time: <input type="datetime-local" name="checkout" required></label>
+        <label>Number of Occupants: <input type="number" name="occupants" min="1" required></label>
+        <label>Company Affiliation (optional): <input type="text" name="company"></label>
+        <label>Company Contact Number (optional): <input type="text" name="company_contact"></label>
+        <button type="submit">Confirm Reservation</button>
+      </form>
 
-<!-- Pencil Booking Form -->
-<form id="pencilForm" method="POST" action="database/user_auth.php" style="display:none;">
-  <h3>Pencil Booking Form (Function Hall)</h3>
-  <input type="hidden" name="action" value="create_booking">
-  <input type="hidden" name="booking_type" value="pencil">
+      <!-- Pencil Booking Form -->
+      <form id="pencilForm" method="POST" action="database/user_auth.php" style="display:none;">
+        <h3>Pencil Booking Form (Function Hall)</h3>
+        <input type="hidden" name="action" value="create_booking">
+        <input type="hidden" name="booking_type" value="pencil">
 
-  <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>" readonly></label>
-  <label>Event Type: <input type="text" name="event_type" required></label>
-  <label>Function Hall: <input type="text" name="hall" required></label>
-  <label>Number of Pax: <input type="number" name="pax" min="1" required></label>
-  <label>Time of Event (From): <input type="time" name="time_from" required></label>
-  <label>Time of Event (To): <input type="time" name="time_to" required></label>
-  <label>Food Provider/Caterer: <input type="text" name="caterer" required></label>
-  <label>Contact Person: <input type="text" name="contact_person" required></label>
-  <label>Contact Number: <input type="text" name="contact_number" required></label>
-  <label>Company Affiliation (optional): <input type="text" name="company"></label>
-  <label>Company Number (optional): <input type="text" name="company_number"></label>
-  <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
-</form>
+        <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>"
+            readonly></label>
+        <label>Event Type: <input type="text" name="event_type" required></label>
+        <label>Function Hall: <input type="text" name="hall" required></label>
+        <label>Number of Pax: <input type="number" name="pax" min="1" required></label>
+        <label>Time of Event (From): <input type="time" name="time_from" required></label>
+        <label>Time of Event (To): <input type="time" name="time_to" required></label>
+        <label>Food Provider/Caterer: <input type="text" name="caterer" required></label>
+        <label>Contact Person: <input type="text" name="contact_person" required></label>
+        <label>Contact Number: <input type="text" name="contact_number" required></label>
+        <label>Company Affiliation (optional): <input type="text" name="company"></label>
+        <label>Company Number (optional): <input type="text" name="company_number"></label>
+        <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
+      </form>
 
     </section>
 
@@ -226,7 +221,7 @@ $stmt->close();
       </table>
     </section>
 
-  
+
 
     <!-- Communication -->
     <section id="communication" class="content-section">
@@ -241,8 +236,10 @@ $stmt->close();
     <section id="feedback" class="content-section">
       <h2>Feedback</h2>
       <?php
-      if (!empty($success)) echo "<p style='color:green;'>$success</p>";
-      if (!empty($error)) echo "<p style='color:red;'>$error</p>";
+      if (!empty($success))
+        echo "<p style='color:green;'>$success</p>";
+      if (!empty($error))
+        echo "<p style='color:red;'>$error</p>";
       ?>
       <form method="post">
         <input type="hidden" name="action" value="feedback">
@@ -305,4 +302,5 @@ $stmt->close();
 
   <script src="assets/js/guest.js"></script>
 </body>
+
 </html>
