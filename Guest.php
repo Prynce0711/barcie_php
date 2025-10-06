@@ -74,9 +74,7 @@ $stmt->close();
     <button class="btn btn-outline-light mb-2 text-start" onclick="showSection('booking')">
       <i class="fas fa-calendar-check me-2"></i>Booking & Reservation
     </button>
-    <button class="btn btn-outline-light mb-2 text-start" onclick="showSection('payments')">
-      <i class="fas fa-credit-card me-2"></i>Payments
-    </button>
+  
     <button class="btn btn-outline-light mb-2 text-start" onclick="showSection('user')">
       <i class="fas fa-user-cog me-2"></i>User Management
     </button>
@@ -444,17 +442,7 @@ $stmt->close();
 
       </section>
 
-      <!-- Payments -->
-      <section id="payments" class="content-section">
-        <h2>Payments</h2>
-        <p>Choose a payment method:</p>
-        <form>
-          <label><input type="radio" name="payment" checked> Credit Card</label>
-          <label><input type="radio" name="payment"> GCash</label>
-          <label><input type="radio" name="payment"> PayPal</label>
-          <button type="submit">Pay Now</button>
-        </form>
-      </section>
+   
 
       <!-- User Management -->
       <section id="user" class="content-section">
