@@ -128,6 +128,194 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         $conn->close();
         exit;
     }
+
+    // Get chat messages
+    if ($_GET['action'] === 'get_chat_messages') {
+        header('Content-Type: application/json');
+        
+        $user_id = (int)($_GET['user_id'] ?? 0);
+        $user_type = $_GET['user_type'] ?? '';
+        $other_user_id = (int)($_GET['other_user_id'] ?? 0);
+        $other_user_type = $_GET['other_user_type'] ?? '';
+        $limit = (int)($_GET['limit'] ?? 50);
+        $offset = (int)($_GET['offset'] ?? 0);
+        
+        if ($user_id <= 0 || $other_user_id <= 0 || empty($user_type) || empty($other_user_type)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
+            exit;
+        }
+        
+        try {
+            initializeChatTables($conn);
+            
+            $stmt = $conn->prepare("SELECT cm.*, 
+                                   CASE 
+                                       WHEN cm.sender_type = 'admin' THEN (SELECT username FROM users WHERE id = 1 LIMIT 1)
+                                       ELSE (SELECT username FROM users WHERE id = cm.sender_id LIMIT 1)
+                                   END as sender_name
+                                   FROM chat_messages cm 
+                                   WHERE ((cm.sender_id = ? AND cm.sender_type = ? AND cm.receiver_id = ? AND cm.receiver_type = ?) 
+                                          OR (cm.sender_id = ? AND cm.sender_type = ? AND cm.receiver_id = ? AND cm.receiver_type = ?))
+                                   ORDER BY cm.created_at DESC 
+                                   LIMIT ? OFFSET ?");
+            
+            $stmt->bind_param("isissisiiii", 
+                $user_id, $user_type, $other_user_id, $other_user_type,
+                $other_user_id, $other_user_type, $user_id, $user_type,
+                $limit, $offset
+            );
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $messages = [];
+            while ($row = $result->fetch_assoc()) {
+                $messages[] = $row;
+            }
+            $stmt->close();
+            
+            // Mark messages as read
+            $stmt = $conn->prepare("UPDATE chat_messages SET is_read = TRUE 
+                                   WHERE receiver_id = ? AND receiver_type = ? AND sender_id = ? AND sender_type = ? AND is_read = FALSE");
+            $stmt->bind_param("isis", $user_id, $user_type, $other_user_id, $other_user_type);
+            $stmt->execute();
+            $stmt->close();
+            
+            echo json_encode(['success' => true, 'messages' => array_reverse($messages)]);
+            
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // Get chat conversations
+    if ($_GET['action'] === 'get_chat_conversations') {
+        header('Content-Type: application/json');
+        
+        $user_id = (int)($_GET['user_id'] ?? 0);
+        $user_type = $_GET['user_type'] ?? '';
+        $limit = (int)($_GET['limit'] ?? 20);
+        
+        if ($user_id <= 0 || empty($user_type)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
+            exit;
+        }
+        
+        try {
+            initializeChatTables($conn);
+            
+            if ($user_type === 'admin') {
+                // Admin sees all guest conversations
+                $stmt = $conn->prepare("SELECT DISTINCT 
+                                       cm.sender_id as guest_id,
+                                       COALESCE(u.username, 'Guest User') as guest_name,
+                                       u.email as guest_email,
+                                       (SELECT message FROM chat_messages cm2 
+                                        WHERE (cm2.sender_id = cm.sender_id AND cm2.receiver_id = ?) 
+                                           OR (cm2.sender_id = ? AND cm2.receiver_id = cm.sender_id)
+                                        ORDER BY cm2.created_at DESC LIMIT 1) as last_message,
+                                       (SELECT created_at FROM chat_messages cm3
+                                        WHERE (cm3.sender_id = cm.sender_id AND cm3.receiver_id = ?) 
+                                           OR (cm3.sender_id = ? AND cm3.receiver_id = cm.sender_id)
+                                        ORDER BY cm3.created_at DESC LIMIT 1) as last_message_time,
+                                       (SELECT COUNT(*) FROM chat_messages cm4 
+                                        WHERE cm4.sender_id = cm.sender_id AND cm4.receiver_id = ? 
+                                        AND cm4.is_read = FALSE) as admin_unread_count
+                                       FROM chat_messages cm 
+                                       LEFT JOIN users u ON cm.sender_id = u.id AND cm.sender_type = 'guest'
+                                       WHERE cm.sender_type = 'guest' AND cm.receiver_id = ?
+                                       ORDER BY last_message_time DESC 
+                                       LIMIT ?");
+                $stmt->bind_param("iiiiii", $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $limit);
+            } else {
+                // Guest sees only their conversation with admin
+                $stmt = $conn->prepare("SELECT 1 as admin_id,
+                                       'Admin' as admin_name,
+                                       'admin@example.com' as admin_email,
+                                       (SELECT message FROM chat_messages cm2 
+                                        WHERE (cm2.sender_id = ? AND cm2.receiver_id = 1) 
+                                           OR (cm2.sender_id = 1 AND cm2.receiver_id = ?)
+                                        ORDER BY cm2.created_at DESC LIMIT 1) as last_message,
+                                       (SELECT created_at FROM chat_messages cm3
+                                        WHERE (cm3.sender_id = ? AND cm3.receiver_id = 1) 
+                                           OR (cm3.sender_id = 1 AND cm3.receiver_id = ?)
+                                        ORDER BY cm3.created_at DESC LIMIT 1) as last_message_time,
+                                       (SELECT COUNT(*) FROM chat_messages cm4 
+                                        WHERE cm4.sender_id = 1 AND cm4.receiver_id = ? 
+                                        AND cm4.is_read = FALSE) as guest_unread_count
+                                       FROM chat_messages cm 
+                                       WHERE (cm.sender_id = ? AND cm.receiver_id = 1) 
+                                          OR (cm.sender_id = 1 AND cm.receiver_id = ?)
+                                       LIMIT 1");
+                $stmt->bind_param("iiiiiii", $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id);
+            }
+            
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $conversations = [];
+            while ($row = $result->fetch_assoc()) {
+                $conversations[] = $row;
+            }
+            $stmt->close();
+            
+            echo json_encode(['success' => true, 'conversations' => $conversations]);
+            
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // Get unread count
+    if ($_GET['action'] === 'get_unread_count') {
+        header('Content-Type: application/json');
+        
+        $user_id = (int)($_GET['user_id'] ?? 0);
+        $user_type = $_GET['user_type'] ?? '';
+        
+        if ($user_id <= 0 || empty($user_type)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
+            exit;
+        }
+        
+        try {
+            initializeChatTables($conn);
+            
+            $stmt = $conn->prepare("SELECT COUNT(*) as unread_count FROM chat_messages 
+                                   WHERE receiver_id = ? AND receiver_type = ? AND is_read = FALSE");
+            $stmt->bind_param("is", $user_id, $user_type);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $stmt->close();
+            
+            echo json_encode(['success' => true, 'unread_count' => $row['unread_count']]);
+            
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // Initialize chat system tables
+    if ($_GET['action'] === 'init_chat') {
+        header('Content-Type: application/json');
+        
+        try {
+            initializeChatTables($conn);
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Chat system database initialization completed!'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false, 
+                'error' => 'Error initializing chat system: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
 }
 
 /* ---------------------------
@@ -208,6 +396,7 @@ if ($action === 'login') {
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = (int)$user['id'];
         $_SESSION['username'] = $user['username'];
+        $_SESSION['user_logged_in'] = true;
 
         // Check admin status
         $stmt = $conn->prepare("SELECT id FROM admins WHERE username = ? LIMIT 1");
@@ -215,6 +404,9 @@ if ($action === 'login') {
         $stmt->execute();
         $stmt->store_result();
         $_SESSION['is_admin'] = ($stmt->num_rows > 0);
+        if ($_SESSION['is_admin']) {
+            $_SESSION['admin_logged_in'] = true;
+        }
         $stmt->close();
 
         echo json_encode(['success' => true]); // return JSON success
@@ -455,6 +647,122 @@ if ($action === 'admin_delete_user') {
     redirect('../dashboard.php');
 }
 
+/* ---------------------------
+   CHAT SYSTEM FUNCTIONS
+   --------------------------- */
+
+// Initialize chat tables if they don't exist
+function initializeChatTables($conn) {
+    try {
+        // Create chat_messages table
+        $sql1 = "CREATE TABLE IF NOT EXISTS chat_messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            sender_id INT NOT NULL,
+            sender_type ENUM('admin', 'guest') NOT NULL,
+            receiver_id INT NOT NULL,
+            receiver_type ENUM('admin', 'guest') NOT NULL,
+            message TEXT NOT NULL,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            
+            INDEX idx_sender (sender_id, sender_type),
+            INDEX idx_receiver (receiver_id, receiver_type),
+            INDEX idx_conversation (sender_id, sender_type, receiver_id, receiver_type),
+            INDEX idx_created_at (created_at),
+            INDEX idx_unread (is_read, receiver_id, receiver_type)
+        )";
+
+        if ($conn->query($sql1) !== TRUE) {
+            throw new Exception("Error creating chat_messages table: " . $conn->error);
+        }
+
+        // Create chat_conversations table
+        $sql2 = "CREATE TABLE IF NOT EXISTS chat_conversations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            admin_id INT NOT NULL,
+            guest_id INT NOT NULL,
+            last_message_id INT NULL,
+            last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            admin_unread_count INT DEFAULT 0,
+            guest_unread_count INT DEFAULT 0,
+            
+            UNIQUE KEY unique_conversation (admin_id, guest_id),
+            INDEX idx_last_activity (last_activity),
+            INDEX idx_admin_id (admin_id),
+            INDEX idx_guest_id (guest_id)
+        )";
+
+        if ($conn->query($sql2) !== TRUE) {
+            throw new Exception("Error creating chat_conversations table: " . $conn->error);
+        }
+        
+    } catch (Exception $e) {
+        throw new Exception("Chat table initialization failed: " . $e->getMessage());
+    }
+}
+
+// Send chat message
+if ($action === 'send_chat_message') {
+    header('Content-Type: application/json');
+    
+    $sender_id = (int)($_POST['sender_id'] ?? 0);
+    $sender_type = $_POST['sender_type'] ?? '';
+    $receiver_id = (int)($_POST['receiver_id'] ?? 0);
+    $receiver_type = $_POST['receiver_type'] ?? '';
+    $message = trim($_POST['message'] ?? '');
+    
+    if (empty($message) || empty($sender_type) || empty($receiver_type) || $sender_id <= 0 || $receiver_id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Invalid message data']);
+        exit;
+    }
+    
+    // Validate sender authorization
+    if ($sender_type === 'admin' && (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true)) {
+        echo json_encode(['success' => false, 'error' => 'Admin authentication required']);
+        exit;
+    }
+    
+    if ($sender_type === 'guest' && (!isset($_SESSION['user_logged_in']) || $_SESSION['user_logged_in'] !== true)) {
+        echo json_encode(['success' => false, 'error' => 'Guest authentication required']);
+        exit;
+    }
+    
+    try {
+        initializeChatTables($conn);
+        
+        // Insert message
+        $stmt = $conn->prepare("INSERT INTO chat_messages (sender_id, sender_type, receiver_id, receiver_type, message) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("isiss", $sender_id, $sender_type, $receiver_id, $receiver_type, $message);
+        $stmt->execute();
+        $message_id = $conn->insert_id;
+        $stmt->close();
+        
+        // Update or create conversation
+        $admin_id = ($sender_type === 'admin') ? $sender_id : $receiver_id;
+        $guest_id = ($sender_type === 'guest') ? $sender_id : $receiver_id;
+        
+        $stmt = $conn->prepare("INSERT INTO chat_conversations (admin_id, guest_id, last_message_id, admin_unread_count, guest_unread_count) 
+                               VALUES (?, ?, ?, ?, ?) 
+                               ON DUPLICATE KEY UPDATE 
+                               last_message_id = ?, 
+                               admin_unread_count = CASE WHEN ? = 'guest' THEN admin_unread_count + 1 ELSE admin_unread_count END,
+                               guest_unread_count = CASE WHEN ? = 'admin' THEN guest_unread_count + 1 ELSE guest_unread_count END");
+        
+        $initial_admin_unread = ($sender_type === 'guest') ? 1 : 0;
+        $initial_guest_unread = ($sender_type === 'admin') ? 1 : 0;
+        
+        $stmt->bind_param("iiiiiiss", $admin_id, $guest_id, $message_id, $initial_admin_unread, $initial_guest_unread, $message_id, $sender_type, $sender_type);
+        $stmt->execute();
+        $stmt->close();
+        
+        echo json_encode(['success' => true, 'message_id' => $message_id]);
+        
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    }
+    exit;
+}
 
 $conn->close();
 die("Invalid request.");

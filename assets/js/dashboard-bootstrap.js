@@ -1,0 +1,1319 @@
+// Enhanced Dashboard JavaScript with Bootstrap Integration
+
+// Preserve original functionality while adding Bootstrap enhancements
+document.addEventListener("DOMContentLoaded", function () {
+  // Add a small delay to ensure all elements are ready
+  setTimeout(() => {
+    initializeDashboard();
+  }, 100);
+});
+
+function initializeDashboard() {
+  setupBootstrapComponents();
+  setupMobileMenu();
+  setupSectionNavigation();
+  initializeCalendar();
+  initializeCharts();
+  enhanceForms();
+  setupDarkMode();
+  enhanceDataTables();
+  setupItemManagement();
+  setupBookingForms();
+  setupCommunication();
+}
+
+// Initialize Bootstrap Components
+function setupBootstrapComponents() {
+  // Initialize tooltips
+  var tooltipTriggerList = [].slice.call(
+    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+  );
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  // Initialize popovers
+  var popoverTriggerList = [].slice.call(
+    document.querySelectorAll('[data-bs-toggle="popover"]')
+  );
+  var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+    return new bootstrap.Popover(popoverTriggerEl);
+  });
+
+  // Initialize modals
+  var modalList = [].slice.call(document.querySelectorAll(".modal"));
+  modalList.map(function (modalEl) {
+    return new bootstrap.Modal(modalEl);
+  });
+}
+
+// Mobile Menu Setup
+function setupMobileMenu() {
+  const toggleBtn = document.querySelector(".mobile-menu-toggle");
+  const sidebar = document.querySelector(".sidebar");
+
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener("click", function () {
+      sidebar.classList.toggle("open");
+
+      // Update icon
+      const icon = this.querySelector("i");
+      if (sidebar.classList.contains("open")) {
+        icon.className = "fas fa-times";
+      } else {
+        icon.className = "fas fa-bars";
+      }
+    });
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener("click", function (e) {
+      if (
+        window.innerWidth <= 992 &&
+        !sidebar.contains(e.target) &&
+        !toggleBtn.contains(e.target) &&
+        sidebar.classList.contains("open")
+      ) {
+        sidebar.classList.remove("open");
+        toggleBtn.querySelector("i").className = "fas fa-bars";
+      }
+    });
+  }
+}
+
+// Setup Section Navigation (preserving original functionality)
+function setupSectionNavigation() {
+  // Load last active section from localStorage
+  const lastSectionId =
+    localStorage.getItem("activeSection") || "dashboard-section";
+
+  // Show dashboard section by default or last active section
+  showSection(lastSectionId);
+
+  // Add event listeners to navigation links
+  document.querySelectorAll(".nav-link-custom").forEach((link) => {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      const sectionId = this.getAttribute("data-section");
+      showSection(sectionId);
+
+      // Update active state
+      document
+        .querySelectorAll(".nav-link-custom")
+        .forEach((l) => l.classList.remove("active"));
+      this.classList.add("active");
+
+      // Save current section to localStorage
+      localStorage.setItem("activeSection", sectionId);
+    });
+  });
+
+  // Set initial active state for navigation
+  const initialActiveLink = document.querySelector(
+    `.nav-link-custom[data-section="${lastSectionId}"]`
+  );
+  if (initialActiveLink) {
+    document
+      .querySelectorAll(".nav-link-custom")
+      .forEach((l) => l.classList.remove("active"));
+    initialActiveLink.classList.add("active");
+  }
+}
+
+// Enhanced Section Switching
+function showSection(sectionId) {
+  console.log("Showing section:", sectionId); // Debug log
+
+  // Hide all sections
+  document.querySelectorAll(".content-section").forEach((section) => {
+    section.classList.add("d-none");
+    section.classList.remove("d-block", "active");
+  });
+
+  // Show target section
+  const targetSection = document.getElementById(sectionId);
+  if (targetSection) {
+    targetSection.classList.remove("d-none");
+    targetSection.classList.add("d-block", "active");
+
+    // Add animation
+    targetSection.style.animation = "slideInFromRight 0.5s ease";
+    console.log("Section displayed:", sectionId); // Debug log
+  } else {
+    console.error("Section not found:", sectionId); // Debug log
+  }
+
+  // Close mobile menu if open
+  const sidebar = document.querySelector(".sidebar");
+  const toggleBtn = document.querySelector(".mobile-menu-toggle");
+  if (
+    window.innerWidth <= 992 &&
+    sidebar &&
+    sidebar.classList.contains("open")
+  ) {
+    sidebar.classList.remove("open");
+    if (toggleBtn) {
+      toggleBtn.querySelector("i").className = "fas fa-bars";
+    }
+  }
+}
+
+// Enhanced Calendar Initialization
+function initializeCalendar() {
+  const calendarEl = document.getElementById("calendar");
+  if (calendarEl && typeof FullCalendar !== "undefined") {
+    // Check if bookingEvents is available
+    const events = window.bookingEvents || [];
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: "dayGridMonth",
+      headerToolbar: {
+        left: "prev,next today",
+        center: "title",
+        right: "dayGridMonth,timeGridWeek,timeGridDay",
+      },
+      events: events,
+      eventClick: function (info) {
+        showBookingDetails(info.event);
+      },
+      eventDidMount: function (info) {
+        // Add Bootstrap classes based on event status
+        const status = info.event.extendedProps?.status;
+        if (status === "confirmed") {
+          info.el.classList.add("bg-success");
+        } else if (status === "pending") {
+          info.el.classList.add("bg-warning");
+        } else if (status === "cancelled") {
+          info.el.classList.add("bg-danger");
+        }
+      },
+      height: "auto",
+      responsive: true,
+    });
+
+    calendar.render();
+  }
+
+  // Dashboard Calendar (smaller version)
+  initializeDashboardCalendar();
+}
+
+// Dashboard Mini Calendar Initialization
+function initializeDashboardCalendar() {
+  const dashboardCalendarEl = document.getElementById("dashboardCalendar");
+  if (dashboardCalendarEl && typeof FullCalendar !== "undefined") {
+    const events = window.bookingEvents || [];
+
+    const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
+      initialView: "dayGridMonth",
+      height: 300,
+      headerToolbar: {
+        left: "prev,next",
+        center: "title",
+        right: "",
+      },
+      events: events.map((event) => ({
+        id: event.id,
+        title: `${event.title} | ${event.status}`,
+        start: event.start,
+        end: event.end,
+        color:
+          event.status === "approved"
+            ? "green"
+            : event.status === "pending"
+            ? "orange"
+            : "red",
+      })),
+      eventClick: function (info) {
+        showToast(
+          `Booking ID: ${info.event.id}\nDetails: ${
+            info.event.title
+          }\nStart: ${info.event.start.toLocaleString()}\nEnd: ${
+            info.event.end ? info.event.end.toLocaleString() : "N/A"
+          }`,
+          "info"
+        );
+      },
+    });
+
+    dashboardCalendar.render();
+  }
+}
+
+// Show Booking Details in Modal
+function showBookingDetails(event) {
+  const modalHtml = `
+        <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bookingModalLabel">
+                            <i class="fas fa-calendar-check me-2"></i>Booking Details
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Title:</strong></div>
+                            <div class="col-sm-8">${event.title}</div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Start:</strong></div>
+                            <div class="col-sm-8">${event.start.toLocaleDateString()}</div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>End:</strong></div>
+                            <div class="col-sm-8">${
+                              event.end ? event.end.toLocaleDateString() : "N/A"
+                            }</div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Status:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-${getStatusColor(
+                                  event.extendedProps?.status
+                                )}">
+                                    ${event.extendedProps?.status || "Unknown"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+  // Remove existing modal if present
+  const existingModal = document.getElementById("bookingModal");
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Add new modal to body
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById("bookingModal"));
+  modal.show();
+}
+
+// Get Status Color for Badge
+function getStatusColor(status) {
+  switch (status) {
+    case "confirmed":
+      return "success";
+    case "pending":
+      return "warning";
+    case "cancelled":
+      return "danger";
+    default:
+      return "secondary";
+  }
+}
+
+// Enhanced Form Handling
+function enhanceForms() {
+  const forms = document.querySelectorAll("form");
+
+  forms.forEach((form) => {
+    // Add Bootstrap validation
+    form.addEventListener(
+      "submit",
+      function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+          showToast("Please fill in all required fields correctly.", "warning");
+        } else {
+          showToast("Form submitted successfully!", "success");
+        }
+        form.classList.add("was-validated");
+      },
+      false
+    );
+
+    // Real-time validation
+    const inputs = form.querySelectorAll("input, select, textarea");
+    inputs.forEach((input) => {
+      input.addEventListener("blur", function () {
+        validateField(this);
+      });
+
+      input.addEventListener("input", function () {
+        clearValidation(this);
+      });
+    });
+  });
+}
+
+// Field Validation
+function validateField(field) {
+  if (field.checkValidity()) {
+    field.classList.remove("is-invalid");
+    field.classList.add("is-valid");
+  } else {
+    field.classList.remove("is-valid");
+    field.classList.add("is-invalid");
+  }
+}
+
+// Clear Validation
+function clearValidation(field) {
+  field.classList.remove("is-valid", "is-invalid");
+}
+
+// Enhanced Dark Mode (preserving original functionality)
+function setupDarkMode() {
+  // Apply saved theme
+  const savedTheme = localStorage.getItem("theme") || "light";
+  document.documentElement.setAttribute("data-bs-theme", savedTheme);
+
+  // Also apply to body for backward compatibility
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-mode");
+  }
+
+  // Update toggle button
+  const toggleBtn = document.querySelector(".dark-toggle");
+  if (toggleBtn) {
+    const icon = toggleBtn.querySelector("i");
+    if (icon) {
+      icon.className = savedTheme === "dark" ? "fas fa-sun" : "fas fa-moon";
+    } else {
+      toggleBtn.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+    }
+  }
+}
+
+// Toggle Dark Mode (enhanced version)
+function toggleDarkMode() {
+  const currentTheme =
+    document.documentElement.getAttribute("data-bs-theme") || "light";
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+  document.documentElement.setAttribute("data-bs-theme", newTheme);
+  localStorage.setItem("theme", newTheme);
+
+  // Also toggle body class for backward compatibility
+  document.body.classList.toggle("dark-mode", newTheme === "dark");
+
+  // Update button
+  const toggleBtn = document.querySelector(".dark-toggle");
+  if (toggleBtn) {
+    const icon = toggleBtn.querySelector("i");
+    if (icon) {
+      icon.className = newTheme === "dark" ? "fas fa-sun" : "fas fa-moon";
+    } else {
+      toggleBtn.textContent = newTheme === "dark" ? "☀️" : "🌙";
+    }
+  }
+
+  showToast(`Switched to ${newTheme} mode`, "info");
+}
+
+// Enhance Data Tables
+function enhanceDataTables() {
+  const tables = document.querySelectorAll(".table");
+
+  tables.forEach((table) => {
+    // Add Bootstrap classes
+    table.classList.add("table-hover", "table-responsive");
+
+    // Add search functionality for large tables
+    if (table.querySelectorAll("tbody tr").length > 5) {
+      addTableSearch(table);
+    }
+
+    // Add sorting functionality
+    addTableSorting(table);
+  });
+}
+
+// Add Table Search
+function addTableSearch(table) {
+  const tableContainer = table.closest(".card-body") || table.parentElement;
+  if (tableContainer && !tableContainer.querySelector(".table-search")) {
+    const searchHtml = `
+            <div class="table-search mb-3">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search table..." 
+                           onkeyup="filterTable(this, '${
+                             table.id || "table-" + Date.now()
+                           }')">
+                </div>
+            </div>
+        `;
+    tableContainer.insertAdjacentHTML("afterbegin", searchHtml);
+
+    if (!table.id) {
+      table.id = "table-" + Date.now();
+    }
+  }
+}
+
+// Filter Table
+function filterTable(input, tableId) {
+  const filter = input.value.toLowerCase();
+  const table = document.getElementById(tableId);
+  const rows = table.querySelectorAll("tbody tr");
+
+  rows.forEach((row) => {
+    const text = row.textContent.toLowerCase();
+    if (text.includes(filter)) {
+      row.classList.remove("d-none");
+    } else {
+      row.classList.add("d-none");
+    }
+  });
+}
+
+// Add Table Sorting
+function addTableSorting(table) {
+  const headers = table.querySelectorAll("th");
+  headers.forEach((header, index) => {
+    if (!header.classList.contains("no-sort")) {
+      header.style.cursor = "pointer";
+      header.innerHTML += ' <i class="fas fa-sort ms-1"></i>';
+      header.addEventListener("click", () => sortTable(table, index));
+    }
+  });
+}
+
+// Sort Table
+function sortTable(table, columnIndex) {
+  const tbody = table.querySelector("tbody");
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+  const isAscending = table.dataset.sortOrder !== "asc";
+
+  rows.sort((a, b) => {
+    const aText = a.cells[columnIndex].textContent.trim();
+    const bText = b.cells[columnIndex].textContent.trim();
+
+    if (isNaN(aText) || isNaN(bText)) {
+      return isAscending
+        ? aText.localeCompare(bText)
+        : bText.localeCompare(aText);
+    } else {
+      return isAscending
+        ? Number(aText) - Number(bText)
+        : Number(bText) - Number(aText);
+    }
+  });
+
+  rows.forEach((row) => tbody.appendChild(row));
+  table.dataset.sortOrder = isAscending ? "asc" : "desc";
+
+  // Update sort icon
+  const headers = table.querySelectorAll("th");
+  headers.forEach((header, index) => {
+    const icon = header.querySelector("i");
+    if (icon) {
+      if (index === columnIndex) {
+        icon.className = isAscending
+          ? "fas fa-sort-up ms-1"
+          : "fas fa-sort-down ms-1";
+      } else {
+        icon.className = "fas fa-sort ms-1";
+      }
+    }
+  });
+}
+
+// Enhanced Toast Notifications
+function showToast(message, type = "info") {
+  const toastContainer = getOrCreateToastContainer();
+  const toastId = "toast-" + Date.now();
+
+  let bgClass, iconClass;
+  switch (type) {
+    case "success":
+      bgClass = "bg-success";
+      iconClass = "fa-check-circle";
+      break;
+    case "warning":
+      bgClass = "bg-warning";
+      iconClass = "fa-exclamation-triangle";
+      break;
+    case "error":
+    case "danger":
+      bgClass = "bg-danger";
+      iconClass = "fa-times-circle";
+      break;
+    default:
+      bgClass = "bg-info";
+      iconClass = "fa-info-circle";
+  }
+
+  const toastHtml = `
+        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas ${iconClass} me-2"></i>
+                <strong class="me-auto">Dashboard</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+
+  toastContainer.insertAdjacentHTML("beforeend", toastHtml);
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement);
+  toast.show();
+
+  // Remove element after it's hidden
+  toastElement.addEventListener("hidden.bs.toast", function () {
+    this.remove();
+  });
+}
+
+// Get or Create Toast Container
+function getOrCreateToastContainer() {
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    container.className = "toast-container position-fixed top-0 end-0 p-3";
+    container.style.zIndex = "9999";
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+// Item Management Functions
+async function loadItems() {
+  try {
+    const res = await fetch("database/fetch_items.php");
+    const items = await res.json();
+    const container = document.getElementById("cards-grid");
+    if (container) {
+      container.innerHTML = "";
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+        card.dataset.type = item.item_type;
+        card.innerHTML = `
+                    ${
+                      item.image
+                        ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">`
+                        : ""
+                    }
+                    <h3>${item.name}</h3>
+                    ${
+                      item.room_number
+                        ? `<p>Room Number: ${item.room_number}</p>`
+                        : ""
+                    }
+                    <p>Capacity: ${item.capacity} ${
+          item.item_type === "room" ? "persons" : "people"
+        }</p>
+                    <p>Price: P${item.price}${
+          item.item_type === "room" ? "/night" : "/day"
+        }</p>
+                    <p>${item.description}</p>
+                `;
+        container.appendChild(card);
+      });
+      filterItems();
+    }
+  } catch (error) {
+    console.error("Error loading items:", error);
+    showToast("Error loading items", "error");
+  }
+}
+
+// Filter Items by Type
+function filterItems() {
+  const selectedType = document.querySelector(
+    'input[name="type_filter"]:checked'
+  );
+  if (selectedType) {
+    const selectedValue = selectedType.value;
+    document.querySelectorAll(".card").forEach((card) => {
+      if (card.dataset && card.dataset.type) {
+        card.style.display =
+          card.dataset.type === selectedValue ? "block" : "none";
+      }
+    });
+  }
+}
+
+// Setup Item Management
+function setupItemManagement() {
+  // Setup type filter listeners
+  document.querySelectorAll('input[name="type_filter"]').forEach((radio) => {
+    radio.addEventListener("change", filterItems);
+  });
+
+  // Setup edit form toggles
+  setupEditFormToggles();
+
+  // Initial filter
+  filterItems();
+}
+
+// Setup Edit Form Toggles
+function setupEditFormToggles() {
+  document.querySelectorAll(".card").forEach((card) => {
+    const toggleBtn = card.querySelector("button.edit-form"); // the toggle button
+    const editForm = card.querySelector("form.edit-form"); // the hidden form
+
+    if (toggleBtn && editForm) {
+      toggleBtn.addEventListener("click", () => {
+        if (
+          editForm.style.display === "none" ||
+          editForm.style.display === ""
+        ) {
+          editForm.style.display = "block";
+          toggleBtn.textContent = "Close Edit";
+        } else {
+          editForm.style.display = "none";
+          toggleBtn.textContent = "Edit";
+        }
+      });
+    }
+  });
+}
+
+// Booking Form Management
+function setupBookingForms() {
+  // Booking Type Toggle
+  function toggleBookingForm() {
+    const selectedType = document.querySelector(
+      'input[name="bookingType"]:checked'
+    );
+    if (selectedType) {
+      const selectedValue = selectedType.value;
+      const reservationForm = document.getElementById("reservationForm");
+      const pencilForm = document.getElementById("pencilForm");
+
+      if (reservationForm && pencilForm) {
+        if (selectedValue === "reservation") {
+          reservationForm.style.display = "block";
+          pencilForm.style.display = "none";
+          // Generate receipt number when switching to reservation form
+          generateReceiptNumber();
+        } else {
+          reservationForm.style.display = "none";
+          pencilForm.style.display = "block";
+        }
+      }
+    }
+  }
+
+  // Initialize booking form display
+  toggleBookingForm();
+
+  // Attach listeners to booking type radio buttons
+  document.querySelectorAll('input[name="bookingType"]').forEach((radio) => {
+    radio.addEventListener("change", toggleBookingForm);
+  });
+
+  // Generate initial receipt number
+  generateReceiptNumber();
+
+  // Make toggleBookingForm globally available
+  window.toggleBookingForm = toggleBookingForm;
+}
+
+// Pencil Booking Reminder
+function pencilReminder() {
+  return confirm(
+    "Please note: This is a pencil booking. Final confirmation and payment will be required later."
+  );
+}
+
+// Receipt Number Generation (from guest.js)
+async function generateReceiptNumber() {
+  try {
+    const response = await fetch(
+      "database/user_auth.php?action=get_receipt_no"
+    );
+    const data = await response.json();
+
+    if (data.success) {
+      const receiptField =
+        document.querySelector('input[name="receipt_no"]') ||
+        document.getElementById("receipt_no");
+      if (receiptField) {
+        receiptField.value = data.receipt_no;
+        receiptField.classList.add("is-valid");
+        showToast("Receipt number generated: " + data.receipt_no, "success");
+      }
+      console.log("Generated receipt number:", data.receipt_no);
+    } else {
+      console.error("Error generating receipt number:", data.error);
+      generateFallbackReceiptNumber();
+    }
+  } catch (error) {
+    console.error("Network error:", error);
+    generateFallbackReceiptNumber();
+  }
+}
+
+// Fallback receipt number generator
+function generateFallbackReceiptNumber() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
+
+  const receiptNo = `BARCIE-${year}${month}${day}-${hours}${minutes}${seconds}`;
+
+  const receiptField =
+    document.querySelector('input[name="receipt_no"]') ||
+    document.getElementById("receipt_no");
+  if (receiptField) {
+    receiptField.value = receiptNo;
+    receiptField.classList.add("is-valid");
+    showToast("Fallback receipt number generated: " + receiptNo, "warning");
+  }
+}
+
+// Communication System Setup
+function setupCommunication() {
+  initializeChatSystem();
+}
+
+// Initialize Chat System
+function initializeChatSystem() {
+  const chatForm = document.getElementById("chat-form");
+  const chatInput = document.getElementById("chat-input");
+
+  // Load conversations on page load
+  loadConversations();
+
+  // Set up periodic refresh for real-time updates
+  setInterval(() => {
+    if (window.currentChatUser) {
+      loadChatMessages(window.currentChatUser.id, window.currentChatUser.type);
+    }
+    loadConversations();
+  }, 3000); // Refresh every 3 seconds
+
+  // Handle message sending
+  if (chatForm && chatInput) {
+    chatForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const message = chatInput.value.trim();
+
+      if (message && window.currentChatUser) {
+        sendChatMessage(message);
+        chatInput.value = "";
+      } else if (!window.currentChatUser) {
+        showToast("Please select a conversation first", "warning");
+      }
+    });
+
+    // Add quick response functionality
+    chatInput.addEventListener("keydown", function (e) {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        showQuickResponses();
+      }
+    });
+  }
+
+  // Add professional welcome message
+  setTimeout(() => {
+    if (!window.currentChatUser) {
+      showSystemMessage(
+        "Customer Support System initialized. Ready to assist guests."
+      );
+    }
+  }, 1000);
+}
+
+// Show quick response templates
+function showQuickResponses() {
+  const chatInput = document.getElementById("chat-input");
+  const quickResponses = [
+    "Hello! How can I assist you today?",
+    "Thank you for contacting us. Let me help you with that.",
+    "I understand your concern. Let me look into this for you.",
+    "Is there anything else I can help you with?",
+    "Thank you for your patience. Your issue has been resolved.",
+    "I'll escalate this to our management team right away.",
+  ];
+
+  // Create quick response dropdown
+  let dropdown = document.getElementById("quick-response-dropdown");
+  if (dropdown) {
+    dropdown.remove();
+  }
+
+  dropdown = document.createElement("div");
+  dropdown.id = "quick-response-dropdown";
+  dropdown.className =
+    "position-absolute bg-white border rounded shadow-lg p-2";
+  dropdown.style.cssText = `
+        bottom: 60px;
+        left: 50px;
+        right: 50px;
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+    `;
+
+  quickResponses.forEach((response) => {
+    const btn = document.createElement("button");
+    btn.className =
+      "btn btn-sm btn-outline-primary d-block w-100 text-start mb-1";
+    btn.textContent = response;
+    btn.onclick = () => {
+      chatInput.value = response;
+      dropdown.remove();
+      chatInput.focus();
+    };
+    dropdown.appendChild(btn);
+  });
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "btn btn-sm btn-secondary d-block w-100 mt-2";
+  closeBtn.textContent = "Close Templates";
+  closeBtn.onclick = () => dropdown.remove();
+  dropdown.appendChild(closeBtn);
+
+  chatInput.parentElement.appendChild(dropdown);
+
+  // Auto-close after 10 seconds
+  setTimeout(() => {
+    if (dropdown.parentElement) {
+      dropdown.remove();
+    }
+  }, 10000);
+}
+
+// Show system message
+function showSystemMessage(message) {
+  const chatMessages = document.getElementById("chat-messages");
+  if (!chatMessages) {
+    return;
+  }
+
+  const systemMsg = document.createElement("div");
+  systemMsg.className =
+    "alert alert-info alert-dismissible fade show mx-3 mb-3";
+  systemMsg.innerHTML = `
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>System:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+  chatMessages.appendChild(systemMsg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Load conversations list
+async function loadConversations() {
+  try {
+    const response = await fetch(
+      `database/user_auth.php?action=get_chat_conversations&user_id=1&user_type=admin`
+    );
+    const data = await response.json();
+
+    if (data.success) {
+      displayConversations(data.conversations);
+    } else {
+      console.error("Error loading conversations:", data.error);
+    }
+  } catch (error) {
+    console.error("Network error loading conversations:", error);
+  }
+}
+
+// Display conversations in the sidebar
+function displayConversations(conversations) {
+  const conversationsList = document.getElementById("conversations-list");
+  const totalUnread = document.getElementById("total-unread");
+
+  if (!conversationsList) {
+    return;
+  }
+
+  let totalUnreadCount = 0;
+
+  if (conversations.length === 0) {
+    conversationsList.innerHTML = `
+            <div class="text-center text-muted p-4">
+                <i class="fas fa-comment-slash fa-2x mb-3 opacity-50"></i>
+                <p>No conversations yet</p>
+                <small>Conversations will appear when guests send messages</small>
+            </div>
+        `;
+    return;
+  }
+
+  let conversationsHtml = "";
+
+  conversations.forEach((conv) => {
+    const unreadCount = conv.admin_unread_count || 0;
+    totalUnreadCount += unreadCount;
+
+    const lastMessageTime = conv.last_message_time
+      ? new Date(conv.last_message_time).toLocaleString()
+      : "No messages";
+
+    const isActive =
+      window.currentChatUser &&
+      window.currentChatUser.id === conv.guest_id &&
+      window.currentChatUser.type === "guest";
+
+    conversationsHtml += `
+            <div class="conversation-item ${isActive ? "active" : ""}" 
+                 data-guest-id="${conv.guest_id}" 
+                 data-guest-name="${conv.guest_name || "Guest"}"
+                 data-guest-email="${conv.guest_email || ""}">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-circle bg-primary text-white me-3">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${conv.guest_name || "Guest User"}</h6>
+                        <p class="mb-0 text-muted small">${
+                          conv.last_message || "No messages yet"
+                        }</p>
+                        <small class="text-muted">${lastMessageTime}</small>
+                    </div>
+                    ${
+                      unreadCount > 0
+                        ? `<span class="badge bg-danger unread-badge">${unreadCount}</span>`
+                        : ""
+                    }
+                </div>
+            </div>
+        `;
+  });
+
+  conversationsList.innerHTML = conversationsHtml;
+
+  // Update total unread count
+  if (totalUnreadCount > 0) {
+    totalUnread.textContent = totalUnreadCount;
+    totalUnread.style.display = "inline";
+  } else {
+    totalUnread.style.display = "none";
+  }
+
+  // Add click handlers
+  conversationsList.querySelectorAll(".conversation-item").forEach((item) => {
+    item.addEventListener("click", function () {
+      const { guestId, guestName, guestEmail } = this.dataset;
+
+      selectConversation(guestId, guestName, guestEmail);
+    });
+  });
+}
+
+// Select a conversation
+function selectConversation(guestId, guestName, guestEmail) {
+  window.currentChatUser = {
+    id: parseInt(guestId),
+    type: "guest",
+    name: guestName,
+    email: guestEmail,
+  };
+
+  // Update UI
+  const chatHeader = document.getElementById("chat-header");
+  const chatInputArea = document.getElementById("chat-input-area");
+  const chatWithName = document.getElementById("chat-with-name");
+  const chatWithEmail = document.getElementById("chat-with-email");
+
+  if (chatHeader) {
+    chatHeader.style.display = "block";
+  }
+  if (chatInputArea) {
+    chatInputArea.style.display = "block";
+  }
+  if (chatWithName) {
+    chatWithName.textContent = guestName;
+  }
+  if (chatWithEmail) {
+    chatWithEmail.textContent = guestEmail;
+  }
+
+  // Update active conversation in sidebar
+  document.querySelectorAll(".conversation-item").forEach((item) => {
+    item.classList.remove("active");
+  });
+  document
+    .querySelector(`[data-guest-id="${guestId}"]`)
+    ?.classList.add("active");
+
+  // Load messages for this conversation
+  loadChatMessages(guestId, "guest");
+}
+
+// Load chat messages
+async function loadChatMessages(otherUserId, otherUserType) {
+  try {
+    const response = await fetch(
+      `database/user_auth.php?action=get_chat_messages&user_id=1&user_type=admin&other_user_id=${otherUserId}&other_user_type=${otherUserType}`
+    );
+    const data = await response.json();
+
+    if (data.success) {
+      displayChatMessages(data.messages);
+    } else {
+      console.error("Error loading messages:", data.error);
+    }
+  } catch (error) {
+    console.error("Network error loading messages:", error);
+  }
+}
+
+// Display chat messages
+function displayChatMessages(messages) {
+  const chatMessages = document.getElementById("chat-messages");
+  if (!chatMessages) {
+    return;
+  }
+
+  if (messages.length === 0) {
+    chatMessages.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-comment-dots fa-2x mb-3 opacity-25"></i>
+                <h6>No messages yet</h6>
+                <p>Start a conversation with this guest</p>
+            </div>
+        `;
+    return;
+  }
+
+  let messagesHtml = "";
+
+  messages.forEach((message) => {
+    const isFromAdmin = message.sender_type === "admin";
+    const messageClass = isFromAdmin ? "sent" : "received";
+    const messageTime = new Date(message.created_at).toLocaleString();
+
+    messagesHtml += `
+            <div class="chat-message ${messageClass}">
+                <div class="message-content">
+                    ${escapeHtml(message.message)}
+                    <div class="message-time">${messageTime}</div>
+                </div>
+            </div>
+        `;
+  });
+
+  chatMessages.innerHTML = messagesHtml;
+
+  // Scroll to bottom
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Send chat message
+async function sendChatMessage(message) {
+  if (!window.currentChatUser) {
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("action", "send_chat_message");
+    formData.append("sender_id", "1"); // Admin ID
+    formData.append("sender_type", "admin");
+    formData.append("receiver_id", window.currentChatUser.id.toString());
+    formData.append("receiver_type", window.currentChatUser.type);
+    formData.append("message", message);
+
+    const response = await fetch("database/user_auth.php", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Reload messages to show the new message
+      loadChatMessages(window.currentChatUser.id, window.currentChatUser.type);
+      showToast("Message sent successfully", "success");
+    } else {
+      showToast("Error sending message: " + data.error, "error");
+    }
+  } catch (error) {
+    console.error("Network error sending message:", error);
+    showToast("Network error sending message", "error");
+  }
+}
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, function (m) {
+    return map[m];
+  });
+}
+
+// Chart.js Initialization
+function initializeCharts() {
+  // Bookings Overview Chart (Line Chart)
+  const bookingsChartElement = document.getElementById("bookingsChart");
+  if (
+    bookingsChartElement &&
+    typeof Chart !== "undefined" &&
+    typeof monthlyBookingsData !== "undefined"
+  ) {
+    const ctx = bookingsChartElement.getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: monthlyBookingsData.map((item) => item.month),
+        datasets: [
+          {
+            label: "Bookings",
+            data: monthlyBookingsData.map((item) => item.count),
+            backgroundColor: "rgba(78, 115, 223, 0.1)",
+            borderColor: "rgba(78, 115, 223, 1)",
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false,
+            },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1,
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // Status Distribution Chart (Doughnut Chart)
+  const statusChartElement = document.getElementById("statusChart");
+  if (
+    statusChartElement &&
+    typeof Chart !== "undefined" &&
+    typeof statusDistributionData !== "undefined"
+  ) {
+    const ctx = statusChartElement.getContext("2d");
+    const statusLabels = Object.keys(statusDistributionData);
+    const statusValues = Object.values(statusDistributionData);
+
+    new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: statusLabels.map(
+          (label) => label.charAt(0).toUpperCase() + label.slice(1)
+        ),
+        datasets: [
+          {
+            data: statusValues,
+            backgroundColor: [
+              "#f6c23e", // pending - yellow
+              "#1cc88a", // approved - green
+              "#36b9cc", // checked_in - info
+              "#5a5c69", // checked_out - secondary
+              "#e74a3b", // cancelled - red
+            ],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              boxWidth: 12,
+              padding: 15,
+            },
+          },
+        },
+        cutout: "60%",
+      },
+    });
+  }
+
+  // Legacy chart for backward compatibility
+  const legacyChartElement = document.getElementById("reportChart");
+  if (legacyChartElement && typeof Chart !== "undefined") {
+    const ctx = legacyChartElement.getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+        datasets: [
+          {
+            label: "Bookings",
+            data: [12, 19, 7, 15, 20],
+            backgroundColor: "#1abc9c",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  }
+}
+
+// Global function exports (to maintain compatibility)
+window.showSection = showSection;
+window.toggleDarkMode = toggleDarkMode;
+window.filterTable = filterTable;
+window.showToast = showToast;
+window.loadItems = loadItems;
+window.filterItems = filterItems;
+window.toggleBookingForm = toggleBookingForm;
+window.pencilReminder = pencilReminder;
+window.generateReceiptNumber = generateReceiptNumber;
+
+// Global sidebar toggle function
+window.toggleSidebar = function () {
+  const sidebar = document.querySelector(".sidebar");
+  const toggleBtn = document.querySelector(".mobile-menu-toggle");
+
+  if (sidebar) {
+    sidebar.classList.toggle("open");
+
+    if (toggleBtn) {
+      const icon = toggleBtn.querySelector("i");
+      if (sidebar.classList.contains("open")) {
+        icon.className = "fas fa-times";
+      } else {
+        icon.className = "fas fa-bars";
+      }
+    }
+  }
+};

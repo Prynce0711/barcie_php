@@ -6,13 +6,115 @@ A comprehensive PHP-based hotel management system for **Barasoain Center for Inn
 
 ## 🏨 Overview
 
-BarCIE Hotel Management System is a full-featured web application designed to streamline hotel operations including room management, booking reservations, guest services, and administrative tasks. Built specifically for educational purposes and real-world hotel management scenarios.
+BarCIE Hotel Management System is a full-featured web application designed to stre5. **Submit Feedback**: Provide service feedback
+
+## 💬 Chat API Endpoints
+
+The system includes a comprehensive chat API integrated into the `user_auth.php` endpoint for real-time communication between guests and administrators.
+
+### Initialize Chat System
+```http
+GET /database/user_auth.php?action=init_chat
+```
+**Response**: Initializes chat tables in the database
+```json
+{
+  "success": true,
+  "message": "Chat tables initialized successfully"
+}
+```
+
+### Send Message
+```http
+POST /database/user_auth.php
+Content-Type: application/x-www-form-urlencoded
+
+action=send_chat_message
+&sender_id=1
+&sender_type=guest
+&receiver_id=1
+&receiver_type=admin
+&message=Hello, I need assistance
+```
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Message sent successfully"
+}
+```
+
+### Get Messages
+```http
+GET /database/user_auth.php?action=get_chat_messages&user_id=1&user_type=guest&other_user_id=1&other_user_type=admin
+```
+**Response**: Returns message history between two users
+```json
+{
+  "success": true,
+  "messages": [
+    {
+      "id": 1,
+      "sender_id": 1,
+      "sender_type": "guest",
+      "message": "Hello, I need assistance",
+      "created_at": "2025-10-06 14:30:00",
+      "is_read": false
+    }
+  ]
+}
+```
+
+### Get Conversations
+```http
+GET /database/user_auth.php?action=get_chat_conversations&user_id=1&user_type=guest
+```
+**Response**: Returns all conversations for a user
+```json
+{
+  "success": true,
+  "conversations": [
+    {
+      "other_user_id": 1,
+      "other_user_type": "admin",
+      "other_username": "admin",
+      "last_message": "Hello, I need assistance",
+      "last_message_time": "2025-10-06 14:30:00",
+      "unread_count": 0
+    }
+  ]
+}
+```
+
+### Get Unread Count
+```http
+GET /database/user_auth.php?action=get_unread_count&user_id=1&user_type=guest
+```
+**Response**: Returns total unread message count
+```json
+{
+  "success": true,
+  "unread_count": 3
+}
+```
+
+### Testing Chat System
+Use the provided test script to verify chat functionality:
+```bash
+# Access via browser
+http://localhost/barcie_php/test_chat_endpoints.php
+
+# Or run via command line
+php test_chat_endpoints.php
+```
+
+## 🔧 Configurationine hotel operations including room management, booking reservations, guest services, and administrative tasks. Built specifically for educational purposes and real-world hotel management scenarios.
 
 ## ✨ Features
 
 ### 🔐 Authentication System
 - **Dual Authentication**: Separate login systems for guests and administrators
-- **Secure Registration**: Email validation with domain restrictions (@email.lcup.edu.ph)
+- **Secure Registration**: Email validation with domain restrictions (@gmail.com)
 - **Password Security**: Real-time validation and secure hashing
 - **Session Management**: Persistent user sessions with role-based access
 
@@ -23,7 +125,12 @@ BarCIE Hotel Management System is a full-featured web application designed to st
 - **User Management**: Complete user administration interface
 - **Real-time Statistics**: Active bookings, pending approvals, occupancy rates
 - **Dark Mode**: Toggle between light and dark themes
-- **Communication Hub**: Integrated chat and WebRTC video calling
+- **Professional Customer Support Chat**: 
+  - Real-time messaging with guests
+  - Quick response templates (Tab key activation)
+  - Professional support-themed interface
+  - Conversation management and status tracking
+  - Enhanced UI with gradient styling and animations
 
 ### 👤 Guest Portal
 - **Room Browsing**: Filter and view available rooms and facilities
@@ -34,6 +141,8 @@ BarCIE Hotel Management System is a full-featured web application designed to st
 - **Payment Integration**: Multiple payment method support
 - **Feedback System**: Submit and track feedback
 - **Responsive Design**: Mobile-friendly interface
+- **Live Chat Support**: Direct communication with hotel administrators
+- **Real-time Messaging**: Instant messaging capabilities with support staff
 
 ### 🏢 Room & Facility Management
 - **Dynamic Content**: Real-time loading of rooms and facilities
@@ -48,6 +157,15 @@ BarCIE Hotel Management System is a full-featured web application designed to st
 - **Status Tracking**: Real-time booking status updates
 - **Receipt Generation**: Automatic receipt number generation
 - **Date Validation**: Prevent double bookings and conflicts
+
+### 💬 Communication System
+- **Real-time Chat**: Instant messaging between guests and administrators
+- **Professional Support Interface**: Customer service focused chat design
+- **Quick Response Templates**: Pre-defined responses for efficient support
+- **Conversation Management**: Track and manage multiple guest conversations
+- **Message History**: Persistent chat history and conversation tracking
+- **Authentication Integration**: Secure messaging with user verification
+- **Enhanced UI/UX**: Modern gradient design with smooth animations
 
 ## 🛠️ Technology Stack
 
@@ -86,6 +204,9 @@ barcie_php/
 ├── 📄 README_DOCKER.md       # Docker deployment guide
 ├── 📄 Dockerfile             # Docker container configuration
 ├── 📄 docker-compose.yml     # Multi-container orchestration
+├── 📄 test_chat_endpoints.php # Chat system testing script
+├── 📄 ADMIN_CHAT_ENHANCEMENT.md # Chat enhancement documentation
+├── 📄 CHAT_FIXES.md          # Chat integration fixes documentation
 ├── 📄 .env.example           # Environment variables template
 ├── 📄 .gitignore             # Git ignore patterns
 ├── 📄 .dockerignore          # Docker ignore patterns
@@ -96,17 +217,21 @@ barcie_php/
 │
 ├── 📂 database/
 │   ├── 📄 db_connect.php     # Database connection with env support
-│   ├── 📄 user_auth.php      # Authentication & user management
+│   ├── 📄 user_auth.php      # Authentication & user management + Chat API
 │   ├── 📄 admin_login.php    # Admin authentication
-│   └── 📄 fetch_items.php    # Room/facility data API
+│   ├── 📄 fetch_items.php    # Room/facility data API
+│   ├── 📄 init_chat.php      # Chat system initialization script
+│   └── 📄 chat_setup.sql     # Chat database schema
 │
 ├── 📂 assets/
 │   ├── 📂 css/
 │   │   ├── 📄 dashboard.css  # Admin dashboard styles
-│   │   └── 📄 guest.css      # Guest portal styles
+│   │   ├── 📄 dashboard-enhanced.css # Enhanced admin UI with chat styling
+│   │   ├── 📄 guest.css      # Guest portal styles
+│   │   └── 📄 guest-enhanced.css # Enhanced guest UI with chat styling
 │   ├── 📂 js/
-│   │   ├── 📄 dashboard.js   # Admin dashboard scripts
-│   │   └── 📄 guest.js       # Guest portal scripts
+│   │   ├── 📄 dashboard-bootstrap.js # Admin dashboard scripts
+│   │   └── 📄 guest-bootstrap.js     # Guest portal scripts
 │   └── 📂 images/
 │       ├── 📂 rooms/         # Room images
 │       └── 📂 imageBg/       # Background images & logos
@@ -181,6 +306,39 @@ CREATE TABLE feedback (
 );
 ```
 
+### Chat Messages Table
+```sql
+CREATE TABLE chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    sender_type ENUM('guest', 'admin') NOT NULL,
+    receiver_id INT NOT NULL,
+    receiver_type ENUM('guest', 'admin') NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_sender (sender_id, sender_type),
+    INDEX idx_receiver (receiver_id, receiver_type),
+    INDEX idx_created (created_at)
+);
+```
+
+### Chat Conversations Table
+```sql
+CREATE TABLE chat_conversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user1_id INT NOT NULL,
+    user1_type ENUM('guest', 'admin') NOT NULL,
+    user2_id INT NOT NULL,
+    user2_type ENUM('guest', 'admin') NOT NULL,
+    last_message_id INT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_conversation (user1_id, user1_type, user2_id, user2_type),
+    INDEX idx_user1 (user1_id, user1_type),
+    INDEX idx_user2 (user2_id, user2_type)
+);
+```
+
 ## 🚀 Installation & Setup
 
 ### 🐳 Docker Deployment (Recommended)
@@ -219,9 +377,15 @@ CREATE TABLE feedback (
    ```bash
    # Import your SQL dump
    docker exec -i $(docker-compose ps -q db) mysql -u root -p barcie_db < your_dump.sql
+   
+   # Initialize chat system tables
+   docker exec -i $(docker-compose ps -q web) php database/init_chat.php
    ```
 
-### 🖥️ Traditional XAMPP Setup
+6. **Access the Application**
+   ```
+   http://localhost:8080
+   ```
 
 **Prerequisites**
 - **XAMPP** (Apache, MySQL, PHP 8.x)
@@ -256,6 +420,9 @@ CREATE TABLE feedback (
    CREATE DATABASE barcie_db;
    
    # Import the SQL schema (create tables as shown above)
+   
+   # Initialize chat system
+   php database/init_chat.php
    ```
 
 5. **Configure Database Connection**
@@ -292,7 +459,7 @@ CREATE TABLE feedback (
 
 ### For Guests
 
-1. **Registration**: Create account with valid email (@email.lcup.edu.ph)
+1. **Registration**: Create account with valid email (@gmail.com)
 2. **Login**: Access guest portal with credentials
 3. **Browse Rooms**: Filter and view available accommodations
 4. **Make Reservations**: Book rooms or function halls
@@ -315,8 +482,8 @@ TS_AUTHKEY=your_authkey   # For VPN networking
 
 ### Email Validation
 ```javascript
-// Email must end with @email.lcup.edu.ph
-const emailPattern = /@email\.lcup\.edu\.ph$/;
+// Email must end with @gmail.com
+const emailPattern = /@gmail\.com$/;
 ```
 
 ### Password Requirements
@@ -392,7 +559,7 @@ services:
 
 4. **Email Validation Errors**
    ```
-   Solution: Ensure email follows @email.lcup.edu.ph format
+   Solution: Ensure email follows @gmail.com format
    ```
 
 5. **Docker Build Issues**
@@ -407,6 +574,21 @@ services:
    ```
    # If port 8080 is busy, change in docker-compose.yml
    ports: ["8081:80"]  # Use port 8081 instead
+   ```
+
+7. **Chat System Issues**
+   ```
+   Solution: Initialize chat tables using database/init_chat.php
+   Test chat endpoints using test_chat_endpoints.php
+   Verify session authentication for message sending
+   Check database for chat_messages and chat_conversations tables
+   ```
+
+8. **Authentication Errors in Chat**
+   ```
+   Solution: Ensure $_SESSION['user_logged_in'] is set during login
+   Verify user_id and username are properly stored in session
+   Check admin_logged_in flag for admin users
    ```
 
 ### Docker-Specific Troubleshooting
@@ -454,6 +636,12 @@ docker-compose exec web chown -R www-data:www-data /var/www/html
 - ✅ **Docker Containerization**
 - ✅ **CI/CD Pipeline (GitHub Actions)**
 - ✅ **Environment Configuration**
+- ✅ **Real-time Chat System**
+- ✅ **Professional Customer Support Interface**
+- ✅ **Chat API Integration**
+- ✅ **Enhanced UI/UX with Animations**
+- ✅ **Quick Response Templates**
+- ✅ **Message History & Conversation Management**
 - 🔄 **Payment Integration** (In Progress)
 - 🔄 **Advanced Reporting** (Planned)
 - 🔄 **API Development** (Planned)
@@ -521,6 +709,18 @@ This project is developed as part of a capstone project for educational purposes
 - **Purpose**: Capstone Project
 
 ## 🔄 Version History
+
+- **v2.1.0** - Professional Chat System Integration (October 2025)
+  - Implemented real-time chat system between guests and administrators
+  - Added professional customer support interface with modern UI
+  - Created comprehensive chat API with RESTful endpoints
+  - Enhanced database schema with chat_messages and chat_conversations tables
+  - Added quick response templates for efficient customer support
+  - Integrated chat authentication with existing user system
+  - Enhanced CSS with gradient styling and smooth animations
+  - Removed WebRTC complexity in favor of focused chat experience
+  - Added chat system initialization and testing scripts
+  - Professional support-themed interface design
 
 - **v2.0.0** - Docker deployment and CI/CD integration
   - Added Docker containerization with PHP 8.2-Apache
