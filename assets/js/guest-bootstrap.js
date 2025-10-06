@@ -290,10 +290,268 @@ async function loadItems() {
                 `;
         container.appendChild(card);
       });
+      
+      // Add event handlers for View Details and Book Now buttons
+      setupItemButtons();
       filterItems();
     }
   } catch (error) {
     console.error("Error loading items:", error);
+  }
+}
+
+// Setup event handlers for item buttons
+function setupItemButtons() {
+  console.log('Setting up item buttons...');
+  
+  // View Details buttons
+  const viewDetailsBtns = document.querySelectorAll('.view-details-btn');
+  console.log('Found view details buttons:', viewDetailsBtns.length);
+  
+  viewDetailsBtns.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const { itemId } = this.dataset;
+      console.log('View details clicked for item:', itemId);
+      showItemDetails(itemId);
+    });
+  });
+  
+  // Book Now buttons
+  const bookNowBtns = document.querySelectorAll('.book-now-btn');
+  console.log('Found book now buttons:', bookNowBtns.length);
+  
+  bookNowBtns.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const { itemId } = this.dataset;
+      console.log('Book now clicked for item:', itemId);
+      redirectToBooking(itemId);
+    });
+  });
+  
+  console.log('Item buttons setup complete');
+}
+
+// Show item details in modal
+function showItemDetails(itemId) {
+  const item = window.allItems.find(item => item.id == itemId);
+  
+  if (!item) {
+    showToast('Item details not found', 'error');
+    return;
+  }
+  
+  // Create or update modal
+  let modal = document.getElementById('itemDetailsModal');
+  if (!modal) {
+    modal = createItemDetailsModal();
+  }
+  
+  // Populate modal with item details
+  populateItemModal(modal, item);
+  
+  // Show modal
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
+}
+
+// Create item details modal
+function createItemDetailsModal() {
+  const modalHtml = `
+    <div class="modal fade" id="itemDetailsModal" tabindex="-1" aria-labelledby="itemDetailsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="itemDetailsModalLabel">Room/Facility Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="itemDetailsBody">
+            <!-- Content will be populated dynamically -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success" id="modalBookNowBtn">Book Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  return document.getElementById('itemDetailsModal');
+}
+
+// Populate modal with item details
+function populateItemModal(modal, item) {
+  const modalBody = modal.querySelector('#itemDetailsBody');
+  const modalTitle = modal.querySelector('#itemDetailsModalLabel');
+  const bookNowBtn = modal.querySelector('#modalBookNowBtn');
+  
+  modalTitle.textContent = `${item.name} - Details`;
+  
+  const detailsHtml = `
+    <div class="row">
+      <div class="col-md-6">
+        ${item.image ? `
+          <img src="${item.image}" class="img-fluid rounded mb-3" alt="${item.name}" style="max-height: 300px; width: 100%; object-fit: cover;">
+        ` : `
+          <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 200px;">
+            <i class="fas ${item.item_type === 'room' ? 'fa-bed' : 'fa-building'} fa-3x text-muted"></i>
+          </div>
+        `}
+      </div>
+      <div class="col-md-6">
+        <h4 class="mb-3">${item.name}</h4>
+        
+        <div class="detail-item mb-2">
+          <strong><i class="fas fa-tag me-2"></i>Type:</strong>
+          <span class="badge bg-primary ms-2">${item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1)}</span>
+        </div>
+        
+        ${item.room_number ? `
+          <div class="detail-item mb-2">
+            <strong><i class="fas fa-door-open me-2"></i>Room Number:</strong>
+            <span class="ms-2">${item.room_number}</span>
+          </div>
+        ` : ''}
+        
+        <div class="detail-item mb-2">
+          <strong><i class="fas fa-users me-2"></i>Capacity:</strong>
+          <span class="ms-2">${item.capacity} ${item.item_type === 'room' ? 'persons' : 'people'}</span>
+        </div>
+        
+        <div class="detail-item mb-3">
+          <strong><i class="fas fa-peso-sign me-2"></i>Price:</strong>
+          <span class="ms-2 text-success fw-bold">₱${parseInt(item.price).toLocaleString()}${item.item_type === 'room' ? '/night' : '/day'}</span>
+        </div>
+        
+        <div class="availability-status mb-3">
+          <strong><i class="fas fa-calendar-check me-2"></i>Availability:</strong>
+          <span class="badge bg-success ms-2">Available for booking</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mt-3">
+      <div class="col-12">
+        <h5><i class="fas fa-info-circle me-2"></i>Description</h5>
+        <p class="text-muted">${item.description || 'Comfortable accommodation with modern amenities and excellent service.'}</p>
+      </div>
+    </div>
+    
+    <div class="row mt-3">
+      <div class="col-12">
+        <h5><i class="fas fa-star me-2"></i>Features & Amenities</h5>
+        <div class="row">
+          <div class="col-md-6">
+            <ul class="list-unstyled">
+              ${item.item_type === 'room' ? `
+                <li><i class="fas fa-wifi text-success me-2"></i>Free WiFi</li>
+                <li><i class="fas fa-snowflake text-success me-2"></i>Air Conditioning</li>
+                <li><i class="fas fa-tv text-success me-2"></i>Cable TV</li>
+              ` : `
+                <li><i class="fas fa-utensils text-success me-2"></i>Event Catering Available</li>
+                <li><i class="fas fa-microphone text-success me-2"></i>Audio/Visual Equipment</li>
+                <li><i class="fas fa-parking text-success me-2"></i>Parking Space</li>
+              `}
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <ul class="list-unstyled">
+              <li><i class="fas fa-broom text-success me-2"></i>Daily Housekeeping</li>
+              <li><i class="fas fa-phone text-success me-2"></i>24/7 Support</li>
+              <li><i class="fas fa-shield-alt text-success me-2"></i>Secure Environment</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  modalBody.innerHTML = detailsHtml;
+  
+  // Setup Book Now button in modal
+  bookNowBtn.onclick = function() {
+    modal.querySelector('[data-bs-dismiss="modal"]').click(); // Close modal
+    redirectToBooking(item.id);
+  };
+}
+
+// Redirect to booking section with pre-filled item
+function redirectToBooking(itemId) {
+  console.log('Redirecting to booking for item ID:', itemId);
+  
+  const item = window.allItems.find(item => item.id == itemId);
+  
+  if (!item) {
+    console.error('Item not found:', itemId);
+    showToast('Item not found for booking', 'error');
+    return;
+  }
+  
+  console.log('Found item for booking:', item);
+  
+  // Find and activate the booking button in sidebar
+  const bookingButton = document.querySelector('button[onclick*="showSection(\'booking\')"]');
+  console.log('Booking button found:', bookingButton);
+  
+  // Switch to booking section (correct section ID)
+  console.log('Switching to booking section...');
+  showSection('booking', bookingButton);
+  
+  // Pre-fill booking form with selected item
+  setTimeout(() => {
+    console.log('Pre-filling booking form...');
+    prefillBookingForm(item);
+    showToast(`Ready to book ${item.name}`, 'success');
+  }, 500); // Increased timeout to ensure section switch completes
+}
+
+// Pre-fill booking form with selected item
+function prefillBookingForm(item) {
+  // Set item name in form if there's a field for it
+  const itemNameField = document.querySelector('#item_name, [name="item_name"]');
+  if (itemNameField) {
+    itemNameField.value = item.name;
+  }
+  
+  // Try to find and populate other relevant fields
+  const itemTypeField = document.querySelector('#item_type, [name="item_type"]');
+  if (itemTypeField) {
+    itemTypeField.value = item.item_type;
+  }
+  
+  const priceField = document.querySelector('#price, [name="price"]');
+  if (priceField) {
+    priceField.value = item.price;
+  }
+  
+  // Add item details to details field if it exists
+  const detailsField = document.querySelector('#details, [name="details"], textarea');
+  if (detailsField) {
+    const currentDetails = detailsField.value;
+    const itemInfo = `Item: ${item.name} | Type: ${item.item_type} | Price: P${item.price}${item.item_type === 'room' ? '/night' : '/day'} | Capacity: ${item.capacity}`;
+    
+    if (currentDetails) {
+      detailsField.value = itemInfo + ' | ' + currentDetails;
+    } else {
+      detailsField.value = itemInfo;
+    }
+  }
+  
+  // Highlight the booking form
+  const bookingForm = document.querySelector('#reservationForm, #pencilForm, form');
+  if (bookingForm) {
+    bookingForm.style.border = '2px solid #28a745';
+    bookingForm.style.borderRadius = '0.5rem';
+    bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Remove highlight after 3 seconds
+    setTimeout(() => {
+      bookingForm.style.border = '';
+      bookingForm.style.borderRadius = '';
+    }, 3000);
   }
 }
 
@@ -506,6 +764,9 @@ window.showToast = showToast;
 window.toggleSidebar = toggleSidebar;
 window.loadItems = loadItems;
 window.filterItems = filterItems;
+window.showItemDetails = showItemDetails;
+window.redirectToBooking = redirectToBooking;
+window.setupItemButtons = setupItemButtons;
 
 // Interactive Overview Setup - Typical Dashboard Style
 function setupInteractiveOverview() {
