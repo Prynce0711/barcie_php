@@ -207,9 +207,7 @@ while ($row = $result->fetch_assoc()) {
     <a href="#" class="nav-link-custom" data-section="bookings">
       <i class="fas fa-calendar-alt me-2"></i>Bookings
     </a>
-    <a href="#" class="nav-link-custom" data-section="payments">
-      <i class="fas fa-credit-card me-2"></i>Payments
-    </a>
+
     <a href="#" class="nav-link-custom" data-section="users">
       <i class="fas fa-users me-2"></i>Users
     </a>
@@ -643,24 +641,7 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-      <!-- Payments -->
-      <section id="payments" class="content-section">
-        <h2>Payments</h2>
-        <table>
-          <tr>
-            <th>Guest</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-          <tr>
-            <td>Mary Smith</td>
-            <td>$300</td>
-            <td>Pending</td>
-            <td><button class="approve">Mark Paid</button></td>
-          </tr>
-        </table>
-      </section>
+
 
       <!-- Users -->
       <section id="users" class="content-section">
