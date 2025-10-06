@@ -16,7 +16,9 @@ function initializeGuestPortal() {
   loadItems();
   addKeyboardNavigation();
   setupInteractiveOverview();
-  initializeChatSystem();
+  // initializeChatSystem(); // Temporarily disabled to fix feedback system
+  initializeStarRating();
+  initializeGuestCalendar();
 }
 
 // Initialize Bootstrap Components
@@ -633,61 +635,42 @@ function loadFeaturedItems() {
   });
 }
 
-// Initialize Guest Chat System
+// Initialize Guest Chat System (Simplified)
 function initializeChatSystem() {
+  console.log('Chat system temporarily disabled for feedback system stability');
+  
+  // Only initialize basic form handling without server calls
   const chatForm = document.getElementById("chat-form");
   const chatInput = document.getElementById("chat-input");
 
-  // Load initial messages
-  loadChatMessages();
-
-  // Set up periodic refresh for real-time updates
-  setInterval(() => {
-    loadChatMessages();
-    updateUnreadCount();
-  }, 3000); // Refresh every 3 seconds
-
-  // Handle message sending
   if (chatForm && chatInput) {
     chatForm.addEventListener("submit", function (e) {
       e.preventDefault();
       const message = chatInput.value.trim();
 
       if (message) {
-        sendChatMessage(message);
+        // Show message locally without server call
+        showToast('Message received. Chat system is currently under maintenance.', 'info');
         chatInput.value = "";
       }
     });
   }
-
-  // Initial unread count check
-  updateUnreadCount();
 }
 
-// Load chat messages for guest
-async function loadChatMessages() {
-  try {
-    // Get user ID from PHP session
-    const userIdElement = document.querySelector('meta[name="user-id"]');
-    const userId = userIdElement ? userIdElement.content : 0;
-
-    if (userId <= 0) {
-      console.error("User ID not found");
-      return;
-    }
-
-    const response = await fetch(
-      `database/user_auth.php?action=get_chat_messages&user_id=${userId}&user_type=guest&other_user_id=1&other_user_type=admin`
-    );
-    const data = await response.json();
-
-    if (data.success) {
-      displayChatMessages(data.messages);
-    } else {
-      console.error("Error loading messages:", data.error);
-    }
-  } catch (error) {
-    console.error("Network error loading messages:", error);
+// Load chat messages for guest (Simplified)
+function loadChatMessages() {
+  // Temporarily disabled to prevent errors
+  console.log('Chat messages loading disabled for system stability');
+  
+  const chatMessages = document.getElementById("chat-messages");
+  if (chatMessages) {
+    chatMessages.innerHTML = `
+      <div class="text-center text-muted">
+        <i class="fas fa-comment-dots fa-3x mb-3 opacity-25"></i>
+        <h5>Chat System Under Maintenance</h5>
+        <p>Please use the feedback system to contact us</p>
+      </div>
+    `;
   }
 }
 
@@ -733,43 +716,10 @@ function displayChatMessages(messages) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Send chat message from guest
-async function sendChatMessage(message) {
-  try {
-    const userIdElement = document.querySelector('meta[name="user-id"]');
-    const userId = userIdElement ? userIdElement.content : 0;
-
-    if (userId <= 0) {
-      showToast("Error: User not authenticated", "error");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("action", "send_chat_message");
-    formData.append("sender_id", userId.toString());
-    formData.append("sender_type", "guest");
-    formData.append("receiver_id", "1"); // Admin ID
-    formData.append("receiver_type", "admin");
-    formData.append("message", message);
-
-    const response = await fetch("database/user_auth.php", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      // Reload messages to show the new message
-      loadChatMessages();
-      showToast("Message sent successfully", "success");
-    } else {
-      showToast("Error sending message: " + data.error, "error");
-    }
-  } catch (error) {
-    console.error("Network error sending message:", error);
-    showToast("Network error sending message", "error");
-  }
+// Send chat message from guest (Simplified)
+function sendChatMessage(message) {
+  // Temporarily disabled to prevent errors
+  showToast('Chat system is under maintenance. Please use the feedback system instead.', 'info');
 }
 
 // Send quick message (for quick help buttons)
@@ -781,39 +731,313 @@ function sendQuickMessage(message) {
   }
 }
 
-// Update unread message count
-async function updateUnreadCount() {
-  try {
-    const userIdElement = document.querySelector('meta[name="user-id"]');
-    const userId = userIdElement ? userIdElement.content : 0;
-
-    if (userId <= 0) {
-      return;
-    }
-
-    const response = await fetch(
-      `database/user_auth.php?action=get_unread_count&user_id=${userId}&user_type=guest`
-    );
-    const data = await response.json();
-
-    if (data.success) {
-      const unreadCount = data.unread_count;
-      const unreadBadge = document.getElementById("unread-count");
-
-      if (unreadBadge) {
-        if (unreadCount > 0) {
-          unreadBadge.textContent = unreadCount;
-          unreadBadge.style.display = "inline";
-        } else {
-          unreadBadge.style.display = "none";
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error updating unread count:", error);
+// Update unread message count (Simplified)
+function updateUnreadCount() {
+  // Temporarily disabled to prevent errors
+  const unreadBadge = document.getElementById("unread-count");
+  if (unreadBadge) {
+    unreadBadge.style.display = "none";
   }
 }
 
 // Export new functions for global access
 window.sendQuickMessage = sendQuickMessage;
 window.initializeChatSystem = initializeChatSystem;
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Star Rating System
+function initializeStarRating() {
+  const starRating = document.getElementById('star-rating');
+  const ratingValue = document.getElementById('rating-value');
+  const ratingText = document.getElementById('rating-text');
+  const submitButton = document.getElementById('submit-feedback');
+  
+  if (!starRating) {
+    return;
+  }
+  
+  const stars = starRating.querySelectorAll('.star');
+  const ratingTexts = {
+    1: 'Poor - Needs significant improvement',
+    2: 'Fair - Below expectations',
+    3: 'Good - Meets expectations',
+    4: 'Very Good - Exceeds expectations',
+    5: 'Excellent - Outstanding experience'
+  };
+  
+  let currentRating = 0;
+  
+  // Add event listeners to stars
+  stars.forEach((star, index) => {
+    const rating = index + 1;
+    
+    // Hover effect
+    star.addEventListener('mouseenter', () => {
+      highlightStars(rating);
+      ratingText.textContent = ratingTexts[rating];
+      ratingText.className = 'text-primary fw-bold';
+    });
+    
+    // Click to select rating
+    star.addEventListener('click', () => {
+      currentRating = rating;
+      ratingValue.value = rating;
+      updateStarDisplay(rating);
+      ratingText.textContent = ratingTexts[rating];
+      ratingText.className = 'text-success fw-bold';
+      
+      // Enable submit button
+      submitButton.disabled = false;
+      submitButton.className = 'btn btn-primary';
+    });
+  });
+  
+  // Reset on mouse leave
+  starRating.addEventListener('mouseleave', () => {
+    updateStarDisplay(currentRating);
+    if (currentRating > 0) {
+      ratingText.textContent = ratingTexts[currentRating];
+      ratingText.className = 'text-success fw-bold';
+    } else {
+      ratingText.textContent = 'Click to rate';
+      ratingText.className = 'text-muted';
+    }
+  });
+  
+  function highlightStars(rating) {
+    stars.forEach((star, index) => {
+      if (index < rating) {
+        star.classList.add('hover');
+        star.classList.remove('active');
+      } else {
+        star.classList.remove('hover', 'active');
+      }
+    });
+  }
+  
+  function updateStarDisplay(rating) {
+    stars.forEach((star, index) => {
+      if (index < rating) {
+        star.classList.add('active');
+        star.classList.remove('hover');
+      } else {
+        star.classList.remove('active', 'hover');
+      }
+    });
+  }
+  
+  // Form submission enhancement
+  const feedbackForm = document.getElementById('feedback-form');
+  if (feedbackForm) {
+    feedbackForm.addEventListener('submit', (e) => {
+      if (currentRating === 0) {
+        e.preventDefault();
+        alert('Please select a star rating before submitting your feedback.');
+        return false;
+      }
+      
+      // Add loading state
+      submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+      submitButton.disabled = true;
+      
+      // Show a success message even before form submission
+      setTimeout(() => {
+        if (!e.defaultPrevented) {
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-info mt-3';
+          alertDiv.innerHTML = '<i class="fas fa-clock me-2"></i>Processing your feedback...';
+          feedbackForm.appendChild(alertDiv);
+        }
+      }, 100);
+    });
+  }
+  
+  // Auto-hide alerts after 5 seconds
+  const alerts = document.querySelectorAll('.alert');
+  alerts.forEach(alert => {
+    if (alert.classList.contains('alert-success') || alert.classList.contains('alert-info')) {
+      setTimeout(() => {
+        alert.style.transition = 'opacity 0.5s ease';
+        alert.style.opacity = '0';
+        setTimeout(() => {
+          if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+          }
+        }, 500);
+      }, 5000);
+    }
+  });
+}
+
+// Guest Availability Calendar - Privacy-Focused
+function initializeGuestCalendar() {
+  const calendarEl = document.getElementById('guestCalendar');
+  
+  if (!calendarEl) {
+    console.log('Guest calendar element not found');
+    return;
+  }
+  
+  console.log('Initializing guest calendar...');
+  
+  // Check if FullCalendar is loaded
+  if (typeof FullCalendar === 'undefined') {
+    console.error('FullCalendar library not loaded!');
+    showToast('Calendar library not loaded. Please refresh the page.', 'error');
+    return;
+  }
+  
+  // Initialize FullCalendar for guest availability view
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,listWeek'
+    },
+    height: 'auto',
+    events: function(fetchInfo, successCallback, failureCallback) {
+      console.log('Fetching guest availability data...');
+      fetch('database/user_auth.php?action=fetch_guest_availability')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Guest availability data received:', data);
+          successCallback(data);
+        })
+        .catch(error => {
+          console.error('Error fetching availability data:', error);
+          failureCallback(error);
+          showToast('Unable to load availability data. Please refresh the page.', 'warning');
+        });
+    },
+    eventDisplay: 'block',
+    dayMaxEvents: 3,
+    moreLinkClick: 'popover',
+    eventMouseEnter: function(info) {
+      // Show tooltip with room/facility info (privacy-safe)
+      const tooltip = document.createElement('div');
+      tooltip.className = 'custom-tooltip';
+      tooltip.innerHTML = `
+        <strong>${info.event.title}</strong><br>
+        <small>Check availability for other dates</small>
+      `;
+      tooltip.style.cssText = `
+        position: absolute;
+        background: #333;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 1000;
+        pointer-events: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      `;
+      
+      document.body.appendChild(tooltip);
+      
+      const rect = info.el.getBoundingClientRect();
+      tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+      tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
+      
+      info.el.tooltip = tooltip;
+    },
+    eventMouseLeave: function(info) {
+      if (info.el.tooltip) {
+        document.body.removeChild(info.el.tooltip);
+        info.el.tooltip = null;
+      }
+    },
+    eventClick: function(info) {
+      // Show availability info without personal details
+      const { facility } = info.event.extendedProps;
+      const message = `${facility} is currently occupied during this period. Please select alternative dates for your booking.`;
+      showToast(message, 'info');
+    },
+    loading: function(isLoading) {
+      const loadingIndicator = document.getElementById('calendar-loading');
+      if (loadingIndicator) {
+        loadingIndicator.style.display = isLoading ? 'block' : 'none';
+      }
+    },
+    // Responsive settings
+    aspectRatio: window.innerWidth < 768 ? 1.0 : 1.35,
+    locale: 'en',
+    firstDay: 1, // Monday first
+    businessHours: {
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // All days
+      startTime: '06:00',
+      endTime: '22:00'
+    },
+    selectMirror: true,
+    weekends: true,
+    nowIndicator: true,
+    eventTextColor: '#ffffff',
+    eventBorderColor: 'transparent',
+    // Add some demo events if no real data
+    eventDidMount: function(info) {
+      console.log('Event mounted:', info.event.title);
+    }
+  });
+  
+  // Render the calendar
+  try {
+    calendar.render();
+    console.log('Guest calendar rendered successfully');
+    
+    // Add a message for empty calendar
+    setTimeout(() => {
+      if (calendar.getEvents().length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'text-center text-muted mt-3';
+        emptyMessage.innerHTML = `
+          <i class="fas fa-calendar-check fa-2x mb-2"></i>
+          <p>All rooms and facilities are currently available!</p>
+          <small>Book now to secure your preferred dates.</small>
+        `;
+        calendarEl.parentNode.appendChild(emptyMessage);
+      }
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Error rendering guest calendar:', error);
+    showToast('Failed to initialize calendar. Please refresh the page.', 'error');
+  }
+  
+  // Store calendar globally for potential updates
+  window.guestCalendar = calendar;
+  
+  // Responsive handling
+  window.addEventListener('resize', function() {
+    if (calendar) {
+      calendar.updateSize();
+    }
+  });
+  
+  // Add loading indicator if it doesn't exist
+  if (!document.getElementById('calendar-loading')) {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'calendar-loading';
+    loadingDiv.style.cssText = `
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+    `;
+    loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading availability...';
+    calendarEl.parentNode.insertBefore(loadingDiv, calendarEl);
+  }
+}
+
+// Export guest calendar functions
+window.initializeGuestCalendar = initializeGuestCalendar;

@@ -143,6 +143,21 @@ while ($row = $recent_activity_result->fetch_assoc()) {
   $recent_activities[] = $row;
 }
 
+// Feedback Statistics
+$feedback_stats_result = $conn->query("SELECT 
+    COUNT(*) as total_feedback,
+    COALESCE(AVG(rating), 0) as avg_rating,
+    COUNT(CASE WHEN rating = 5 THEN 1 END) as five_star,
+    COUNT(CASE WHEN rating = 4 THEN 1 END) as four_star,
+    COUNT(CASE WHEN rating = 3 THEN 1 END) as three_star,
+    COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
+    COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
+    FROM feedback");
+$feedback_stats = $feedback_stats_result ? $feedback_stats_result->fetch_assoc() : [
+    'total_feedback' => 0, 'avg_rating' => 0, 'five_star' => 0, 'four_star' => 0, 
+    'three_star' => 0, 'two_star' => 0, 'one_star' => 0
+];
+
 // Calendar Events
 $events = [];
 $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
@@ -244,23 +259,26 @@ while ($row = $result->fetch_assoc()) {
 
         <!-- Stats Cards Row -->
         <div class="row g-4 mb-4">
-          <div class="col-xl-3 col-md-6">
+          <div class="col-xl-3 col-lg-6">
             <div class="card bg-primary h-100">
               <div class="card-body">
                 <div class="row align-items-center">
                   <div class="col">
-                    <div class="text-xs mb-1">Total Rooms</div>
-                    <div class="h5 mb-0"><?php echo $total_rooms; ?></div>
+                    <div class="text-xs mb-1">Total Rooms & Facilities</div>
+                    <div class="h5 mb-0"><?php echo $total_rooms + $total_facilities; ?></div>
+                    <div class="text-xs text-muted">
+                      <?php echo $total_rooms; ?> rooms • <?php echo $total_facilities; ?> facilities
+                    </div>
                   </div>
                   <div class="col-auto">
-                    <i class="fas fa-door-open fa-lg"></i>
+                    <i class="fas fa-building fa-lg"></i>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="col-xl-3 col-md-6">
+          <div class="col-xl-3 col-lg-6">
             <div class="card bg-success h-100">
               <div class="card-body">
                 <div class="row align-items-center">
@@ -276,34 +294,191 @@ while ($row = $result->fetch_assoc()) {
             </div>
           </div>
 
-          <div class="col-xl-3 col-md-6">
+          <div class="col-xl-3 col-lg-6">
             <div class="card bg-warning h-100">
               <div class="card-body">
                 <div class="row align-items-center">
                   <div class="col">
-                    <div class="text-xs mb-1">Pending Approvals</div>
-                    <div class="h5 mb-0"><?php echo $pending_approvals; ?></div>
+                    <div class="text-xs mb-1">Average Rating</div>
+                    <div class="h5 mb-0">
+                      <?php echo number_format($feedback_stats['avg_rating'], 1); ?>
+                      <small class="h6 text-muted">
+                        <?php for($i = 1; $i <= 5; $i++): ?>
+                          <i class="fas fa-star <?php echo $i <= round($feedback_stats['avg_rating']) ? 'text-warning' : 'text-muted'; ?>"></i>
+                        <?php endfor; ?>
+                      </small>
+                    </div>
                   </div>
                   <div class="col-auto">
-                    <i class="fas fa-clock fa-lg"></i>
+                    <i class="fas fa-star fa-lg"></i>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="col-xl-3 col-md-6">
+          <div class="col-xl-3 col-lg-6">
             <div class="card bg-info h-100">
               <div class="card-body">
                 <div class="row align-items-center">
                   <div class="col">
-                    <div class="text-xs mb-1">Total Facilities</div>
-                    <div class="h5 mb-0"><?php echo $total_facilities; ?></div>
+                    <div class="text-xs mb-1">Total Feedback</div>
+                    <div class="h5 mb-0"><?php echo $feedback_stats['total_feedback']; ?></div>
+                    <div class="text-xs text-muted">
+                      <?php echo $feedback_stats['five_star']; ?> five-star reviews
+                    </div>
                   </div>
                   <div class="col-auto">
-                    <i class="fas fa-building fa-lg"></i>
+                    <i class="fas fa-comments fa-lg"></i>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback Metrics Row -->
+        <div class="row g-4 mb-4">
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header bg-white py-3">
+                <h6 class="m-0 text-dark fw-bold">
+                  <i class="fas fa-chart-bar me-2 text-warning"></i>Guest Satisfaction Overview
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <h5 class="text-primary mb-3">Rating Breakdown</h5>
+                    <?php 
+                    $total_reviews = $feedback_stats['total_feedback'];
+                    $ratings = [
+                        5 => ['count' => $feedback_stats['five_star'], 'color' => 'success'],
+                        4 => ['count' => $feedback_stats['four_star'], 'color' => 'info'],
+                        3 => ['count' => $feedback_stats['three_star'], 'color' => 'warning'],
+                        2 => ['count' => $feedback_stats['two_star'], 'color' => 'danger'],
+                        1 => ['count' => $feedback_stats['one_star'], 'color' => 'dark']
+                    ];
+                    foreach($ratings as $star => $data): 
+                        $percentage = $total_reviews > 0 ? ($data['count'] / $total_reviews * 100) : 0;
+                    ?>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="me-2" style="width: 60px;">
+                            <?php for($i = 1; $i <= 5; $i++): ?>
+                                <i class="fas fa-star <?php echo $i <= $star ? 'text-warning' : 'text-muted'; ?>" style="font-size: 12px;"></i>
+                            <?php endfor; ?>
+                        </div>
+                        <div class="flex-grow-1 me-2">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-<?php echo $data['color']; ?>" 
+                                     style="width: <?php echo $percentage; ?>%"></div>
+                            </div>
+                        </div>
+                        <span class="text-muted" style="width: 50px; font-size: 12px;">
+                            <?php echo $data['count']; ?> (<?php echo number_format($percentage, 1); ?>%)
+                        </span>
+                    </div>
+                    <?php endforeach; ?>
+                  </div>
+                  <div class="col-md-6">
+                    <h5 class="text-primary mb-3">Satisfaction Metrics</h5>
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-success mb-1">
+                                    <?php 
+                                    $positive_reviews = $feedback_stats['five_star'] + $feedback_stats['four_star'];
+                                    $positive_percentage = $total_reviews > 0 ? ($positive_reviews / $total_reviews * 100) : 0;
+                                    echo number_format($positive_percentage, 1); 
+                                    ?>%
+                                </div>
+                                <small class="text-muted">Positive<br>(4-5 stars)</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-warning mb-1">
+                                    <?php 
+                                    $neutral_percentage = $total_reviews > 0 ? ($feedback_stats['three_star'] / $total_reviews * 100) : 0;
+                                    echo number_format($neutral_percentage, 1); 
+                                    ?>%
+                                </div>
+                                <small class="text-muted">Neutral<br>(3 stars)</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-danger mb-1">
+                                    <?php 
+                                    $negative_reviews = $feedback_stats['two_star'] + $feedback_stats['one_star'];
+                                    $negative_percentage = $total_reviews > 0 ? ($negative_reviews / $total_reviews * 100) : 0;
+                                    echo number_format($negative_percentage, 1); 
+                                    ?>%
+                                </div>
+                                <small class="text-muted">Negative<br>(1-2 stars)</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <div class="h4 text-primary mb-1">
+                                    <?php echo number_format($feedback_stats['avg_rating'], 2); ?>
+                                </div>
+                                <small class="text-muted">Average<br>Rating</small>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header bg-white py-3">
+                <h6 class="m-0 text-dark fw-bold">
+                  <i class="fas fa-trophy me-2 text-warning"></i>Guest Satisfaction Status
+                </h6>
+              </div>
+              <div class="card-body text-center">
+                <?php 
+                $avg_rating = $feedback_stats['avg_rating'];
+                if ($avg_rating >= 4.5) {
+                    $status = 'Excellent';
+                    $color = 'success';
+                    $icon = 'fa-trophy';
+                } elseif ($avg_rating >= 4.0) {
+                    $status = 'Very Good';
+                    $color = 'info';
+                    $icon = 'fa-thumbs-up';
+                } elseif ($avg_rating >= 3.5) {
+                    $status = 'Good';
+                    $color = 'warning';
+                    $icon = 'fa-star';
+                } elseif ($avg_rating >= 3.0) {
+                    $status = 'Average';
+                    $color = 'secondary';
+                    $icon = 'fa-minus-circle';
+                } else {
+                    $status = 'Needs Improvement';
+                    $color = 'danger';
+                    $icon = 'fa-exclamation-triangle';
+                }
+                ?>
+                <div class="mb-3">
+                    <i class="fas <?php echo $icon; ?> fa-3x text-<?php echo $color; ?>"></i>
+                </div>
+                <h4 class="text-<?php echo $color; ?> mb-2"><?php echo $status; ?></h4>
+                <p class="text-muted mb-3">
+                    Overall guest satisfaction based on <?php echo $total_reviews; ?> reviews
+                </p>
+                <div class="mb-3">
+                    <?php for($i = 1; $i <= 5; $i++): ?>
+                        <i class="fas fa-star <?php echo $i <= round($avg_rating) ? 'text-warning' : 'text-muted'; ?> fa-lg"></i>
+                    <?php endfor; ?>
+                </div>
+                <a href="#" class="btn btn-outline-<?php echo $color; ?> btn-sm" onclick="document.querySelector('[data-section=\"feedback\"]').click()">
+                    <i class="fas fa-chart-line me-1"></i>View Details
+                </a>
               </div>
             </div>
           </div>
@@ -318,8 +493,10 @@ while ($row = $result->fetch_assoc()) {
                   <i class="fas fa-chart-line me-2 text-primary"></i>Bookings Overview
                 </h6>
               </div>
-              <div class="card-body">
-                <canvas id="bookingsChart" width="100%" height="40"></canvas>
+              <div class="card-body p-4">
+                <div class="mb-3">
+                  <canvas id="bookingsChart" width="100%" height="40"></canvas>
+                </div>
               </div>
             </div>
           </div>
@@ -331,8 +508,10 @@ while ($row = $result->fetch_assoc()) {
                   <i class="fas fa-chart-pie me-2 text-primary"></i>Booking Status
                 </h6>
               </div>
-              <div class="card-body">
-                <canvas id="statusChart" width="100%" height="100"></canvas>
+              <div class="card-body p-4">
+                <div class="mb-3">
+                  <canvas id="statusChart" width="100%" height="100"></canvas>
+                </div>
               </div>
             </div>
           </div>
@@ -344,8 +523,16 @@ while ($row = $result->fetch_assoc()) {
             <div class="card">
               <div class="card-header bg-white py-3">
                 <h6 class="m-0 text-dark fw-bold">
-                  <i class="fas fa-calendar-alt me-2 text-primary"></i>Booking Calendar
+                  <i class="fas fa-calendar-alt me-2 text-primary"></i>Booking Calendar - Rooms & Facilities
                 </h6>
+                <div class="mt-2">
+                  <small class="text-muted">
+                    <span class="badge bg-success me-1">📅</span>Approved 
+                    <span class="badge bg-info me-1">🏠</span>Checked-in 
+                    <span class="badge bg-warning me-1">🔑</span>Check-in Events 
+                    <span class="badge bg-danger me-1">🚪</span>Check-out Events
+                  </small>
+                </div>
               </div>
               <div class="card-body">
                 <div id="dashboardCalendar"></div>
@@ -394,18 +581,74 @@ while ($row = $result->fetch_assoc()) {
       </section>
 
       <?php
-      // ✅ Load booking events for calendar
+      // Load booking events for calendar
       $events = [];
-      $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
-      while ($row = $result->fetch_assoc()) {
-        $events[] = [
-          'id' => $row['id'],
-          'title' => "Room " . $row['details'] . " (" . $row['type'] . ")",
-          'start' => $row['checkin'],
-          'end' => $row['checkout'],
-          'status' => $row['status']
-        ];
+      
+      $calendar_query = "SELECT b.*, u.username FROM bookings b LEFT JOIN users u ON b.user_id = u.id WHERE b.status != 'rejected' ORDER BY b.id DESC";
+      $result = $conn->query($calendar_query);
+      
+      if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+          $room_facility = 'Booking #' . $row['id'];
+          
+          // Try to extract guest name from details
+          if (strpos($row['details'], 'Guest:') !== false) {
+            $parts = explode('|', $row['details']);
+            foreach ($parts as $part) {
+              if (strpos($part, 'Guest:') !== false) {
+                $room_facility = trim(str_replace('Guest:', '', $part));
+                break;
+              }
+            }
+          }
+          
+          $title = '';
+          $color = '#007bff';
+          
+          // Status-based styling
+          if ($row['status'] == 'confirmed' || $row['status'] == 'approved') {
+            $title = "✅ Approved: " . $room_facility;
+            $color = '#28a745';
+          } elseif ($row['status'] == 'checked_in') {
+            $title = "🏠 Checked In: " . $room_facility;
+            $color = '#17a2b8';
+          } elseif ($row['status'] == 'checked_out') {
+            $title = "🚪 Checked Out: " . $room_facility;
+            $color = '#6c757d';
+          } elseif ($row['status'] == 'pending') {
+            $title = "⏳ Pending: " . $room_facility;
+            $color = '#ffc107';
+          } else {
+            $title = ucfirst($row['status']) . ": " . $room_facility;
+            $color = '#6c757d';
+          }
+          
+          if ($row['username']) {
+            $title .= " - " . $row['username'];
+          }
+          
+          $start_date = $row['checkin'] ? $row['checkin'] : date('Y-m-d');
+          $end_date = $row['checkout'] ? $row['checkout'] : date('Y-m-d', strtotime($start_date . ' +1 day'));
+          
+          $events[] = [
+            'id' => 'booking-' . $row['id'],
+            'title' => $title,
+            'start' => $start_date,
+            'end' => $end_date,
+            'backgroundColor' => $color,
+            'borderColor' => $color,
+            'textColor' => '#ffffff'
+          ];
+        }
       }
+      
+      // Test event
+      $events[] = [
+        'id' => 'test-today',
+        'title' => '🧪 Test - Today',
+        'start' => date('Y-m-d'),
+        'backgroundColor' => '#dc3545'
+      ];
       ?>
       <script>
         // Data for dashboard charts and calendar
@@ -417,8 +660,19 @@ while ($row = $result->fetch_assoc()) {
           totalFacilities: <?php echo $total_facilities; ?>,
           activeBookings: <?php echo $active_bookings; ?>,
           pendingApprovals: <?php echo $pending_approvals; ?>,
-          totalRevenue: <?php echo $total_revenue; ?>
+          totalRevenue: <?php echo $total_revenue; ?>,
+          feedbackStats: <?php echo json_encode($feedback_stats); ?>
         };
+        
+        // Make variables globally accessible
+        window.bookingEvents = bookingEvents;
+        window.monthlyBookingsData = monthlyBookingsData;
+        window.statusDistributionData = statusDistributionData;
+        window.dashboardStats = dashboardStats;
+        
+        // Debug: Log the events to console
+        console.log('Booking Events:', bookingEvents);
+        console.log('Events Length:', bookingEvents.length);
       </script>
 
 
@@ -816,7 +1070,7 @@ while ($row = $result->fetch_assoc()) {
         </div>
       </section>
 
-      </section>
+
 
 
 

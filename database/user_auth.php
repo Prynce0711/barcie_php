@@ -25,6 +25,170 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         exit;
     }
 
+    if ($_GET['action'] === 'debug_bookings') {
+        header('Content-Type: application/json');
+        
+        try {
+            // Get all bookings for debugging
+            $query = "SELECT id, details, checkin, checkout, status, created_at FROM bookings ORDER BY id DESC LIMIT 10";
+            $result = $conn->query($query);
+            
+            $bookings = [];
+            if ($result && $result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    $bookings[] = [
+                        'id' => $row['id'],
+                        'details' => substr($row['details'], 0, 100),
+                        'checkin' => $row['checkin'],
+                        'checkout' => $row['checkout'],
+                        'status' => $row['status'],
+                        'created_at' => $row['created_at'],
+                        'current_date' => date('Y-m-d')
+                    ];
+                }
+            }
+            
+            echo json_encode([
+                'total_bookings' => count($bookings),
+                'current_date' => date('Y-m-d'),
+                'bookings' => $bookings
+            ]);
+            
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        
+        $conn->close();
+        exit;
+    }
+
+    if ($_GET['action'] === 'fetch_guest_availability') {
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET');
+        
+        try {
+            // Check if connection exists and is valid
+            if (!isset($conn)) {
+                throw new Exception("Database connection not established");
+            }
+            
+            if ($conn->connect_error) {
+                throw new Exception("Database connection failed: " . $conn->connect_error);
+            }
+            
+            // Fetch bookings with minimal privacy-respecting information
+            // Show confirmed, approved, pending, and checked_in bookings
+            // Include recent and future bookings (last 7 days to future)
+            $query = "SELECT 
+                        details,
+                        checkin,
+                        checkout,
+                        status
+                      FROM bookings 
+                      WHERE status IN ('confirmed', 'approved', 'pending', 'checked_in')
+                      AND (checkin >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) OR checkin IS NULL)
+                      ORDER BY checkin ASC";
+            
+            $result = $conn->query($query);
+            
+            if (!$result) {
+                throw new Exception("Query failed: " . $conn->error);
+            }
+            
+            $events = [];
+            
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    // Extract room/facility name from details
+                    $room_facility = 'Room/Facility';
+                    
+                    // Try to extract room/facility info from details
+                    if (!empty($row['details'])) {
+                        $details = $row['details'];
+                        
+                        // Look for various patterns in details
+                        if (strpos($details, 'Room:') !== false) {
+                            preg_match('/Room:\s*([^|]+)/i', $details, $matches);
+                            if (!empty($matches[1])) {
+                                $room_facility = trim($matches[1]);
+                            }
+                        } elseif (strpos($details, 'Facility:') !== false) {
+                            preg_match('/Facility:\s*([^|]+)/i', $details, $matches);
+                            if (!empty($matches[1])) {
+                                $room_facility = trim($matches[1]);
+                            }
+                        } elseif (strpos($details, 'Item:') !== false) {
+                            preg_match('/Item:\s*([^|]+)/i', $details, $matches);
+                            if (!empty($matches[1])) {
+                                $room_facility = trim($matches[1]);
+                            }
+                        }
+                        
+                        // If no specific room/facility found, try to get guest name for room identification
+                        if ($room_facility == 'Room/Facility' && strpos($details, 'Guest:') !== false) {
+                            preg_match('/Guest:\s*([^|]+)/i', $details, $matches);
+                            if (!empty($matches[1])) {
+                                $guest_name = trim($matches[1]);
+                                $room_facility = "Room for " . substr($guest_name, 0, 1) . "***"; // Privacy: show first letter only
+                            }
+                        }
+                    }
+                    
+                    // Set dates - use today if checkin is null
+                    $start_date = $row['checkin'] ?: date('Y-m-d');
+                    $end_date = $row['checkout'] ?: date('Y-m-d', strtotime($start_date . ' +1 day'));
+                    
+                    // Set color based on status
+                    $color = '#dc3545'; // Default red for occupied
+                    $status_text = 'Occupied';
+                    
+                    if ($row['status'] == 'pending') {
+                        $color = '#ffc107'; // Yellow for pending
+                        $status_text = 'Pending';
+                    } elseif ($row['status'] == 'checked_in') {
+                        $color = '#17a2b8'; // Blue for checked in
+                        $status_text = 'Occupied';
+                    }
+                    
+                    // Create calendar event with privacy protection
+                    $events[] = [
+                        'title' => $room_facility . ' - ' . $status_text,
+                        'start' => $start_date,
+                        'end' => $end_date,
+                        'backgroundColor' => $color,
+                        'borderColor' => $color,
+                        'textColor' => '#ffffff',
+                        'allDay' => false,
+                        'extendedProps' => [
+                            'facility' => $room_facility,
+                            'status' => strtolower($status_text),
+                            'booking_status' => $row['status']
+                        ]
+                    ];
+                }
+            }
+            
+            // Return JSON response
+            echo json_encode($events);
+            
+        } catch (Exception $e) {
+            // Log error for debugging
+            error_log("Guest availability error: " . $e->getMessage());
+            
+            // Return error response
+            http_response_code(500);
+            echo json_encode([
+                'error' => 'Failed to fetch availability data',
+                'message' => $e->getMessage(),
+                'debug' => 'Check server logs for details'
+            ]);
+        }
+        
+        $conn->close();
+        exit;
+    }
+
     if ($_GET['action'] === 'get_receipt_no') {
         header('Content-Type: application/json');
         try {
@@ -133,58 +297,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     if ($_GET['action'] === 'get_chat_messages') {
         header('Content-Type: application/json');
         
-        $user_id = (int)($_GET['user_id'] ?? 0);
-        $user_type = $_GET['user_type'] ?? '';
-        $other_user_id = (int)($_GET['other_user_id'] ?? 0);
-        $other_user_type = $_GET['other_user_type'] ?? '';
-        $limit = (int)($_GET['limit'] ?? 50);
-        $offset = (int)($_GET['offset'] ?? 0);
-        
-        if ($user_id <= 0 || $other_user_id <= 0 || empty($user_type) || empty($other_user_type)) {
-            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
-            exit;
-        }
-        
-        try {
-            initializeChatTables($conn);
-            
-            $stmt = $conn->prepare("SELECT cm.*, 
-                                   CASE 
-                                       WHEN cm.sender_type = 'admin' THEN (SELECT username FROM users WHERE id = 1 LIMIT 1)
-                                       ELSE (SELECT username FROM users WHERE id = cm.sender_id LIMIT 1)
-                                   END as sender_name
-                                   FROM chat_messages cm 
-                                   WHERE ((cm.sender_id = ? AND cm.sender_type = ? AND cm.receiver_id = ? AND cm.receiver_type = ?) 
-                                          OR (cm.sender_id = ? AND cm.sender_type = ? AND cm.receiver_id = ? AND cm.receiver_type = ?))
-                                   ORDER BY cm.created_at DESC 
-                                   LIMIT ? OFFSET ?");
-            
-            $stmt->bind_param("isissisiiii", 
-                $user_id, $user_type, $other_user_id, $other_user_type,
-                $other_user_id, $other_user_type, $user_id, $user_type,
-                $limit, $offset
-            );
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            $messages = [];
-            while ($row = $result->fetch_assoc()) {
-                $messages[] = $row;
-            }
-            $stmt->close();
-            
-            // Mark messages as read
-            $stmt = $conn->prepare("UPDATE chat_messages SET is_read = TRUE 
-                                   WHERE receiver_id = ? AND receiver_type = ? AND sender_id = ? AND sender_type = ? AND is_read = FALSE");
-            $stmt->bind_param("isis", $user_id, $user_type, $other_user_id, $other_user_type);
-            $stmt->execute();
-            $stmt->close();
-            
-            echo json_encode(['success' => true, 'messages' => array_reverse($messages)]);
-            
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
-        }
+        // Temporarily disabled to fix feedback system
+        echo json_encode(['success' => false, 'error' => 'Chat system temporarily disabled']);
         exit;
     }
 
@@ -192,78 +306,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     if ($_GET['action'] === 'get_chat_conversations') {
         header('Content-Type: application/json');
         
-        $user_id = (int)($_GET['user_id'] ?? 0);
-        $user_type = $_GET['user_type'] ?? '';
-        $limit = (int)($_GET['limit'] ?? 20);
-        
-        if ($user_id <= 0 || empty($user_type)) {
-            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
-            exit;
-        }
-        
-        try {
-            initializeChatTables($conn);
-            
-            if ($user_type === 'admin') {
-                // Admin sees all guest conversations
-                $stmt = $conn->prepare("SELECT DISTINCT 
-                                       cm.sender_id as guest_id,
-                                       COALESCE(u.username, 'Guest User') as guest_name,
-                                       u.email as guest_email,
-                                       (SELECT message FROM chat_messages cm2 
-                                        WHERE (cm2.sender_id = cm.sender_id AND cm2.receiver_id = ?) 
-                                           OR (cm2.sender_id = ? AND cm2.receiver_id = cm.sender_id)
-                                        ORDER BY cm2.created_at DESC LIMIT 1) as last_message,
-                                       (SELECT created_at FROM chat_messages cm3
-                                        WHERE (cm3.sender_id = cm.sender_id AND cm3.receiver_id = ?) 
-                                           OR (cm3.sender_id = ? AND cm3.receiver_id = cm.sender_id)
-                                        ORDER BY cm3.created_at DESC LIMIT 1) as last_message_time,
-                                       (SELECT COUNT(*) FROM chat_messages cm4 
-                                        WHERE cm4.sender_id = cm.sender_id AND cm4.receiver_id = ? 
-                                        AND cm4.is_read = FALSE) as admin_unread_count
-                                       FROM chat_messages cm 
-                                       LEFT JOIN users u ON cm.sender_id = u.id AND cm.sender_type = 'guest'
-                                       WHERE cm.sender_type = 'guest' AND cm.receiver_id = ?
-                                       ORDER BY last_message_time DESC 
-                                       LIMIT ?");
-                $stmt->bind_param("iiiiii", $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $limit);
-            } else {
-                // Guest sees only their conversation with admin
-                $stmt = $conn->prepare("SELECT 1 as admin_id,
-                                       'Admin' as admin_name,
-                                       'admin@example.com' as admin_email,
-                                       (SELECT message FROM chat_messages cm2 
-                                        WHERE (cm2.sender_id = ? AND cm2.receiver_id = 1) 
-                                           OR (cm2.sender_id = 1 AND cm2.receiver_id = ?)
-                                        ORDER BY cm2.created_at DESC LIMIT 1) as last_message,
-                                       (SELECT created_at FROM chat_messages cm3
-                                        WHERE (cm3.sender_id = ? AND cm3.receiver_id = 1) 
-                                           OR (cm3.sender_id = 1 AND cm3.receiver_id = ?)
-                                        ORDER BY cm3.created_at DESC LIMIT 1) as last_message_time,
-                                       (SELECT COUNT(*) FROM chat_messages cm4 
-                                        WHERE cm4.sender_id = 1 AND cm4.receiver_id = ? 
-                                        AND cm4.is_read = FALSE) as guest_unread_count
-                                       FROM chat_messages cm 
-                                       WHERE (cm.sender_id = ? AND cm.receiver_id = 1) 
-                                          OR (cm.sender_id = 1 AND cm.receiver_id = ?)
-                                       LIMIT 1");
-                $stmt->bind_param("iiiiiii", $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id);
-            }
-            
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            $conversations = [];
-            while ($row = $result->fetch_assoc()) {
-                $conversations[] = $row;
-            }
-            $stmt->close();
-            
-            echo json_encode(['success' => true, 'conversations' => $conversations]);
-            
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
-        }
+        // Temporarily disabled to fix feedback system
+        echo json_encode(['success' => false, 'error' => 'Chat system temporarily disabled']);
         exit;
     }
 
@@ -271,30 +315,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     if ($_GET['action'] === 'get_unread_count') {
         header('Content-Type: application/json');
         
-        $user_id = (int)($_GET['user_id'] ?? 0);
-        $user_type = $_GET['user_type'] ?? '';
-        
-        if ($user_id <= 0 || empty($user_type)) {
-            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
-            exit;
-        }
-        
-        try {
-            initializeChatTables($conn);
-            
-            $stmt = $conn->prepare("SELECT COUNT(*) as unread_count FROM chat_messages 
-                                   WHERE receiver_id = ? AND receiver_type = ? AND is_read = FALSE");
-            $stmt->bind_param("is", $user_id, $user_type);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $row = $result->fetch_assoc();
-            $stmt->close();
-            
-            echo json_encode(['success' => true, 'unread_count' => $row['unread_count']]);
-            
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
-        }
+        // Temporarily disabled to fix feedback system
+        echo json_encode(['success' => true, 'unread_count' => 0]);
         exit;
     }
 
@@ -312,6 +334,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             echo json_encode([
                 'success' => false, 
                 'error' => 'Error initializing chat system: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    // Initialize feedback table
+    if ($_GET['action'] === 'init_feedback_table') {
+        header('Content-Type: application/json');
+        
+        try {
+            // Create feedback table if it doesn't exist
+            $conn->query("CREATE TABLE IF NOT EXISTS feedback (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                rating INT NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+                message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_id (user_id),
+                INDEX idx_rating (rating),
+                INDEX idx_created_at (created_at)
+            )");
+            
+            // Check if rating column exists, add if missing
+            $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
+            if ($result->num_rows == 0) {
+                $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5 AFTER user_id");
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Feedback table initialized successfully!'
+            ]);
+            
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Error initializing feedback table: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    // Get feedback data for admin
+    if ($_GET['action'] === 'get_feedback_data') {
+        header('Content-Type: application/json');
+        
+        try {
+            // Ensure feedback table exists first
+            $conn->query("CREATE TABLE IF NOT EXISTS feedback (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                rating INT NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+                message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_id (user_id),
+                INDEX idx_rating (rating),
+                INDEX idx_created_at (created_at)
+            )");
+            
+            // Check if rating column exists, add if missing
+            $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
+            if ($result->num_rows == 0) {
+                $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5 AFTER user_id");
+            }
+            
+            $limit = (int)($_GET['limit'] ?? 50);
+            $offset = (int)($_GET['offset'] ?? 0);
+            
+            // Get feedback with user details
+            $stmt = $conn->prepare("SELECT f.id, f.rating, f.message, f.created_at, 
+                                   u.username, u.email 
+                                   FROM feedback f 
+                                   JOIN users u ON f.user_id = u.id 
+                                   ORDER BY f.created_at DESC 
+                                   LIMIT ? OFFSET ?");
+            $stmt->bind_param("ii", $limit, $offset);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $feedback = [];
+            while ($row = $result->fetch_assoc()) {
+                $feedback[] = $row;
+            }
+            $stmt->close();
+            
+            // Get summary statistics
+            $stats_query = "SELECT 
+                COUNT(*) as total_feedback,
+                AVG(rating) as avg_rating,
+                COUNT(CASE WHEN rating = 5 THEN 1 END) as five_star,
+                COUNT(CASE WHEN rating = 4 THEN 1 END) as four_star,
+                COUNT(CASE WHEN rating = 3 THEN 1 END) as three_star,
+                COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
+                COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
+                FROM feedback";
+            $stats_result = $conn->query($stats_query);
+            $stats = $stats_result->fetch_assoc();
+            
+            echo json_encode([
+                'success' => true,
+                'feedback' => $feedback,
+                'stats' => $stats
+            ]);
+            
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Database error: ' . $e->getMessage()
             ]);
         }
         exit;
@@ -577,17 +707,55 @@ if ($action === 'create_booking') {
 /* ---------------------------
    SUBMIT FEEDBACK
    --------------------------- */
-if ($action === 'submit_feedback') {
+if ($action === 'submit_feedback' || $action === 'feedback') {
     if (!isset($_SESSION['user_id'])) die("You must be logged in to submit feedback.");
     $user_id = (int)$_SESSION['user_id'];
     $message = trim($_POST['message'] ?? '');
-    if ($message === '') {
-        $_SESSION['feedback_error'] = "Feedback cannot be empty.";
+    $rating = (int)($_POST['rating'] ?? 0);
+    
+    if ($rating < 1 || $rating > 5) {
+        $_SESSION['feedback_error'] = "Please select a star rating.";
         redirect('../Guest.php#feedback');
     }
-    $stmt = $conn->prepare("INSERT INTO feedback (user_id, message) VALUES (?, ?)");
-    $stmt->bind_param("is", $user_id, $message);
-    $_SESSION['feedback_success'] = $stmt->execute() ? "Feedback submitted. Thank you." : "Error: " . $stmt->error;
+    
+    // Create feedback table if it doesn't exist
+    try {
+        $conn->query("CREATE TABLE IF NOT EXISTS feedback (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            rating INT NOT NULL DEFAULT 5,
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_id (user_id),
+            INDEX idx_rating (rating),
+            INDEX idx_created_at (created_at)
+        )");
+        
+        // Check if rating column exists, add if missing
+        $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
+        if ($result && $result->num_rows == 0) {
+            $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5 AFTER user_id");
+        }
+        
+        // Try to add check constraint (ignore if already exists)
+        try {
+            $conn->query("ALTER TABLE feedback ADD CONSTRAINT chk_rating CHECK (rating >= 1 AND rating <= 5)");
+        } catch (Exception $constraintError) {
+            // Ignore constraint errors - it might already exist
+        }
+    } catch (Exception $e) {
+        error_log("Error creating/updating feedback table: " . $e->getMessage());
+    }
+    
+    $stmt = $conn->prepare("INSERT INTO feedback (user_id, rating, message) VALUES (?, ?, ?)");
+    $stmt->bind_param("iis", $user_id, $rating, $message);
+    
+    if ($stmt->execute()) {
+        $_SESSION['feedback_success'] = "Thank you for your " . $rating . "-star feedback!";
+    } else {
+        $_SESSION['feedback_error'] = "Error submitting feedback. Please try again.";
+        error_log("Feedback submission error: " . $stmt->error);
+    }
     $stmt->close();
     redirect('../Guest.php#feedback');
 }
@@ -706,61 +874,8 @@ function initializeChatTables($conn) {
 if ($action === 'send_chat_message') {
     header('Content-Type: application/json');
     
-    $sender_id = (int)($_POST['sender_id'] ?? 0);
-    $sender_type = $_POST['sender_type'] ?? '';
-    $receiver_id = (int)($_POST['receiver_id'] ?? 0);
-    $receiver_type = $_POST['receiver_type'] ?? '';
-    $message = trim($_POST['message'] ?? '');
-    
-    if (empty($message) || empty($sender_type) || empty($receiver_type) || $sender_id <= 0 || $receiver_id <= 0) {
-        echo json_encode(['success' => false, 'error' => 'Invalid message data']);
-        exit;
-    }
-    
-    // Validate sender authorization
-    if ($sender_type === 'admin' && (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true)) {
-        echo json_encode(['success' => false, 'error' => 'Admin authentication required']);
-        exit;
-    }
-    
-    if ($sender_type === 'guest' && (!isset($_SESSION['user_logged_in']) || $_SESSION['user_logged_in'] !== true)) {
-        echo json_encode(['success' => false, 'error' => 'Guest authentication required']);
-        exit;
-    }
-    
-    try {
-        initializeChatTables($conn);
-        
-        // Insert message
-        $stmt = $conn->prepare("INSERT INTO chat_messages (sender_id, sender_type, receiver_id, receiver_type, message) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("isiss", $sender_id, $sender_type, $receiver_id, $receiver_type, $message);
-        $stmt->execute();
-        $message_id = $conn->insert_id;
-        $stmt->close();
-        
-        // Update or create conversation
-        $admin_id = ($sender_type === 'admin') ? $sender_id : $receiver_id;
-        $guest_id = ($sender_type === 'guest') ? $sender_id : $receiver_id;
-        
-        $stmt = $conn->prepare("INSERT INTO chat_conversations (admin_id, guest_id, last_message_id, admin_unread_count, guest_unread_count) 
-                               VALUES (?, ?, ?, ?, ?) 
-                               ON DUPLICATE KEY UPDATE 
-                               last_message_id = ?, 
-                               admin_unread_count = CASE WHEN ? = 'guest' THEN admin_unread_count + 1 ELSE admin_unread_count END,
-                               guest_unread_count = CASE WHEN ? = 'admin' THEN guest_unread_count + 1 ELSE guest_unread_count END");
-        
-        $initial_admin_unread = ($sender_type === 'guest') ? 1 : 0;
-        $initial_guest_unread = ($sender_type === 'admin') ? 1 : 0;
-        
-        $stmt->bind_param("iiiiiiss", $admin_id, $guest_id, $message_id, $initial_admin_unread, $initial_guest_unread, $message_id, $sender_type, $sender_type);
-        $stmt->execute();
-        $stmt->close();
-        
-        echo json_encode(['success' => true, 'message_id' => $message_id]);
-        
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
-    }
+    // Temporarily disabled to fix feedback system
+    echo json_encode(['success' => false, 'error' => 'Chat system temporarily disabled']);
     exit;
 }
 

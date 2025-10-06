@@ -10,19 +10,80 @@ $user_id = $_SESSION['user_id'];
 
 $success = $error = "";
 
+// Check for session messages
+if (isset($_SESSION['feedback_success'])) {
+    $success = $_SESSION['feedback_success'];
+    unset($_SESSION['feedback_success']);
+}
+if (isset($_SESSION['feedback_error'])) {
+    $error = $_SESSION['feedback_error'];
+    unset($_SESSION['feedback_error']);
+}
+
+// Initialize feedback table if it doesn't exist
+try {
+    // First create the table without foreign key constraints
+    $createTableQuery = "CREATE TABLE IF NOT EXISTS feedback (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        rating INT NOT NULL DEFAULT 5,
+        message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_rating (rating),
+        INDEX idx_created_at (created_at)
+    )";
+    
+    $conn->query($createTableQuery);
+    
+    // Check if rating column exists, add if missing
+    $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
+    if ($result && $result->num_rows == 0) {
+        $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5 AFTER user_id");
+    }
+    
+    // Add check constraint for rating if it doesn't exist
+    $conn->query("ALTER TABLE feedback ADD CONSTRAINT chk_rating CHECK (rating >= 1 AND rating <= 5)");
+    
+} catch (Exception $e) {
+    // Log error but don't stop execution
+    error_log("Error initializing feedback table: " . $e->getMessage());
+}
+
 // ✅ Handle Feedback Submission
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === "feedback") {
-  $message = trim($_POST['message']);
-  if (!empty($message)) {
-    $stmt = $conn->prepare("INSERT INTO feedback (user_id, message) VALUES (?, ?)");
-    $stmt->bind_param("is", $user_id, $message);
-    if ($stmt->execute()) {
-      $success = "Feedback submitted successfully!";
-    } else {
-      $error = "Error: " . $stmt->error;
-    }
+  $message = trim($_POST['message'] ?? '');
+  $rating = (int)($_POST['rating'] ?? 0);
+  
+  if ($rating < 1 || $rating > 5) {
+    $error = "Please select a star rating.";
   } else {
-    $error = "Feedback cannot be empty.";
+    try {
+      // Ensure table exists before inserting
+      $conn->query("CREATE TABLE IF NOT EXISTS feedback (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          rating INT NOT NULL DEFAULT 5,
+          message TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_user_id (user_id),
+          INDEX idx_rating (rating),
+          INDEX idx_created_at (created_at)
+      )");
+      
+      $stmt = $conn->prepare("INSERT INTO feedback (user_id, rating, message) VALUES (?, ?, ?)");
+      $stmt->bind_param("iis", $user_id, $rating, $message);
+      
+      if ($stmt->execute()) {
+        $success = "Thank you for your " . $rating . "-star feedback!";
+      } else {
+        $error = "Error submitting feedback. Please try again.";
+      }
+      $stmt->close();
+    } catch (Exception $e) {
+      $error = "Error submitting feedback. Please try again.";
+      error_log("Feedback submission error: " . $e->getMessage());
+    }
   }
 }
 
@@ -47,9 +108,52 @@ $stmt->close();
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="assets/css/guest.css">
   <link rel="stylesheet" href="assets/css/guest-enhanced.css">
+  
+  <style>
+    /* Calendar Legend Styles */
+    .legend-color {
+      width: 15px;
+      height: 15px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    
+    .availability-legend {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #dee2e6;
+    }
+    
+    /* Calendar customization for better privacy display */
+    .fc-event {
+      border: none !important;
+      font-size: 0.75rem;
+    }
+    
+    .fc-event-title {
+      font-weight: 500;
+    }
+    
+    /* Responsive calendar */
+    @media (max-width: 768px) {
+      #guestCalendar {
+        min-height: 250px !important;
+      }
+      
+      .availability-legend {
+        margin-top: 1rem;
+      }
+    }
+  </style>
+  
+  <!-- FullCalendar JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <!-- Bootstrap JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/guest-bootstrap.js" defer></script>
@@ -210,6 +314,56 @@ $stmt->close();
                       <i class="fas fa-star fa-2x mb-2"></i>
                       <span>Give Feedback</span>
                     </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Availability Calendar -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                  <i class="fas fa-calendar-alt me-2"></i>Room & Facility Availability
+                </h5>
+                <small class="opacity-75">View availability for planning your stay</small>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+                    <div id="guestCalendar" style="min-height: 300px;"></div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="availability-legend">
+                      <h6 class="mb-3">Availability Legend</h6>
+                      <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color bg-success me-2"></div>
+                        <small>Available</small>
+                      </div>
+                      <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color bg-warning me-2"></div>
+                        <small>Pending Booking</small>
+                      </div>
+                      <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color bg-danger me-2"></div>
+                        <small>Occupied</small>
+                      </div>
+                      <div class="d-flex align-items-center mb-3">
+                        <div class="legend-color bg-info me-2"></div>
+                        <small>Checked In</small>
+                      </div>
+                      
+                      <div class="availability-info mt-3">
+                        <h6 class="text-muted">Privacy Notice</h6>
+                        <small class="text-muted">
+                          This calendar shows room/facility availability only. 
+                          Guest information is kept private for security.
+                        </small>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -687,18 +841,155 @@ $stmt->close();
 
       <!-- Feedback -->
       <section id="feedback" class="content-section">
-        <h2>Feedback</h2>
-        <?php
-        if (!empty($success))
-          echo "<p style='color:green;'>$success</p>";
-        if (!empty($error))
-          echo "<p style='color:red;'>$error</p>";
-        ?>
-        <form method="post">
-          <input type="hidden" name="action" value="feedback">
-          <textarea name="message" rows="5" placeholder="Write your feedback..." required></textarea><br><br>
-          <button type="submit">Submit Feedback</button>
-        </form>
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                  <i class="fas fa-star me-2"></i>Share Your Experience
+                </h5>
+                <small class="text-white-50">Help us improve by rating your experience</small>
+              </div>
+              <div class="card-body">
+                <?php
+                if (!empty($success))
+                  echo "<div class='alert alert-success'><i class='fas fa-check-circle me-2'></i>$success</div>";
+                if (!empty($error))
+                  echo "<div class='alert alert-danger'><i class='fas fa-exclamation-circle me-2'></i>$error</div>";
+                ?>
+                
+                <form method="post" id="feedback-form">
+                  <input type="hidden" name="action" value="feedback">
+                  <input type="hidden" name="rating" id="rating-value" value="">
+                  
+                  <!-- Star Rating Section -->
+                  <div class="mb-4">
+                    <label class="form-label fw-bold">Rate Your Experience</label>
+                    <div class="d-flex align-items-center">
+                      <div class="star-rating me-3" id="star-rating">
+                        <span class="star" data-rating="1">
+                          <i class="fas fa-star"></i>
+                        </span>
+                        <span class="star" data-rating="2">
+                          <i class="fas fa-star"></i>
+                        </span>
+                        <span class="star" data-rating="3">
+                          <i class="fas fa-star"></i>
+                        </span>
+                        <span class="star" data-rating="4">
+                          <i class="fas fa-star"></i>
+                        </span>
+                        <span class="star" data-rating="5">
+                          <i class="fas fa-star"></i>
+                        </span>
+                      </div>
+                      <small class="text-muted" id="rating-text">Click to rate</small>
+                    </div>
+                  </div>
+
+                  <!-- Feedback Message -->
+                  <div class="mb-4">
+                    <label for="feedback-message" class="form-label fw-bold">Tell us more (optional)</label>
+                    <textarea 
+                      class="form-control" 
+                      name="message" 
+                      id="feedback-message"
+                      rows="4" 
+                      placeholder="Share specific details about your experience..."
+                    ></textarea>
+                  </div>
+
+                  <!-- Submit Button -->
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Your feedback helps us serve you better
+                    </small>
+                    <button type="submit" class="btn btn-primary" id="submit-feedback" disabled>
+                      <i class="fas fa-paper-plane me-2"></i>Submit Feedback
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Previous Feedback -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <i class="fas fa-history me-2"></i>Your Previous Feedback
+                </h6>
+              </div>
+              <div class="card-body">
+                <div id="previous-feedback">
+                  <?php
+                  try {
+                    // Check if feedback table exists
+                    $tableExists = $conn->query("SHOW TABLES LIKE 'feedback'");
+                    
+                    if ($tableExists && $tableExists->num_rows > 0) {
+                      // Check if rating column exists
+                      $ratingColumnExists = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
+                      
+                      if ($ratingColumnExists && $ratingColumnExists->num_rows > 0) {
+                        // Fetch user's previous feedback with rating
+                        $feedback_stmt = $conn->prepare("SELECT rating, message, created_at FROM feedback WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+                      } else {
+                        // Fetch without rating column if it doesn't exist
+                        $feedback_stmt = $conn->prepare("SELECT message, created_at FROM feedback WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+                      }
+                      
+                      $feedback_stmt->bind_param("i", $user_id);
+                      $feedback_stmt->execute();
+                      $feedback_result = $feedback_stmt->get_result();
+                      
+                      if ($feedback_result->num_rows > 0) {
+                        while ($feedback = $feedback_result->fetch_assoc()) {
+                          $rating = isset($feedback['rating']) ? $feedback['rating'] : 5; // Default to 5 if no rating
+                          $stars = str_repeat('<i class="fas fa-star text-warning"></i>', $rating);
+                          $stars .= str_repeat('<i class="far fa-star text-muted"></i>', 5 - $rating);
+                          
+                          echo "<div class='feedback-item border-bottom pb-3 mb-3'>
+                                  <div class='d-flex justify-content-between align-items-center mb-2'>
+                                    <div class='star-display'>{$stars}</div>
+                                    <small class='text-muted'>" . date('M d, Y', strtotime($feedback['created_at'])) . "</small>
+                                  </div>
+                                  <p class='mb-0 text-muted'>" . htmlspecialchars($feedback['message'] ?: 'No additional comments') . "</p>
+                                </div>";
+                        }
+                      } else {
+                        echo "<div class='text-center text-muted py-3'>
+                                <i class='fas fa-comment-slash fa-2x mb-3 opacity-50'></i>
+                                <p>You haven't submitted any feedback yet.</p>
+                                <small>Share your experience using the form above!</small>
+                              </div>";
+                      }
+                      $feedback_stmt->close();
+                    } else {
+                      echo "<div class='text-center text-muted py-3'>
+                              <i class='fas fa-info-circle fa-2x mb-3 text-info'></i>
+                              <p>Feedback system is being initialized...</p>
+                              <small>Please submit your first feedback to get started!</small>
+                            </div>";
+                    }
+                  } catch (Exception $e) {
+                    echo "<div class='text-center text-muted py-3'>
+                            <i class='fas fa-exclamation-triangle fa-2x mb-3 text-warning'></i>
+                            <p>Unable to load previous feedback at this time.</p>
+                            <small>Your new feedback will still be saved successfully.</small>
+                          </div>";
+                    error_log("Error fetching feedback: " . $e->getMessage());
+                  }
+                  ?>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </div> <!-- Close container-fluid -->
   </main>
