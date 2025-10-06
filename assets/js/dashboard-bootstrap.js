@@ -19,7 +19,8 @@ function initializeDashboard() {
   enhanceDataTables();
   setupItemManagement();
   setupBookingForms();
-  setupCommunication();
+  // setupCommunication(); // Temporarily disabled to fix feedback system
+  initializeFeedbackManagement();
 }
 
 // Initialize Bootstrap Components
@@ -138,6 +139,11 @@ function showSection(sectionId) {
     // Add animation
     targetSection.style.animation = "slideInFromRight 0.5s ease";
     console.log("Section displayed:", sectionId); // Debug log
+    
+    // Dispatch custom event for section change
+    document.dispatchEvent(new CustomEvent('sectionChanged', {
+      detail: { section: sectionId }
+    }));
   } else {
     console.error("Section not found:", sectionId); // Debug log
   }
@@ -1298,6 +1304,275 @@ window.filterItems = filterItems;
 window.toggleBookingForm = toggleBookingForm;
 window.pencilReminder = pencilReminder;
 window.generateReceiptNumber = generateReceiptNumber;
+
+// Feedback Management System
+function initializeFeedbackManagement() {
+  // Initialize feedback section when it becomes active
+  document.addEventListener('sectionChanged', function(e) {
+    if (e.detail.section === 'feedback') {
+      loadFeedbackData();
+    }
+  });
+  
+  // Load feedback data if feedback section is already active
+  const feedbackSection = document.getElementById('feedback');
+  if (feedbackSection && feedbackSection.classList.contains('active')) {
+    loadFeedbackData();
+  }
+}
+
+async function loadFeedbackData(limit = 50, offset = 0) {
+  try {
+    // First initialize the feedback table
+    await fetch('database/user_auth.php?action=init_feedback_table');
+    
+    // Then load the feedback data
+    const response = await fetch(`database/user_auth.php?action=get_feedback_data&limit=${limit}&offset=${offset}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      updateFeedbackStats(data.stats);
+      updateFeedbackTable(data.feedback);
+      updateRatingChart(data.stats);
+      updateFeedbackInsights(data.stats);
+    } else {
+      console.error('Error loading feedback data:', data.error);
+      showFeedbackError('Failed to load feedback data: ' + (data.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error fetching feedback data:', error);
+    showFeedbackError('Network error while loading feedback');
+  }
+}
+
+function updateFeedbackStats(stats) {
+  document.getElementById('total-feedback').textContent = stats.total_feedback || 0;
+  document.getElementById('avg-rating').textContent = parseFloat(stats.avg_rating || 0).toFixed(1);
+  document.getElementById('five-star-count').textContent = stats.five_star || 0;
+  document.getElementById('low-rating-count').textContent = (parseInt(stats.one_star || 0) + parseInt(stats.two_star || 0));
+}
+
+function updateFeedbackTable(feedback) {
+  const tbody = document.getElementById('feedback-tbody');
+  
+  if (!feedback || feedback.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center text-muted py-4">
+          <i class="fas fa-comment-slash fa-2x mb-3 opacity-50"></i>
+          <br>No feedback received yet
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = feedback.map(item => {
+    const stars = generateStarDisplay(item.rating);
+    const date = new Date(item.created_at).toLocaleDateString();
+    const message = item.message || 'No additional comments';
+    
+    return `
+      <tr>
+        <td>
+          <div class="d-flex align-items-center">
+            <div class="avatar-circle bg-primary text-white me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;">
+              ${item.username.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div class="fw-semibold">${escapeHtml(item.username)}</div>
+              <small class="text-muted">${escapeHtml(item.email)}</small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="d-flex align-items-center">
+            <div class="star-display me-2">${stars}</div>
+            <small class="text-muted">(${item.rating}/5)</small>
+          </div>
+        </td>
+        <td>
+          <div class="feedback-message" style="max-width: 300px;">
+            ${escapeHtml(message)}
+          </div>
+        </td>
+        <td>
+          <small class="text-muted">${date}</small>
+        </td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary btn-sm" onclick="viewFeedbackDetails(${item.id})" title="View Details">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-outline-success btn-sm" onclick="respondToFeedback(${item.id})" title="Respond">
+              <i class="fas fa-reply"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function generateStarDisplay(rating) {
+  const fullStars = Math.floor(rating);
+  const emptyStars = 5 - fullStars;
+  
+  return '★'.repeat(fullStars) + '☆'.repeat(emptyStars);
+}
+
+function updateRatingChart(stats) {
+  const ctx = document.getElementById('ratingChart');
+  if (!ctx) {
+    return;
+  }
+  
+  // Destroy existing chart if it exists
+  if (window.ratingChartInstance) {
+    window.ratingChartInstance.destroy();
+  }
+  
+  window.ratingChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'],
+      datasets: [{
+        label: 'Number of Reviews',
+        data: [
+          stats.one_star || 0,
+          stats.two_star || 0,
+          stats.three_star || 0,
+          stats.four_star || 0,
+          stats.five_star || 0
+        ],
+        backgroundColor: [
+          '#dc3545', // Red for 1 star
+          '#fd7e14', // Orange for 2 stars
+          '#ffc107', // Yellow for 3 stars
+          '#20c997', // Teal for 4 stars
+          '#28a745'  // Green for 5 stars
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+}
+
+function updateFeedbackInsights(stats) {
+  const insights = document.getElementById('feedback-insights');
+  const totalFeedback = parseInt(stats.total_feedback || 0);
+  const avgRating = parseFloat(stats.avg_rating || 0);
+  const fiveStarPercent = totalFeedback > 0 ? ((stats.five_star || 0) / totalFeedback * 100).toFixed(1) : 0;
+  const lowRatingCount = parseInt(stats.one_star || 0) + parseInt(stats.two_star || 0);
+  
+  if (totalFeedback === 0) {
+    insights.innerHTML = `
+      <div class="text-center text-muted">
+        <i class="fas fa-star-o fa-2x mb-3 opacity-50"></i>
+        <h6>No Feedback Yet</h6>
+        <p class="mb-0">Encourage guests to share their experiences!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let insightClass = 'success';
+  let insightIcon = 'fa-smile';
+  let insightTitle = 'Excellent Performance!';
+  let insightMessage = 'Guests are highly satisfied with their experience.';
+  
+  if (avgRating < 3) {
+    insightClass = 'danger';
+    insightIcon = 'fa-frown';
+    insightTitle = 'Needs Improvement';
+    insightMessage = 'Consider addressing common concerns in feedback.';
+  } else if (avgRating < 4) {
+    insightClass = 'warning';
+    insightIcon = 'fa-meh';
+    insightTitle = 'Good but Room for Growth';
+    insightMessage = 'Focus on enhancing guest satisfaction areas.';
+  }
+  
+  insights.innerHTML = `
+    <div class="text-center">
+      <div class="text-${insightClass} mb-3">
+        <i class="fas ${insightIcon} fa-3x"></i>
+      </div>
+      <h6 class="text-${insightClass}">${insightTitle}</h6>
+      <p class="mb-3">${insightMessage}</p>
+      <div class="row text-center">
+        <div class="col-6">
+          <h5 class="text-${insightClass} mb-1">${fiveStarPercent}%</h5>
+          <small class="text-muted">5-Star Reviews</small>
+        </div>
+        <div class="col-6">
+          <h5 class="text-${lowRatingCount > 0 ? 'warning' : 'success'} mb-1">${lowRatingCount}</h5>
+          <small class="text-muted">Low Ratings</small>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showFeedbackError(message) {
+  const tbody = document.getElementById('feedback-tbody');
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="5" class="text-center text-danger py-4">
+        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+        <br>${message}
+      </td>
+    </tr>
+  `;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function refreshFeedback() {
+  loadFeedbackData();
+}
+
+function exportFeedback() {
+  // Implementation for exporting feedback data
+  alert('Export functionality would be implemented here');
+}
+
+function viewFeedbackDetails(feedbackId) {
+  // Implementation for viewing detailed feedback
+  alert(`View details for feedback ID: ${feedbackId}`);
+}
+
+function respondToFeedback(feedbackId) {
+  // Implementation for responding to feedback
+  alert(`Respond to feedback ID: ${feedbackId}`);
+}
+
+// Export feedback functions globally
+window.refreshFeedback = refreshFeedback;
+window.exportFeedback = exportFeedback;
+window.viewFeedbackDetails = viewFeedbackDetails;
+window.respondToFeedback = respondToFeedback;
 
 // Global sidebar toggle function
 window.toggleSidebar = function () {
