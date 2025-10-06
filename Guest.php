@@ -150,6 +150,49 @@ $stmt->close();
         margin-top: 1rem;
       }
     }
+    
+    /* Item Details Modal Styling */
+    .detail-item {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f8f9fa;
+    }
+    
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    
+    .modal-lg {
+      max-width: 800px;
+    }
+    
+    /* Card Action Buttons */
+    .card-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: auto;
+      padding-top: 1rem;
+    }
+    
+    .card-actions .btn {
+      flex: 1;
+      transition: all 0.3s ease;
+    }
+    
+    .card-actions .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    /* Booking Form Highlight */
+    .booking-form-highlight {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
   </style>
   
   <!-- FullCalendar JavaScript -->
