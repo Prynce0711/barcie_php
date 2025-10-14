@@ -198,10 +198,11 @@ body {
 /* ---------------- MAIN CONTENT ---------------- */
 .main-content {
   margin-left: 260px;
-  padding: 30px;
+  padding: 30px 30px 120px 30px; /* Add bottom padding to prevent footer overlap */
   flex-grow: 1;
   transition: all 0.3s ease;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px); /* Account for footer height */
+  position: relative;
 }
 
 /* ---------------- HEADER ---------------- */
@@ -230,16 +231,48 @@ header p {
 
 /* ---------------- CONTENT SECTIONS ---------------- */
 .content-section {
-  display: none;
+  display: none !important;
+  opacity: 0;
   background: rgba(255,255,255,0.95);
   border: 2px solid rgba(52,152,219,0.2);
   padding: 30px;
+  margin-bottom: 30px; /* Add spacing between sections */
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: opacity 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
-.content-section.active { 
-  display: block;
+.content-section.active {
+  display: block !important;
+  opacity: 1 !important;
+  animation: fadeInUp 0.4s ease !important;
+}
+
+/* Ensure sections are visible when active */
+.content-section.active * {
+  visibility: visible;
+}
+
+/* Fallback display rules */
+.content-section[style*="display: block"] {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* Force show any section with active class */
+section.active, 
+div.active.content-section {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Debug helper */
+.debug-visible {
+  border: 2px solid red !important;
+  background: rgba(255, 0, 0, 0.1) !important;
 }
 
 .content-section h2 {
@@ -287,11 +320,13 @@ header p {
 /* Form Container */
 form {
   background: rgba(255,255,255,0.95);
-  padding: 30px;
+  padding: 25px;
   border-radius: 12px;
   border: 1px solid rgba(52,152,219,0.3);
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  margin-top: 20px;
+  margin: 20px 0; /* Add margin-bottom for spacing */
+  max-width: 100%;
+  overflow: hidden;
 }
 
 form h3 {
@@ -424,6 +459,7 @@ form button:active {
 /* Compact form styling for better space usage */
 .compact-form {
   padding: 25px;
+  margin-bottom: 30px; /* Ensure proper spacing */
 }
 
 .compact-form label {
@@ -432,6 +468,15 @@ form button:active {
 
 .compact-form .form-grid {
   gap: 15px;
+}
+
+/* Ensure forms don't overlap with footer */
+#booking form {
+  margin-bottom: 40px;
+}
+
+#feedback form {
+  margin-bottom: 30px;
 }
 
 /* Responsive Design */
@@ -943,23 +988,42 @@ video {
 
 /* ---------------- FOOTER ---------------- */
 footer {
-  background: rgba(30,60,114,0.9);
+  background: rgba(30,60,114,0.95);
   color: #fff;
   text-align: center;
-  padding: 20px 10px;
+  padding: 15px 10px;
   position: fixed;
-  bottom: 0; left: 0; width: 100%;
-  border-top: 2px solid rgba(52,152,219,0.5);
-  backdrop-filter: blur(10px);
+  bottom: 0; 
+  left: 0; 
+  width: 100%;
+  height: 60px; /* Fixed height for consistent spacing */
+  border-top: 2px solid rgba(52,152,219,0.4);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 -3px 15px rgba(52,152,219,0.2);
+  z-index: 100; /* Ensure it stays above content but below modals */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+footer:hover {
+  background: rgba(30,60,114,1);
   box-shadow: 0 -5px 20px rgba(52,152,219,0.3);
-  animation: footerGlow 3s infinite alternate;
 }
-@keyframes footerGlow {
-  0% { box-shadow: 0 -5px 10px rgba(52,152,219,0.3); }
-  50% { box-shadow: 0 -8px 25px rgba(52,152,219,0.6); }
-  100% { box-shadow: 0 -5px 10px rgba(52,152,219,0.3); }
+
+footer p { 
+  margin: 0; 
+  font-size: 0.9rem; 
+  font-weight: 500;
+  opacity: 0.9;
 }
-footer p { margin: 0; font-size: 0.9rem; }
+
+/* Remove the glowing animation for better performance and less distraction */
+@keyframes subtleGlow {
+  0% { box-shadow: 0 -3px 15px rgba(52,152,219,0.2); }
+  100% { box-shadow: 0 -5px 20px rgba(52,152,219,0.3); }
+}
 
 /* ---------------- ANIMATIONS ---------------- */
 @keyframes fadeInDown { 0%{opacity:0; transform:translateY(-20px);}100%{opacity:1; transform:translateY(0);} }
@@ -969,7 +1033,7 @@ footer p { margin: 0; font-size: 0.9rem; }
 @media (max-width: 1200px) {
   .main-content {
     margin-left: 260px;
-    padding: 30px;
+    padding: 30px 25px 120px 25px; /* Maintain bottom padding */
   }
   
   .sidebar-guest {
@@ -980,7 +1044,7 @@ footer p { margin: 0; font-size: 0.9rem; }
 @media (max-width: 1024px) {
   .main-content {
     margin-left: 240px;
-    padding: 25px;
+    padding: 25px 20px 120px 20px; /* Maintain bottom padding */
   }
   
   .sidebar-guest {
@@ -1005,13 +1069,14 @@ footer p { margin: 0; font-size: 0.9rem; }
 
 @media (max-width: 768px) {
   .sidebar-guest {
-    width: 100%;
-    height: auto;
+    width: 280px; /* Slightly wider for better touch targets */
+    height: 100vh;
     position: fixed;
     top: 0;
-    left: -100%;
+    left: -280px; /* Match the width */
     transition: left 0.3s ease;
     z-index: 1001;
+    overflow-y: auto; /* Ensure scrollability on mobile */
   }
   
   .sidebar-guest.open {
@@ -1020,7 +1085,7 @@ footer p { margin: 0; font-size: 0.9rem; }
   
   .main-content {
     margin-left: 0;
-    padding: 20px;
+    padding: 20px 15px 120px 15px; /* Adjusted for mobile */
     width: 100%;
   }
   
@@ -1083,11 +1148,12 @@ footer p { margin: 0; font-size: 0.9rem; }
 
 @media (max-width: 480px) {
   .main-content {
-    padding: 15px;
+    padding: 15px 10px 120px 10px; /* Maintain consistent bottom padding */
   }
   
   header {
     padding: 20px 15px;
+    margin-top: 60px; /* Account for mobile menu button */
   }
   
   header h1 {
@@ -1121,12 +1187,43 @@ footer p { margin: 0; font-size: 0.9rem; }
   table th, table td {
     padding: 10px 6px;
   }
+  
+  /* Ensure footer doesn't hide content on small screens */
+  footer {
+    height: 50px; /* Smaller footer on mobile */
+    padding: 10px;
+  }
+  
+  footer p {
+    font-size: 0.8rem;
+  }
+}
+
+/* Mobile overlay for sidebar */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.show {
+  display: block;
 }
 
 /* Desktop-only elements */
 @media (min-width: 769px) {
   .mobile-menu-toggle {
     display: none;
+  }
+  
+  .sidebar-overlay {
+    display: none !important;
   }
 }
 

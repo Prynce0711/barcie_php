@@ -116,27 +116,34 @@ $pending_approvals = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE 
 $total_revenue_result = $conn->query("SELECT SUM(CAST(SUBSTRING_INDEX(details, 'Price: P', -1) AS DECIMAL(10,2))) as revenue FROM bookings WHERE status='approved'");
 $total_revenue = $total_revenue_result->fetch_assoc()['revenue'] ?? 0;
 
-// Monthly bookings for chart
+// Monthly bookings for chart (last 12 months)
 $monthly_bookings = [];
 for ($i = 11; $i >= 0; $i--) {
   $month = date('Y-m', strtotime("-$i months"));
   $month_name = date('M Y', strtotime("-$i months"));
-  $count = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE DATE_FORMAT(created_at, '%Y-%m') = '$month'")->fetch_assoc()['count'];
-  $monthly_bookings[] = ['month' => $month_name, 'count' => $count];
+  $result = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE DATE_FORMAT(created_at, '%Y-%m') = '$month'");
+  $count = $result ? $result->fetch_assoc()['count'] : 0;
+  $monthly_bookings[] = ['month' => $month_name, 'count' => (int)$count];
 }
 
 // Booking status distribution
 $status_distribution = [];
-$statuses = ['pending', 'approved', 'checked_in', 'checked_out', 'cancelled'];
+$statuses = ['pending', 'approved', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'rejected'];
 foreach ($statuses as $status) {
-  $count = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status='$status'")->fetch_assoc()['count'];
-  $status_distribution[$status] = $count;
+  $result = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status='$status'");
+  $count = $result ? $result->fetch_assoc()['count'] : 0;
+  $status_distribution[$status] = (int)$count;
 }
 
-// Recent Activities
-$recent_activity_result = $conn->query("SELECT b.type, b.details, b.created_at, u.username 
+// Additional booking statistics
+$total_bookings = array_sum($status_distribution);
+$active_bookings_count = $status_distribution['approved'] + $status_distribution['confirmed'] + $status_distribution['checked_in'];
+$pending_bookings_count = $status_distribution['pending'];
+$completed_bookings_count = $status_distribution['checked_out'];
+
+// Recent Activities (no user join needed since we removed user_id)
+$recent_activity_result = $conn->query("SELECT b.type, b.details, b.created_at 
     FROM bookings b 
-    LEFT JOIN users u ON b.user_id = u.id 
     ORDER BY b.created_at DESC LIMIT 8");
 $recent_activities = [];
 while ($row = $recent_activity_result->fetch_assoc()) {
@@ -154,8 +161,13 @@ $feedback_stats_result = $conn->query("SELECT
     COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
     FROM feedback");
 $feedback_stats = $feedback_stats_result ? $feedback_stats_result->fetch_assoc() : [
-    'total_feedback' => 0, 'avg_rating' => 0, 'five_star' => 0, 'four_star' => 0, 
-    'three_star' => 0, 'two_star' => 0, 'one_star' => 0
+  'total_feedback' => 0,
+  'avg_rating' => 0,
+  'five_star' => 0,
+  'four_star' => 0,
+  'three_star' => 0,
+  'two_star' => 0,
+  'one_star' => 0
 ];
 
 // Calendar Events
@@ -195,8 +207,8 @@ while ($row = $result->fetch_assoc()) {
   <script src="assets/js/dashboard-bootstrap.js" defer></script>
   <!-- Custom CSS -->
   <link rel="stylesheet" href="assets/css/dashboard.css">
-  <link rel="stylesheet" href="assets/css/dashboard-enhanced.css">
 </head>
+
 
 <body>
 
@@ -210,11 +222,19 @@ while ($row = $result->fetch_assoc()) {
     <i class="fas fa-bars"></i>
   </button>
 
+  <!-- Floating Add New Item Button -->
+  <button class="floating-add-btn" data-bs-toggle="modal" data-bs-target="#addItemModal" title="Add New Item">
+    <i class="fas fa-plus"></i>
+  </button>
+
   <!-- Sidebar -->
   <div class="sidebar">
     <h2><i class="fas fa-hotel me-2"></i>Hotel Admin</h2>
     <a href="#" class="nav-link-custom" data-section="dashboard-section">
       <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+    </a>
+    <a href="#" class="nav-link-custom" data-section="calendar-section">
+      <i class="fas fa-calendar-check me-2"></i>Calendar & Items
     </a>
     <a href="#" class="nav-link-custom" data-section="rooms">
       <i class="fas fa-door-open me-2"></i>Rooms & Facilities
@@ -223,12 +243,6 @@ while ($row = $result->fetch_assoc()) {
       <i class="fas fa-calendar-alt me-2"></i>Bookings
     </a>
 
-    <a href="#" class="nav-link-custom" data-section="users">
-      <i class="fas fa-users me-2"></i>Users
-    </a>
-    <a href="#" class="nav-link-custom" data-section="communication">
-      <i class="fas fa-comments me-2"></i>Customer Support
-    </a>
     <a href="index.php" class="btn btn-danger mt-3">
       <i class="fas fa-sign-out-alt me-2"></i>Logout
     </a>
@@ -237,99 +251,35 @@ while ($row = $result->fetch_assoc()) {
 
   <!-- Main Content -->
   <div class="main-content">
-    <div class="container-fluid">
-      <!-- Header -->
-      <header class="mb-5">
-        <div class="row align-items-center">
-          <div class="col-md-8">
-            <h1 class="h2 mb-1 text-dark">Dashboard</h1>
-            <p class="mb-0 text-muted">Welcome back! Here's your hotel overview.</p>
-          </div>
-          <div class="col-md-4 text-md-end">
-            <div class="text-muted">
-              <i class="fas fa-calendar me-1"></i>
-              <?php echo date('F j, Y'); ?>
-            </div>
-          </div>
+    <div class="container-fluid px-2" style="max-width: 100%;">
+      <div class="row">
+        <div class="col-12">
+
         </div>
-      </header>
+      </div>
 
       <!-- Dashboard Section -->
       <section id="dashboard-section" class="content-section active">
 
-        <!-- Stats Cards Row -->
-        <div class="row g-4 mb-4">
-          <div class="col-xl-3 col-lg-6">
-            <div class="card bg-primary h-100">
+        <!-- Welcome Header -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card bg-gradient-primary text-white">
               <div class="card-body">
                 <div class="row align-items-center">
-                  <div class="col">
-                    <div class="text-xs mb-1">Total Rooms & Facilities</div>
-                    <div class="h5 mb-0"><?php echo $total_rooms + $total_facilities; ?></div>
-                    <div class="text-xs text-muted">
-                      <?php echo $total_rooms; ?> rooms • <?php echo $total_facilities; ?> facilities
-                    </div>
+                  <div class="col-md-8">
+                    <h3 class="card-title mb-2">
+                      <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                    </h3>
+                    <p class="card-text mb-0 opacity-90">
+                      Welcome back! Here's an overview of your hotel management system.
+                    </p>
+                    <small class="opacity-75">
+                      <i class="fas fa-clock me-1"></i>Last updated: <?php echo date('M d, Y - H:i'); ?>
+                    </small>
                   </div>
-                  <div class="col-auto">
-                    <i class="fas fa-building fa-lg"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-xl-3 col-lg-6">
-            <div class="card bg-success h-100">
-              <div class="card-body">
-                <div class="row align-items-center">
-                  <div class="col">
-                    <div class="text-xs mb-1">Active Bookings</div>
-                    <div class="h5 mb-0"><?php echo $active_bookings; ?></div>
-                  </div>
-                  <div class="col-auto">
-                    <i class="fas fa-calendar-check fa-lg"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-xl-3 col-lg-6">
-            <div class="card bg-warning h-100">
-              <div class="card-body">
-                <div class="row align-items-center">
-                  <div class="col">
-                    <div class="text-xs mb-1">Average Rating</div>
-                    <div class="h5 mb-0">
-                      <?php echo number_format($feedback_stats['avg_rating'], 1); ?>
-                      <small class="h6 text-muted">
-                        <?php for($i = 1; $i <= 5; $i++): ?>
-                          <i class="fas fa-star <?php echo $i <= round($feedback_stats['avg_rating']) ? 'text-warning' : 'text-muted'; ?>"></i>
-                        <?php endfor; ?>
-                      </small>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <i class="fas fa-star fa-lg"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-xl-3 col-lg-6">
-            <div class="card bg-info h-100">
-              <div class="card-body">
-                <div class="row align-items-center">
-                  <div class="col">
-                    <div class="text-xs mb-1">Total Feedback</div>
-                    <div class="h5 mb-0"><?php echo $feedback_stats['total_feedback']; ?></div>
-                    <div class="text-xs text-muted">
-                      <?php echo $feedback_stats['five_star']; ?> five-star reviews
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <i class="fas fa-comments fa-lg"></i>
+                  <div class="col-md-4 text-center">
+                    <i class="fas fa-hotel fa-4x opacity-75"></i>
                   </div>
                 </div>
               </div>
@@ -337,237 +287,372 @@ while ($row = $result->fetch_assoc()) {
           </div>
         </div>
 
-        <!-- Feedback Metrics Row -->
+        <!-- Key Performance Metrics -->
         <div class="row g-4 mb-4">
-          <div class="col-lg-8">
-            <div class="card">
-              <div class="card-header bg-white py-3">
-                <h6 class="m-0 text-dark fw-bold">
-                  <i class="fas fa-chart-bar me-2 text-warning"></i>Guest Satisfaction Overview
-                </h6>
-              </div>
+          <div class="col-xl-3 col-lg-6">
+            <div class="card bg-gradient-primary text-white h-100 border-0 shadow">
               <div class="card-body">
-                <div class="row">
-                  <div class="col-md-6">
-                    <h5 class="text-primary mb-3">Rating Breakdown</h5>
-                    <?php 
-                    $total_reviews = $feedback_stats['total_feedback'];
-                    $ratings = [
-                        5 => ['count' => $feedback_stats['five_star'], 'color' => 'success'],
-                        4 => ['count' => $feedback_stats['four_star'], 'color' => 'info'],
-                        3 => ['count' => $feedback_stats['three_star'], 'color' => 'warning'],
-                        2 => ['count' => $feedback_stats['two_star'], 'color' => 'danger'],
-                        1 => ['count' => $feedback_stats['one_star'], 'color' => 'dark']
-                    ];
-                    foreach($ratings as $star => $data): 
-                        $percentage = $total_reviews > 0 ? ($data['count'] / $total_reviews * 100) : 0;
-                    ?>
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="me-2" style="width: 60px;">
-                            <?php for($i = 1; $i <= 5; $i++): ?>
-                                <i class="fas fa-star <?php echo $i <= $star ? 'text-warning' : 'text-muted'; ?>" style="font-size: 12px;"></i>
-                            <?php endfor; ?>
-                        </div>
-                        <div class="flex-grow-1 me-2">
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-<?php echo $data['color']; ?>" 
-                                     style="width: <?php echo $percentage; ?>%"></div>
-                            </div>
-                        </div>
-                        <span class="text-muted" style="width: 50px; font-size: 12px;">
-                            <?php echo $data['count']; ?> (<?php echo number_format($percentage, 1); ?>%)
-                        </span>
+                <div class="row align-items-center">
+                  <div class="col">
+                    <div class="text-xs mb-2 opacity-75">Total Inventory</div>
+                    <div class="h4 mb-1 fw-bold"><?php echo $total_rooms + $total_facilities; ?></div>
+                    <div class="text-xs opacity-75">
+                      <i class="fas fa-bed me-1"></i><?php echo $total_rooms; ?> rooms
+                      <span class="mx-1">•</span>
+                      <i class="fas fa-building me-1"></i><?php echo $total_facilities; ?> facilities
                     </div>
-                    <?php endforeach; ?>
                   </div>
-                  <div class="col-md-6">
-                    <h5 class="text-primary mb-3">Satisfaction Metrics</h5>
-                    <div class="row text-center">
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-success mb-1">
-                                    <?php 
-                                    $positive_reviews = $feedback_stats['five_star'] + $feedback_stats['four_star'];
-                                    $positive_percentage = $total_reviews > 0 ? ($positive_reviews / $total_reviews * 100) : 0;
-                                    echo number_format($positive_percentage, 1); 
-                                    ?>%
-                                </div>
-                                <small class="text-muted">Positive<br>(4-5 stars)</small>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-warning mb-1">
-                                    <?php 
-                                    $neutral_percentage = $total_reviews > 0 ? ($feedback_stats['three_star'] / $total_reviews * 100) : 0;
-                                    echo number_format($neutral_percentage, 1); 
-                                    ?>%
-                                </div>
-                                <small class="text-muted">Neutral<br>(3 stars)</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-danger mb-1">
-                                    <?php 
-                                    $negative_reviews = $feedback_stats['two_star'] + $feedback_stats['one_star'];
-                                    $negative_percentage = $total_reviews > 0 ? ($negative_reviews / $total_reviews * 100) : 0;
-                                    echo number_format($negative_percentage, 1); 
-                                    ?>%
-                                </div>
-                                <small class="text-muted">Negative<br>(1-2 stars)</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2">
-                                <div class="h4 text-primary mb-1">
-                                    <?php echo number_format($feedback_stats['avg_rating'], 2); ?>
-                                </div>
-                                <small class="text-muted">Average<br>Rating</small>
-                            </div>
-                        </div>
+                  <div class="col-auto">
+                    <div class="icon-circle bg-white bg-opacity-25">
+                      <i class="fas fa-building fa-lg"></i>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header bg-white py-3">
-                <h6 class="m-0 text-dark fw-bold">
-                  <i class="fas fa-trophy me-2 text-warning"></i>Guest Satisfaction Status
-                </h6>
+
+          <div class="col-xl-3 col-lg-6">
+            <div class="card bg-gradient-success text-white h-100 border-0 shadow">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <div class="text-xs mb-2 opacity-75">Active Bookings</div>
+                    <div class="h4 mb-1 fw-bold"><?php echo $active_bookings; ?></div>
+                    <div class="text-xs opacity-75">
+                      <i class="fas fa-calendar-check me-1"></i>Currently occupied
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon-circle bg-white bg-opacity-25">
+                      <i class="fas fa-calendar-check fa-lg"></i>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="card-body text-center">
-                <?php 
-                $avg_rating = $feedback_stats['avg_rating'];
-                if ($avg_rating >= 4.5) {
-                    $status = 'Excellent';
-                    $color = 'success';
-                    $icon = 'fa-trophy';
-                } elseif ($avg_rating >= 4.0) {
-                    $status = 'Very Good';
-                    $color = 'info';
-                    $icon = 'fa-thumbs-up';
-                } elseif ($avg_rating >= 3.5) {
-                    $status = 'Good';
-                    $color = 'warning';
-                    $icon = 'fa-star';
-                } elseif ($avg_rating >= 3.0) {
-                    $status = 'Average';
-                    $color = 'secondary';
-                    $icon = 'fa-minus-circle';
-                } else {
-                    $status = 'Needs Improvement';
-                    $color = 'danger';
-                    $icon = 'fa-exclamation-triangle';
-                }
-                ?>
-                <div class="mb-3">
-                    <i class="fas <?php echo $icon; ?> fa-3x text-<?php echo $color; ?>"></i>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-lg-6">
+            <div class="card bg-gradient-warning text-white h-100 border-0 shadow">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <div class="text-xs mb-2 opacity-75">Guest Satisfaction</div>
+                    <div class="h4 mb-1 fw-bold">
+                      <?php echo number_format($feedback_stats['avg_rating'], 1); ?>/5.0
+                    </div>
+                    <div class="text-xs opacity-75">
+                      <?php for ($i = 1; $i <= 5; $i++): ?>
+                        <i
+                          class="fas fa-star <?php echo $i <= round($feedback_stats['avg_rating']) ? '' : 'opacity-50'; ?>"></i>
+                      <?php endfor; ?>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon-circle bg-white bg-opacity-25">
+                      <i class="fas fa-star fa-lg"></i>
+                    </div>
+                  </div>
                 </div>
-                <h4 class="text-<?php echo $color; ?> mb-2"><?php echo $status; ?></h4>
-                <p class="text-muted mb-3">
-                    Overall guest satisfaction based on <?php echo $total_reviews; ?> reviews
-                </p>
-                <div class="mb-3">
-                    <?php for($i = 1; $i <= 5; $i++): ?>
-                        <i class="fas fa-star <?php echo $i <= round($avg_rating) ? 'text-warning' : 'text-muted'; ?> fa-lg"></i>
-                    <?php endfor; ?>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-lg-6">
+            <div class="card bg-gradient-info text-white h-100 border-0 shadow">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <div class="text-xs mb-2 opacity-75">Total Reviews</div>
+                    <div class="h4 mb-1 fw-bold"><?php echo $feedback_stats['total_feedback']; ?></div>
+                    <div class="text-xs opacity-75">
+                      <i class="fas fa-thumbs-up me-1"></i><?php echo $feedback_stats['five_star']; ?> five-star
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <div class="icon-circle bg-white bg-opacity-25">
+                      <i class="fas fa-comments fa-lg"></i>
+                    </div>
+                  </div>
                 </div>
-                <a href="#" class="btn btn-outline-<?php echo $color; ?> btn-sm" onclick="document.querySelector('[data-section=\"feedback\"]').click()">
-                    <i class="fas fa-chart-line me-1"></i>View Details
-                </a>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Charts Row -->
+        <!-- Quick Actions Panel -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom">
+                <h6 class="m-0 text-dark fw-bold">
+                  <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-lg-3 col-md-6">
+                    <div class="quick-action-card" onclick="showSection('bookings')">
+                      <div class="action-icon bg-primary">
+                        <i class="fas fa-calendar-plus text-white"></i>
+                      </div>
+                      <div class="action-content">
+                        <h6 class="mb-1">Manage Bookings</h6>
+                        <small class="text-muted">View and update reservations</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-md-6">
+                    <div class="quick-action-card" onclick="showSection('rooms')">
+                      <div class="action-icon bg-success">
+                        <i class="fas fa-plus-circle text-white"></i>
+                      </div>
+                      <div class="action-content">
+                        <h6 class="mb-1">Add Room/Facility</h6>
+                        <small class="text-muted">Create new inventory items</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-md-6">
+                    <div class="quick-action-card" onclick="showSection('calendar-section')">
+                      <div class="action-icon bg-info">
+                        <i class="fas fa-calendar-alt text-white"></i>
+                      </div>
+                      <div class="action-content">
+                        <h6 class="mb-1">View Calendar</h6>
+                        <small class="text-muted">Check availability overview</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-md-6">
+                    <div class="quick-action-card" onclick="showSection('communication')">
+                      <div class="action-icon bg-warning">
+                        <i class="fas fa-comments text-white"></i>
+                      </div>
+                      <div class="action-content">
+                        <h6 class="mb-1">Guest Messages</h6>
+                        <small class="text-muted">View feedback and support</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Dashboard -->
         <div class="row g-4 mb-4">
+          <!-- Booking Trends Chart -->
           <div class="col-xl-8">
-            <div class="card">
-              <div class="card-header bg-white py-3">
-                <h6 class="m-0 text-dark fw-bold">
-                  <i class="fas fa-chart-line me-2 text-primary"></i>Bookings Overview
-                </h6>
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="m-0 text-dark fw-bold">
+                      <i class="fas fa-chart-line me-2 text-primary"></i>Booking Trends
+                    </h6>
+                  </div>
+                  <div class="col-auto">
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-primary" type="button" onclick="refreshChart('7days')">7 Days</button>
+                      <button class="btn btn-outline-primary" type="button" onclick="refreshChart('30days')">30 Days</button>
+                      <button class="btn btn-outline-primary active" type="button" onclick="refreshChart('12months')">Year</button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="card-body p-4">
-                <div class="mb-3">
-                  <canvas id="bookingsChart" width="100%" height="40"></canvas>
+              <div class="card-body">
+                <div style="height: 300px;">
+                  <canvas id="bookingsChart" width="100%" height="300"></canvas>
                 </div>
               </div>
             </div>
           </div>
 
+          <!-- Status Distribution -->
           <div class="col-xl-4">
-            <div class="card">
-              <div class="card-header bg-white py-3">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom">
                 <h6 class="m-0 text-dark fw-bold">
                   <i class="fas fa-chart-pie me-2 text-primary"></i>Booking Status
                 </h6>
               </div>
-              <div class="card-body p-4">
-                <div class="mb-3">
-                  <canvas id="statusChart" width="100%" height="100"></canvas>
+              <div class="card-body">
+                <div style="height: 200px;" class="mb-3">
+                  <canvas id="statusChart" width="100%" height="200"></canvas>
+                </div>
+                <div class="status-legend">
+                  <?php
+                  $total_for_percentage = $total_bookings > 0 ? $total_bookings : 1;
+                  $status_colors = [
+                    'pending' => 'warning',
+                    'approved' => 'success', 
+                    'confirmed' => 'success',
+                    'checked_in' => 'info',
+                    'checked_out' => 'secondary',
+                    'cancelled' => 'danger',
+                    'rejected' => 'danger'
+                  ];
+                  
+                  foreach ($status_distribution as $status => $count):
+                    if ($count > 0):
+                      $percentage = round(($count / $total_for_percentage) * 100, 1);
+                      $color_class = $status_colors[$status] ?? 'secondary';
+                      $display_name = ucfirst(str_replace('_', ' ', $status));
+                  ?>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center">
+                      <div class="legend-dot bg-<?php echo $color_class; ?> me-2"></div>
+                      <small><?php echo $display_name; ?></small>
+                    </div>
+                    <small class="text-muted fw-bold"><?php echo $percentage; ?>%</small>
+                  </div>
+                  <?php 
+                    endif;
+                  endforeach; 
+                  
+                  if ($total_bookings == 0): 
+                  ?>
+                  <div class="text-center text-muted">
+                    <small>No bookings data</small>
+                  </div>
+                  <?php endif; ?>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Calendar and Activity Row -->
+        <!-- Guest Satisfaction & Recent Activity -->
         <div class="row g-4">
-          <div class="col-xl-8">
-            <div class="card">
-              <div class="card-header bg-white py-3">
+          <!-- Guest Satisfaction Detailed -->
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom">
                 <h6 class="m-0 text-dark fw-bold">
-                  <i class="fas fa-calendar-alt me-2 text-primary"></i>Booking Calendar - Rooms & Facilities
+                  <i class="fas fa-chart-bar me-2 text-warning"></i>Guest Satisfaction Analysis
                 </h6>
-                <div class="mt-2">
-                  <small class="text-muted">
-                    <span class="badge bg-success me-1">📅</span>Approved 
-                    <span class="badge bg-info me-1">🏠</span>Checked-in 
-                    <span class="badge bg-warning me-1">🔑</span>Check-in Events 
-                    <span class="badge bg-danger me-1">🚪</span>Check-out Events
-                  </small>
-                </div>
               </div>
               <div class="card-body">
-                <div id="dashboardCalendar"></div>
+                <div class="text-center mb-4">
+                  <?php
+                  $avg_rating = $feedback_stats['avg_rating'];
+                  if ($avg_rating >= 4.5) {
+                    $status = 'Excellent';
+                    $color = 'success';
+                    $icon = 'fa-trophy';
+                  } elseif ($avg_rating >= 4.0) {
+                    $status = 'Very Good';
+                    $color = 'info';
+                    $icon = 'fa-thumbs-up';
+                  } elseif ($avg_rating >= 3.5) {
+                    $status = 'Good';
+                    $color = 'warning';
+                    $icon = 'fa-star';
+                  } elseif ($avg_rating >= 3.0) {
+                    $status = 'Average';
+                    $color = 'secondary';
+                    $icon = 'fa-minus-circle';
+                  } else {
+                    $status = 'Needs Improvement';
+                    $color = 'danger';
+                    $icon = 'fa-exclamation-triangle';
+                  }
+                  ?>
+                  <div
+                    class="satisfaction-badge bg-<?php echo $color; ?> bg-opacity-10 text-<?php echo $color; ?> rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                    style="width: 80px; height: 80px;">
+                    <i class="fas <?php echo $icon; ?> fa-2x"></i>
+                  </div>
+                  <h4 class="text-<?php echo $color; ?> mb-2"><?php echo $status; ?></h4>
+                  <div class="mb-3">
+                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                      <i
+                        class="fas fa-star <?php echo $i <= round($avg_rating) ? 'text-warning' : 'text-muted'; ?> fa-lg"></i>
+                    <?php endfor; ?>
+                  </div>
+                  <h3 class="text-primary mb-1"><?php echo number_format($feedback_stats['avg_rating'], 1); ?>/5.0</h3>
+                  <p class="text-muted small">Based on <?php echo $feedback_stats['total_feedback']; ?> guest reviews
+                  </p>
+                </div>
+
+                <!-- Rating Distribution -->
+                <?php
+                $total_reviews = $feedback_stats['total_feedback'];
+                $ratings = [
+                  5 => ['count' => $feedback_stats['five_star'], 'color' => 'success'],
+                  4 => ['count' => $feedback_stats['four_star'], 'color' => 'info'],
+                  3 => ['count' => $feedback_stats['three_star'], 'color' => 'warning'],
+                  2 => ['count' => $feedback_stats['two_star'], 'color' => 'danger'],
+                  1 => ['count' => $feedback_stats['one_star'], 'color' => 'dark']
+                ];
+                foreach ($ratings as $star => $data):
+                  $percentage = $total_reviews > 0 ? ($data['count'] / $total_reviews * 100) : 0;
+                  ?>
+                  <div class="d-flex align-items-center mb-2">
+                    <div class="me-2" style="width: 20px;">
+                      <small class="text-muted"><?php echo $star; ?>★</small>
+                    </div>
+                    <div class="flex-grow-1 me-2">
+                      <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-<?php echo $data['color']; ?>"
+                          style="width: <?php echo $percentage; ?>%"></div>
+                      </div>
+                    </div>
+                    <span class="text-muted small" style="width: 50px;">
+                      <?php echo $data['count']; ?> (<?php echo number_format($percentage, 1); ?>%)
+                    </span>
+                  </div>
+                <?php endforeach; ?>
               </div>
             </div>
           </div>
 
-          <div class="col-xl-4">
-            <div class="card">
-              <div class="card-header bg-white py-3">
-                <h6 class="m-0 text-dark fw-bold">
-                  <i class="fas fa-clock me-2 text-primary"></i>Recent Activity
-                </h6>
+          <!-- Recent Activity Feed -->
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="m-0 text-dark fw-bold">
+                      <i class="fas fa-clock me-2 text-primary"></i>Recent Activity
+                    </h6>
+                  </div>
+                  <div class="col-auto">
+                    <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                      <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div class="card-body">
-                <div class="activity-list" style="max-height: 400px; overflow-y: auto;">
+              <div class="card-body p-0">
+                <div class="activity-timeline" style="max-height: 400px; overflow-y: auto;">
                   <?php if (empty($recent_activities)): ?>
-                    <div class="text-center text-muted py-4">
-                      <i class="fas fa-inbox fa-2x mb-3 opacity-50"></i>
-                      <p>No recent activity</p>
+                    <div class="text-center text-muted py-5">
+                      <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+                      <h6 class="text-muted">No Recent Activity</h6>
+                      <p class="small mb-0">New activities will appear here</p>
                     </div>
                   <?php else: ?>
-                    <?php foreach ($recent_activities as $activity): ?>
-                      <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
-                        <div class="activity-icon me-3 mt-1">
-                          <i class="fas fa-circle"></i>
+                    <?php foreach ($recent_activities as $index => $activity): ?>
+                      <div
+                        class="activity-item d-flex p-3 <?php echo $index < count($recent_activities) - 1 ? 'border-bottom' : ''; ?>">
+                        <div class="activity-icon me-3">
+                          <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-circle fa-xs"></i>
+                          </div>
                         </div>
                         <div class="flex-grow-1">
-                          <div class="fw-semibold text-dark mb-1"><?php echo htmlspecialchars($activity['type']); ?></div>
-                          <div class="text-muted small mb-1"><?php echo htmlspecialchars($activity['details']); ?></div>
-                          <div class="text-muted small">
-                            <?php if (isset($activity['username'])): ?>
-                              by <?php echo htmlspecialchars($activity['username']); ?> •
-                            <?php endif; ?>
-                            <?php echo date('M d, H:i', strtotime($activity['created_at'])); ?>
+                          <div class="activity-content">
+                            <h6 class="mb-1 text-dark"><?php echo htmlspecialchars($activity['type']); ?></h6>
+                            <p class="text-muted small mb-1"><?php echo htmlspecialchars($activity['details']); ?></p>
+                            <div class="text-muted small">
+                              <i class="fas fa-user me-1"></i>Guest •
+                              <i
+                                class="fas fa-clock me-1"></i><?php echo date('M d, H:i', strtotime($activity['created_at'])); ?>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -583,14 +668,14 @@ while ($row = $result->fetch_assoc()) {
       <?php
       // Load booking events for calendar
       $events = [];
-      
-      $calendar_query = "SELECT b.*, u.username FROM bookings b LEFT JOIN users u ON b.user_id = u.id WHERE b.status != 'rejected' ORDER BY b.id DESC";
+
+      $calendar_query = "SELECT b.* FROM bookings b WHERE b.status != 'rejected' ORDER BY b.id DESC";
       $result = $conn->query($calendar_query);
-      
+
       if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
           $room_facility = 'Booking #' . $row['id'];
-          
+
           // Try to extract guest name from details
           if (strpos($row['details'], 'Guest:') !== false) {
             $parts = explode('|', $row['details']);
@@ -601,35 +686,37 @@ while ($row = $result->fetch_assoc()) {
               }
             }
           }
-          
+
           $title = '';
           $color = '#007bff';
-          
+
           // Status-based styling
           if ($row['status'] == 'confirmed' || $row['status'] == 'approved') {
             $title = "✅ Approved: " . $room_facility;
-            $color = '#28a745';
+            $color = '#10b981';  // Green - matches success color
           } elseif ($row['status'] == 'checked_in') {
             $title = "🏠 Checked In: " . $room_facility;
-            $color = '#17a2b8';
+            $color = '#3b82f6';  // Blue - matches info/primary color
           } elseif ($row['status'] == 'checked_out') {
             $title = "🚪 Checked Out: " . $room_facility;
-            $color = '#6c757d';
-          } elseif ($row['status'] == 'pending') {
+            $color = '#8b5cf6';  // Purple - matches custom purple color
+          } elseif ($row['status'] == 'pending') {                                                                                                                              
             $title = "⏳ Pending: " . $room_facility;
-            $color = '#ffc107';
+            $color = '#f59e0b';  // Orange - matches warning color
+          } elseif ($row['status'] == 'cancelled' || $row['status'] == 'rejected') {
+            $title = "❌ Cancelled: " . $room_facility;
+            $color = '#ef4444';  // Red - matches danger color
           } else {
-            $title = ucfirst($row['status']) . ": " . $room_facility;
-            $color = '#6c757d';
+            $title = ucfirst($row['status']) . ": " . $room_facility;                                                                
+            $color = '#6c757d';  // Gray for unknown status
           }
-          
-          if ($row['username']) {
-            $title .= " - " . $row['username'];
-          }
-          
+
+          // No username needed since we removed user system
+          $title .= " - Guest";
+
           $start_date = $row['checkin'] ? $row['checkin'] : date('Y-m-d');
           $end_date = $row['checkout'] ? $row['checkout'] : date('Y-m-d', strtotime($start_date . ' +1 day'));
-          
+
           $events[] = [
             'id' => 'booking-' . $row['id'],
             'title' => $title,
@@ -641,7 +728,7 @@ while ($row = $result->fetch_assoc()) {
           ];
         }
       }
-      
+
       // Test event
       $events[] = [
         'id' => 'test-today',
@@ -651,415 +738,339 @@ while ($row = $result->fetch_assoc()) {
       ];
       ?>
       <script>
-        // Data for dashboard charts and calendar
-        const bookingEvents = <?php echo json_encode($events); ?>;
-        const monthlyBookingsData = <?php echo json_encode($monthly_bookings); ?>;
-        const statusDistributionData = <?php echo json_encode($status_distribution); ?>;
-        const dashboardStats = {
+        // Data for dashboard charts and calendar - directly from database
+        window.calendarEvents = <?php echo json_encode($events); ?>;
+        window.monthlyBookingsData = <?php echo json_encode($monthly_bookings); ?>;
+        window.statusDistributionData = <?php echo json_encode($status_distribution); ?>;
+        window.dashboardStats = {
           totalRooms: <?php echo $total_rooms; ?>,
           totalFacilities: <?php echo $total_facilities; ?>,
           activeBookings: <?php echo $active_bookings; ?>,
           pendingApprovals: <?php echo $pending_approvals; ?>,
           totalRevenue: <?php echo $total_revenue; ?>,
+          totalBookings: <?php echo $total_bookings; ?>,
+          activeBookingsCount: <?php echo $active_bookings_count; ?>,
+          pendingBookingsCount: <?php echo $pending_bookings_count; ?>,
+          completedBookingsCount: <?php echo $completed_bookings_count; ?>,
           feedbackStats: <?php echo json_encode($feedback_stats); ?>
         };
         
-        // Make variables globally accessible
-        window.bookingEvents = bookingEvents;
-        window.monthlyBookingsData = monthlyBookingsData;
-        window.statusDistributionData = statusDistributionData;
-        window.dashboardStats = dashboardStats;
-        
-        // Debug: Log the events to console
-        console.log('Booking Events:', bookingEvents);
-        console.log('Events Length:', bookingEvents.length);
+        // Initialize dashboard when document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+          // Set data for charts
+          setDashboardData(
+            window.calendarEvents,
+            window.monthlyBookingsData,
+            window.statusDistributionData,
+            window.dashboardStats
+          );
+        });
       </script>
 
 
 
-      <section id="rooms" class="content-section">
-        <!-- ✅ Add Item Form -->
-        <h2>Add Room / Facility</h2>
-        <form method="POST" enctype="multipart/form-data">
-          <input type="hidden" name="add_item" value="1">
-          <label>Name:</label><input type="text" name="name" required>
-          <label>Type:</label>
-          <select name="item_type" required>
-            <option value="room">Room</option>
-            <option value="facility">Facility</option>
-          </select>
-          <label>Room Number (optional):</label><input type="text" name="room_number">
-          <label>Description:</label><textarea name="description"></textarea>
-          <label>Capacity:</label><input type="number" name="capacity" required>
-          <label>Price:</label><input type="number" step="1" name="price" required>
-          <label>Image (optional):</label><input type="file" name="image" accept="image/*">
-          <button type="submit">Add Item</button>
-        </form>
-
-        <!-- ✅ Existing Items -->
-        <h2>Existing Items</h2>
-        <label>Filter Type:
-          <input type="radio" name="type_filter" value="room" checked> Room
-          <input type="radio" name="type_filter" value="facility"> Facility
-        </label>
-
-        <div class="cards-grid" id="cards-grid">
-          <?php
-          $res = $conn->query("SELECT * FROM items ORDER BY created_at DESC");
-          while ($item = $res->fetch_assoc()): ?>
-            <div class="card" data-type="<?= $item['item_type'] ?>">
-              <?php if ($item['image']): ?>
-                <img src="<?= $item['image'] ?>" style="width:100%;height:150px;object-fit:cover;">
-              <?php endif; ?>
-
-              <h3><?= $item['name'] ?></h3>
-              <?= $item['room_number'] ? "<p>Room Number: " . $item['room_number'] . "</p>" : "" ?>
-              <p>Capacity: <?= $item['capacity'] ?>   <?= $item['item_type'] === 'room' ? 'persons' : 'people' ?></p>
-              <p>Price: P<?= $item['price'] ?><?= $item['item_type'] === 'room' ? '/night' : '/day' ?></p>
-              <p><?= $item['description'] ?></p>
-
-              <!-- ✅ Edit Toggle Button -->
-              <button type="button" class="edit-form">Edit</button>
-
-              <!-- ✅ Edit Form (hidden by default) -->
-              <form method="POST" enctype="multipart/form-data" class="edit-form" style="display:none;">
-                <input type="hidden" name="action" value="update">
-                <input type="hidden" name="id" value="<?= $item['id'] ?>">
-                <input type="hidden" name="old_image" value="<?= $item['image'] ?>">
-
-                <label>Name: <input type="text" name="name" value="<?= $item['name'] ?>" required></label>
-                <label>Type:
-                  <select name="item_type">
-                    <option value="room" <?= $item['item_type'] == 'room' ? 'selected' : '' ?>>Room</option>
-                    <option value="facility" <?= $item['item_type'] == 'facility' ? 'selected' : '' ?>>Facility</option>
-                  </select>
-                </label>
-                <label>Room Number: <input type="text" name="room_number" value="<?= $item['room_number'] ?>"></label>
-                <label>Description: <textarea name="description"><?= $item['description'] ?></textarea></label>
-                <label>Capacity: <input type="number" name="capacity" value="<?= $item['capacity'] ?>" required></label>
-                <label>Price: <input type="number" step="1" name="price" value="<?= $item['price'] ?>" required></label>
-                <label>Change Image: <input type="file" name="image"></label>
-                <button type="submit">Update</button>
-              </form>
-
-              <!-- ✅ Delete Form -->
-              <form method="POST">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="id" value="<?= $item['id'] ?>">
-                <button type="submit" style="background:red;color:white;">Delete</button>
-              </form>
-            </div>
-          <?php endwhile; ?>
-        </div>
-
-      </section>
-
-
-
-      <!-- Bookings -->
-
-
-      <section id="bookings" class="content-section">
-
-        <!-- Select Booking Type -->
-        <label><input type="radio" name="bookingType" value="reservation" checked onchange="toggleBookingForm()">
-          Reservation</label>
-        <label><input type="radio" name="bookingType" value="pencil" onchange="toggleBookingForm()"> Pencil Booking
-          (Function Hall)</label>
-
-        <form id="reservationForm" method="POST" action="database/user_auth.php">
-          <input type="hidden" name="action" value="create_booking">
-          <input type="hidden" name="booking_type" value="reservation">
-
-
-
-          <h3>Reservation Form</h3>
-          <label>Official Receipt No.: <input type="text" name="receipt_no" id="receipt_no" readonly></label>
-          <label>Guest Name: <input type="text" name="guest_name" required></label>
-          <label>Contact Number: <input type="text" name="contact_number" required></label>
-          <label>Email Address: <input type="email" name="email" required></label>
-          <label>Check-in Date & Time: <input type="datetime-local" name="checkin" required></label>
-          <label>Check-out Date & Time: <input type="datetime-local" name="checkout" required></label>
-          <label>Number of Occupants: <input type="number" name="occupants" min="1" required></label>
-          <label>Company Affiliation (optional): <input type="text" name="company"></label>
-          <label>Company Contact Number (optional): <input type="text" name="company_contact"></label>
-          <input type="hidden" name="type" value="reservation">
-          <button type="submit">Confirm Reservation</button>
-        </form>
-
-        <!-- Pencil Booking Form -->
-        <form id="pencilForm" method="POST" action="database/user_auth.php" style="display:none;">
-          <input type="hidden" name="action" value="create_booking">
-          <input type="hidden" name="booking_type" value="pencil">
-
-          <h3>Pencil Booking Form (Function Hall)</h3>
-          <label>Date of Pencil Booking: <input type="date" name="pencil_date" value="<?php echo date('Y-m-d'); ?>"
-              readonly></label>
-          <label>Event Type: <input type="text" name="event_type" required></label>
-          <label>Function Hall: <input type="text" name="hall" required></label>
-          <label>Number of Pax: <input type="number" name="pax" min="1" required></label>
-          <label>Time of Event (From): <input type="time" name="time_from" required></label>
-          <label>Time of Event (To): <input type="time" name="time_to" required></label>
-          <label>Food Provider/Caterer: <input type="text" name="caterer" required></label>
-          <label>Contact Person: <input type="text" name="contact_person" required></label>
-          <label>Contact Number: <input type="text" name="contact_number" required></label>
-          <label>Company Affiliation (optional): <input type="text" name="company"></label>
-          <label>Company Number (optional): <input type="text" name="company_number"></label>
-          <input type="hidden" name="type" value="pencil">
-          <button type="submit" onclick="return pencilReminder()">Submit Pencil Booking</button>
-        </form>
-
-
-
-        <h2>Bookings</h2>
-        <table>
-          <tr>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Details</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-
-          <?php
-          include __DIR__ . '/database/db_connect.php';
-
-          $result = $conn->query("SELECT * FROM bookings ORDER BY id DESC");
-          while ($row = $result->fetch_assoc()):
-            $status = $row['status'];
-            ?>
-            <tr>
-              <td><?= htmlspecialchars($row['id']) ?></td>
-              <td><?= htmlspecialchars($row['type']) ?></td>
-              <td><?= htmlspecialchars($row['details']) ?></td>
-              <td><?= htmlspecialchars($row['created_at']) ?></td>
-              <td><?= htmlspecialchars($status) ?></td>
-              <td>
-                <!-- Approve -->
-                <form method="POST" action="database/user_auth.php" style="display:inline;">
-                  <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
-                  <input type="hidden" name="action" value="admin_update_booking">
-                  <input type="hidden" name="admin_action" value="approve">
-                  <button type="submit" class="approve" <?= in_array($status, ['confirmed', 'rejected', 'checked_in', 'checked_out', 'cancelled']) ? 'disabled' : '' ?>>
-                    Approve
-                  </button>
-                </form>
-
-                <!-- Reject -->
-                <form method="POST" action="database/user_auth.php" style="display:inline;">
-                  <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
-                  <input type="hidden" name="action" value="admin_update_booking">
-                  <input type="hidden" name="admin_action" value="reject">
-                  <button type="submit" class="reject" <?= $status === 'rejected' ? 'disabled' : '' ?>>
-                    Reject
-                  </button>
-                </form>
-
-                <!-- Check In -->
-                <form method="POST" action="database/user_auth.php" style="display:inline;">
-                  <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
-                  <input type="hidden" name="action" value="admin_update_booking">
-                  <input type="hidden" name="admin_action" value="checkin">
-                  <button type="submit" class="checkin" <?= in_array($status, ['checked_in', 'checked_out', 'cancelled', 'rejected']) ? 'disabled' : '' ?>>
-                    Check In
-                  </button>
-                </form>
-
-                <!-- Check Out -->
-                <form method="POST" action="database/user_auth.php" style="display:inline;">
-                  <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
-                  <input type="hidden" name="action" value="admin_update_booking">
-                  <input type="hidden" name="admin_action" value="checkout">
-                  <button type="submit" class="checkout" <?= in_array($status, ['checked_out', 'cancelled', 'rejected']) ? 'disabled' : '' ?>>
-                    Check Out
-                  </button>
-                </form>
-
-                <!-- Cancel -->
-                <form method="POST" action="database/user_auth.php" style="display:inline;">
-                  <input type="hidden" name="booking_id" value="<?= $row['id'] ?>">
-                  <input type="hidden" name="action" value="admin_update_booking">
-                  <input type="hidden" name="admin_action" value="cancel">
-                  <button type="submit" class="cancel" <?= in_array($status, ['cancelled', 'rejected', 'checked_out']) ? 'disabled' : '' ?>>
-                    Cancel
-                  </button>
-                </form>
-              </td>
-            </tr>
-          <?php endwhile; ?>
-        </table>
-
-      </section>
-
-
-
-
-
-
-      <!-- Users -->
-      <section id="users" class="content-section">
-        <h2>User Management</h2>
-
-        <!-- ✅ Table of Registered Users -->
-        <table>
-          <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Created At</th>
-            <th>Actions</th>
-          </tr>
-
-          <?php
-
-          $sql = "SELECT id, username, email, created_at FROM users ORDER BY created_at DESC";
-          $result = $conn->query($sql);
-
-          if ($result->num_rows > 0):
-            while ($row = $result->fetch_assoc()):
-              ?>
-              <tr>
-                <td><?= $row['id'] ?></td>
-                <td><?= htmlspecialchars($row['username']) ?></td>
-                <td><?= htmlspecialchars($row['email']) ?></td>
-                <td><?= $row['created_at'] ?></td>
-                <td>
-                  <!-- ✅ Inline Edit Form -->
-                  <form method="post" action="database/user_auth.php" style="display:inline-block;">
-                    <input type="hidden" name="action" value="edit_user">
-                    <input type="hidden" name="id" value="<?= $row['id'] ?>">
-                    <input type="text" name="username" value="<?= htmlspecialchars($row['username']) ?>" required>
-                    <input type="email" name="email" value="<?= htmlspecialchars($row['email']) ?>" required>
-                    <button type="submit" class="action-btn edit">Save</button>
-                  </form>
-
-                  <!-- ✅ Delete Form -->
-                  <form method="post" action="database/user_auth.php" style="display:inline-block;"
-                    onsubmit="return confirm('Are you sure you want to delete this user?');">
-                    <input type="hidden" name="action" value="admin_delete_user">
-                    <input type="hidden" name="user_id" value="<?= $row['id'] ?>">
-                    <button type="submit" class="action-btn delete">Delete</button>
-                  </form>
-                </td>
-              </tr>
-              <?php
-            endwhile;
-          else:
-            ?>
-            <tr>
-              <td colspan="5">No users found.</td>
-            </tr>
-          <?php endif; ?>
-        </table>
-      </section>
-
-
-
-      <!-- Communication -->
-      <section id="communication" class="content-section">
-        <div class="row">
+      <!-- Calendar & Rooms Section -->
+      <section id="calendar-section" class="content-section">
+        <div class="row mb-4c:\xampp\htdocs\barcie_php\dashboard.php">
           <div class="col-12">
             <div class="card">
               <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                  <i class="fas fa-headset me-2 text-primary"></i>Customer Support Chat
-                  <small class="text-muted ms-2">- Real-time Guest Support</small>
-                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0">
+                    <i class="fas fa-calendar-check me-2"></i>Calendar & Room/Facility Management
+                  </h5>
+                  <!-- Navigation tabs -->
+                  <nav class="nav nav-pills" id="calendar-nav">
+                    <button class="nav-link nav-link-white active" id="calendar-view-btn" data-view="calendar">
+                      <i class="fas fa-calendar-alt me-1"></i>Calendar View
+                    </button>
+                    <button class="nav-link nav-link-white" id="room-list-btn" data-view="room-list">
+                      <i class="fas fa-list me-1"></i>Room List
+                    </button>
+                  </nav>
+                </div>
               </div>
               <div class="card-body p-0">
-                <div class="row g-0" style="height: 650px;">
 
-                  <!-- Conversations List -->
-                  <div class="col-md-4 border-end">
-                    <div class="p-3 border-bottom"
-                      style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                      <h6 class="mb-0">
-                        <i class="fas fa-users me-2"></i>Active Conversations
-                        <span id="total-unread" class="badge bg-danger ms-2" style="display: none;">0</span>
-                      </h6>
-                      <small class="opacity-75">Manage guest inquiries</small>
+                <!-- Calendar View -->
+                <div id="calendar-view-content" class="calendar-content">
+                  <div class="p-3 border-bottom bg-light">
+                    <div class="row align-items-center">
+                      <div class="col-md-8">
+                        <h6 class="mb-1">Room & Facility Reservation Calendar</h6>
+                        <small class="text-muted">View room and facility availability and reservations status</small>
+                      </div>
+                      <div class="col-md-4 text-end">
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-primary"
+                            onclick="calendarInstance.changeView('dayGridMonth')">Month</button>
+                          <button class="btn btn-outline-primary"
+                            onclick="calendarInstance.changeView('timeGridWeek')">Week</button>
+                          <button class="btn btn-outline-primary"
+                            onclick="calendarInstance.changeView('timeGridDay')">Day</button>
+                        </div>
+                      </div>
                     </div>
-                    <div id="conversations-list" class="conversation-list"
-                      style="height: 550px; overflow-y: auto; background-color: #f8f9fa;">
-                      <div class="text-center text-muted p-4">
-                        <i class="fas fa-comment-slash fa-2x mb-3 opacity-50"></i>
-                        <p class="mb-2">No conversations yet</p>
-                        <small>Guest messages will appear here</small>
+                    <div class="mt-2">
+                      <small class="me-3">
+                        <span class="badge bg-success me-1">●</span>Approved/Confirmed
+                      </small>
+                      <small class="me-3">
+                        <span class="badge bg-primary me-1">●</span>Checked-in
+                      </small>
+                      <small class="me-3">
+                        <span class="badge bg-purple me-1">●</span>Checked-out
+                      </small>
+                      <small class="me-3">
+                        <span class="badge bg-warning me-1">●</span>Pending
+                      </small>
+                      <small class="me-3">
+                        <span class="badge bg-danger me-1">●</span>Cancelled
+                      </small>
+                      <small class="text-muted">
+                        Empty days = No reservations
+                      </small>
+                    </div>
+                  </div>
+                  <div class="p-3">
+                    <div id="roomCalendar"></div>
+                  </div>
+                </div>
+
+                <!-- Room List View -->
+                <div id="room-list-content" class="calendar-content" style="display: none;">
+                  <div class="p-3 border-bottom bg-light">
+                    <div class="row align-items-center">
+                      <div class="col-md-8">
+                        <h6 class="mb-1">Room & Facility Status Overview</h6>
+                        <small class="text-muted">Current status and upcoming reservations for all rooms and
+                          facilities</small>
+                      </div>
+                      <div class="col-md-4 text-end">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                          </span>
+                          <input type="text" class="form-control" placeholder="Search rooms & facilities..."
+                            id="room-search">
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <div class="room-list-container" style="max-height: 600px; overflow-y: auto;">
 
-                  <!-- Chat Area -->
-                  <div class="col-md-8 d-flex flex-column">
-                    <div id="chat-header" class="p-3 border-bottom"
-                      style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                      <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                          <div class="avatar-circle bg-white text-primary me-3"
-                            style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                            <i class="fas fa-user"></i>
-                          </div>
-                          <div>
-                            <h6 class="mb-0" id="chat-with-name">Select a conversation</h6>
-                            <small class="opacity-75" id="chat-with-email"></small>
+                    <?php
+                    // Fetch all rooms AND facilities with their current booking status
+                    $items_query = "SELECT * FROM items WHERE item_type IN ('room', 'facility') ORDER BY item_type DESC, room_number ASC, name ASC";
+                    $items_result = $conn->query($items_query);
+
+                    if ($items_result && $items_result->num_rows > 0) {
+                      while ($item = $items_result->fetch_assoc()) {
+                        // Get current reservation for this item
+                        $today = date('Y-m-d');
+                        $item_id = $item['id'];
+                        $item_name = $item['name'];
+                        $item_type = $item['item_type'];
+                        $room_number = $item['room_number'] ?: 'N/A';
+
+                        // Check for active bookings (today or ongoing)
+                        $booking_query = "SELECT b.* 
+                                            FROM bookings b 
+                                            WHERE b.details LIKE '%$item_name%' 
+                                            AND b.status IN ('approved', 'confirmed', 'checked_in') 
+                                            AND DATE(b.checkin) <= '$today' 
+                                            AND DATE(b.checkout) >= '$today'
+                                            ORDER BY b.checkin ASC LIMIT 1";
+                        $booking_result = $conn->query($booking_query);
+                        $current_booking = $booking_result ? $booking_result->fetch_assoc() : null;
+
+                        // Get next upcoming booking
+                        $next_booking_query = "SELECT b.* 
+                                                 FROM bookings b 
+                                                 WHERE b.details LIKE '%$item_name%' 
+                                                 AND b.status IN ('approved', 'confirmed', 'pending') 
+                                                 AND DATE(b.checkin) > '$today'
+                                                 ORDER BY b.checkin ASC LIMIT 1";
+                        $next_booking_result = $conn->query($next_booking_query);
+                        $next_booking = $next_booking_result ? $next_booking_result->fetch_assoc() : null;
+
+                        // Determine status
+                        $status = 'available';
+                        $status_class = 'success';
+                        $status_text = 'Available';
+                        $status_icon = 'check-circle';
+
+                        if ($current_booking) {
+                          if ($current_booking['status'] == 'checked_in') {
+                            $status = 'occupied';
+                            $status_class = 'info';
+                            $status_text = $item_type == 'room' ? 'Occupied' : 'In Use';
+                            $status_icon = $item_type == 'room' ? 'user' : 'cog';
+                          } else {
+                            $status = 'reserved';
+                            $status_class = 'warning';
+                            $status_text = 'Reserved';
+                            $status_icon = 'calendar-check';
+                          }
+                        } elseif (!$next_booking) {
+                          $status = 'no-reservation';
+                          $status_class = 'secondary';
+                          $status_text = 'No Reservations';
+                          $status_icon = 'calendar-times';
+                        }
+
+                        // Different icons for different types
+                        $type_icon = $item_type == 'room' ? 'door-open' : 'building';
+                        $type_label = ucfirst($item_type);
+                        $capacity_label = $item_type == 'room' ? 'guests' : 'people';
+                        $price_label = $item_type == 'room' ? '/night' : '/day';
+                        ?>
+
+                        <div class="room-card p-3 border-bottom room-item" data-room-name="<?= strtolower($item_name) ?>"
+                          data-room-number="<?= strtolower($room_number) ?>" data-item-type="<?= $item_type ?>">
+                          <div class="row align-items-center">
+                            <div class="col-md-2">
+                              <?php if ($item['image'] && file_exists($item['image'])): ?>
+                                <img src="<?= htmlspecialchars($item['image']) ?>" class="img-fluid rounded"
+                                  style="width: 80px; height: 60px; object-fit: cover;"
+                                  alt="<?= htmlspecialchars($item['name']) ?>">
+                              <?php else: ?>
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                  style="width: 80px; height: 60px;">
+                                  <i class="fas fa-<?= $type_icon ?> text-muted fa-2x"></i>
+                                </div>
+                              <?php endif; ?>
+                            </div>
+                            <div class="col-md-3">
+                              <h6 class="mb-1">
+                                <?= htmlspecialchars($item['name']) ?>
+                                <small class="badge bg-primary ms-1"><?= $type_label ?></small>
+                              </h6>
+                              <small class="text-muted">
+                                <?php if ($item_type == 'room'): ?>
+                                  Room #<?= htmlspecialchars($room_number) ?> • <?= $item['capacity'] ?>
+                                  <?= $capacity_label ?>
+                                <?php else: ?>
+                                  Facility • <?= $item['capacity'] ?>       <?= $capacity_label ?>
+                                <?php endif; ?>
+                              </small>
+                              <div class="mt-1">
+                                <small class="text-success">₱<?= number_format($item['price']) ?><?= $price_label ?></small>
+                              </div>
+                            </div>
+                            <div class="col-md-2">
+                              <span class="badge bg-<?= $status_class ?> px-3 py-2">
+                                <i class="fas fa-<?= $status_icon ?> me-1"></i><?= $status_text ?>
+                              </span>
+                            </div>
+                            <div class="col-md-5">
+                              <?php if ($current_booking): ?>
+                                <div class="current-booking mb-2">
+                                  <strong class="text-<?= $status_class ?>">Current
+                                    <?= $item_type == 'room' ? 'Guest' : 'User' ?>:</strong>
+                                  <div class="small">
+                                    Guest
+                                    <span class="text-muted">
+                                      • <?= date('M j', strtotime($current_booking['checkin'])) ?> -
+                                      <?= date('M j', strtotime($current_booking['checkout'])) ?>
+                                    </span>
+                                  </div>
+                                </div>
+                              <?php endif; ?>
+
+                              <?php if ($next_booking): ?>
+                                <div class="next-booking">
+                                  <strong class="text-primary">Next Reservation:</strong>
+                                  <div class="small">
+                                    Guest
+                                    <span class="text-muted">
+                                      • <?= date('M j', strtotime($next_booking['checkin'])) ?> -
+                                      <?= date('M j', strtotime($next_booking['checkout'])) ?>
+                                    </span>
+                                  </div>
+                                </div>
+                              <?php elseif (!$current_booking): ?>
+                                <div class="text-muted small">
+                                  <i class="fas fa-calendar-times me-1"></i>No upcoming reservations
+                                </div>
+                              <?php endif; ?>
+                            </div>
                           </div>
                         </div>
-                        <div class="d-flex align-items-center">
-                          <span class="badge bg-success me-2" id="chat-status">
-                            <i class="fas fa-circle me-1" style="font-size: 8px;"></i>Support Active
-                          </span>
-                          <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
-                              data-bs-toggle="dropdown">
-                              <i class="fas fa-ellipsis-v"></i>
-                            </button>
-                            <ul class="dropdown-menu">
-                              <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>View Profile</a>
-                              </li>
-                              <li><a class="dropdown-item" href="#"><i class="fas fa-history me-2"></i>Chat History</a>
-                              </li>
-                              <li>
-                                <hr class="dropdown-divider">
-                              </li>
-                              <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-ban me-2"></i>Block
-                                  User</a></li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
+
+                        <?php
+                      }
+                    } else {
+                      echo '<div class="text-center text-muted p-4">
+                                <i class="fas fa-building fa-3x mb-3 opacity-50"></i>
+                                <p>No rooms or facilities found</p>
+                                <small>Add rooms and facilities in the Rooms & Facilities section</small>
+                              </div>';
+                    }
+                    ?>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="rooms" class="content-section">
+        <!-- Rooms & Facilities Header -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+              <div class="card-body text-white">
+                <div class="text-center">
+                  <h2 class="mb-1"><i class="fas fa-building me-2"></i>Rooms & Facilities Management</h2>
+                  <p class="mb-0 opacity-75">Manage your property inventory and amenities</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col-md-6">
+                    <h5 class="mb-3"><i class="fas fa-filter me-2 text-primary"></i>Filter & Search</h5>
+                    <div class="btn-group w-100 item-filters" role="group" aria-label="Type filter">
+                      <input type="radio" class="btn-check type-filter" name="type_filter" id="filter-all" value="all"
+                        checked>
+                      <label class="btn btn-outline-primary" for="filter-all">
+                        <i class="fas fa-list me-1"></i>All
+                        <span class="badge bg-primary ms-1 type-count" data-type="all">0</span>
+                      </label>
+
+                      <input type="radio" class="btn-check type-filter" name="type_filter" id="filter-room"
+                        value="room">
+                      <label class="btn btn-outline-primary" for="filter-room">
+                        <i class="fas fa-bed me-1"></i>Rooms
+                        <span class="badge bg-primary ms-1 type-count" data-type="room">0</span>
+                      </label>
+
+                      <input type="radio" class="btn-check type-filter" name="type_filter" id="filter-facility"
+                        value="facility">
+                      <label class="btn btn-outline-primary" for="filter-facility">
+                        <i class="fas fa-building me-1"></i>Facilities
+                        <span class="badge bg-primary ms-1 type-count" data-type="facility">0</span>
+                      </label>
                     </div>
-
-                    <!-- Messages Area -->
-                    <div id="chat-messages" class="flex-grow-1 p-3"
-                      style="height: 430px; overflow-y: auto; background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);">
-                      <div class="text-center text-muted py-5">
-                        <i class="fas fa-headset fa-3x mb-3 text-primary opacity-50"></i>
-                        <h5 class="text-primary">Customer Support Ready</h5>
-                        <p class="mb-0">Select a conversation to assist guests</p>
-                        <small class="text-muted">Professional support at your fingertips</small>
-                      </div>
-                    </div>
-
-                    <!-- Message Input -->
-                    <div id="chat-input-area" class="p-3 border-top"
-                      style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                      <form id="chat-form" class="d-flex">
-                        <div class="input-group">
-                          <div class="input-group-text bg-white">
-                            <i class="fas fa-smile text-muted"></i>
-                          </div>
-                          <input type="text" id="chat-input" class="form-control border-0"
-                            placeholder="Type your support response..." required>
-                          <button type="submit" class="btn btn-light">
-                            <i class="fas fa-paper-plane text-primary"></i>
-                          </button>
-                        </div>
-                      </form>
-                      <div class="mt-2">
-                        <small class="text-white opacity-75">
-                          <i class="fas fa-info-circle me-1"></i>Quick responses: Press Tab for templates
-                        </small>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Search Items</label>
+                      <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="searchItems"
+                          placeholder="Search by name, room number, or description...">
                       </div>
                     </div>
                   </div>
@@ -1067,8 +1078,602 @@ while ($row = $result->fetch_assoc()) {
               </div>
             </div>
           </div>
+        </div> <!-- Items Grid -->
+        <div class="row" id="items-container">
+          <?php
+          $res = $conn->query("SELECT * FROM items ORDER BY item_type, created_at DESC");
+          while ($item = $res->fetch_assoc()): ?>
+            <div class="col-lg-4 col-md-6 mb-4 item-card" data-type="<?= $item['item_type'] ?>"
+              data-searchable="<?= strtolower($item['name'] . ' ' . $item['room_number'] . ' ' . $item['description']) ?>">
+              <div class="card border-0 shadow-sm h-100 hover-lift">
+                <!-- Item Image -->
+                <div class="position-relative">
+                  <?php if ($item['image'] && file_exists($item['image'])): ?>
+                    <img src="<?= htmlspecialchars($item['image']) ?>" class="card-img-top"
+                      style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>">
+                  <?php else: ?>
+                    <div class="card-img-top d-flex align-items-center justify-content-center"
+                      style="height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);">
+                      <i
+                        class="fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted"></i>
+                    </div>
+                  <?php endif; ?>
+
+                  <!-- Type Badge -->
+                  <div class="position-absolute top-0 end-0 m-2">
+                    <span
+                      class="badge <?= $item['item_type'] === 'room' ? 'bg-primary' : ($item['item_type'] === 'facility' ? 'bg-success' : 'bg-info') ?> px-3 py-2">
+                      <i
+                        class="fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> me-1"></i>
+                      <?= ucfirst($item['item_type']) ?>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Item Details -->
+                <div class="card-body d-flex flex-column">
+                  <div class="flex-grow-1">
+                    <h5 class="card-title mb-2"><?= htmlspecialchars($item['name']) ?></h5>
+
+                    <?php if ($item['room_number']): ?>
+                      <p class="text-muted mb-2">
+                        <i class="fas fa-door-open me-1"></i>Room #<?= htmlspecialchars($item['room_number']) ?>
+                      </p>
+                    <?php endif; ?>
+
+                    <p class="card-text text-muted small mb-3"><?= htmlspecialchars($item['description']) ?></p>
+
+                    <div class="row text-center mb-3">
+                      <div class="col-6">
+                        <div class="border-end">
+                          <h6 class="text-primary mb-1">₱<?= number_format($item['price']) ?></h6>
+                          <small class="text-muted"><?= $item['item_type'] === 'room' ? 'per night' : 'per day' ?></small>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <h6 class="text-success mb-1"><?= $item['capacity'] ?></h6>
+                        <small class="text-muted"><?= $item['item_type'] === 'room' ? 'guests' : 'people' ?></small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary flex-fill edit-toggle-btn"
+                      data-item-id="<?= $item['id'] ?>">
+                      <i class="fas fa-edit me-1"></i>Edit
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
+                      data-bs-target="#deleteModal<?= $item['id'] ?>">
+                      <i class="fas fa-trash me-1"></i>Delete
+                    </button>
+                  </div>
+
+                  <!-- Hidden Edit Form -->
+                  <div class="edit-form-container mt-3" id="editForm<?= $item['id'] ?>" style="display: none;">
+                    <form method="POST" enctype="multipart/form-data" class="border-top pt-3">
+                      <input type="hidden" name="action" value="update">
+                      <input type="hidden" name="id" value="<?= $item['id'] ?>">
+                      <input type="hidden" name="old_image" value="<?= $item['image'] ?>">
+
+                      <div class="row">
+                        <div class="col-12 mb-3">
+                          <label class="form-label">Name</label>
+                          <input type="text" class="form-control" name="name"
+                            value="<?= htmlspecialchars($item['name']) ?>" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Type</label>
+                          <select name="item_type" class="form-select">
+                            <option value="room" <?= $item['item_type'] == 'room' ? 'selected' : '' ?>>Room</option>
+                            <option value="facility" <?= $item['item_type'] == 'facility' ? 'selected' : '' ?>>Facility
+                            </option>
+                            <option value="amenities" <?= $item['item_type'] == 'amenities' ? 'selected' : '' ?>>Amenities
+                            </option>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Room Number</label>
+                          <input type="text" class="form-control" name="room_number"
+                            value="<?= htmlspecialchars($item['room_number']) ?>">
+                        </div>
+
+                        <div class="col-12 mb-3">
+                          <label class="form-label">Description</label>
+                          <textarea class="form-control" name="description"
+                            rows="3"><?= htmlspecialchars($item['description']) ?></textarea>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Capacity</label>
+                          <input type="number" class="form-control" name="capacity" value="<?= $item['capacity'] ?>"
+                            required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Price (₱)</label>
+                          <input type="number" class="form-control" name="price" value="<?= $item['price'] ?>" required>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                          <label class="form-label">Change Image</label>
+                          <input type="file" class="form-control" name="image" accept="image/*">
+                        </div>
+                      </div>
+
+                      <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                          <i class="fas fa-save me-1"></i>Update
+                        </button>
+                        <button type="button" class="btn btn-secondary edit-cancel-btn" data-item-id="<?= $item['id'] ?>">
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delete Confirmation Modal -->
+            <div class="modal fade" id="deleteModal<?= $item['id'] ?>" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Are you sure you want to delete <strong><?= htmlspecialchars($item['name']) ?></strong>?</p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="id" value="<?= $item['id'] ?>">
+                      <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <?php endwhile; ?>
+        </div>
+
+
+        <!-- Add Item Modal -->
+        <div class="modal fade" id="addItemModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">
+                  <i class="fas fa-plus me-2"></i>Add New Room / Facility / Amenities
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <form method="POST" enctype="multipart/form-data">
+                <!-- Action Buttons at Top -->
+                <div class="modal-body border-bottom pb-3 mb-3">
+                  <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                      <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+
+                  </div>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" name="add_item" value="1">
+
+                  <div class="row">
+                    <div class="col-12 mb-3">
+                      <label class="form-label">Name <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" name="name" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Type <span class="text-danger">*</span></label>
+                      <select name="item_type" class="form-select" required>
+                        <option value="">Select Type</option>
+                        <option value="room">Room</option>
+                        <option value="facility">Facility</option>
+                        <option value="amenities">Amenities</option>
+                      </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Room Number</label>
+                      <input type="text" class="form-control" name="room_number" placeholder="Optional">
+                    </div>
+
+                    <div class="col-12 mb-3">
+                      <label class="form-label">Description</label>
+                      <textarea class="form-control" name="description" rows="3"
+                        placeholder="Brief description of the room or facility"></textarea>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Capacity <span class="text-danger">*</span></label>
+                      <input type="number" class="form-control" name="capacity" min="1" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Price (₱) <span class="text-danger">*</span></label>
+                      <input type="number" class="form-control" name="price" min="0" step="1" required>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                      <label class="form-label">Image</label>
+                      <input type="file" class="form-control" name="image" accept="image/*">
+                      <div class="form-text">Optional: Upload an image for this room or facility</div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Bookings Management -->
+
+      <section id="bookings" class="content-section">
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                  <i class="fas fa-calendar-alt me-2"></i>Bookings Management
+                </h5>
+                <small class="opacity-75">Manage all guest reservations and bookings</small>
+              </div>
+              <div class="card-body">
+                <!-- Filter Controls -->
+                <div class="row mb-3">
+                  <div class="col-md-3">
+                    <label class="form-label">Filter by Status:</label>
+                    <select class="form-select" id="statusFilter" onchange="filterBookings()">
+                      <option value="">All Statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="checked_in">Checked In</option>
+                      <option value="checked_out">Checked Out</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Filter by Type:</label>
+                    <select class="form-select" id="typeFilter" onchange="filterBookings()">
+                      <option value="">All Types</option>
+                      <option value="reservation">Reservation</option>
+                      <option value="pencil">Pencil Booking</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Search Guest:</label>
+                    <input type="text" class="form-control" id="guestSearch"
+                      placeholder="Search by guest name or contact..." onkeyup="filterBookings()">
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                      <i class="fas fa-undo me-1"></i>Reset
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Bookings Table -->
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover" id="bookingsTable">
+                    <thead class="table-dark">
+                      <tr>
+                        <th>Receipt #</th>
+                        <th>Room/Facility</th>
+                        <th>Type</th>
+                        <th>Guest Details</th>
+                        <th>Schedule</th>
+                        <th>Status</th>
+                        <th>Discount Application</th>
+                        <th>Created</th>
+                        <th>Admin Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php
+                      // Fetch all bookings with room details
+                      $bookings_query = "SELECT b.*, i.name as room_name, i.item_type, i.room_number, i.capacity, i.price 
+                                       FROM bookings b 
+                                       LEFT JOIN items i ON b.room_id = i.id 
+                                       ORDER BY b.created_at DESC";
+                      $bookings_result = $conn->query($bookings_query);
+
+                      if ($bookings_result && $bookings_result->num_rows > 0) {
+                        while ($booking = $bookings_result->fetch_assoc()) {
+                          // Extract guest information from details
+                          $guest_name = 'Guest';
+                          $contact = '';
+                          $email = '';
+                          if (!empty($booking['details'])) {
+                            if (preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
+                              $guest_name = trim($matches[1]);
+                            }
+                            if (preg_match('/Contact:\s*([^|]+)/', $booking['details'], $matches)) {
+                              $contact = trim($matches[1]);
+                            }
+                            if (preg_match('/Email:\s*([^|]+)/', $booking['details'], $matches)) {
+                              $email = trim($matches[1]);
+                            }
+                          }
+
+                          // Determine room/facility display
+                          $room_display = $booking['room_name'] ?: 'Unknown';
+                          if ($booking['room_number']) {
+                            $room_display .= " (#" . $booking['room_number'] . ")";
+                          }
+
+                          // Status badge styling
+                          $status_class = 'secondary';
+                          switch (strtolower($booking['status'])) {
+                            case 'approved':
+                            case 'confirmed':
+                              $status_class = 'success'; // Green
+                              break;
+                            case 'pending':
+                              $status_class = 'warning'; // Orange
+                              break;
+                            case 'checked_in':
+                              $status_class = 'primary'; // Blue
+                              break;
+                            case 'checked_out':
+                              $status_class = 'purple'; // Purple (custom class)
+                              break;
+                            case 'cancelled':
+                            case 'rejected':
+                              $status_class = 'danger';
+                              break;
+                          }
+
+                          echo "<tr data-booking-id='" . $booking['id'] . "' data-status='" . strtolower($booking['status']) . "' data-type='" . strtolower($booking['type']) . "' data-guest='" . strtolower($guest_name . ' ' . $contact) . "'>";
+                          echo "<td><code>" . htmlspecialchars($booking['receipt_no'] ?: 'N/A') . "</code></td>";
+                          echo "<td>";
+                          echo "<strong>" . htmlspecialchars($room_display) . "</strong><br>";
+                          echo "<small class='text-muted'>" . ucfirst($booking['item_type'] ?: 'Unknown') . "</small>";
+                          if ($booking['capacity']) {
+                            echo "<br><small class='text-info'>Capacity: " . $booking['capacity'] . "</small>";
+                          }
+                          echo "</td>";
+                          echo "<td><span class='badge bg-light text-dark'>" . htmlspecialchars(ucfirst($booking['type'])) . "</span></td>";
+                          echo "<td>";
+                          echo "<strong>" . htmlspecialchars($guest_name) . "</strong>";
+                          if ($contact) {
+                            echo "<br><small class='text-muted'><i class='fas fa-phone me-1'></i>" . htmlspecialchars($contact) . "</small>";
+                          }
+                          if ($email) {
+                            echo "<br><small class='text-muted'><i class='fas fa-envelope me-1'></i>" . htmlspecialchars($email) . "</small>";
+                          }
+                          echo "</td>";
+                          echo "<td>";
+                          if ($booking['checkin']) {
+                            echo "<strong>In:</strong> " . date('M j, Y H:i', strtotime($booking['checkin'])) . "<br>";
+                          }
+                          if ($booking['checkout']) {
+                            echo "<strong>Out:</strong> " . date('M j, Y H:i', strtotime($booking['checkout']));
+                          }
+                          if (!$booking['checkin'] && !$booking['checkout']) {
+                            echo "<small class='text-muted'>No schedule set</small>";
+                          }
+                          echo "</td>";
+                          echo "<td><span class='badge bg-" . $status_class . "'>" . htmlspecialchars(ucfirst($booking['status'])) . "</span></td>";
+
+                          // Discount Application Column
+                          echo "<td>";
+                          $discount_type = '';
+                          $discount_details = '';
+                          $discount_proof = '';
+                          if (!empty($booking['details'])) {
+                            if (preg_match('/Discount: ([^|]+)/', $booking['details'], $matches)) {
+                              $discount_type = trim($matches[1]);
+                            }
+                            if (preg_match('/Discount Details: ([^|]+)/', $booking['details'], $matches)) {
+                              $discount_details = trim($matches[1]);
+                            }
+                            if (preg_match('/Proof: ([^|]+)/', $booking['details'], $matches)) {
+                              $discount_proof = trim($matches[1]);
+                            }
+                          }
+                          if ($discount_type) {
+                            echo "<span class='badge bg-warning text-dark mb-1'>" . htmlspecialchars($discount_type) . "</span><br>";
+                            if ($discount_details) {
+                              echo "<small class='text-muted'>" . htmlspecialchars($discount_details) . "</small><br>";
+                            }
+                            if ($discount_proof) {
+                              echo "<a href='" . htmlspecialchars($discount_proof) . "' target='_blank' class='btn btn-link btn-sm p-0'>View Proof</a><br>";
+                            }
+                            // Admin eligibility buttons (only if pending and not yet approved/rejected)
+                            if ($booking['status'] === 'pending') {
+                              echo "<div class='mt-2'>";
+                              echo "<button class='btn btn-success btn-sm me-1' onclick='updateBookingStatus(" . $booking['id'] . ", \"approved\")'>Eligible</button>";
+                              echo "<button class='btn btn-danger btn-sm' onclick='updateBookingStatus(" . $booking['id'] . ", \"rejected\")'>Not Eligible</button>";
+                              echo "</div>";
+                            }
+                          } else {
+                            echo "<span class='text-muted'>None</span>";
+                          }
+                          echo "</td>";
+                          echo "<td><small class='text-muted'>" . date('M j, Y H:i', strtotime($booking['created_at'])) . "</small></td>";
+                          echo "<td>";
+
+                          // Admin Action Buttons
+                          $status = $booking['status'];
+                          echo "<div class='btn-group-vertical btn-group-sm' role='group'>";
+
+                          // View Details Button
+                          echo "<button class='btn btn-outline-primary btn-sm mb-1' onclick='viewBookingDetails(" . $booking['id'] . ")' title='View Details'>";
+                          echo "<i class='fas fa-eye me-1'></i>View";
+                          echo "</button>";
+
+                          // Status Update Buttons
+                          if ($status === 'pending') {
+                            echo "<button class='btn btn-success btn-sm mb-1' onclick='updateBookingStatus(" . $booking['id'] . ", \"approved\")' title='Approve Booking'>";
+                            echo "<i class='fas fa-check me-1'></i>Approve";
+                            echo "</button>";
+                            echo "<button class='btn btn-danger btn-sm mb-1' onclick='updateBookingStatus(" . $booking['id'] . ", \"rejected\")' title='Reject Booking'>";
+                            echo "<i class='fas fa-times me-1'></i>Reject";
+                            echo "</button>";
+                          }
+
+                          if ($status === 'approved' || $status === 'confirmed') {
+                            echo "<button class='btn btn-info btn-sm mb-1' onclick='updateBookingStatus(" . $booking['id'] . ", \"checked_in\")' title='Check In Guest'>";
+                            echo "<i class='fas fa-sign-in-alt me-1'></i>Check In";
+                            echo "</button>";
+                          }
+
+                          if ($status === 'checked_in') {
+                            echo "<button class='btn btn-primary btn-sm mb-1' onclick='updateBookingStatus(" . $booking['id'] . ", \"checked_out\")' title='Check Out Guest'>";
+                            echo "<i class='fas fa-sign-out-alt me-1'></i>Check Out";
+                            echo "</button>";
+                          }
+
+                          // Cancel button (available for most statuses except completed ones)
+                          if (!in_array($status, ['checked_out', 'cancelled', 'rejected'])) {
+                            echo "<button class='btn btn-outline-danger btn-sm' onclick='updateBookingStatus(" . $booking['id'] . ", \"cancelled\")' title='Cancel Booking'>";
+                            echo "<i class='fas fa-ban me-1'></i>Cancel";
+                            echo "</button>";
+                          }
+
+                          echo "</div>";
+                          echo "</td>";
+                          echo "</tr>";
+                        }
+                      } else {
+                        echo "<tr><td colspan='8' class='text-center text-muted py-4'>";
+                        echo "<i class='fas fa-calendar-times fa-3x mb-3 opacity-50'></i><br>";
+                        echo "No bookings found.";
+                        echo "</td></tr>";
+                      }
+                      ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                  <i class="fas fa-percent me-2"></i>Discount Applications
+                </h5>
+                <small class="opacity-75">Review and approve/reject guest discount requests</small>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Receipt #</th>
+                        <th>Guest Name</th>
+                        <th>Room/Facility</th>
+                        <th>Discount Type</th>
+                        <th>Details</th>
+                        <th>Proof</th>
+                        <th>Schedule</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php
+                      // Fetch only bookings with pending discount applications
+                      $discount_query = "SELECT b.*, i.name as room_name, i.item_type, i.room_number FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.status = 'pending' AND b.details LIKE '%Discount:%' ORDER BY b.created_at DESC";
+                      $discount_result = $conn->query($discount_query);
+                      if ($discount_result && $discount_result->num_rows > 0) {
+                        while ($booking = $discount_result->fetch_assoc()) {
+                          $guest_name = 'Guest';
+                          $discount_type = '';
+                          $discount_details = '';
+                          $discount_proof = '';
+                          $email = '';
+                          if (!empty($booking['details'])) {
+                            if (preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
+                              $guest_name = trim($matches[1]);
+                            }
+                            if (preg_match('/Discount: ([^|]+)/', $booking['details'], $matches)) {
+                              $discount_type = trim($matches[1]);
+                            }
+                            if (preg_match('/Discount Details: ([^|]+)/', $booking['details'], $matches)) {
+                              $discount_details = trim($matches[1]);
+                            }
+                            if (preg_match('/Proof: ([^|]+)/', $booking['details'], $matches)) {
+                              $discount_proof = trim($matches[1]);
+                            }
+                            if (preg_match('/Email:\s*([^|]+)/', $booking['details'], $matches)) {
+                              $email = trim($matches[1]);
+                            }
+                          }
+                          $room_display = $booking['room_name'] ?: 'Unknown';
+                          if ($booking['room_number']) {
+                            $room_display .= " (#" . $booking['room_number'] . ")";
+                          }
+                          echo "<tr>";
+                          echo "<td><code>" . htmlspecialchars($booking['receipt_no'] ?: 'N/A') . "</code></td>";
+                          echo "<td>" . htmlspecialchars($guest_name) . "<br><small class='text-muted'>" . htmlspecialchars($email) . "</small></td>";
+                          echo "<td>" . htmlspecialchars($room_display) . "<br><small class='text-muted'>" . htmlspecialchars(ucfirst($booking['item_type'])) . "</small></td>";
+                          echo "<td><span class='badge bg-warning text-dark'>" . htmlspecialchars($discount_type) . "</span></td>";
+                          echo "<td>" . htmlspecialchars($discount_details) . "</td>";
+                          echo "<td>";
+                          if ($discount_proof) {
+                            echo "<a href='" . htmlspecialchars($discount_proof) . "' target='_blank' class='btn btn-link btn-sm'>View Proof</a>";
+                          } else {
+                            echo "<span class='text-muted'>None</span>";
+                          }
+                          echo "</td>";
+                          echo "<td>";
+                          if ($booking['checkin']) {
+                            echo "<strong>In:</strong> " . date('M j, Y H:i', strtotime($booking['checkin'])) . "<br>";
+                          }
+                          if ($booking['checkout']) {
+                            echo "<strong>Out:</strong> " . date('M j, Y H:i', strtotime($booking['checkout']));
+                          }
+                          echo "</td>";
+                          echo "<td>";
+                          echo "<form method='post' action='database/user_auth.php' class='d-inline'>";
+                          echo "<input type='hidden' name='action' value='admin_update_booking'>";
+                          echo "<input type='hidden' name='booking_id' value='" . $booking['id'] . "'>";
+                          echo "<input type='hidden' name='admin_action' value='approve'>";
+                          echo "<button type='submit' class='btn btn-success btn-sm me-1'>Approve</button>";
+                          echo "</form>";
+                          echo "<form method='post' action='database/user_auth.php' class='d-inline'>";
+                          echo "<input type='hidden' name='action' value='admin_update_booking'>";
+                          echo "<input type='hidden' name='booking_id' value='" . $booking['id'] . "'>";
+                          echo "<input type='hidden' name='admin_action' value='reject'>";
+                          echo "<button type='submit' class='btn btn-danger btn-sm'>Reject</button>";
+                          echo "</form>";
+                          echo "</td>";
+                          echo "</tr>";
+                        }
+                      } else {
+                        echo "<tr><td colspan='8' class='text-center text-muted py-4'><i class='fas fa-percent fa-2x mb-2'></i><br>No pending discount applications.</td></tr>";
+                      }
+                      ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
+
+
+
 
 
 
@@ -1093,12 +1698,149 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-      <!-- Socket.IO for communication features -->
-      <script src="/socket.io/socket.io.js"></script>
+      <!-- Custom JavaScript for Calendar Section -->
+      <script>
+        // Initialize room calendar when the document is ready
+        document.addEventListener('DOMContentLoaded', function () {
+          initializeRoomCalendar();
+          initializeCalendarNavigation();
+          initializeRoomSearch();
+        });
+
+        function initializeRoomCalendar() {
+          const calendarEl = document.getElementById('roomCalendar');
+          if (!calendarEl) return;
+
+          // Generate room events based on current booking data
+          const roomEvents = generateRoomEvents();
+
+          calendarInstance = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: roomEvents,
+            eventDisplay: 'block',
+            dayMaxEvents: true, // When too many events, show "+X more"
+            height: 'auto',
+            aspectRatio: 1.8,
+            eventOverlap: false, // Prevent event overlap
+            slotEventOverlap: false,
+            displayEventTime: true,
+            displayEventEnd: true,
+            nowIndicator: true, // Show current time indicator
+            businessHours: {
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // 0=Sunday, 1=Monday, etc.
+              startTime: '08:00',
+              endTime: '20:00',
+            },
+            eventClick: function (info) {
+              // Show event details
+              const itemType = info.event.extendedProps.itemType || 'Item';
+              const itemName = info.event.extendedProps.itemName || info.event.title;
+              const roomNumber = info.event.extendedProps.roomNumber || '';
+              const guest = info.event.extendedProps.guest || 'Unknown';
+              const status = info.event.extendedProps.status || 'Unknown';
+              const checkin = info.event.extendedProps.checkin || 'Unknown';
+              const checkout = info.event.extendedProps.checkout || 'Unknown';
+              const details = info.event.extendedProps.details || 'No details';
+
+              const roomInfo = roomNumber ? `\nRoom Number: #${roomNumber}` : '';
+              alert(`${itemType}: ${itemName}${roomInfo}\nGuest: ${guest}\nStatus: ${status}\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nBooking Details: ${details}`);
+            },
+            dateClick: function (info) {
+              // Handle date click - show available items for that date
+              console.log('Date clicked:', info.dateStr);
+              // You could open a modal here to show all items available on this date
+            },
+            eventDidMount: function (info) {
+              // Add custom styling or tooltips
+              if (!info.event.extendedProps.hasReservation) {
+                info.el.style.opacity = '0.6';
+              }
+            }
+          });
+
+          calendarInstance.render();
+        }
+
+        // Generate PHP room events and make them globally available
+        window.roomEvents = [];
+        <?php
+        // Generate JavaScript events using proper room_id relationship
+        $bookings_query = "SELECT b.*, i.name as item_name, i.item_type, i.room_number
+                         FROM bookings b 
+                         LEFT JOIN items i ON b.room_id = i.id
+                         WHERE b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out', 'pending')
+                         AND b.checkin >= CURDATE() - INTERVAL 7 DAY
+                         AND b.checkin <= CURDATE() + INTERVAL 30 DAY
+                         ORDER BY b.checkin ASC";
+        $bookings_result = $conn->query($bookings_query);
+
+        if ($bookings_result && $bookings_result->num_rows > 0) {
+          while ($booking = $bookings_result->fetch_assoc()) {
+            // Use room/facility name from proper JOIN
+            $item_name = $booking['item_name'] ? addslashes($booking['item_name']) : 'Unassigned Room/Facility';
+            $room_number = $booking['room_number'] ? '#' . $booking['room_number'] : '';
+            $item_type = $booking['item_type'] ?: 'room';
+
+            $guest = 'Guest';
+            $status = $booking['status'];
+
+            // Create display title with room number if available
+            $display_title = $item_name . $room_number . ' - ' . $guest;
+
+            // Color based on status
+            $color = '#28a745'; // green for approved/confirmed
+            if ($status == 'checked_in')
+              $color = '#0d6efd'; // blue (primary)
+            if ($status == 'checked_out')
+              $color = '#6f42c1'; // purple
+            if ($status == 'pending')
+              $color = '#fd7e14'; // orange (warning)
+        
+            echo "window.roomEvents.push({\n";
+            echo "  id: 'booking-{$booking['id']}',\n";
+            echo "  title: '{$display_title}',\n";
+            echo "  start: '{$booking['checkin']}',\n";
+            echo "  end: '" . date('Y-m-d', strtotime($booking['checkout'] . ' +1 day')) . "',\n";
+            echo "  backgroundColor: '{$color}',\n";
+            echo "  borderColor: '{$color}',\n";
+            echo "  textColor: '#ffffff',\n";
+            echo "  extendedProps: {\n";
+            echo "    itemName: '{$item_name}',\n";
+            echo "    roomNumber: '" . ($booking['room_number'] ?: '') . "',\n";
+            echo "    itemType: '{$item_type}',\n";
+            echo "    guest: '{$guest}',\n";
+            echo "    status: '{$status}',\n";
+            echo "    checkin: '{$booking['checkin']}',\n";
+            echo "    checkout: '{$booking['checkout']}',\n";
+            echo "    roomId: " . ($booking['room_id'] ?: 'null') . "\n";
+            echo "  }\n";
+            echo "});\n";
+          }
+        }
+        ?>
+
+
+      </script>
+
+      <!-- Rooms & Facilities JavaScript -->
+      <script>
+        // Initialize rooms and facilities functionality
+        document.addEventListener('DOMContentLoaded', function () {
+          initializeRoomsFiltering();
+          initializeRoomsSearch();
+          initializeEditForms();
+        });
+      </script>
+
+      <!-- All styles moved to dashboard.css for better organization -->
 
 
 
 
 </body>
-
 </html>
