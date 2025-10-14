@@ -1,4 +1,50 @@
 <?php
+// PHPMailer setup (safe require with error handling)
+function send_smtp_mail($to, $subject, $body, $altBody = '') {
+    try {
+        // Check if PHPMailer files exist before requiring
+        $phpmailer_path = __DIR__ . '/../vendor/PHPMailer/src/PHPMailer.php';
+        $smtp_path = __DIR__ . '/../vendor/PHPMailer/src/SMTP.php';
+        $exception_path = __DIR__ . '/../vendor/PHPMailer/src/Exception.php';
+        
+        if (!file_exists($phpmailer_path) || !file_exists($smtp_path) || !file_exists($exception_path)) {
+            error_log('PHPMailer files not found. Email functionality disabled.');
+            return false;
+        }
+        
+        require_once $phpmailer_path;
+        require_once $smtp_path;
+        require_once $exception_path;
+        
+        $config_path = __DIR__ . '/../mail_config.php';
+        if (!file_exists($config_path)) {
+            error_log('Mail config file not found. Email functionality disabled.');
+            return false;
+        }
+        
+        $config = require $config_path;
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        
+        $mail->isSMTP();
+        $mail->Host = $config['host'];
+        $mail->SMTPAuth = true;
+        $mail->Username = $config['username'];
+        $mail->Password = $config['password'];
+        $mail->SMTPSecure = $config['secure'];
+        $mail->Port = $config['port'];
+        $mail->setFrom($config['from_email'], $config['from_name']);
+        $mail->addAddress($to);
+        $mail->Subject = $subject;
+        $mail->Body = $body;
+        $mail->AltBody = $altBody ?: strip_tags($body);
+        $mail->isHTML(true);
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log('PHPMailer error: ' . $e->getMessage());
+        return false;
+    }
+}
 session_start();
 include __DIR__ . '/db_connect.php';
 
@@ -7,6 +53,168 @@ function redirect($url) {
     header("Location: $url");
     exit;
 }
+
+// Helper function for AJAX responses
+function handleResponse($message, $success = true, $redirectUrl = null) {
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => $success,
+            'message' => $message,
+            'redirect' => $redirectUrl
+        ]);
+        exit;
+    } else {
+        // Traditional behavior for non-AJAX requests
+        if ($success) {
+            $_SESSION['booking_msg'] = $message;
+        } else {
+            $_SESSION['booking_msg'] = $message;
+        }
+        redirect($redirectUrl);
+    }
+}
+
+// Function to ensure database structure is correct
+function ensureDatabaseStructure($conn) {
+    try {
+        // Ensure bookings table exists with proper structure
+        $conn->query("CREATE TABLE IF NOT EXISTS bookings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            receipt_no VARCHAR(50) NULL,
+            room_id INT NULL,
+            type VARCHAR(50) NOT NULL DEFAULT 'reservation',
+            details TEXT,
+            status VARCHAR(50) DEFAULT 'pending',
+            checkin DATETIME NULL,
+            checkout DATETIME NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+
+        // Function to check if column exists
+        function columnExists($conn, $table, $column) {
+            $result = $conn->query("SHOW COLUMNS FROM $table LIKE '$column'");
+            return $result && $result->num_rows > 0;
+        }
+
+        // Add missing columns if they don't exist
+        $columns_to_add = [
+            'receipt_no' => 'VARCHAR(50) NULL',
+            'room_id' => 'INT NULL',
+            'type' => 'VARCHAR(50) NOT NULL DEFAULT "reservation"',
+            'details' => 'TEXT',
+            'status' => 'VARCHAR(50) DEFAULT "pending"',
+            'checkin' => 'DATETIME NULL',
+            'checkout' => 'DATETIME NULL',
+            'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+        ];
+
+        foreach ($columns_to_add as $column => $definition) {
+            if (!columnExists($conn, 'bookings', $column)) {
+                $sql = "ALTER TABLE bookings ADD COLUMN $column $definition";
+                $conn->query($sql);
+            }
+        }
+
+        // Remove user_id column if it exists (handle foreign key constraints first)
+        if (columnExists($conn, 'bookings', 'user_id')) {
+            // Drop foreign key constraints first
+            $conn->query("ALTER TABLE bookings DROP FOREIGN KEY fk_bookings_user");
+            $conn->query("ALTER TABLE bookings DROP FOREIGN KEY bookings_ibfk_1");
+            $conn->query("ALTER TABLE bookings DROP INDEX fk_bookings_user");
+            $conn->query("ALTER TABLE bookings DROP INDEX user_id");
+            // Now drop the column
+            $conn->query("ALTER TABLE bookings DROP COLUMN user_id");
+        }
+
+        // Ensure items table has room_status column
+        if (!columnExists($conn, 'items', 'room_status')) {
+            $conn->query("ALTER TABLE items ADD COLUMN room_status ENUM('available', 'reserved', 'occupied', 'clean', 'dirty', 'maintenance', 'out_of_order') DEFAULT 'available'");
+        }
+
+        // Update room status based on current bookings
+        $conn->query("UPDATE items i 
+            SET room_status = CASE 
+                WHEN EXISTS (
+                    SELECT 1 FROM bookings b 
+                    WHERE b.room_id = i.id 
+                    AND b.status = 'checked_in' 
+                    AND CURDATE() BETWEEN DATE(b.checkin) AND DATE(b.checkout)
+                ) THEN 'occupied'
+                WHEN EXISTS (
+                    SELECT 1 FROM bookings b 
+                    WHERE b.room_id = i.id 
+                    AND b.status IN ('approved', 'confirmed') 
+                    AND DATE(b.checkin) >= CURDATE()
+                ) THEN 'reserved'
+                ELSE 'available'
+            END
+            WHERE i.item_type IN ('room', 'facility')");
+
+    } catch (Exception $e) {
+        error_log("Database structure error: " . $e->getMessage());
+    }
+}
+
+// Ensure database structure is correct on every request
+ensureDatabaseStructure($conn);
+
+// Function to fix bookings with missing room_id
+function fixMissingRoomIds($conn) {
+    try {
+        // Get bookings that have NULL room_id but have details
+        $query = "SELECT id, details FROM bookings WHERE room_id IS NULL AND details IS NOT NULL";
+        $result = $conn->query($query);
+        
+        if ($result && $result->num_rows > 0) {
+            while ($booking = $result->fetch_assoc()) {
+                $details = $booking['details'];
+                $booking_id = $booking['id'];
+                
+                // Try to extract room/facility name from details and find matching item
+                $room_name = '';
+                
+                // Look for different patterns in details
+                if (preg_match('/(?:Room|Facility):\s*([^|]+)/i', $details, $matches)) {
+                    $room_name = trim($matches[1]);
+                } elseif (preg_match('/Item:\s*([^|]+)/i', $details, $matches)) {
+                    $room_name = trim($matches[1]);
+                }
+                
+                if (!empty($room_name)) {
+                    // Find matching item in items table
+                    $item_query = "SELECT id FROM items WHERE name = ? LIMIT 1";
+                    $item_stmt = $conn->prepare($item_query);
+                    $item_stmt->bind_param("s", $room_name);
+                    $item_stmt->execute();
+                    $item_result = $item_stmt->get_result();
+                    
+                    if ($item_row = $item_result->fetch_assoc()) {
+                        $room_id = $item_row['id'];
+                        
+                        // Update booking with correct room_id
+                        $update_query = "UPDATE bookings SET room_id = ? WHERE id = ?";
+                        $update_stmt = $conn->prepare($update_query);
+                        $update_stmt->bind_param("ii", $room_id, $booking_id);
+                        $update_stmt->execute();
+                        $update_stmt->close();
+                    }
+                    $item_stmt->close();
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Error fixing missing room IDs: " . $e->getMessage());
+    }
+}
+
+// Fix missing room IDs on startup (run once)
+fixMissingRoomIds($conn);
 
 /* ---------------------------
    GET: fetch_items (JSON)
@@ -71,24 +279,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             // Check if connection exists and is valid
             if (!isset($conn)) {
                 throw new Exception("Database connection not established");
+                
             }
             
+
             if ($conn->connect_error) {
                 throw new Exception("Database connection failed: " . $conn->connect_error);
             }
             
-            // Fetch bookings with minimal privacy-respecting information
+            // Fetch bookings with room/facility information
             // Show confirmed, approved, pending, and checked_in bookings
             // Include recent and future bookings (last 7 days to future)
             $query = "SELECT 
-                        details,
-                        checkin,
-                        checkout,
-                        status
-                      FROM bookings 
-                      WHERE status IN ('confirmed', 'approved', 'pending', 'checked_in')
-                      AND (checkin >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) OR checkin IS NULL)
-                      ORDER BY checkin ASC";
+                        b.details,
+                        b.checkin,
+                        b.checkout,
+                        b.status,
+                        b.room_id,
+                        i.name as room_name,
+                        i.room_number
+                      FROM bookings b
+                      LEFT JOIN items i ON b.room_id = i.id
+                      WHERE b.status IN ('confirmed', 'approved', 'pending', 'checked_in')
+                      AND (b.checkin >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) OR b.checkin IS NULL)
+                      ORDER BY b.checkin ASC";
             
             $result = $conn->query($query);
             
@@ -100,37 +314,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             
             if ($result->num_rows > 0) {
                 while ($row = $result->fetch_assoc()) {
-                    // Extract room/facility name from details
+                    // Get room/facility name from the database join
                     $room_facility = 'Room/Facility';
                     
-                    // Try to extract room/facility info from details
-                    if (!empty($row['details'])) {
-                        $details = $row['details'];
+                    // Use the actual room name from the database
+                    if (!empty($row['room_name'])) {
+                        $room_facility = $row['room_name'];
                         
-                        // Look for various patterns in details
-                        if (strpos($details, 'Room:') !== false) {
-                            preg_match('/Room:\s*([^|]+)/i', $details, $matches);
-                            if (!empty($matches[1])) {
-                                $room_facility = trim($matches[1]);
-                            }
-                        } elseif (strpos($details, 'Facility:') !== false) {
-                            preg_match('/Facility:\s*([^|]+)/i', $details, $matches);
-                            if (!empty($matches[1])) {
-                                $room_facility = trim($matches[1]);
-                            }
-                        } elseif (strpos($details, 'Item:') !== false) {
-                            preg_match('/Item:\s*([^|]+)/i', $details, $matches);
-                            if (!empty($matches[1])) {
-                                $room_facility = trim($matches[1]);
-                            }
+                        // Add room number if available
+                        if (!empty($row['room_number'])) {
+                            $room_facility .= " (Room #" . $row['room_number'] . ")";
                         }
-                        
-                        // If no specific room/facility found, try to get guest name for room identification
-                        if ($room_facility == 'Room/Facility' && strpos($details, 'Guest:') !== false) {
-                            preg_match('/Guest:\s*([^|]+)/i', $details, $matches);
-                            if (!empty($matches[1])) {
-                                $guest_name = trim($matches[1]);
-                                $room_facility = "Room for " . substr($guest_name, 0, 1) . "***"; // Privacy: show first letter only
+                    } else {
+                        // Enhanced fallback: try to extract room info from details
+                        if (!empty($row['details'])) {
+                            $details = $row['details'];
+                            
+                            // Try multiple patterns to extract room/facility names
+                            if (strpos($details, 'Item:') !== false) {
+                                preg_match('/Item:\s*([^|]+)/i', $details, $matches);
+                                if (!empty($matches[1])) {
+                                    $room_facility = trim($matches[1]);
+                                }
+                            } elseif (strpos($details, 'Room:') !== false) {
+                                preg_match('/Room:\s*([^|]+)/i', $details, $matches);
+                                if (!empty($matches[1])) {
+                                    $room_facility = trim($matches[1]);
+                                }
+                            } elseif (strpos($details, 'Facility:') !== false) {
+                                preg_match('/Facility:\s*([^|]+)/i', $details, $matches);
+                                if (!empty($matches[1])) {
+                                    $room_facility = trim($matches[1]);
+                                }
+                            } else {
+                                // Try to extract any meaningful room information
+                                $patterns = [
+                                    '/(?:Room|Facility|Item)\s*[:#]\s*([^|,\n]+)/i',
+                                    '/([A-Za-z\s]+(?:Room|Suite|Hall|Facility))/i',
+                                    '/^([^|]+)/'  // First part before any separator
+                                ];
+                                
+                                foreach ($patterns as $pattern) {
+                                    if (preg_match($pattern, $details, $matches)) {
+                                        $potential_name = trim($matches[1]);
+                                        if (strlen($potential_name) > 3 && strlen($potential_name) < 50) {
+                                            $room_facility = $potential_name;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -138,6 +370,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                     // Set dates - use today if checkin is null
                     $start_date = $row['checkin'] ?: date('Y-m-d');
                     $end_date = $row['checkout'] ?: date('Y-m-d', strtotime($start_date . ' +1 day'));
+                    
+                    // For FullCalendar: end date should be the day AFTER the last day for all-day events
+                    $calendar_end_date = date('Y-m-d', strtotime($end_date . ' +1 day'));
+                    
+                    // Calculate duration for display
+                    $duration_days = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24);
+                    $duration_text = $duration_days > 1 ? " ({$duration_days} days)" : " (1 day)";
                     
                     // Set color based on status
                     $color = '#dc3545'; // Default red for occupied
@@ -151,25 +390,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                         $status_text = 'Occupied';
                     }
                     
-                    // Create calendar event with privacy protection
+                    // Create calendar event with duration info
                     $events[] = [
-                        'title' => $room_facility . ' - ' . $status_text,
+                        'title' => $room_facility . ' - ' . $status_text . $duration_text,
                         'start' => $start_date,
-                        'end' => $end_date,
+                        'end' => $calendar_end_date,
                         'backgroundColor' => $color,
                         'borderColor' => $color,
                         'textColor' => '#ffffff',
-                        'allDay' => false,
+                        'allDay' => true, // Changed to true for proper multi-day display
                         'extendedProps' => [
                             'facility' => $room_facility,
                             'status' => strtolower($status_text),
-                            'booking_status' => $row['status']
+                            'booking_status' => $row['status'],
+                            'checkin_date' => $start_date,
+                            'checkout_date' => $end_date,
+                            'duration_days' => $duration_days
                         ]
                     ];
                 }
             }
             
             // Return JSON response
+            error_log("Calendar API: Returning " . count($events) . " events");
+            foreach ($events as $event) {
+                error_log("Event: " . $event['title']);
+            }
             echo json_encode($events);
             
         } catch (Exception $e) {
@@ -177,7 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             error_log("Guest availability error: " . $e->getMessage());
             
             // Return error response
-            http_response_code(500);
+            http_response_code(500); 
             echo json_encode([
                 'error' => 'Failed to fetch availability data',
                 'message' => $e->getMessage(),
@@ -249,6 +495,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                 'error' => $e->getMessage()
             ]);
         }
+        $conn->close();
+        exit;
+    }
+
+    if ($_GET['action'] === 'get_available_count') {
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET');
+        
+        try {
+            // Check if connection exists and is valid
+            if (!isset($conn)) {
+                throw new Exception("Database connection not established");
+            }
+            
+            if ($conn->connect_error) {
+                throw new Exception("Database connection failed: " . $conn->connect_error);
+            }
+            
+            // Count available rooms and facilities
+            // Available means: room_status is 'available' or 'clean' AND not currently booked
+            $query = "SELECT COUNT(*) as available_count FROM items i 
+                      WHERE (i.room_status = 'available' OR i.room_status = 'clean')
+                      AND i.id NOT IN (
+                          SELECT DISTINCT b.room_id 
+                          FROM bookings b 
+                          WHERE b.room_id IS NOT NULL 
+                          AND b.status IN ('confirmed', 'approved', 'pending', 'checked_in')
+                          AND (
+                              (b.checkin <= CURDATE() AND b.checkout >= CURDATE()) OR
+                              (b.checkin = CURDATE())
+                          )
+                      )";
+            
+            $result = $conn->query($query);
+            
+            if (!$result) {
+                throw new Exception("Query failed: " . $conn->error);
+            }
+            
+            $row = $result->fetch_assoc();
+            $availableCount = $row['available_count'] ?? 0;
+            
+            echo json_encode([
+                'success' => true,
+                'available_count' => (int)$availableCount,
+                'query_time' => date('Y-m-d H:i:s')
+            ]);
+            
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'available_count' => 0
+            ]);
+        }
+        
         $conn->close();
         exit;
     }
@@ -376,6 +679,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         exit;
     }
 
+    // Fix missing room IDs in bookings
+    if ($_GET['action'] === 'fix_room_ids') {
+        header('Content-Type: application/json');
+        
+        try {
+            fixMissingRoomIds($conn);
+            
+            // Get count of fixed bookings
+            $count_query = "SELECT COUNT(*) as fixed_count FROM bookings WHERE room_id IS NOT NULL";
+            $count_result = $conn->query($count_query);
+            $fixed_count = $count_result ? $count_result->fetch_assoc()['fixed_count'] : 0;
+            
+            $remaining_query = "SELECT COUNT(*) as remaining_count FROM bookings WHERE room_id IS NULL";
+            $remaining_result = $conn->query($remaining_query);
+            $remaining_count = $remaining_result ? $remaining_result->fetch_assoc()['remaining_count'] : 0;
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Room ID fixing completed!',
+                'fixed_bookings' => $fixed_count,
+                'remaining_null' => $remaining_count
+            ]);
+            
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Error fixing room IDs: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
     // Get feedback data for admin
     if ($_GET['action'] === 'get_feedback_data') {
         header('Content-Type: application/json');
@@ -402,11 +737,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             $limit = (int)($_GET['limit'] ?? 50);
             $offset = (int)($_GET['offset'] ?? 0);
             
-            // Get feedback with user details
-            $stmt = $conn->prepare("SELECT f.id, f.rating, f.message, f.created_at, 
-                                   u.username, u.email 
+            // Get feedback without user details (anonymous feedback)
+            $stmt = $conn->prepare("SELECT f.id, f.rating, f.message, f.created_at
                                    FROM feedback f 
-                                   JOIN users u ON f.user_id = u.id 
                                    ORDER BY f.created_at DESC 
                                    LIMIT ? OFFSET ?");
             $stmt->bind_param("ii", $limit, $offset);
@@ -415,6 +748,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             
             $feedback = [];
             while ($row = $result->fetch_assoc()) {
+                // Add anonymous guest identifier
+                $row['username'] = 'Guest';
+                $row['email'] = '';
                 $feedback[] = $row;
             }
             $stmt->close();
@@ -446,6 +782,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         }
         exit;
     }
+
+
 }
 
 /* ---------------------------
@@ -453,164 +791,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
    --------------------------- */
 $action = $_POST['action'] ?? '';
 
-/* ---------------------------
-   SIGNUP
-   --------------------------- */
-if ($action === 'signup') {
-    $username = trim($_POST['username'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $confirm = $_POST['confirm_password'] ?? '';
 
-    if ($username === '' || $email === '' || $password === '') {
-        $_SESSION['signup_error'] = "Please fill required fields.";
-        redirect('../index.php');
-    }
-    if ($password !== $confirm) {
-        $_SESSION['signup_error'] = "Passwords do not match.";
-        redirect('../index.php');
-    }
-
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1");
-    $stmt->bind_param("ss", $username, $email);
-    $stmt->execute();
-    $stmt->store_result();
-    if ($stmt->num_rows > 0) {
-        $_SESSION['signup_error'] = "Username or email already exists.";
-        $stmt->close();
-        redirect('../index.php');
-    }
-    $stmt->close();
-
-    $hashed = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $username, $email, $hashed);
-
-    if ($stmt->execute()) {
-        $newUserId = $stmt->insert_id;
-        $_SESSION['user_id'] = $newUserId;
-        $_SESSION['username'] = $username;
-        $_SESSION['is_admin'] = false;
-        $_SESSION['signup_success'] = "Signup successful. You are now logged in.";
-        redirect('../Guest.php');
-    } else {
-        $_SESSION['signup_error'] = "Error creating account.";
-        redirect('../index.php');
-    }
-}
-
-/* ---------------------------
-   LOGIN
-   --------------------------- */
-
-$action = $_POST['action'] ?? '';
-
-if ($action === 'login') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    if ($username === '' || $password === '') {
-        $_SESSION['login_error'] = "Fill both username and password.";
-        header('Location: ../index.php'); // optional if you want to reload
-        exit;
-    }
-
-    // Check users table
-    $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = ? LIMIT 1");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $user = $res->fetch_assoc();
-    $stmt->close();
-
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = (int)$user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['user_logged_in'] = true;
-
-        // Check admin status
-        $stmt = $conn->prepare("SELECT id FROM admins WHERE username = ? LIMIT 1");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $stmt->store_result();
-        $_SESSION['is_admin'] = ($stmt->num_rows > 0);
-        if ($_SESSION['is_admin']) {
-            $_SESSION['admin_logged_in'] = true;
-        }
-        $stmt->close();
-
-        echo json_encode(['success' => true]); // return JSON success
-        exit;
-    }
-
-    $_SESSION['login_error'] = "Invalid username or password.";
-    echo json_encode(['success' => false, 'error' => $_SESSION['login_error']]);
-    exit;
-}
-
-
-/* ---------------------------
-   LOGOUT
-   --------------------------- */
-if ($action === 'logout') {
-    session_unset();
-    session_destroy();
-    redirect('../index.php');
-}
-
-/* ---------------------------
-   UPDATE PROFILE
-   --------------------------- */
-if ($action === 'update_profile') {
-    if (!isset($_SESSION['user_id'])) die("You must be logged in.");
-    $user_id = (int)$_SESSION['user_id'];
-    $username = trim($_POST['username'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    if ($username === '' || $email === '') {
-        $_SESSION['profile_error'] = "Username and email cannot be empty.";
-        redirect('../Guest.php');
-    }
-
-    $stmt = $conn->prepare("SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ? LIMIT 1");
-    $stmt->bind_param("ssi", $username, $email, $user_id);
-    $stmt->execute();
-    $stmt->store_result();
-    if ($stmt->num_rows > 0) {
-        $_SESSION['profile_error'] = "Username or email already used by another account.";
-        $stmt->close();
-        redirect('../Guest.php');
-    }
-    $stmt->close();
-
-    if (!empty($password)) {
-        $hashed = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE users SET username=?, email=?, password=? WHERE id=?");
-        $stmt->bind_param("sssi", $username, $email, $hashed, $user_id);
-    } else {
-        $stmt = $conn->prepare("UPDATE users SET username=?, email=? WHERE id=?");
-        $stmt->bind_param("ssi", $username, $email, $user_id);
-    }
-
-    if ($stmt->execute()) {
-        $_SESSION['username'] = $username;
-        $_SESSION['profile_success'] = "Profile updated.";
-    } else {
-        $_SESSION['profile_error'] = "Error updating profile.";
-    }
-    $stmt->close();
-    redirect('../Guest.php');
-}
 
 /* ---------------------------
    CREATE BOOKING
    --------------------------- */
 if ($action === 'create_booking') {
-    if (!isset($_SESSION['user_id'])) die("You must be logged in to book.");
-    $user_id = (int)$_SESSION['user_id'];
+
+    // No user_id needed for guest bookings
     $type = $_POST['booking_type'] ?? '';
     $status = "pending";
+    $room_id = (int)($_POST['room_id'] ?? 0);
+
+    // Discount application fields
+    $discount_type = $_POST['discount_type'] ?? '';
+    $discount_details = $_POST['discount_details'] ?? '';
+    $discount_proof_path = '';
+
+    // Handle file upload for discount proof
+    if (!empty($discount_type) && isset($_FILES['discount_proof']) && $_FILES['discount_proof']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = __DIR__ . '/../uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        $file_tmp = $_FILES['discount_proof']['tmp_name'];
+        $file_ext = pathinfo($_FILES['discount_proof']['name'], PATHINFO_EXTENSION);
+        $file_name = time() . '_' . uniqid() . '.' . $file_ext;
+        $target_path = $upload_dir . $file_name;
+        if (move_uploaded_file($file_tmp, $target_path)) {
+            $discount_proof_path = 'uploads/' . $file_name;
+        }
+    }
+
+    // Validate room/facility selection
+    if ($room_id <= 0) {
+        handleResponse("Please select a room or facility.", false, '../Guest.php');
+    }
+
+    // Get room/facility details for validation and details
+    $room_stmt = $conn->prepare("SELECT id, name, item_type, room_status, capacity, price FROM items WHERE id = ?");
+    $room_stmt->bind_param("i", $room_id);
+    $room_stmt->execute();
+    $room_result = $room_stmt->get_result();
+    $room_data = $room_result->fetch_assoc();
+    $room_stmt->close();
+
+    if (!$room_data) {
+        handleResponse("Selected room/facility not found.", false, '../Guest.php');
+    }
+
+    // Check if room/facility is available
+    if (!in_array($room_data['room_status'], ['available', 'clean'])) {
+        handleResponse("Selected " . $room_data['item_type'] . " is not available. Current status: " . $room_data['room_status'], false, '../Guest.php');
+    }
 
     if ($type === 'reservation') {
         // Get the receipt number from the form
@@ -647,42 +880,121 @@ if ($action === 'create_booking') {
         $occupants = (int)($_POST['occupants'] ?? 1);
         $company = $conn->real_escape_string($_POST['company'] ?? '');
 
-        $details = "Receipt: $receipt_no | Guest: $guest_name | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company";
+        // Validate dates
+        if (empty($checkin) || empty($checkout)) {
+            handleResponse("Please provide check-in and check-out dates.", false, '../Guest.php');
+        }
 
-        // Try to insert with receipt_no column, fallback if column doesn't exist
+        if (strtotime($checkin) >= strtotime($checkout)) {
+            handleResponse("Check-out date must be after check-in date.", false, '../Guest.php');
+        }
+
+        // Check for double booking
+        $conflict_stmt = $conn->prepare("SELECT id FROM bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending', 'checked_in') AND ((checkin BETWEEN ? AND ?) OR (checkout BETWEEN ? AND ?) OR (checkin <= ? AND checkout >= ?))");
+        $conflict_stmt->bind_param("issssss", $room_id, $checkin, $checkout, $checkin, $checkout, $checkin, $checkout);
+        $conflict_stmt->execute();
+        $conflict_result = $conflict_stmt->get_result();
+        
+        if ($conflict_result->num_rows > 0) {
+            $conflict_stmt->close();
+            handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../Guest.php');
+        }
+        $conflict_stmt->close();
+
+        // Validate occupancy
+        if ($occupants > $room_data['capacity']) {
+            handleResponse("Number of occupants (" . $occupants . ") exceeds " . $room_data['item_type'] . " capacity (" . $room_data['capacity'] . ").", false, '../Guest.php');
+        }
+
+        // Add discount info to details
+        $discount_info = '';
+        if (!empty($discount_type)) {
+            $discount_info = " | Discount: $discount_type | Discount Details: $discount_details | Proof: $discount_proof_path";
+        }
+
+        $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
+
+        // Try to insert with room_id and receipt_no columns
         try {
-            $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, receipt_no, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("issssss", $user_id, $type, $receipt_no, $details, $status, $checkin, $checkout);
-            $success = $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            // If receipt_no column doesn't exist or is wrong type, try to fix it
-            if (strpos($e->getMessage(), 'receipt_no') !== false) {
-                try {
-                    // Try to add/fix the column
-                    $conn->query("ALTER TABLE bookings DROP COLUMN IF EXISTS receipt_no");
-                    $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
-                    
-                    // Retry the insert
-                    $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, receipt_no, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->bind_param("issssss", $user_id, $type, $receipt_no, $details, $status, $checkin, $checkout);
-                    $success = $stmt->execute();
-                } catch (Exception $e2) {
-                    // Fallback to original format without receipt_no column
-                    $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?)");
-                    $stmt->bind_param("isssss", $user_id, $type, $details, $status, $checkin, $checkout);
-                    $success = $stmt->execute();
-                }
-            } else {
-                throw $e;
+            // Debug: Log what we're trying to insert
+            error_log("Booking Debug - Type: $type, Room ID: $room_id, Receipt: $receipt_no");
+            error_log("Booking Debug - Details: " . substr($details, 0, 100));
+            error_log("Booking Debug - Status: $status, Checkin: $checkin, Checkout: $checkout");
+
+            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . $conn->error);
             }
+
+            $stmt->bind_param("sisssss", $type, $room_id, $receipt_no, $details, $status, $checkin, $checkout);
+            $success = $stmt->execute();
+
+            if (!$success) {
+                throw new Exception("Execute failed: " . $stmt->error);
+            }
+
+            if ($success) {
+                // Update room status to reserved
+                $update_status = $conn->prepare("UPDATE items SET room_status = 'reserved' WHERE id = ?");
+                $update_status->bind_param("i", $room_id);
+                $update_status->execute();
+                $update_status->close();
+
+                // Send email to admin if discount was applied
+                if (!empty($discount_type)) {
+                    $admin_email = 'pc.clemente11@gmail.com'; // Change to your admin email
+                    $subject = "New Discount Application - $discount_type";
+                    $message = "A guest has applied for a discount.<br><br>" .
+                        "<b>Guest:</b> $guest_name<br>" .
+                        "<b>Email:</b> $email<br>" .
+                        "<b>Contact:</b> $contact<br>" .
+                        "<b>Room/Facility:</b> " . $room_data['name'] . "<br>" .
+                        "<b>Check-in:</b> $checkin<br>" .
+                        "<b>Check-out:</b> $checkout<br>" .
+                        "<b>Discount Type:</b> $discount_type<br>" .
+                        "<b>Discount Details:</b> $discount_details<br>" .
+                        (!empty($discount_proof_path) ? ("<b>Proof:</b> <a href='" . $discount_proof_path . "'>View Proof</a><br>") : "") .
+                        "<br>Please review and approve/reject in the admin portal.";
+                    send_smtp_mail($admin_email, $subject, $message);
+
+                    // Send confirmation email to guest
+                    if (!empty($email)) {
+                        $guest_subject = 'Discount Application Received';
+                        $guest_message = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; padding: 24px; background: #fafbfc;'>"
+                            . "<h2 style='color: #2d7be5;'>BarCIE International Center</h2>"
+                            . "<p>Dear <b>" . htmlspecialchars($guest_name) . "</b>,</p>"
+                            . "<p>We have <b>received your discount application</b> for your reservation request at BarCIE International Center.</p>"
+                            . "<ul style='background: #f6f8fa; border-radius: 6px; padding: 16px; list-style: none;'>"
+                            . "<li><b>Room/Facility:</b> " . htmlspecialchars($room_data['name']) . "</li>"
+                            . "<li><b>Check-in:</b> " . htmlspecialchars($checkin) . "</li>"
+                            . "<li><b>Check-out:</b> " . htmlspecialchars($checkout) . "</li>"
+                            . "<li><b>Discount Type:</b> " . htmlspecialchars($discount_type) . "</li>"
+                            . "</ul>"
+                            . "<p style='margin-top: 18px;'>Our team will review your application and notify you by email once your discount is <b>approved or rejected</b>.</p>"
+                            . "<p style='color: #888;'>If you have questions, please reply to this email or contact us at info@barcie.com.</p>"
+                            . "<p style='margin-top: 32px; color: #2d7be5;'><b>Thank you for choosing BarCIE International Center!</b></p>"
+                            . "</div>";
+                        send_smtp_mail($email, $guest_subject, $guest_message);
+                    }
+                }
+
+                handleResponse("Reservation saved successfully with receipt number: $receipt_no for " . $room_data['name'], true, '../Guest.php');
+            } else {
+                handleResponse("Error saving reservation: " . $stmt->error, false, '../Guest.php');
+                error_log("Booking insert error: " . $stmt->error);
+            }
+            $stmt->close();
+        } catch (mysqli_sql_exception $e) {
+            handleResponse("Database error: " . $e->getMessage(), false, '../Guest.php');
+            error_log("Booking creation exception: " . $e->getMessage());
+        } catch (Exception $e) {
+            handleResponse("Unexpected error: " . $e->getMessage(), false, '../Guest.php');
+            error_log("Booking creation general exception: " . $e->getMessage());
         }
         
-        $_SESSION['booking_msg'] = $success ? "Reservation saved with receipt number: $receipt_no" : "Error: " . $stmt->error;
-        $stmt->close();
     } elseif ($type === 'pencil') {
         $pencil_date = $_POST['pencil_date'] ?? null;
         $event = $conn->real_escape_string($_POST['event_type'] ?? '');
-        $hall = $conn->real_escape_string($_POST['hall'] ?? '');
         $pax = (int)($_POST['pax'] ?? 1);
         $time_from = $_POST['time_from'] ?? '';
         $time_to = $_POST['time_to'] ?? '';
@@ -691,42 +1003,76 @@ if ($action === 'create_booking') {
         $contact_number = $conn->real_escape_string($_POST['contact_number'] ?? '');
         $company = $conn->real_escape_string($_POST['company'] ?? '');
 
-        $details = "Pencil Booking | Date: $pencil_date | Event: $event | Hall: $hall | Pax: $pax | Time: $time_from-$time_to | Caterer: $caterer | Contact: $contact_person ($contact_number) | Company: $company";
+        // Validate facility type for pencil booking
+        if ($room_data['item_type'] !== 'facility') {
+            handleResponse("Pencil bookings are only available for facilities/function halls.", false, '../Guest.php');
+        }
 
-        $stmt = $conn->prepare("INSERT INTO bookings (user_id, type, details, status, checkin) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("issss", $user_id, $type, $details, $status, $pencil_date);
-        $_SESSION['booking_msg'] = $stmt->execute() ? "Pencil booking saved." : "Error: " . $stmt->error;
-        $stmt->close();
+        // Validate pax capacity
+        if ($pax > $room_data['capacity']) {
+            handleResponse("Number of guests (" . $pax . ") exceeds facility capacity (" . $room_data['capacity'] . ").", false, '../Guest.php');
+        }
+
+        // Check for conflicts on the same date
+        if (!empty($pencil_date)) {
+            $conflict_stmt = $conn->prepare("SELECT id FROM bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending') AND DATE(checkin) = ?");
+            $conflict_stmt->bind_param("is", $room_id, $pencil_date);
+            $conflict_stmt->execute();
+            $conflict_result = $conflict_stmt->get_result();
+            
+            if ($conflict_result->num_rows > 0) {
+                $conflict_stmt->close();
+                handleResponse("Sorry, the selected facility is already booked for " . $pencil_date . ".", false, '../Guest.php');
+            }
+            $conflict_stmt->close();
+        }
+
+        $details = "Pencil Booking | Facility: " . $room_data['name'] . " | Date: $pencil_date | Event: $event | Pax: $pax | Time: $time_from-$time_to | Caterer: $caterer | Contact: $contact_person ($contact_number) | Company: $company";
+
+        try {
+            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, details, status, checkin) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("sisss", $type, $room_id, $details, $status, $pencil_date);
+            $success = $stmt->execute();
+            
+            if ($success) {
+                // Update facility status to reserved
+                $update_status = $conn->prepare("UPDATE items SET room_status = 'reserved' WHERE id = ?");
+                $update_status->bind_param("i", $room_id);
+                $update_status->execute();
+                $update_status->close();
+                
+                handleResponse("Pencil booking saved for " . $room_data['name'] . " on " . $pencil_date, true, '../Guest.php');
+            } else {
+                handleResponse("Error: " . $stmt->error, false, '../Guest.php');
+            }
+            $stmt->close();
+        } catch (mysqli_sql_exception $e) {
+            handleResponse("Database error: " . $e->getMessage(), false, '../Guest.php');
+        }
     } else {
-        $_SESSION['booking_msg'] = "Unknown booking type.";
+        handleResponse("Unknown booking type.", false, '../Guest.php');
     }
-
-    redirect('../Guest.php');
 }
 
 /* ---------------------------
    SUBMIT FEEDBACK
    --------------------------- */
 if ($action === 'submit_feedback' || $action === 'feedback') {
-    if (!isset($_SESSION['user_id'])) die("You must be logged in to submit feedback.");
-    $user_id = (int)$_SESSION['user_id'];
+    // No user_id needed for guest feedback
     $message = trim($_POST['message'] ?? '');
     $rating = (int)($_POST['rating'] ?? 0);
     
     if ($rating < 1 || $rating > 5) {
-        $_SESSION['feedback_error'] = "Please select a star rating.";
-        redirect('../Guest.php#feedback');
+        handleResponse("Please select a star rating.", false, '../Guest.php#feedback');
     }
     
-    // Create feedback table if it doesn't exist
+    // Create feedback table if it doesn't exist (no user_id needed)
     try {
         $conn->query("CREATE TABLE IF NOT EXISTS feedback (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
             rating INT NOT NULL DEFAULT 5,
             message TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_user_id (user_id),
             INDEX idx_rating (rating),
             INDEX idx_created_at (created_at)
         )");
@@ -734,7 +1080,13 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
         // Check if rating column exists, add if missing
         $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
         if ($result && $result->num_rows == 0) {
-            $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5 AFTER user_id");
+            $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5");
+        }
+        
+        // Remove user_id column if it exists
+        $user_id_exists = $conn->query("SHOW COLUMNS FROM feedback LIKE 'user_id'");
+        if ($user_id_exists && $user_id_exists->num_rows > 0) {
+            $conn->query("ALTER TABLE feedback DROP COLUMN user_id");
         }
         
         // Try to add check constraint (ignore if already exists)
@@ -747,17 +1099,16 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
         error_log("Error creating/updating feedback table: " . $e->getMessage());
     }
     
-    $stmt = $conn->prepare("INSERT INTO feedback (user_id, rating, message) VALUES (?, ?, ?)");
-    $stmt->bind_param("iis", $user_id, $rating, $message);
+    $stmt = $conn->prepare("INSERT INTO feedback (rating, message) VALUES (?, ?)");
+    $stmt->bind_param("is", $rating, $message);
     
     if ($stmt->execute()) {
-        $_SESSION['feedback_success'] = "Thank you for your " . $rating . "-star feedback!";
+        handleResponse("Thank you for your " . $rating . "-star feedback!", true, '../Guest.php#feedback');
     } else {
-        $_SESSION['feedback_error'] = "Error submitting feedback. Please try again.";
+        handleResponse("Error submitting feedback. Please try again.", false, '../Guest.php#feedback');
         error_log("Feedback submission error: " . $stmt->error);
     }
     $stmt->close();
-    redirect('../Guest.php#feedback');
 }
 
 /* ---------------------------
@@ -784,12 +1135,117 @@ if ($action === 'admin_update_booking') {
         redirect('../dashboard.php');
     }
 
-    $stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
     $newStatus = $statusMap[$adminAction];
+    
+    // Get booking details first
+    $booking_stmt = $conn->prepare("SELECT room_id, status, details FROM bookings WHERE id = ?");
+    $booking_stmt->bind_param("i", $bookingId);
+    $booking_stmt->execute();
+    $booking_result = $booking_stmt->get_result();
+    $booking_data = $booking_result->fetch_assoc();
+    $booking_stmt->close();
+
+    // Update booking status
+    $stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
     $stmt->bind_param("si", $newStatus, $bookingId);
-    $_SESSION['msg'] = $stmt->execute() ? "Booking #$bookingId updated." : "Error updating booking.";
+    $success = $stmt->execute();
     $stmt->close();
-    redirect('../dashboard.php');
+
+    if ($success && $booking_data && $booking_data['room_id']) {
+    // Notify guest about discount status if discount was applied
+    if ($success && $booking_data && isset($booking_data['details'])) {
+        $details = $booking_data['details'];
+        $guest_email = '';
+        $guest_name = 'Guest';
+        $discount_type = '';
+        if (preg_match('/Email:\s*([^|]+)/', $details, $matches)) {
+            $guest_email = trim($matches[1]);
+        }
+        if (preg_match('/Guest:\s*([^|]+)/', $details, $matches)) {
+            $guest_name = trim($matches[1]);
+        }
+        if (preg_match('/Discount: ([^|]+)/', $details, $matches)) {
+            $discount_type = trim($matches[1]);
+        }
+        if ($guest_email && $discount_type) {
+            $subject = '';
+            $message = '';
+            if ($adminAction === 'approve') {
+                $subject = 'Discount Application Approved';
+                $message = "Dear $guest_name,<br><br>Your discount application ($discount_type) has been <b>approved</b>.<br>You may now continue your reservation with the discounted price.<br><br>Thank you for choosing BarCIE International Center.";
+            } elseif ($adminAction === 'reject') {
+                $subject = 'Discount Application Rejected';
+                $message = "Dear $guest_name,<br><br>We regret to inform you that your discount application ($discount_type) was <b>not approved</b>.<br>The original price per day will apply to your reservation.<br><br>Thank you for your understanding.";
+            }
+            if ($subject && $message) {
+                send_smtp_mail($guest_email, $subject, $message);
+            }
+        }
+    }
+        // Update room status based on booking status
+        $room_id = $booking_data['room_id'];
+        $room_status = 'available'; // default
+        
+        switch ($adminAction) {
+            case 'approve':
+                $room_status = 'reserved';
+                break;
+            case 'checkin':
+                $room_status = 'occupied';
+                break;
+            case 'checkout':
+                $room_status = 'dirty'; // needs cleaning after checkout
+                break;
+            case 'reject':
+            case 'cancel':
+                // Check if there are other active bookings for this room
+                $check_stmt = $conn->prepare("SELECT COUNT(*) as active_bookings FROM bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending', 'checked_in') AND id != ?");
+                $check_stmt->bind_param("ii", $room_id, $bookingId);
+                $check_stmt->execute();
+                $check_result = $check_stmt->get_result();
+                $check_data = $check_result->fetch_assoc();
+                $check_stmt->close();
+                
+                if ($check_data['active_bookings'] == 0) {
+                    $room_status = 'available';
+                } else {
+                    $room_status = 'reserved'; // keep as reserved if other bookings exist
+                }
+                break;
+        }
+        
+        // Update room status
+        $room_update = $conn->prepare("UPDATE items SET room_status = ? WHERE id = ?");
+        $room_update->bind_param("si", $room_status, $room_id);
+        $room_update->execute();
+        $room_update->close();
+    }
+
+    // Check if this is an AJAX request
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    
+    if ($isAjax) {
+        // Return JSON response for AJAX requests
+        header('Content-Type: application/json');
+        if ($success) {
+            echo json_encode([
+                'success' => true, 
+                'message' => "Booking #$bookingId updated to $newStatus successfully.",
+                'status' => $newStatus
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, 
+                'error' => "Error updating booking #$bookingId."
+            ]);
+        }
+        exit;
+    } else {
+        // Traditional redirect for non-AJAX requests
+        $_SESSION['msg'] = $success ? "Booking #$bookingId updated to $newStatus." : "Error updating booking.";
+        redirect('../dashboard.php');
+    }
 }
 
 /* ---------------------------
@@ -876,6 +1332,53 @@ if ($action === 'send_chat_message') {
     
     // Temporarily disabled to fix feedback system
     echo json_encode(['success' => false, 'error' => 'Chat system temporarily disabled']);
+    exit;
+}
+
+/* ---------------------------
+   GET BOOKING DETAILS (ADMIN ONLY)
+   --------------------------- */
+if ($action === 'get_booking_details') {
+    header('Content-Type: application/json');
+    
+    // Admin access check
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        echo json_encode(['success' => false, 'error' => 'Admin access required']);
+        exit;
+    }
+    
+    $booking_id = (int)($_POST['booking_id'] ?? 0);
+    
+    if ($booking_id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Invalid booking ID']);
+        exit;
+    }
+    
+    try {
+        $stmt = $conn->prepare("
+            SELECT b.*, i.name as room_name, i.item_type, i.room_number, i.capacity, i.price
+            FROM bookings b 
+            LEFT JOIN items i ON b.room_id = i.id 
+            WHERE b.id = ?
+        ");
+        $stmt->bind_param("i", $booking_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($booking = $result->fetch_assoc()) {
+            echo json_encode([
+                'success' => true,
+                'booking' => $booking
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Booking not found']);
+        }
+        
+        $stmt->close();
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    }
+    
     exit;
 }
 

@@ -82,6 +82,7 @@
       box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     }
 
+    
     /* Hero Section */
     .hero-section {
       height: 100vh;
@@ -244,9 +245,7 @@
         </ul>
 
         <div class="navbar-nav">
-          <button class="btn btn-outline-custom me-2" onclick="showSection('user-auth')">
-            <i class="fas fa-user me-1"></i> Guest Login
-          </button>
+         
           <button class="btn btn-primary-custom" onclick="showSection('admin-login')">
             <i class="fas fa-shield-alt me-1"></i> Admin
           </button>
@@ -268,8 +267,8 @@
             Management. Experience world-class hospitality education and services.
           </p>
           <div class="d-flex flex-wrap gap-3">
-            <button class="btn btn-primary-custom btn-lg" onclick="showSection('user-auth')">
-              <i class="fas fa-rocket me-2"></i>Get Started
+            <button class="btn btn-primary-custom btn-lg" onclick="window.location.href='Guest.php'">
+              <i class="fas fa-arrow-right me-2"></i>Get Started
             </button>
             <button class="btn btn-outline-custom btn-lg" onclick="scrollToSection('about')">
               <i class="fas fa-info-circle me-2"></i>Learn More

@@ -13,7 +13,8 @@ function initializeDashboard() {
   setupMobileMenu();
   setupSectionNavigation();
   initializeCalendar();
-  initializeCharts();
+  // Wait for Chart.js to be available before initializing charts
+  waitForChartJS();
   enhanceForms();
   setupDarkMode();
   enhanceDataTables();
@@ -21,28 +22,42 @@ function initializeDashboard() {
   setupBookingForms();
   // setupCommunication(); // Temporarily disabled to fix feedback system
   initializeFeedbackManagement();
+  
+  // Initialize calendar & items functionality
+  initializeCalendarNavigation();
+  initializeRoomSearch();
+  initializeRoomCalendar();
+}
+
+// Wait for Chart.js to be loaded before initializing charts
+function waitForChartJS() {
+  if (typeof Chart !== "undefined") {
+    initializeCharts();
+  } else {
+    setTimeout(waitForChartJS, 100);
+  }
 }
 
 // Initialize Bootstrap Components
 function setupBootstrapComponents() {
   // Initialize tooltips
-  var tooltipTriggerList = [].slice.call(
+  const tooltipTriggerList = [].slice.call(
     document.querySelectorAll('[data-bs-toggle="tooltip"]')
   );
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
 
   // Initialize popovers
-  var popoverTriggerList = [].slice.call(
+  const popoverTriggerList = [].slice.call(
     document.querySelectorAll('[data-bs-toggle="popover"]')
   );
-  var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+  popoverTriggerList.map(function (popoverTriggerEl) {
     return new bootstrap.Popover(popoverTriggerEl);
   });
 
   // Initialize modals
-  var modalList = [].slice.call(document.querySelectorAll(".modal"));
+  const modalList = [].slice.call(document.querySelectorAll(".modal"));
   modalList.map(function (modalEl) {
     return new bootstrap.Modal(modalEl);
   });
@@ -122,12 +137,11 @@ function setupSectionNavigation() {
 
 // Enhanced Section Switching
 function showSection(sectionId) {
-  console.log("Showing section:", sectionId); // Debug log
-
-  // Hide all sections
+  // Hide all sections - use both CSS classes and display property for consistency
   document.querySelectorAll(".content-section").forEach((section) => {
     section.classList.add("d-none");
     section.classList.remove("d-block", "active");
+    section.style.display = "none";
   });
 
   // Show target section
@@ -135,17 +149,20 @@ function showSection(sectionId) {
   if (targetSection) {
     targetSection.classList.remove("d-none");
     targetSection.classList.add("d-block", "active");
+    targetSection.style.display = "block";
 
     // Add animation
     targetSection.style.animation = "slideInFromRight 0.5s ease";
-    console.log("Section displayed:", sectionId); // Debug log
-    
+
+    // Store the active section
+    localStorage.setItem("activeSection", sectionId);
+
     // Dispatch custom event for section change
-    document.dispatchEvent(new CustomEvent('sectionChanged', {
-      detail: { section: sectionId }
-    }));
-  } else {
-    console.error("Section not found:", sectionId); // Debug log
+    document.dispatchEvent(
+      new CustomEvent("sectionChanged", {
+        detail: { section: sectionId },
+      })
+    );
   }
 
   // Close mobile menu if open
@@ -602,32 +619,65 @@ async function loadItems() {
     const container = document.getElementById("cards-grid");
     if (container) {
       container.innerHTML = "";
+
+      // Create counters object to track counts
+      const counters = {
+        room: 0,
+        facility: 0,
+      };
+
       items.forEach((item) => {
+        // Increment counter based on item type
+        counters[item.item_type] = (counters[item.item_type] || 0) + 1;
+
         const card = document.createElement("div");
-        card.classList.add("card");
+        card.classList.add("card", "shadow-sm");
         card.dataset.type = item.item_type;
         card.innerHTML = `
-                    ${
-                      item.image
-                        ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">`
-                        : ""
-                    }
-                    <h3>${item.name}</h3>
-                    ${
-                      item.room_number
-                        ? `<p>Room Number: ${item.room_number}</p>`
-                        : ""
-                    }
-                    <p>Capacity: ${item.capacity} ${
+          <div class="card-body">
+            ${
+              item.image
+                ? `<img src="${item.image}" class="card-img-top mb-3" style="height:150px;object-fit:cover;">`
+                : ""
+            }
+            <h5 class="card-title mb-3">${item.name}</h5>
+            ${
+              item.room_number
+                ? `<p class="card-text mb-2"><i class="fas fa-door-open me-2"></i>Room Number: ${item.room_number}</p>`
+                : ""
+            }
+            <p class="card-text mb-2">
+              <i class="fas fa-users me-2"></i>Capacity: ${item.capacity} ${
           item.item_type === "room" ? "persons" : "people"
-        }</p>
-                    <p>Price: P${item.price}${
+        }
+
+            </p>
+            <p class="card-text mb-2">
+              <i class="fas fa-tag me-2"></i>Price: ₱${item.price}${
           item.item_type === "room" ? "/night" : "/day"
-        }</p>
-                    <p>${item.description}</p>
-                `;
+        }
+            </p>
+            <p class="card-text text-muted small">${item.description}</p>
+            <div class="mt-3 pt-3 border-top">
+              <span class="badge ${
+                item.item_type === "room" ? "bg-primary" : "bg-success"
+              }">
+                ${item.item_type.toUpperCase()}
+              </span>
+            </div>
+          </div>
+        `;
         container.appendChild(card);
       });
+
+      // Update the counters in the UI
+      document.querySelectorAll(".type-count").forEach((counter) => {
+        const { type } = counter.dataset;
+        if (type) {
+          counter.textContent = counters[type] || 0;
+        }
+      });
+
       filterItems();
     }
   } catch (error) {
@@ -645,8 +695,21 @@ function filterItems() {
     const selectedValue = selectedType.value;
     document.querySelectorAll(".card").forEach((card) => {
       if (card.dataset && card.dataset.type) {
-        card.style.display =
-          card.dataset.type === selectedValue ? "block" : "none";
+        if (selectedValue === "all") {
+          card.style.display = "block";
+        } else {
+          card.style.display =
+            card.dataset.type === selectedValue ? "block" : "none";
+        }
+      }
+    });
+
+    // Update active state of filter buttons
+    document.querySelectorAll(".type-filter").forEach((btn) => {
+      if (btn.value === selectedValue) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
       }
     });
   }
@@ -655,15 +718,65 @@ function filterItems() {
 // Setup Item Management
 function setupItemManagement() {
   // Setup type filter listeners
-  document.querySelectorAll('input[name="type_filter"]').forEach((radio) => {
-    radio.addEventListener("change", filterItems);
+  document.querySelectorAll(".type-filter").forEach((radio) => {
+    radio.addEventListener("change", (e) => {
+      // Update active states
+      document
+        .querySelectorAll(".type-filter")
+        .forEach((btn) =>
+          btn.classList.toggle("active", btn.value === e.target.value)
+        );
+      filterItems();
+    });
   });
 
-  // Setup edit form toggles
-  setupEditFormToggles();
+  // Initialize counters
+  initializeCounters();
 
-  // Initial filter
-  filterItems();
+  // Initial item load
+  loadItems();
+
+  // Setup edit form toggles if they exist
+  setupEditFormToggles();
+}
+
+// Initialize item counters and filters
+function initializeCounters() {
+  const filterSection = document.querySelector(".item-filters");
+  if (!filterSection) {
+    return;
+  }
+
+  // Clear existing content
+  filterSection.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="btn-group" role="group" aria-label="Item type filter">
+        <input type="radio" class="btn-check type-filter" name="type_filter" id="all" value="all" checked>
+        <label class="btn btn-outline-primary" for="all">
+          All <span class="badge bg-primary type-count" data-type="all">0</span>
+        </label>
+
+        <input type="radio" class="btn-check type-filter" name="type_filter" id="room" value="room">
+        <label class="btn btn-outline-primary" for="room">
+          Rooms <span class="badge bg-primary type-count" data-type="room">0</span>
+        </label>
+
+        <input type="radio" class="btn-check type-filter" name="type_filter" id="facility" value="facility">
+        <label class="btn btn-outline-primary" for="facility">
+          Facilities <span class="badge bg-primary type-count" data-type="facility">0</span>
+        </label>
+      </div>
+
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
+        <i class="fas fa-plus me-2"></i>Add New
+      </button>
+    </div>
+  `;
+
+  // Attach event listeners
+  document.querySelectorAll(".type-filter").forEach((radio) => {
+    radio.addEventListener("change", filterItems);
+  });
 }
 
 // Setup Edit Form Toggles
@@ -689,32 +802,49 @@ function setupEditFormToggles() {
   });
 }
 
-// Booking Form Management
-function setupBookingForms() {
-  // Booking Type Toggle
-  function toggleBookingForm() {
-    const selectedType = document.querySelector(
-      'input[name="bookingType"]:checked'
-    );
-    if (selectedType) {
-      const selectedValue = selectedType.value;
-      const reservationForm = document.getElementById("reservationForm");
-      const pencilForm = document.getElementById("pencilForm");
+// Booking Type Toggle Function (Global)
+function toggleBookingForm() {
+  const selectedType = document.querySelector(
+    'input[name="bookingType"]:checked'
+  );
 
-      if (reservationForm && pencilForm) {
-        if (selectedValue === "reservation") {
-          reservationForm.style.display = "block";
-          pencilForm.style.display = "none";
-          // Generate receipt number when switching to reservation form
-          generateReceiptNumber();
-        } else {
-          reservationForm.style.display = "none";
-          pencilForm.style.display = "block";
-        }
-      }
-    }
+  if (!selectedType) {
+    console.warn("No booking type selected");
+    return;
   }
 
+  const selectedValue = selectedType.value;
+  const reservationForm = document.getElementById("reservationForm");
+  const pencilForm = document.getElementById("pencilForm");
+
+  if (!reservationForm || !pencilForm) {
+    console.warn("Booking forms not found");
+    return;
+  }
+
+  if (selectedValue === "reservation") {
+    reservationForm.style.display = "block";
+    pencilForm.style.display = "none";
+    // Generate receipt number when switching to reservation form
+    generateReceiptNumber();
+  } else {
+    reservationForm.style.display = "none";
+    pencilForm.style.display = "block";
+  }
+}
+
+// Immediately assign to global scope with fallback
+window.toggleBookingForm = toggleBookingForm;
+
+// Also create a backup reference in case of scope issues
+if (typeof window.toggleBookingForm === "undefined") {
+  window.toggleBookingForm = function () {
+    return toggleBookingForm.apply(this, arguments);
+  };
+}
+
+// Booking Form Management
+function setupBookingForms() {
   // Initialize booking form display
   toggleBookingForm();
 
@@ -725,9 +855,6 @@ function setupBookingForms() {
 
   // Generate initial receipt number
   generateReceiptNumber();
-
-  // Make toggleBookingForm globally available
-  window.toggleBookingForm = toggleBookingForm;
 }
 
 // Pencil Booking Reminder
@@ -1172,102 +1299,174 @@ function escapeHtml(text) {
 
 // Chart.js Initialization
 function initializeCharts() {
+  // Wait for Chart.js to be fully loaded
+  if (typeof Chart === "undefined") {
+    setTimeout(initializeCharts, 500);
+    return;
+  }
+  
   // Bookings Overview Chart (Line Chart)
   const bookingsChartElement = document.getElementById("bookingsChart");
-  if (
-    bookingsChartElement &&
-    typeof Chart !== "undefined" &&
-    typeof monthlyBookingsData !== "undefined"
-  ) {
+  if (bookingsChartElement) {
     const ctx = bookingsChartElement.getContext("2d");
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: monthlyBookingsData.map((item) => item.month),
-        datasets: [
-          {
-            label: "Bookings",
-            data: monthlyBookingsData.map((item) => item.count),
-            backgroundColor: "rgba(78, 115, 223, 0.1)",
-            borderColor: "rgba(78, 115, 223, 1)",
-            borderWidth: 2,
-            fill: true,
-            tension: 0.3,
+    
+    // Check if data exists and has content
+    const monthlyData = window.monthlyBookingsData || [];
+    
+    // Destroy existing chart if it exists
+    if (window.bookingsChartInstance) {
+      window.bookingsChartInstance.destroy();
+    }
+    
+    if (monthlyData && monthlyData.length > 0) {
+      const labels = monthlyData.map((item) => {
+        return item.month || item.label || 'Unknown';
+      });
+      
+      const data = monthlyData.map((item) => {
+        return parseInt(item.count) || 0;
+      });
+      
+      try {
+        window.bookingsChartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Monthly Bookings",
+                data: data,
+                backgroundColor: "rgba(78, 115, 223, 0.1)",
+                borderColor: "rgba(78, 115, 223, 1)",
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: "rgba(78, 115, 223, 1)",
+                pointBorderColor: "rgba(78, 115, 223, 1)",
+                pointRadius: 4,
+              },
+            ],
           },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false,
-          },
-        },
-        scales: {
-          x: {
-            grid: {
-              display: false,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top'
+              },
+              title: {
+                display: true,
+                text: 'Booking Trends'
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  display: false,
+                },
+                title: {
+                  display: true,
+                  text: 'Month'
+                }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1,
+                },
+                title: {
+                  display: true,
+                  text: 'Number of Bookings'
+                }
+              },
             },
           },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              stepSize: 1,
-            },
-          },
-        },
-      },
-    });
+        });
+      } catch (error) {
+        console.error('Error creating bookings chart:', error);
+      }
+    } else {
+      // Display "No data" message
+      ctx.clearRect(0, 0, bookingsChartElement.width, bookingsChartElement.height);
+      ctx.fillStyle = '#6c757d';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('No booking data available', bookingsChartElement.width / 2, bookingsChartElement.height / 2);
+    }
   }
 
   // Status Distribution Chart (Doughnut Chart)
   const statusChartElement = document.getElementById("statusChart");
-  if (
-    statusChartElement &&
-    typeof Chart !== "undefined" &&
-    typeof statusDistributionData !== "undefined"
-  ) {
+  if (statusChartElement) {
     const ctx = statusChartElement.getContext("2d");
-    const statusLabels = Object.keys(statusDistributionData);
-    const statusValues = Object.values(statusDistributionData);
-
-    new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels: statusLabels.map(
-          (label) => label.charAt(0).toUpperCase() + label.slice(1)
-        ),
-        datasets: [
-          {
-            data: statusValues,
-            backgroundColor: [
-              "#f6c23e", // pending - yellow
-              "#1cc88a", // approved - green
-              "#36b9cc", // checked_in - info
-              "#5a5c69", // checked_out - secondary
-              "#e74a3b", // cancelled - red
+    
+    // Check if data exists and has content
+    const statusData = window.statusDistributionData || {};
+    
+    // Destroy existing chart if it exists
+    if (window.statusChartInstance) {
+      window.statusChartInstance.destroy();
+    }
+    
+    const statusLabels = Object.keys(statusData);
+    const statusValues = Object.values(statusData).map(val => parseInt(val) || 0);
+    const hasData = statusValues.some(value => value > 0);
+    
+    if (hasData) {
+      
+      try {
+        window.statusChartInstance = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: statusLabels.map(
+              (label) => label.charAt(0).toUpperCase() + label.slice(1)
+            ),
+            datasets: [
+              {
+                data: statusValues,
+                backgroundColor: [
+                  "#f6c23e", // pending - yellow
+                  "#1cc88a", // approved - green
+                  "#36b9cc", // checked_in - info
+                  "#5a5c69", // checked_out - secondary
+                  "#e74a3b", // cancelled - red
+                ],
+                borderWidth: 2,
+                borderColor: "#ffffff",
+              },
             ],
-            borderWidth: 2,
-            borderColor: "#ffffff",
           },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              boxWidth: 12,
-              padding: 15,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  boxWidth: 12,
+                  padding: 15,
+                },
+              },
+              title: {
+                display: true,
+                text: 'Booking Status Distribution'
+              }
             },
+            cutout: "60%",
           },
-        },
-        cutout: "60%",
-      },
-    });
+        });
+      } catch (error) {
+        console.error('Error creating status chart:', error);
+      }
+    } else {
+      // Display "No data" message
+      ctx.clearRect(0, 0, statusChartElement.width, statusChartElement.height);
+      ctx.fillStyle = '#6c757d';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('No status data available', statusChartElement.width / 2, statusChartElement.height / 2);
+    }
   }
 
   // Legacy chart for backward compatibility
@@ -1294,29 +1493,265 @@ function initializeCharts() {
   }
 }
 
-// Global function exports (to maintain compatibility)
-window.showSection = showSection;
-window.toggleDarkMode = toggleDarkMode;
-window.filterTable = filterTable;
-window.showToast = showToast;
-window.loadItems = loadItems;
-window.filterItems = filterItems;
-window.toggleBookingForm = toggleBookingForm;
-window.pencilReminder = pencilReminder;
-window.generateReceiptNumber = generateReceiptNumber;
+// Dashboard Data Management
+function setDashboardData(events, monthlyData, statusData, stats) {
+  window.dashboardData = {
+    bookingEvents: events || [],
+    monthlyBookingsData: monthlyData || [],
+    statusDistributionData: statusData || {},
+    dashboardStats: stats || {}
+  };
+  
+  // Make variables globally accessible for chart functions
+  window.bookingEvents = events || [];
+  window.monthlyBookingsData = monthlyData || [];
+  window.statusDistributionData = statusData || {};
+  window.dashboardStats = stats || {};
+  
+  // Wait for DOM to be ready before initializing charts
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(() => {
+        initializeCharts();
+      }, 100);
+    });
+  } else {
+    // DOM is already ready, initialize charts immediately
+    setTimeout(() => {
+      initializeCharts();
+    }, 100);
+  }
+}
 
-// Feedback Management System
+// Refresh chart with different timeframes (using existing database data for now)
+function refreshChart(timeframe, event) {
+  // Update active button
+  const buttons = document.querySelectorAll('.btn-group .btn');
+  buttons.forEach(btn => btn.classList.remove('active'));
+  if (event && event.target) {
+    event.target.classList.add('active');
+  }
+  
+  // Note: Since we removed API calls, we're using the existing monthly data
+  // In a real application, you could reload the page with a timeframe parameter
+  // or implement server-side filtering
+  
+  if (timeframe === '7days' || timeframe === '30days') {
+      // For demo purposes, show a subset of data for shorter timeframes
+      let filteredData = window.monthlyBookingsData;
+      if (timeframe === '7days') {
+        filteredData = window.monthlyBookingsData.slice(-7);
+      } else if (timeframe === '30days') {
+        filteredData = window.monthlyBookingsData.slice(-5);
+      }
+      
+      // Update the chart with filtered data
+      if (window.bookingsChartInstance) {
+        window.bookingsChartInstance.data.labels = filteredData.map(item => item.month);
+        window.bookingsChartInstance.data.datasets[0].data = filteredData.map(item => item.count);
+        window.bookingsChartInstance.update();
+      }
+    }
+  else if (window.bookingsChartInstance) {
+        window.bookingsChartInstance.data.labels = window.monthlyBookingsData.map(item => item.month);
+        window.bookingsChartInstance.data.datasets[0].data = window.monthlyBookingsData.map(item => item.count);
+        window.bookingsChartInstance.update();
+      }
+  
+  showToast(`Chart updated to show ${timeframe} view`, 'info');
+}
+
+// Initialize Rooms Filtering Function
+function initializeRoomsFiltering() {
+  // Filter buttons functionality
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  const roomCards = document.querySelectorAll('.room-card, .facility-card');
+  
+  if (filterButtons.length > 0) {
+    filterButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const filterType = this.dataset.filter;
+        
+        // Update active button
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Filter rooms/facilities
+        roomCards.forEach(card => {
+          const cardType = card.dataset.type || card.classList.contains('room-card') ? 'room' : 'facility';
+          
+          if (filterType === 'all' || cardType === filterType) {
+            card.style.display = 'block';
+            card.classList.remove('d-none');
+          } else {
+            card.style.display = 'none';
+            card.classList.add('d-none');
+          }
+        });
+      });
+    });
+  }
+  
+  // Type filter radio buttons (if they exist)
+  const typeFilters = document.querySelectorAll('input[name="type_filter"]');
+  if (typeFilters.length > 0) {
+    typeFilters.forEach(filter => {
+      filter.addEventListener('change', function() {
+        const selectedType = this.value;
+        
+        roomCards.forEach(card => {
+          const cardType = card.dataset.type || (card.classList.contains('room-card') ? 'room' : 'facility');
+          
+          if (selectedType === 'all' || cardType === selectedType) {
+            card.style.display = 'block';
+            card.classList.remove('d-none');
+          } else {
+            card.style.display = 'none';
+            card.classList.add('d-none');
+          }
+        });
+        
+      });
+    });
+  }
+}
+
+// Initialize Rooms Search Function  
+function initializeRoomsSearch() {
+  const searchInput = document.querySelector('#rooms-search, .rooms-search-input');
+  const roomCards = document.querySelectorAll('.room-card, .facility-card');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase().trim();
+      
+      roomCards.forEach(card => {
+        const title = card.querySelector('.card-title, .room-title, .facility-title');
+        const description = card.querySelector('.card-text, .room-description, .facility-description');
+        
+        let cardText = '';
+        if (title) {
+          cardText += title.textContent.toLowerCase();
+        }
+        if (description) {
+          cardText += ' ' + description.textContent.toLowerCase();
+        }
+        
+        if (searchTerm === '' || cardText.includes(searchTerm)) {
+          card.style.display = 'block';
+          card.classList.remove('d-none');
+        } else {
+          card.style.display = 'none';
+          card.classList.add('d-none');
+        }
+      });
+    });
+  }
+}
+
+// Initialize Edit Forms Function
+function initializeEditForms() {
+  const editButtons = document.querySelectorAll('.edit-btn, .btn-edit');
+  const editForms = document.querySelectorAll('.edit-form');
+  
+  editButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      const targetForm = this.dataset.target || this.getAttribute('data-bs-target');
+      const formElement = document.querySelector(targetForm) || this.closest('.card').querySelector('.edit-form');
+      
+      if (formElement) {
+        formElement.style.display = formElement.style.display === 'none' ? 'block' : 'none';
+        formElement.classList.toggle('d-none');
+        
+        // Update button text
+        if (formElement.style.display === 'block' || !formElement.classList.contains('d-none')) {
+          this.innerHTML = '<i class="fas fa-times"></i> Cancel';
+          this.classList.remove('btn-outline-primary');
+          this.classList.add('btn-outline-secondary');
+        } else {
+          this.innerHTML = '<i class="fas fa-edit"></i> Edit';
+          this.classList.remove('btn-outline-secondary');
+          this.classList.add('btn-outline-primary');
+        }
+      }
+    });
+  });
+  
+  // Cancel button functionality
+  const cancelButtons = document.querySelectorAll('.cancel-edit, .btn-cancel');
+  cancelButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      const form = this.closest('.edit-form');
+      if (form) {
+        form.style.display = 'none';
+        form.classList.add('d-none');
+        
+        // Reset the edit button
+        const editButton = form.parentElement.querySelector('.edit-btn, .btn-edit');
+        if (editButton) {
+          editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
+          editButton.classList.remove('btn-outline-secondary');
+          editButton.classList.add('btn-outline-primary');
+        }
+      }
+    });
+  });
+}
+
+// Function to refresh dashboard data
+function refreshDashboardData() {
+  // Reinitialize the charts with existing data
+  initializeCharts();
+}
+
+// Global function exports (to maintain compatibility)
+// Using try-catch to handle any reference errors gracefully
+try {
+  window.showSection = showSection;
+  window.toggleDarkMode = toggleDarkMode;
+  window.filterTable = filterTable;
+  window.showToast = showToast;
+  window.loadItems = loadItems;
+  window.filterItems = filterItems;
+  window.toggleBookingForm = toggleBookingForm;
+  window.pencilReminder = pencilReminder;
+  window.generateReceiptNumber = generateReceiptNumber;
+  
+  // Calendar & Items functions
+  window.initializeCalendarNavigation = initializeCalendarNavigation;
+  window.initializeRoomSearch = initializeRoomSearch;
+  window.initializeRoomCalendar = initializeRoomCalendar;
+  window.generateRoomEvents = generateRoomEvents;
+  
+  // Dashboard data function
+  window.setDashboardData = setDashboardData;
+  
+  // Rooms management functions
+  window.initializeRoomsFiltering = initializeRoomsFiltering;
+  window.initializeRoomsSearch = initializeRoomsSearch;
+  window.initializeEditForms = initializeEditForms;
+  
+  // Chart functions
+  window.initializeCharts = initializeCharts;
+  window.refreshDashboardData = refreshDashboardData;
+} catch (error) {
+  console.warn("Error assigning global functions:", error);
+}// Feedback Management System
 function initializeFeedbackManagement() {
   // Initialize feedback section when it becomes active
-  document.addEventListener('sectionChanged', function(e) {
-    if (e.detail.section === 'feedback') {
+  document.addEventListener("sectionChanged", function (e) {
+    if (e.detail.section === "feedback") {
       loadFeedbackData();
     }
   });
-  
+
   // Load feedback data if feedback section is already active
-  const feedbackSection = document.getElementById('feedback');
-  if (feedbackSection && feedbackSection.classList.contains('active')) {
+  const feedbackSection = document.getElementById("feedback");
+  if (feedbackSection && feedbackSection.classList.contains("active")) {
     loadFeedbackData();
   }
 }
@@ -1324,37 +1759,45 @@ function initializeFeedbackManagement() {
 async function loadFeedbackData(limit = 50, offset = 0) {
   try {
     // First initialize the feedback table
-    await fetch('database/user_auth.php?action=init_feedback_table');
-    
+    await fetch("database/user_auth.php?action=init_feedback_table");
+
     // Then load the feedback data
-    const response = await fetch(`database/user_auth.php?action=get_feedback_data&limit=${limit}&offset=${offset}`);
+    const response = await fetch(
+      `database/user_auth.php?action=get_feedback_data&limit=${limit}&offset=${offset}`
+    );
     const data = await response.json();
-    
+
     if (data.success) {
       updateFeedbackStats(data.stats);
       updateFeedbackTable(data.feedback);
       updateRatingChart(data.stats);
       updateFeedbackInsights(data.stats);
     } else {
-      console.error('Error loading feedback data:', data.error);
-      showFeedbackError('Failed to load feedback data: ' + (data.error || 'Unknown error'));
+      console.error("Error loading feedback data:", data.error);
+      showFeedbackError(
+        "Failed to load feedback data: " + (data.error || "Unknown error")
+      );
     }
   } catch (error) {
-    console.error('Error fetching feedback data:', error);
-    showFeedbackError('Network error while loading feedback');
+    console.error("Error fetching feedback data:", error);
+    showFeedbackError("Network error while loading feedback");
   }
 }
 
 function updateFeedbackStats(stats) {
-  document.getElementById('total-feedback').textContent = stats.total_feedback || 0;
-  document.getElementById('avg-rating').textContent = parseFloat(stats.avg_rating || 0).toFixed(1);
-  document.getElementById('five-star-count').textContent = stats.five_star || 0;
-  document.getElementById('low-rating-count').textContent = (parseInt(stats.one_star || 0) + parseInt(stats.two_star || 0));
+  document.getElementById("total-feedback").textContent =
+    stats.total_feedback || 0;
+  document.getElementById("avg-rating").textContent = parseFloat(
+    stats.avg_rating || 0
+  ).toFixed(1);
+  document.getElementById("five-star-count").textContent = stats.five_star || 0;
+  document.getElementById("low-rating-count").textContent =
+    parseInt(stats.one_star || 0) + parseInt(stats.two_star || 0);
 }
 
 function updateFeedbackTable(feedback) {
-  const tbody = document.getElementById('feedback-tbody');
-  
+  const tbody = document.getElementById("feedback-tbody");
+
   if (!feedback || feedback.length === 0) {
     tbody.innerHTML = `
       <tr>
@@ -1366,13 +1809,14 @@ function updateFeedbackTable(feedback) {
     `;
     return;
   }
-  
-  tbody.innerHTML = feedback.map(item => {
-    const stars = generateStarDisplay(item.rating);
-    const date = new Date(item.created_at).toLocaleDateString();
-    const message = item.message || 'No additional comments';
-    
-    return `
+
+  tbody.innerHTML = feedback
+    .map((item) => {
+      const stars = generateStarDisplay(item.rating);
+      const date = new Date(item.created_at).toLocaleDateString();
+      const message = item.message || "No additional comments";
+
+      return `
       <tr>
         <td>
           <div class="d-flex align-items-center">
@@ -1401,59 +1845,66 @@ function updateFeedbackTable(feedback) {
         </td>
         <td>
           <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-primary btn-sm" onclick="viewFeedbackDetails(${item.id})" title="View Details">
+            <button class="btn btn-outline-primary btn-sm" onclick="viewFeedbackDetails(${
+              item.id
+            })" title="View Details">
               <i class="fas fa-eye"></i>
             </button>
-            <button class="btn btn-outline-success btn-sm" onclick="respondToFeedback(${item.id})" title="Respond">
+            <button class="btn btn-outline-success btn-sm" onclick="respondToFeedback(${
+              item.id
+            })" title="Respond">
               <i class="fas fa-reply"></i>
             </button>
           </div>
         </td>
       </tr>
     `;
-  }).join('');
+    })
+    .join("");
 }
 
 function generateStarDisplay(rating) {
   const fullStars = Math.floor(rating);
   const emptyStars = 5 - fullStars;
-  
-  return '★'.repeat(fullStars) + '☆'.repeat(emptyStars);
+
+  return "★".repeat(fullStars) + "☆".repeat(emptyStars);
 }
 
 function updateRatingChart(stats) {
-  const ctx = document.getElementById('ratingChart');
+  const ctx = document.getElementById("ratingChart");
   if (!ctx) {
     return;
   }
-  
+
   // Destroy existing chart if it exists
   if (window.ratingChartInstance) {
     window.ratingChartInstance.destroy();
   }
-  
+
   window.ratingChartInstance = new Chart(ctx, {
-    type: 'bar',
+    type: "bar",
     data: {
-      labels: ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'],
-      datasets: [{
-        label: 'Number of Reviews',
-        data: [
-          stats.one_star || 0,
-          stats.two_star || 0,
-          stats.three_star || 0,
-          stats.four_star || 0,
-          stats.five_star || 0
-        ],
-        backgroundColor: [
-          '#dc3545', // Red for 1 star
-          '#fd7e14', // Orange for 2 stars
-          '#ffc107', // Yellow for 3 stars
-          '#20c997', // Teal for 4 stars
-          '#28a745'  // Green for 5 stars
-        ],
-        borderWidth: 1
-      }]
+      labels: ["1 Star", "2 Stars", "3 Stars", "4 Stars", "5 Stars"],
+      datasets: [
+        {
+          label: "Number of Reviews",
+          data: [
+            stats.one_star || 0,
+            stats.two_star || 0,
+            stats.three_star || 0,
+            stats.four_star || 0,
+            stats.five_star || 0,
+          ],
+          backgroundColor: [
+            "#dc3545", // Red for 1 star
+            "#fd7e14", // Orange for 2 stars
+            "#ffc107", // Yellow for 3 stars
+            "#20c997", // Teal for 4 stars
+            "#28a745", // Green for 5 stars
+          ],
+          borderWidth: 1,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -1462,26 +1913,30 @@ function updateRatingChart(stats) {
         y: {
           beginAtZero: true,
           ticks: {
-            stepSize: 1
-          }
-        }
+            stepSize: 1,
+          },
+        },
       },
       plugins: {
         legend: {
-          display: false
-        }
-      }
-    }
+          display: false,
+        },
+      },
+    },
   });
 }
 
 function updateFeedbackInsights(stats) {
-  const insights = document.getElementById('feedback-insights');
+  const insights = document.getElementById("feedback-insights");
   const totalFeedback = parseInt(stats.total_feedback || 0);
   const avgRating = parseFloat(stats.avg_rating || 0);
-  const fiveStarPercent = totalFeedback > 0 ? ((stats.five_star || 0) / totalFeedback * 100).toFixed(1) : 0;
-  const lowRatingCount = parseInt(stats.one_star || 0) + parseInt(stats.two_star || 0);
-  
+  const fiveStarPercent =
+    totalFeedback > 0
+      ? (((stats.five_star || 0) / totalFeedback) * 100).toFixed(1)
+      : 0;
+  const lowRatingCount =
+    parseInt(stats.one_star || 0) + parseInt(stats.two_star || 0);
+
   if (totalFeedback === 0) {
     insights.innerHTML = `
       <div class="text-center text-muted">
@@ -1492,24 +1947,24 @@ function updateFeedbackInsights(stats) {
     `;
     return;
   }
-  
-  let insightClass = 'success';
-  let insightIcon = 'fa-smile';
-  let insightTitle = 'Excellent Performance!';
-  let insightMessage = 'Guests are highly satisfied with their experience.';
-  
+
+  let insightClass = "success";
+  let insightIcon = "fa-smile";
+  let insightTitle = "Excellent Performance!";
+  let insightMessage = "Guests are highly satisfied with their experience.";
+
   if (avgRating < 3) {
-    insightClass = 'danger';
-    insightIcon = 'fa-frown';
-    insightTitle = 'Needs Improvement';
-    insightMessage = 'Consider addressing common concerns in feedback.';
+    insightClass = "danger";
+    insightIcon = "fa-frown";
+    insightTitle = "Needs Improvement";
+    insightMessage = "Consider addressing common concerns in feedback.";
   } else if (avgRating < 4) {
-    insightClass = 'warning';
-    insightIcon = 'fa-meh';
-    insightTitle = 'Good but Room for Growth';
-    insightMessage = 'Focus on enhancing guest satisfaction areas.';
+    insightClass = "warning";
+    insightIcon = "fa-meh";
+    insightTitle = "Good but Room for Growth";
+    insightMessage = "Focus on enhancing guest satisfaction areas.";
   }
-  
+
   insights.innerHTML = `
     <div class="text-center">
       <div class="text-${insightClass} mb-3">
@@ -1523,7 +1978,9 @@ function updateFeedbackInsights(stats) {
           <small class="text-muted">5-Star Reviews</small>
         </div>
         <div class="col-6">
-          <h5 class="text-${lowRatingCount > 0 ? 'warning' : 'success'} mb-1">${lowRatingCount}</h5>
+          <h5 class="text-${
+            lowRatingCount > 0 ? "warning" : "success"
+          } mb-1">${lowRatingCount}</h5>
           <small class="text-muted">Low Ratings</small>
         </div>
       </div>
@@ -1532,7 +1989,7 @@ function updateFeedbackInsights(stats) {
 }
 
 function showFeedbackError(message) {
-  const tbody = document.getElementById('feedback-tbody');
+  const tbody = document.getElementById("feedback-tbody");
   tbody.innerHTML = `
     <tr>
       <td colspan="5" class="text-center text-danger py-4">
@@ -1543,29 +2000,23 @@ function showFeedbackError(message) {
   `;
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 function refreshFeedback() {
   loadFeedbackData();
 }
 
 function exportFeedback() {
   // Implementation for exporting feedback data
-  alert('Export functionality would be implemented here');
+  showToast("Export functionality would be implemented here", "info");
 }
 
 function viewFeedbackDetails(feedbackId) {
   // Implementation for viewing detailed feedback
-  alert(`View details for feedback ID: ${feedbackId}`);
+  showToast(`View details for feedback ID: ${feedbackId}`, "info");
 }
 
 function respondToFeedback(feedbackId) {
   // Implementation for responding to feedback
-  alert(`Respond to feedback ID: ${feedbackId}`);
+  showToast(`Respond to feedback ID: ${feedbackId}`, "info");
 }
 
 // Export feedback functions globally
@@ -1573,6 +2024,151 @@ window.refreshFeedback = refreshFeedback;
 window.exportFeedback = exportFeedback;
 window.viewFeedbackDetails = viewFeedbackDetails;
 window.respondToFeedback = respondToFeedback;
+
+// Calendar & Items Navigation Functions
+function initializeCalendarNavigation() {
+  const calendarViewBtn = document.getElementById('calendar-view-btn');
+  const roomListBtn = document.getElementById('room-list-btn');
+  const calendarContent = document.getElementById('calendar-view-content');
+  const roomListContent = document.getElementById('room-list-content');
+
+  if (calendarViewBtn && roomListBtn && calendarContent && roomListContent) {
+    // Calendar View Button
+    calendarViewBtn.addEventListener('click', function() {
+      // Update button states
+      calendarViewBtn.classList.add('active');
+      roomListBtn.classList.remove('active');
+      
+      // Show/hide content
+      calendarContent.style.display = 'block';
+      roomListContent.style.display = 'none';
+      
+      // Re-render calendar if it exists
+      if (window.roomCalendarInstance) {
+        setTimeout(() => window.roomCalendarInstance.render(), 100);
+      }
+    });
+
+    // Room List Button
+    roomListBtn.addEventListener('click', function() {
+      // Update button states
+      roomListBtn.classList.add('active');
+      calendarViewBtn.classList.remove('active');
+      
+      // Show/hide content
+      calendarContent.style.display = 'none';
+      roomListContent.style.display = 'block';
+    });
+  }
+}
+
+function initializeRoomSearch() {
+  const searchInput = document.getElementById('room-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase();
+      const roomItems = document.querySelectorAll('.room-card, .room-item');
+      
+      roomItems.forEach(item => {
+        const roomName = item.getAttribute('data-room-name') || '';
+        const roomNumber = item.getAttribute('data-room-number') || '';
+        const itemType = item.getAttribute('data-item-type') || '';
+        const text = item.textContent.toLowerCase();
+        
+        const matches = text.includes(searchTerm) || 
+                       roomName.includes(searchTerm) || 
+                       roomNumber.includes(searchTerm) || 
+                       itemType.includes(searchTerm);
+        
+        if (matches) {
+          item.style.display = '';
+          item.classList.remove('d-none');
+        } else {
+          item.style.display = 'none';
+          item.classList.add('d-none');
+        }
+      });
+    });
+  }
+}
+
+function initializeRoomCalendar() {
+  const calendarEl = document.getElementById('roomCalendar');
+  if (!calendarEl || typeof FullCalendar === "undefined") {
+    return;
+  }
+
+  // Generate room events based on current booking data
+  const roomEvents = generateRoomEvents();
+
+  window.roomCalendarInstance = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    events: roomEvents,
+    eventDisplay: 'block',
+    dayMaxEvents: true,
+    height: 'auto',
+    aspectRatio: 1.8,
+    eventOverlap: false,
+    slotEventOverlap: false,
+    displayEventTime: true,
+    displayEventEnd: true,
+    nowIndicator: true,
+    businessHours: {
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+      startTime: '08:00',
+      endTime: '20:00',
+    },
+    eventClick: function (info) {
+      const { title } = info.event;
+      const { itemName, roomNumber, guest, status, checkIn, checkOut } = info.event.extendedProps;
+      
+      let details = `${title}<br><br>`;
+      if (itemName) {
+        details += `Item: ${itemName}<br>`;
+      }
+      if (roomNumber) {
+        details += `Room #: ${roomNumber}<br>`;
+      }
+      if (guest) {
+        details += `Guest: ${guest}<br>`;
+      }
+      if (status) {
+        details += `Status: ${status}<br>`;
+      }
+      if (checkIn) {
+        details += `Check-in: ${checkIn}<br>`;
+      }
+      if (checkOut) {
+        details += `Check-out: ${checkOut}<br>`;
+      }
+      
+      showToast(details, "info");
+    },
+    dateClick: function (info) {
+      // Date click handler can be added here if needed
+    },
+    eventDidMount: function (info) {
+      // Add tooltips or additional styling if needed
+      info.el.title = info.event.title;
+    }
+  });
+
+  window.roomCalendarInstance.render();
+}
+
+function generateRoomEvents() {
+  // Events will be populated by PHP in the dashboard.php script
+  if (typeof window.roomEvents !== 'undefined') {
+    return window.roomEvents;
+  }
+  
+  return [];
+}
 
 // Global sidebar toggle function
 window.toggleSidebar = function () {
@@ -1592,3 +2188,273 @@ window.toggleSidebar = function () {
     }
   }
 };
+
+// Booking Management Functions
+async function updateBookingStatus(bookingId, newStatus) {
+  console.log('updateBookingStatus called with:', bookingId, newStatus);
+  
+  if (!bookingId || !newStatus) {
+    console.error('Invalid parameters:', { bookingId, newStatus });
+    showToast("Invalid booking ID or status", "error");
+    return;
+  }
+
+  // Show confirmation dialog for certain actions
+  const actionMap = {
+    'approved': 'approve',
+    'confirmed': 'approve', 
+    'rejected': 'reject',
+    'cancelled': 'cancel',
+    'checked_in': 'checkin',
+    'checked_out': 'checkout'
+  };
+
+  const action = actionMap[newStatus] || newStatus;
+  
+  // Confirm action
+  const confirmMessages = {
+    'approve': 'Are you sure you want to approve this booking?',
+    'reject': 'Are you sure you want to reject this booking?',
+    'cancel': 'Are you sure you want to cancel this booking?',
+    'checkin': 'Confirm guest check-in?',
+    'checkout': 'Confirm guest check-out?'
+  };
+
+  if (confirmMessages[action] && !confirm(confirmMessages[action])) {
+    return;
+  }
+
+  try {
+    // Show loading state - get the button from the onclick event
+    const button = window.event?.target || document.activeElement;
+    const originalText = button?.innerHTML;
+    if (button && button.tagName === 'BUTTON') {
+      button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      button.disabled = true;
+    }
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('action', 'admin_update_booking');
+    formData.append('booking_id', bookingId);
+    formData.append('admin_action', action);
+
+    // Send AJAX request
+    const response = await fetch('database/user_auth.php', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast(data.message || `Booking updated to ${newStatus} successfully!`, "success");
+      
+      // Reload the page after a short delay to show updated status
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      throw new Error(data.error || 'Unknown error occurred');
+    }
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    showToast(`Error updating booking: ${error.message}`, "error");
+  } finally {
+    // Restore button state
+    if (button && originalText) {
+      button.innerHTML = originalText;
+      button.disabled = false;
+    }
+  }
+}
+
+// View booking details function
+function viewBookingDetails(bookingId) {
+  if (!bookingId) {
+    showToast("Invalid booking ID", "error");
+    return;
+  }
+
+  // Find the booking row
+  const bookingRow = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
+  if (!bookingRow) {
+    showToast("Booking details not found", "error");
+    return;
+  }
+
+  // Extract details from the row
+// sourcery skip: use-object-destructuring
+  const cells = bookingRow.cells;
+  let details = '<div class="booking-details-modal">';
+  details += '<h6>Booking Information</h6>';
+  
+  // Correct mapping based on the actual table structure:
+  // 0: Receipt #, 1: Room/Facility, 2: Type, 3: Guest Details, 4: Schedule, 5: Status, 6: Discount Application, 7: Created, 8: Admin Actions
+  try {
+    if (cells[0]) {
+      details += `<p><strong>Receipt #:</strong> ${cells[0].textContent.trim()}</p>`;
+    }
+    if (cells[1]) {
+      details += `<p><strong>Room/Facility:</strong> ${cells[1].textContent.trim()}</p>`;
+    }
+    if (cells[2]) {
+      details += `<p><strong>Type:</strong> ${cells[2].textContent.trim()}</p>`;
+    }
+    if (cells[3]) {
+      details += `<p><strong>Guest Details:</strong> ${cells[3].textContent.trim()}</p>`;
+    }
+    if (cells[4]) {
+      details += `<p><strong>Schedule:</strong> ${cells[4].textContent.trim()}</p>`;
+    }
+    if (cells[5]) {
+      details += `<p><strong>Status:</strong> ${cells[5].textContent.trim()}</p>`;
+    }
+    if (cells[6]) {
+      details += `<p><strong>Discount Application:</strong> ${cells[6].textContent.trim()}</p>`;
+    }
+    if (cells[7]) {
+      details += `<p><strong>Created:</strong> ${cells[7].textContent.trim()}</p>`;
+    }
+  } catch (error) {
+    console.error('Error extracting booking details:', error);
+    details += '<p class="text-danger">Error loading booking details</p>';
+  }
+  
+  details += '</div>';
+
+  // Create and show modal
+  const modal = document.createElement('div');
+  modal.className = 'modal fade';
+  modal.id = `booking-details-modal-${bookingId}`;
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-info-circle me-2"></i>Booking Details
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          ${details}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  
+  try {
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+
+    // Remove modal after it's hidden
+    modal.addEventListener('hidden.bs.modal', () => {
+      modal.remove();
+    });
+  } catch (error) {
+    console.error('Error showing modal:', error);
+    showToast('Error displaying booking details', 'error');
+    modal.remove();
+  }
+}
+
+// Booking filter functions
+function filterBookings() {
+  try {
+    const statusFilter = document.getElementById('statusFilter')?.value?.toLowerCase() || '';
+    const typeFilter = document.getElementById('typeFilter')?.value?.toLowerCase() || '';
+    const guestSearch = document.getElementById('guestSearch')?.value?.toLowerCase() || '';
+    const bookingRows = document.querySelectorAll('#bookingsTable tbody tr');
+
+    if (!bookingRows || bookingRows.length === 0) {
+      console.warn('No booking rows found to filter');
+      return;
+    }
+
+    bookingRows.forEach(row => {
+      try {
+        const status = (row.dataset.status || '').toLowerCase();
+        const type = (row.dataset.type || '').toLowerCase();
+        const guestText = (row.dataset.guest || '').toLowerCase();
+
+        let showRow = true;
+
+        // Status filter
+        if (statusFilter && !status.includes(statusFilter)) {
+          showRow = false;
+        }
+
+        // Type filter  
+        if (typeFilter && !type.includes(typeFilter)) {
+          showRow = false;
+        }
+
+        // Guest search
+        if (guestSearch && !guestText.includes(guestSearch)) {
+          showRow = false;
+        }
+
+        // Show/hide row
+        if (showRow) {
+          row.style.display = '';
+          row.classList.remove('d-none');
+        } else {
+          row.style.display = 'none';
+          row.classList.add('d-none');
+        }
+      } catch (rowError) {
+        console.error('Error processing booking row:', rowError, row);
+      }
+    });
+  } catch (error) {
+    console.error('Error filtering bookings:', error);
+    showToast("Error filtering bookings", "error");
+  }
+}
+
+function resetFilters() {
+  try {
+    // Reset filter controls
+    const statusFilter = document.getElementById('statusFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const guestSearch = document.getElementById('guestSearch');
+
+    if (statusFilter) {
+      statusFilter.value = '';
+    }
+    if (typeFilter) {
+      typeFilter.value = '';
+    }
+    if (guestSearch) {
+      guestSearch.value = '';
+    }
+
+    // Show all rows
+    const bookingRows = document.querySelectorAll('#bookingsTable tbody tr');
+    bookingRows.forEach(row => {
+      row.style.display = '';
+      row.classList.remove('d-none');
+    });
+
+    showToast("Filters reset", "info");
+  } catch (error) {
+    console.error('Error resetting filters:', error);
+    showToast("Error resetting filters", "error");
+  }
+}
+
+// Make functions globally available
+window.updateBookingStatus = updateBookingStatus;
+window.viewBookingDetails = viewBookingDetails;
+window.filterBookings = filterBookings;
+window.resetFilters = resetFilters;
+
+

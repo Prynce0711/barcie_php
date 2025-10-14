@@ -6,19 +6,91 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function initializeGuestPortal() {
-  setupBootstrapComponents();
-  setupMobileMenu();
-  enhanceForms();
-  setupSectionNavigation();
-  setupBookingForms();
-  setupCardFiltering();
-  initializeReceiptGeneration();
-  loadItems();
-  addKeyboardNavigation();
-  setupInteractiveOverview();
-  // initializeChatSystem(); // Temporarily disabled to fix feedback system
-  initializeStarRating();
-  initializeGuestCalendar();
+  try {
+    setupBootstrapComponents();
+  } catch (error) {
+    console.error("Guest: Bootstrap setup failed:", error);
+  }
+
+  try {
+    setupMobileMenu();
+  } catch (error) {
+    console.error("Guest: Mobile menu setup failed:", error);
+  }
+
+  try {
+    enhanceForms();
+  } catch (error) {
+    console.error("Guest: Form enhancement failed:", error);
+  }
+
+  try {
+    setupSectionNavigation();
+  } catch (error) {
+    console.error("Guest: Section navigation setup failed:", error);
+  }
+
+  try {
+    setupBookingForms();
+  } catch (error) {
+    console.error("Guest: Booking forms setup failed:", error);
+  }  try {
+    setupCardFiltering();
+    console.log("Guest: Card filtering initialized");
+  } catch (error) {
+    console.error("Guest: Card filtering setup failed:", error);
+  }
+  
+  try {
+    initializeReceiptGeneration();
+    console.log("Guest: Receipt generation initialized");
+  } catch (error) {
+    console.error("Guest: Receipt generation failed:", error);
+  }
+  
+  try {
+    loadItems();
+    console.log("Guest: Items loading started");
+  } catch (error) {
+    console.error("Guest: Items loading failed:", error);
+  }
+  
+  try {
+    addKeyboardNavigation();
+    console.log("Guest: Keyboard navigation added");
+  } catch (error) {
+    console.error("Guest: Keyboard navigation failed:", error);
+  }
+  
+  try {
+    setupInteractiveOverview();
+    console.log("Guest: Interactive overview initialized");
+  } catch (error) {
+    console.error("Guest: Interactive overview failed:", error);
+  }
+  
+  try {
+    initializeChatSystem();
+    console.log("Guest: Chat system initialized");
+  } catch (error) {
+    console.warn('Guest: Chat system initialization failed:', error);
+  }
+  
+  try {
+    initializeStarRating();
+    console.log("Guest: Star rating initialized");
+  } catch (error) {
+    console.error("Guest: Star rating failed:", error);
+  }
+  
+  try {
+    initializeGuestCalendar();
+    console.log("Guest: Guest calendar initialized");
+  } catch (error) {
+    console.error("Guest: Guest calendar failed:", error);
+  }
+  
+  console.log("Guest: Portal initialization complete");
 }
 
 // Initialize Bootstrap Components
@@ -81,25 +153,61 @@ function setupMobileMenu() {
 
 // Section Navigation (from inline script)
 function showSection(sectionId, button) {
+  console.log("Guest: Attempting to show section:", sectionId);
+  
+  // Validate sectionId
+  if (!sectionId) {
+    console.error("Guest: No section ID provided");
+    return false;
+  }
+  
   // Hide all sections
-  document
-    .querySelectorAll(".content-section")
-    .forEach((sec) => sec.classList.remove("active"));
+  const allSections = document.querySelectorAll(".content-section");
+  console.log("Guest: Found", allSections.length, "total sections");
+  
+  allSections.forEach((sec) => {
+    sec.classList.remove("active");
+    sec.style.display = "none";
+  });
 
   // Show target section
   const section = document.getElementById(sectionId);
   if (section) {
     section.classList.add("active");
+    section.style.display = "block";
+    section.style.opacity = "1";
+    
     // Add smooth animation
     section.style.animation = "fadeInUp 0.4s ease";
+    
+    console.log("Guest: Section successfully displayed:", sectionId);
+    
+    // Scroll to top of section
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+  } else {
+    console.error("Guest: Section element not found:", sectionId);
+    
+    // Try to find any section as fallback
+    const availableSections = Array.from(allSections).map(sec => sec.id);
+    console.log("Guest: Available sections:", availableSections);
+    return false;
   }
 
   // Update navigation buttons
-  document
-    .querySelectorAll(".sidebar-guest button")
-    .forEach((btn) => btn.classList.remove("active"));
+  const sidebarButtons = document.querySelectorAll(".sidebar-guest button");
+  sidebarButtons.forEach((btn) => btn.classList.remove("active"));
+  
   if (button) {
     button.classList.add("active");
+    console.log("Guest: Navigation button activated");
+  } else {
+    // Try to find the button by section name
+    const matchingButton = document.querySelector(`.sidebar-guest button[onclick*="${sectionId}"]`);
+    if (matchingButton) {
+      matchingButton.classList.add("active");
+      console.log("Guest: Found and activated matching button");
+    }
   }
 
   // Close mobile menu if open
@@ -115,25 +223,73 @@ function showSection(sectionId, button) {
       toggleBtn.querySelector("i").className = "fas fa-bars";
     }
   }
+  
+  return true;
 }
 
 // Setup Section Navigation
 function setupSectionNavigation() {
+  console.log("Guest: Setting up section navigation");
+  
+  // Check if sections exist
+  const sections = document.querySelectorAll(".content-section");
+  console.log("Guest: Found", sections.length, "sections");
+  
+  if (sections.length === 0) {
+    console.error("Guest: No content sections found!");
+    return;
+  }
+  
+  // Check which section should be active on page load
+  // First, remove any existing active class from sections
+  sections.forEach((sec, index) => {
+    sec.classList.remove("active");
+    sec.style.display = "none";
+    console.log(`Guest: Section ${index + 1} (${sec.id}): reset`);
+  });
+  
   // Show overview section by default
   setTimeout(() => {
-    showSection("overview", document.querySelector(".sidebar-guest button"));
-  }, 100);
+    const overviewButton = document.querySelector(".sidebar-guest button[onclick*='overview']");
+    console.log("Guest: Overview button found:", !!overviewButton);
+    
+    // Try to show overview section
+    const overviewSection = document.getElementById("overview");
+    if (overviewSection) {
+      console.log("Guest: Showing overview section");
+      showSection("overview", overviewButton);
+    } else {
+      console.warn("Guest: Overview section not found, trying first available section");
+      const firstSection = sections[0];
+      if (firstSection) {
+        showSection(firstSection.id, null);
+      }
+    }
+  }, 200);
 }
 
 // Booking Form Toggle (from guest.js)
 function toggleBookingForm() {
-  const type = document.querySelector(
+  const selectedType = document.querySelector(
     'input[name="bookingType"]:checked'
-  ).value;
-  document.getElementById("reservationForm").style.display =
-    type === "reservation" ? "block" : "none";
-  document.getElementById("pencilForm").style.display =
-    type === "pencil" ? "block" : "none";
+  );
+  
+  if (!selectedType) {
+    console.warn('No booking type selected');
+    return;
+  }
+  
+  const type = selectedType.value;
+  const reservationForm = document.getElementById("reservationForm");
+  const pencilForm = document.getElementById("pencilForm");
+  
+  if (!reservationForm || !pencilForm) {
+    console.warn('Booking forms not found');
+    return;
+  }
+  
+  reservationForm.style.display = type === "reservation" ? "block" : "none";
+  pencilForm.style.display = type === "pencil" ? "block" : "none";
 
   // Generate new receipt number when switching to reservation form
   if (type === "reservation") {
@@ -157,12 +313,10 @@ function setupBookingForms() {
 // Receipt Number Generation (from guest.js)
 async function generateReceiptNumber() {
   try {
-    const response = await fetch(
-      "database/user_auth.php?action=get_receipt_no"
-    );
+    const response = await fetch("database/user_auth.php?action=get_receipt_no");
     const data = await response.json();
 
-    if (data.success) {
+    if (data && data.success && data.receipt_no) {
       const receiptField = document.getElementById("receipt_no");
       if (receiptField) {
         receiptField.value = data.receipt_no;
@@ -170,7 +324,7 @@ async function generateReceiptNumber() {
       }
       console.log("Generated receipt number:", data.receipt_no);
     } else {
-      console.error("Error generating receipt number:", data.error);
+      console.error("Error generating receipt number:", data && data.error ? data.error : data);
       generateFallbackReceiptNumber();
     }
   } catch (error) {
@@ -218,13 +372,50 @@ function setupCardFiltering() {
 function filterItems() {
   const selectedType =
     document.querySelector('input[name="type"]:checked')?.value || "room";
-  document.querySelectorAll("#cards-grid .card").forEach((card) => {
+  
+  console.log("Guest: Filtering items by type:", selectedType);
+  
+  const cards = document.querySelectorAll("#cards-grid .card");
+  let visibleCount = 0;
+  
+  cards.forEach((card) => {
     if (card.dataset.type === selectedType) {
       card.style.display = "block";
+      visibleCount++;
     } else {
       card.style.display = "none";
     }
   });
+  
+  console.log("Guest: Showing", visibleCount, "items of type", selectedType);
+  
+  // Show message if no items of selected type
+  const container = document.getElementById("cards-grid");
+  if (visibleCount === 0 && container) {
+    const noItemsMessage = document.createElement("div");
+    noItemsMessage.className = "no-items-message col-12";
+    noItemsMessage.innerHTML = `
+      <div class="alert alert-info text-center">
+        <i class="fas fa-search fa-2x mb-2"></i>
+        <h5>No ${selectedType}s Available</h5>
+        <p>Try selecting a different type or check back later.</p>
+      </div>
+    `;
+    
+    // Remove existing no-items message
+    const existingMessage = container.querySelector(".no-items-message");
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+    
+    container.appendChild(noItemsMessage);
+  } else {
+    // Remove no-items message if items are visible
+    const existingMessage = container?.querySelector(".no-items-message");
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+  }
 }
 
 // Sync overview filters with rooms section
@@ -242,61 +433,134 @@ function syncOverviewWithRooms() {
 
 // Load Items (from inline script) - Enhanced for overview integration
 async function loadItems() {
+  console.log("Guest: Loading items from user_auth.php...");
+  
   try {
-    const res = await fetch("database/fetch_items.php");
-    const items = await res.json();
+    const res = await fetch("database/user_auth.php?action=fetch_items");
+    console.log("Guest: Response status:", res.status);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    
+    const response = await res.json();
+    console.log("Guest: Raw response:", response);
+    
+    // user_auth.php returns a plain array of items. Older API returned { success:true, items: [...] }
+    let items = [];
+    if (Array.isArray(response)) {
+      items = response;
+      console.log("Guest: Got plain array of items:", items.length);
+    } else if (response && response.success && Array.isArray(response.items)) {
+      items = response.items;
+      console.log("Guest: Got wrapped items array:", items.length);
+    } else if (response && Array.isArray(response.data)) {
+      items = response.data;
+      console.log("Guest: Got data array:", items.length);
+    } else {
+      items = [];
+      console.warn("Guest: No items found in response:", response);
+    }
 
     // Store items globally for filtering
     window.allItems = items;
 
     const container = document.getElementById("cards-grid");
-
-    if (container) {
-      container.innerHTML = "";
-      items.forEach((item) => {
-        const card = document.createElement("div");
-        card.classList.add("card");
-        card.dataset.type = item.item_type;
-        card.dataset.price = item.price;
-        card.dataset.availability =
-          Math.random() > 0.3 ? "available" : "occupied"; // Random availability
-        card.innerHTML = `
-                    ${
-                      item.image
-                        ? `<img src="${item.image}" style="width:100%;height:150px;object-fit:cover;">`
-                        : ""
-                    }
-                    <h3>${item.name}</h3>
-                    ${
-                      item.room_number
-                        ? `<p>Room Number: ${item.room_number}</p>`
-                        : ""
-                    }
-                    <p>Capacity: ${item.capacity} ${
-          item.item_type === "room" ? "persons" : "people"
-        }</p>
-                    <p>Price: P${item.price}${
-          item.item_type === "room" ? "/night" : "/day"
-        }</p>
-                    <p>${item.description}</p>
-                    <div class="card-actions">
-                        <button class="btn btn-primary btn-sm view-details-btn" data-item-id="${
-                          item.id
-                        }">View Details</button>
-                        <button class="btn btn-success btn-sm book-now-btn" data-item-id="${
-                          item.id
-                        }">Book Now</button>
-                    </div>
-                `;
-        container.appendChild(card);
-      });
-      
-      // Add event handlers for View Details and Book Now buttons
-      setupItemButtons();
-      filterItems();
+    if (!container) {
+      console.error("Guest: Cards grid container not found!");
+      return;
     }
+
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div class="col-12">
+          <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle fa-2x mb-2"></i>
+            <h5>No Rooms or Facilities Available</h5>
+            <p>Please check back later or contact us for more information.</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    console.log("Guest: Rendering", items.length, "items");
+    container.innerHTML = "";
+    
+    items.forEach((item, index) => {
+      console.log(`Guest: Rendering item ${index + 1}:`, item.name, `(${item.item_type})`);
+      
+      const card = document.createElement("div");
+      card.classList.add("card");
+      card.dataset.type = item.item_type;
+      card.dataset.price = item.price || 0;
+      card.dataset.itemId = item.id;
+      
+      // Use actual room status if available, fallback to available
+      const roomStatus = item.room_status || 'available';
+      card.dataset.availability = ['available', 'clean'].includes(roomStatus) ? "available" : "occupied";
+      
+      const imageUrl = item.image && item.image.trim() !== '' 
+        ? item.image 
+        : 'assets/images/imageBg/barcie_logo.jpg';
+      
+      card.innerHTML = `
+        <div class="card-image">
+          <img src="${imageUrl}" 
+               style="width:100%;height:200px;object-fit:cover;border-radius:15px 15px 0 0;" 
+               onerror="this.onerror=null; this.src='assets/images/imageBg/barcie_logo.jpg';"
+               alt="${item.name}">
+          <div class="availability-badge ${card.dataset.availability}">
+            <i class="fas ${card.dataset.availability === 'available' ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+            ${card.dataset.availability === 'available' ? 'Available' : 'Occupied'}
+          </div>
+        </div>
+        <div class="card-content" style="padding: 20px;">
+          <h3 style="margin-bottom: 10px; color: #2c3e50;">${item.name}</h3>
+          ${item.room_number ? `<p style="margin: 5px 0; color: #7f8c8d;"><i class="fas fa-door-open me-1"></i>Room Number: ${item.room_number}</p>` : ""}
+          <p style="margin: 5px 0; color: #7f8c8d;"><i class="fas fa-users me-1"></i>Capacity: ${item.capacity} ${item.item_type === "room" ? "persons" : "people"}</p>
+          <p style="margin: 5px 0; color: #27ae60; font-weight: bold; font-size: 1.1em;"><i class="fas fa-peso-sign me-1"></i>₱${parseInt(item.price || 0).toLocaleString()}${item.item_type === "room" ? "/night" : "/day"}</p>
+          <p style="margin: 10px 0; color: #34495e; line-height: 1.4;">${item.description || 'Comfortable accommodation with modern amenities.'}</p>
+          <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+            <button class="btn btn-primary btn-sm view-details-btn flex-fill" data-item-id="${item.id}">
+              <i class="fas fa-eye me-1"></i>View Details
+            </button>
+            <button class="btn btn-success btn-sm book-now-btn flex-fill" data-item-id="${item.id}" ${card.dataset.availability !== 'available' ? 'disabled' : ''}>
+              <i class="fas fa-calendar-plus me-1"></i>Book Now
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+    
+    // Add event handlers for View Details and Book Now buttons
+    setupItemButtons();
+    filterItems();
+    
+    console.log("Guest: Items loaded and displayed successfully");
+    
   } catch (error) {
-    console.error("Error loading items:", error);
+    console.error("Guest: Error loading items:", error);
+    
+    const container = document.getElementById("cards-grid");
+    if (container) {
+      container.innerHTML = `
+        <div class="col-12">
+          <div class="alert alert-danger text-center">
+            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+            <h5>Error Loading Rooms & Facilities</h5>
+            <p>Unable to load rooms and facilities. Please refresh the page or contact support.</p>
+            <small class="text-muted">Error: ${error.message}</small>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Show user-friendly toast notification
+    if (typeof showToast === 'function') {
+      showToast('Failed to load rooms and facilities. Please refresh the page.', 'error');
+    }
   }
 }
 
@@ -510,49 +774,68 @@ function redirectToBooking(itemId) {
 
 // Pre-fill booking form with selected item
 function prefillBookingForm(item) {
-  // Set item name in form if there's a field for it
-  const itemNameField = document.querySelector('#item_name, [name="item_name"]');
-  if (itemNameField) {
-    itemNameField.value = item.name;
-  }
+  console.log('Pre-filling booking form with item:', item);
   
-  // Try to find and populate other relevant fields
-  const itemTypeField = document.querySelector('#item_type, [name="item_type"]');
-  if (itemTypeField) {
-    itemTypeField.value = item.item_type;
-  }
-  
-  const priceField = document.querySelector('#price, [name="price"]');
-  if (priceField) {
-    priceField.value = item.price;
-  }
-  
-  // Add item details to details field if it exists
-  const detailsField = document.querySelector('#details, [name="details"], textarea');
-  if (detailsField) {
-    const currentDetails = detailsField.value;
-    const itemInfo = `Item: ${item.name} | Type: ${item.item_type} | Price: P${item.price}${item.item_type === 'room' ? '/night' : '/day'} | Capacity: ${item.capacity}`;
-    
-    if (currentDetails) {
-      detailsField.value = itemInfo + ' | ' + currentDetails;
-    } else {
-      detailsField.value = itemInfo;
+  // Set the correct booking type based on item type
+  if (item.item_type === 'facility') {
+    // Select pencil booking for facilities
+    const pencilRadio = document.querySelector('input[name="bookingType"][value="pencil"]');
+    if (pencilRadio) {
+      pencilRadio.checked = true;
+      toggleBookingForm(); // Show pencil form
+    }
+  } else {
+    // Select reservation for rooms
+    const reservationRadio = document.querySelector('input[name="bookingType"][value="reservation"]');
+    if (reservationRadio) {
+      reservationRadio.checked = true;
+      toggleBookingForm(); // Show reservation form
     }
   }
   
-  // Highlight the booking form
-  const bookingForm = document.querySelector('#reservationForm, #pencilForm, form');
-  if (bookingForm) {
-    bookingForm.style.border = '2px solid #28a745';
-    bookingForm.style.borderRadius = '0.5rem';
-    bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Wait a moment for form to be visible, then set the room/facility selection
+  setTimeout(() => {
+    const roomSelect = document.querySelector('#room_select, [name="room_id"]');
+    if (roomSelect) {
+      // Set the selected room/facility
+      roomSelect.value = item.id;
+      console.log('Set room selection to:', item.id, item.name);
+      
+      // Trigger change event to update any dependent fields
+      roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      // Add visual feedback
+      roomSelect.style.border = '2px solid #28a745';
+      setTimeout(() => {
+        roomSelect.style.border = '';
+      }, 2000);
+    } else {
+      console.warn('Room select dropdown not found');
+    }
     
-    // Remove highlight after 3 seconds
-    setTimeout(() => {
-      bookingForm.style.border = '';
-      bookingForm.style.borderRadius = '';
-    }, 3000);
-  }
+    // Scroll to the booking form
+    const activeForm = item.item_type === 'facility' 
+      ? document.querySelector('#pencilForm')
+      : document.querySelector('#reservationForm');
+      
+    if (activeForm) {
+      activeForm.style.border = '2px solid #28a745';
+      activeForm.style.borderRadius = '0.5rem';
+      activeForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Remove highlight after 3 seconds
+      setTimeout(() => {
+        activeForm.style.border = '';
+        activeForm.style.borderRadius = '';
+      }, 3000);
+      
+      // Focus on the first input field
+      const firstInput = activeForm.querySelector('input:not([type="hidden"]):not([readonly]), select, textarea');
+      if (firstInput && !firstInput.value) {
+        firstInput.focus();
+      }
+    }
+  }, 300);
 }
 
 // Reminder Functions (from guest.js with Bootstrap enhancement)
@@ -735,6 +1018,60 @@ function getOrCreateToastContainer() {
   return container;
 }
 
+// Enhanced detailed toast for calendar events
+function showDetailedToast(message, type = "info", title = "Room/Facility Information") {
+  const toastContainer = getOrCreateToastContainer();
+  const toastId = "detailed-toast-" + Date.now();
+
+  let bgClass, iconClass;
+  switch (type) {
+    case "success":
+      bgClass = "bg-success";
+      iconClass = "fa-check-circle";
+      break;
+    case "warning":
+      bgClass = "bg-warning";
+      iconClass = "fa-exclamation-triangle";
+      break;
+    case "error":
+    case "danger":
+      bgClass = "bg-danger";
+      iconClass = "fa-times-circle";
+      break;
+    default:
+      bgClass = "bg-info";
+      iconClass = "fa-info-circle";
+  }
+
+  const toastHtml = `
+        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false" style="max-width: 350px;">
+            <div class="toast-header">
+                <i class="fas ${iconClass} me-2"></i>
+                <strong class="me-auto">${title}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" style="font-size: 0.9rem; line-height: 1.4;">
+                ${message}
+                <hr class="my-2 opacity-50">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small><i class="fas fa-calendar-alt me-1"></i>Calendar View</small>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="toast">Got it</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+  toastContainer.insertAdjacentHTML("beforeend", toastHtml);
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement, { autohide: false }); // Don't auto-hide
+  toast.show();
+
+  // Remove element after it's hidden
+  toastElement.addEventListener("hidden.bs.toast", function () {
+    this.remove();
+  });
+}
+
 // Global Sidebar Toggle Function
 function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar-guest");
@@ -767,6 +1104,7 @@ window.filterItems = filterItems;
 window.showItemDetails = showItemDetails;
 window.redirectToBooking = redirectToBooking;
 window.setupItemButtons = setupItemButtons;
+window.scrollToAvailability = scrollToAvailability;
 
 // Interactive Overview Setup - Typical Dashboard Style
 function setupInteractiveOverview() {
@@ -786,31 +1124,85 @@ function updateOverviewStats() {
   const facilities = window.allItems.filter(
     (item) => item.item_type === "facility"
   );
-  const availableCount = Math.floor(window.allItems.length * 0.7); // 70% available for demo
 
   // Update statistics displays
   document.getElementById("total-rooms").textContent = rooms.length;
   document.getElementById("total-facilities").textContent = facilities.length;
-  document.getElementById("available-rooms").textContent = availableCount;
-
-  // Get user bookings count (you can integrate with real booking data)
-  getUserBookingsCount();
+  
+  // Fetch real availability data
+  fetchRealAvailability();
 }
 
-// Get user bookings count from server or estimate
-function getUserBookingsCount() {
-  // Try to get from user management section if available
-  const bookingsTable = document.querySelector("#user .table-container tbody");
-  let bookingsCount = 0;
+// Fetch real availability data from server
+async function fetchRealAvailability() {
+  // Show loading state
+  const availableElement = document.getElementById("available-rooms");
+  const originalText = availableElement.textContent;
+  availableElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  
+  try {
+    const response = await fetch('database/user_auth.php?action=get_available_count');
+    const data = await response.json();
 
-  if (bookingsTable) {
-    bookingsCount = bookingsTable.querySelectorAll("tr").length;
-  } else {
-    // Default estimate for demo
-    bookingsCount = Math.floor(Math.random() * 5) + 1;
+    if (data && data.success) {
+      availableElement.textContent = data.available_count;
+      console.log('Real availability loaded:', data.available_count);
+    } else {
+      console.warn('API returned error or unexpected response:', data);
+      // Fallback: calculate based on room status from items
+      availableElement.textContent = originalText;
+      calculateFallbackAvailability();
+    }
+  } catch (error) {
+    console.error('Error fetching availability:', error);
+    // Fallback: calculate based on room status from items
+    availableElement.textContent = originalText;
+    calculateFallbackAvailability();
   }
+}
 
-  document.getElementById("total-bookings").textContent = bookingsCount;
+// Fallback availability calculation
+function calculateFallbackAvailability() {
+  if (!window.allItems) {
+    document.getElementById("available-rooms").textContent = "0";
+    return;
+  }
+  
+  // Count items that are available or clean (not occupied, maintenance, etc.)
+  const availableItems = window.allItems.filter(item => 
+    !item.room_status || 
+    item.room_status === 'available' || 
+    item.room_status === 'clean'
+  );
+  
+  document.getElementById("available-rooms").textContent = availableItems.length;
+}
+
+// Scroll to availability calendar section
+function scrollToAvailability() {
+  const availabilitySection = document.getElementById('availability-calendar-section');
+  
+  if (availabilitySection) {
+    availabilitySection.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+    
+    // Add a subtle highlight effect to the card
+    const card = availabilitySection.querySelector('.card');
+    if (card) {
+      card.style.transition = 'box-shadow 0.3s ease';
+      card.style.boxShadow = '0 0 20px rgba(23, 162, 184, 0.3)';
+      
+      setTimeout(() => {
+        card.style.boxShadow = '';
+      }, 2000);
+    }
+    
+    showToast('Viewing availability calendar below', 'info');
+  } else {
+    showToast('Availability calendar section not found', 'warning');
+  }
 }
 
 // Load Featured Items for Overview
@@ -1138,14 +1530,15 @@ function initializeStarRating() {
 
 // Guest Availability Calendar - Privacy-Focused
 function initializeGuestCalendar() {
+  console.log('=== CALENDAR INITIALIZATION START ===');
   const calendarEl = document.getElementById('guestCalendar');
   
   if (!calendarEl) {
-    console.log('Guest calendar element not found');
+    console.error('Guest calendar element not found');
     return;
   }
   
-  console.log('Initializing guest calendar...');
+  console.log('Guest calendar element found:', calendarEl);
   
   // Check if FullCalendar is loaded
   if (typeof FullCalendar === 'undefined') {
@@ -1153,6 +1546,8 @@ function initializeGuestCalendar() {
     showToast('Calendar library not loaded. Please refresh the page.', 'error');
     return;
   }
+  
+  console.log('FullCalendar library loaded successfully');
   
   // Initialize FullCalendar for guest availability view
   const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -1164,19 +1559,37 @@ function initializeGuestCalendar() {
     },
     height: 'auto',
     events: function(fetchInfo, successCallback, failureCallback) {
+      console.log('=== FETCHING CALENDAR DATA ===');
       console.log('Fetching guest availability data...');
       fetch('database/user_auth.php?action=fetch_guest_availability')
         .then(response => {
+          console.log('Response received:', response);
           if (!response.ok) {
-            throw new Error('Network response was not ok');
+            throw new Error('Network response was not ok: ' + response.status);
           }
           return response.json();
         })
         .then(data => {
-          console.log('Guest availability data received:', data);
-          successCallback(data);
+          console.log('=== CALENDAR DATA RECEIVED ===');
+          console.log('Guest availability data:', data);
+          // user_auth.php returns an array of events. Older API returned { success: true, events: [...] }
+          if (Array.isArray(data)) {
+            console.log('Number of events:', data.length);
+            successCallback(data);
+          } else if (data && data.success && Array.isArray(data.events)) {
+            console.log('Number of events (wrapped):', data.events.length);
+            successCallback(data.events);
+          } else {
+            console.log('No events found or invalid data structure');
+            // If server returned an error object, show a toast for visibility
+            if (data && data.error) {
+              showToast('Calendar API error: ' + data.error, 'warning');
+            }
+            successCallback([]);
+          }
         })
         .catch(error => {
+          console.error('=== CALENDAR ERROR ===');
           console.error('Error fetching availability data:', error);
           failureCallback(error);
           showToast('Unable to load availability data. Please refresh the page.', 'warning');
@@ -1186,30 +1599,49 @@ function initializeGuestCalendar() {
     dayMaxEvents: 3,
     moreLinkClick: 'popover',
     eventMouseEnter: function(info) {
-      // Show tooltip with room/facility info (privacy-safe)
+      // Show enhanced tooltip with specific room information
+      const { extendedProps } = info.event;
+      const startDate = new Date(extendedProps.checkin_date || info.event.start);
+      const endDate = new Date(extendedProps.checkout_date || info.event.end);
+      const duration = extendedProps.duration_days || 1;
+      const roomName = extendedProps.facility || 'Room/Facility';
+      
       const tooltip = document.createElement('div');
       tooltip.className = 'custom-tooltip';
       tooltip.innerHTML = `
-        <strong>${info.event.title}</strong><br>
-        <small>Check availability for other dates</small>
+        <strong><i class="fas fa-bed me-1"></i>${roomName}</strong><br>
+        <small><i class="fas fa-calendar me-1"></i>Check-in: ${startDate.toLocaleDateString()}</small><br>
+        <small><i class="fas fa-calendar-check me-1"></i>Check-out: ${endDate.toLocaleDateString()}</small><br>
+        <small><i class="fas fa-clock me-1"></i>Duration: ${duration} day${duration > 1 ? 's' : ''}</small><br>
+        <small><i class="fas fa-info-circle me-1"></i>Status: ${extendedProps.booking_status || 'Occupied'}</small>
       `;
       tooltip.style.cssText = `
         position: absolute;
         background: #333;
         color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
+        padding: 10px 12px;
+        border-radius: 6px;
         font-size: 12px;
         z-index: 1000;
         pointer-events: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        max-width: 250px;
+        line-height: 1.4;
       `;
       
       document.body.appendChild(tooltip);
       
       const rect = info.el.getBoundingClientRect();
       tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-      tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
+      tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
+      
+      // Adjust position if tooltip goes off screen
+      if (tooltip.offsetLeft < 5) {
+        tooltip.style.left = '5px';
+      }
+      if (tooltip.offsetLeft + tooltip.offsetWidth > window.innerWidth - 5) {
+        tooltip.style.left = (window.innerWidth - tooltip.offsetWidth - 5) + 'px';
+      }
       
       info.el.tooltip = tooltip;
     },
@@ -1220,10 +1652,23 @@ function initializeGuestCalendar() {
       }
     },
     eventClick: function(info) {
-      // Show availability info without personal details
-      const { facility } = info.event.extendedProps;
-      const message = `${facility} is currently occupied during this period. Please select alternative dates for your booking.`;
-      showToast(message, 'info');
+      // Show detailed availability info with duration
+      const { extendedProps } = info.event;
+      const facility = extendedProps.facility || 'Room/Facility';
+      const duration = extendedProps.duration_days || 1;
+      const status = extendedProps.booking_status || 'occupied';
+      const checkin = new Date(extendedProps.checkin_date || info.event.start).toLocaleDateString();
+      const checkout = new Date(extendedProps.checkout_date || info.event.end).toLocaleDateString();
+      
+      const statusText = status === 'pending' ? 'has a pending booking' : 'is currently occupied';
+      const message = `
+        <strong>${facility}</strong> ${statusText} from <strong>${checkin}</strong> to <strong>${checkout}</strong> 
+        (${duration} day${duration > 1 ? 's' : ''}). 
+        <br><br>Please select alternative dates for your booking.
+      `;
+      
+      // Create a custom modal-like toast for more detailed info
+      showDetailedToast(message, 'info', facility);
     },
     loading: function(isLoading) {
       const loadingIndicator = document.getElementById('calendar-loading');
@@ -1247,18 +1692,27 @@ function initializeGuestCalendar() {
     eventBorderColor: 'transparent',
     // Add some demo events if no real data
     eventDidMount: function(info) {
+      console.log('=== EVENT MOUNTED ===');
       console.log('Event mounted:', info.event.title);
+      console.log('Event details:', info.event.extendedProps);
     }
   });
   
   // Render the calendar
   try {
+    console.log('=== RENDERING CALENDAR ===');
     calendar.render();
     console.log('Guest calendar rendered successfully');
+    console.log('Calendar object:', calendar);
     
     // Add a message for empty calendar
     setTimeout(() => {
-      if (calendar.getEvents().length === 0) {
+      const events = calendar.getEvents();
+      console.log('=== CALENDAR EVENTS CHECK ===');
+      console.log('Number of events after render:', events.length);
+      
+      if (events.length === 0) {
+        console.log('No events found, showing empty message');
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'text-center text-muted mt-3';
         emptyMessage.innerHTML = `
@@ -1267,10 +1721,13 @@ function initializeGuestCalendar() {
           <small>Book now to secure your preferred dates.</small>
         `;
         calendarEl.parentNode.appendChild(emptyMessage);
+      } else {
+        console.log('Events found:', events.map(e => e.title));
       }
-    }, 2000);
+    }, 3000); // Increased timeout
     
   } catch (error) {
+    console.error('=== CALENDAR RENDER ERROR ===');
     console.error('Error rendering guest calendar:', error);
     showToast('Failed to initialize calendar. Please refresh the page.', 'error');
   }
@@ -1302,3 +1759,134 @@ function initializeGuestCalendar() {
 
 // Export guest calendar functions
 window.initializeGuestCalendar = initializeGuestCalendar;
+
+// Debug function to test section switching
+window.testSectionSwitching = function() {
+  console.log("Testing section switching...");
+  const sections = ['overview', 'availability', 'rooms', 'booking', 'communication', 'feedback'];
+  sections.forEach((sectionId, index) => {
+    setTimeout(() => {
+      console.log(`Testing section: ${sectionId}`);
+      const button = document.querySelector(`button[onclick*="${sectionId}"]`);
+      showSection(sectionId, button);
+    }, index * 1000);
+  });
+};
+
+// Debug function to test items loading
+window.testItemsLoading = async function() {
+  console.log("Testing items loading...");
+  try {
+    const response = await fetch("database/user_auth.php?action=fetch_items");
+    const data = await response.json();
+    console.log("Raw API response:", data);
+    console.log("Response type:", Array.isArray(data) ? 'array' : typeof data);
+    if (Array.isArray(data)) {
+      console.log("Items count:", data.length);
+      data.forEach((item, index) => {
+        console.log(`Item ${index + 1}:`, item.name, `(${item.item_type})`);
+      });
+    }
+    return data;
+  } catch (error) {
+    console.error("Error testing items loading:", error);
+  }
+};
+
+// Debug function to reload items
+window.reloadItems = function() {
+  console.log("Manually reloading items...");
+  loadItems();
+};
+
+// Backup initialization system
+function ensureSectionsWork() {
+  console.log('=== BACKUP INITIALIZATION ===');
+  
+  // Force show home section if nothing is visible
+  const visibleSections = document.querySelectorAll('.content-section.active, .content-section[style*="block"]');
+  console.log('Currently visible sections:', visibleSections.length);
+  
+  if (visibleSections.length === 0) {
+    console.log('No sections visible, forcing home section to show');
+    const homeSection = document.getElementById('home');
+    if (homeSection) {
+      // Remove all active classes first
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+      });
+      
+      // Show home section
+      homeSection.classList.add('active');
+      homeSection.style.display = 'block';
+      homeSection.style.opacity = '1';
+      
+      console.log('Home section forced to show');
+    }
+  }
+  
+  // Ensure navigation works
+  const navButtons = document.querySelectorAll('button[onclick*="showSection"], .nav-link[data-section]');
+  console.log('Found navigation buttons:', navButtons.length);
+  
+  navButtons.forEach(button => {
+    if (!button.hasEventListener) {
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
+      
+      newButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        let sectionId = null;
+        if (this.hasAttribute('data-section')) {
+          sectionId = this.getAttribute('data-section');
+        } else if (this.onclick) {
+          const onclickStr = this.onclick.toString();
+          const match = onclickStr.match(/showSection\(['"]([^'"]+)['"]/);
+          if (match) {
+            sectionId = match[1];
+          }
+        }
+        
+        if (sectionId) {
+          console.log('Navigation clicked:', sectionId);
+          showSection(sectionId, this);
+        }
+      });
+      
+      newButton.hasEventListener = true;
+    }
+  });
+  
+  console.log('Backup initialization completed');
+}
+
+// Multiple initialization attempts
+console.log('=== GUEST PORTAL INITIALIZATION SEQUENCE ===');
+
+// Immediate initialization if DOM is ready
+if (document.readyState !== 'loading') {
+  console.log('DOM already ready, initializing immediately');
+  initializeGuestPortal();
+} else {
+  console.log('DOM still loading, waiting for DOMContentLoaded');
+  document.addEventListener('DOMContentLoaded', initializeGuestPortal);
+}
+
+// Backup initialization after 2 seconds
+setTimeout(() => {
+  console.log('Running backup initialization check...');
+  ensureSectionsWork();
+}, 2000);
+
+// Final fallback after 4 seconds
+setTimeout(() => {
+  console.log('Running final fallback check...');
+  const activeSection = document.querySelector('.content-section.active');
+  if (!activeSection) {
+    console.log('Still no active sections, forcing home section');
+    showSection('overview');
+  }
+}, 4000);
