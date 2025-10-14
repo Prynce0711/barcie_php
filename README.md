@@ -170,8 +170,11 @@ php test_chat_endpoints.php
 ## 🛠️ Technology Stack
 
 ### Backend
-- **PHP 8.2**: Server-side logic and database interactions
+- **PHP 8.2+**: Server-side logic and database interactions (Compatible with PHP 8.4.13)
 - **MySQL/MariaDB**: Relational database for data storage
+- **Composer**: Dependency management for PHP packages
+- **PHPMailer 6.11.1**: SMTP email functionality with OAuth2 support
+- **PSR-3 Logging**: Professional logging standards implementation
 - **Session Management**: PHP sessions for authentication
 - **Apache**: Web server with mod_rewrite enabled
 
@@ -398,6 +401,7 @@ CREATE TABLE chat_conversations (
    ```bash
    # Download from https://www.apachefriends.org/
    # Install with Apache and MySQL modules
+   # Ensure PHP 8.0+ is included
    ```
 
 2. **Clone or Download Project**
@@ -409,11 +413,22 @@ CREATE TABLE chat_conversations (
    # Place in C:\xampp\htdocs\barcie_php
    ```
 
-3. **Start XAMPP Services**
+3. **Install Dependencies**
+   ```bash
+   # Navigate to project directory
+   cd C:\xampp\htdocs\barcie_php
+   
+   # Install Composer dependencies
+   composer install
+   
+   # If Composer is not installed, download from https://getcomposer.org/
+   ```
+
+4. **Start XAMPP Services**
    - Open XAMPP Control Panel
    - Start **Apache** and **MySQL** services
 
-4. **Create Database**
+5. **Create Database**
    ```sql
    # Access phpMyAdmin at http://localhost/phpmyadmin
    # Create database named 'barcie_db'
@@ -425,7 +440,7 @@ CREATE TABLE chat_conversations (
    php database/init_chat.php
    ```
 
-5. **Configure Database Connection**
+6. **Configure Database Connection**
    ```php
    // Create .env file from .env.example
    // Update database/db_connect.php settings if needed
@@ -435,13 +450,22 @@ CREATE TABLE chat_conversations (
    $dbname = "barcie_db";
    ```
 
-6. **Create Admin Account**
+7. **Create Admin Account**
    ```sql
    # Insert admin user in the database
    INSERT INTO admins (username, password) VALUES ('admin', 'admin123');
    ```
 
-7. **Access the Application**
+8. **Verify Dependencies**
+   ```bash
+   # Test Composer autoloader
+   php -r "require_once 'vendor/autoload.php'; echo 'Dependencies loaded successfully\n';"
+   
+   # Test PHPMailer
+   php -r "require_once 'vendor/autoload.php'; use PHPMailer\PHPMailer\PHPMailer; echo 'PHPMailer available\n';"
+   ```
+
+9. **Access the Application**
    ```
    http://localhost/barcie_php/
    ```
@@ -478,6 +502,26 @@ DB_NAME=barcie_db         # Database name
 
 # Tailscale Configuration (optional)
 TS_AUTHKEY=your_authkey   # For VPN networking
+```
+
+### Composer Dependencies
+The project uses Composer for dependency management:
+```json
+{
+    "require": {
+        "psr/log": "^3.0",
+        "phpmailer/phpmailer": "^6.11"
+    }
+}
+```
+
+**Installation:**
+```bash
+# Install dependencies
+composer install
+
+# Update dependencies
+composer update
 ```
 
 ### Email Validation
@@ -562,6 +606,22 @@ services:
    Solution: Ensure email follows @gmail.com format
    ```
 
+5. **Composer/Vendor Folder Issues**
+   ```
+   Problem: PHPMailer not loading or vendor autoloader errors
+   Solution: Run 'composer install' to ensure dependencies are properly installed
+   Verify: Check that vendor/autoload.php exists and is accessible
+   Fix: Ensure database/user_auth.php uses Composer autoloader instead of manual includes
+   ```
+
+6. **Admin Booking Actions Not Working**
+   ```
+   Problem: Admin cannot approve/reject bookings or update booking status
+   Solution: Check browser console for JavaScript errors
+   Verify: Ensure updateBookingStatus function is loaded in dashboard-bootstrap.js
+   Fix: Refresh page after booking status changes to see updated information
+   ```
+
 5. **Docker Build Issues**
    ```
    # Clear Docker cache and rebuild
@@ -642,9 +702,12 @@ docker-compose exec web chown -R www-data:www-data /var/www/html
 - ✅ **Enhanced UI/UX with Animations**
 - ✅ **Quick Response Templates**
 - ✅ **Message History & Conversation Management**
-- 🔄 **Payment Integration** (In Progress)
-- 🔄 **Advanced Reporting** (Planned)
-- 🔄 **API Development** (Planned)
+- ✅ **Composer Dependency Management**
+- ✅ **PHPMailer Integration (Fixed)**
+- ✅ **Admin Booking Management (Fixed)**
+- ✅ **JavaScript Error Handling (Enhanced)**
+- ✅ **Vendor Folder Configuration (Resolved)**
+
 
 ## 🚀 Deployment & DevOps
 
@@ -709,6 +772,16 @@ This project is developed as part of a capstone project for educational purposes
 - **Purpose**: Capstone Project
 
 ## 🔄 Version History
+
+- **v2.2.0** - System Stability & Bug Fixes (October 2025)
+  - **Fixed Vendor Folder Issues**: Resolved PHPMailer loading errors by implementing proper Composer autoloader usage
+  - **Enhanced Admin Booking Management**: Fixed JavaScript errors preventing admin from updating booking statuses
+  - **Improved Error Handling**: Added comprehensive try-catch blocks and validation throughout JavaScript functions
+  - **Updated Booking Details Modal**: Corrected table column mapping for proper data display (9 columns vs 6)
+  - **Enhanced Filter Functions**: Improved booking filter functionality with robust error handling
+  - **Composer Integration**: Properly configured dependency management for PHPMailer and PSR-3 logging
+  - **Code Quality Improvements**: Fixed linting issues and added proper code formatting
+  - **Documentation Updates**: Enhanced troubleshooting section with vendor-specific solutions
 
 - **v2.1.0** - Professional Chat System Integration (October 2025)
   - Implemented real-time chat system between guests and administrators
