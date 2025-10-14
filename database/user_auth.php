@@ -1,20 +1,16 @@
 <?php
-// PHPMailer setup (safe require with error handling)
+// PHPMailer setup using Composer autoloader
 function send_smtp_mail($to, $subject, $body, $altBody = '') {
     try {
-        // Check if PHPMailer files exist before requiring
-        $phpmailer_path = __DIR__ . '/../vendor/PHPMailer/src/PHPMailer.php';
-        $smtp_path = __DIR__ . '/../vendor/PHPMailer/src/SMTP.php';
-        $exception_path = __DIR__ . '/../vendor/PHPMailer/src/Exception.php';
+        // Use Composer autoloader for PHPMailer
+        $autoload_path = __DIR__ . '/../vendor/autoload.php';
         
-        if (!file_exists($phpmailer_path) || !file_exists($smtp_path) || !file_exists($exception_path)) {
-            error_log('PHPMailer files not found. Email functionality disabled.');
+        if (!file_exists($autoload_path)) {
+            error_log('Composer autoloader not found. Please run "composer install".');
             return false;
         }
         
-        require_once $phpmailer_path;
-        require_once $smtp_path;
-        require_once $exception_path;
+        require_once $autoload_path;
         
         $config_path = __DIR__ . '/../mail_config.php';
         if (!file_exists($config_path)) {
