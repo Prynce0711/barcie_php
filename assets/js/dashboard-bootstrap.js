@@ -2272,6 +2272,75 @@ async function updateBookingStatus(bookingId, newStatus) {
   }
 }
 
+// Discount Management Function (SEPARATE from booking approval)
+async function updateDiscountStatus(bookingId, discountAction) {
+  console.log('updateDiscountStatus called with:', bookingId, discountAction);
+  
+  if (!bookingId || !discountAction) {
+    console.error('Invalid parameters:', { bookingId, discountAction });
+    showToast("Invalid booking ID or discount action", "error");
+    return;
+  }
+
+  // Confirm action
+  const confirmMessages = {
+    'approve': 'Are you sure you want to APPROVE this discount application?\n\nNote: This only approves the discount, not the booking itself.',
+    'reject': 'Are you sure you want to REJECT this discount application?\n\nNote: The booking can still be approved separately with standard rates.'
+  };
+
+  if (confirmMessages[discountAction] && !confirm(confirmMessages[discountAction])) {
+    return;
+  }
+
+  try {
+    // Show loading state
+    const button = window.event?.target || document.activeElement;
+    const originalText = button?.innerHTML;
+    if (button && button.tagName === 'BUTTON') {
+      button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      button.disabled = true;
+    }
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('action', 'admin_update_discount');
+    formData.append('booking_id', bookingId);
+    formData.append('discount_action', discountAction);
+
+    // Send AJAX request
+    const response = await fetch('database/user_auth.php', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const actionText = discountAction === 'approve' ? 'approved' : 'rejected';
+      showToast(data.message || `Discount ${actionText} successfully! Guest will be notified via email.`, "success");
+      
+      // Reload the page after a short delay to show updated status
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      throw new Error(data.error || 'Unknown error occurred');
+    }
+  } catch (error) {
+    console.error('Error updating discount status:', error);
+    showToast(`Error updating discount: ${error.message}`, "error");
+  } finally {
+    // Restore button state
+    if (button && originalText) {
+      button.innerHTML = originalText;
+      button.disabled = false;
+    }
+  }
+}
+
 // View booking details function
 function viewBookingDetails(bookingId) {
   if (!bookingId) {
@@ -2453,6 +2522,7 @@ function resetFilters() {
 
 // Make functions globally available
 window.updateBookingStatus = updateBookingStatus;
+window.updateDiscountStatus = updateDiscountStatus;
 window.viewBookingDetails = viewBookingDetails;
 window.filterBookings = filterBookings;
 window.resetFilters = resetFilters;

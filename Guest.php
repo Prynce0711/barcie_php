@@ -974,7 +974,8 @@ $user_id = 0; // Default guest user ID
 
             <label>
               <span class="label-text">Email Address *</span>
-              <input type="email" name="email" required>
+              <input type="email" name="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                title="Only Gmail Address are accepted (@gmail.com)">
             </label>
 
             <label>
