@@ -4,6 +4,72 @@ require __DIR__ . '/../vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+// Helper function to create professional email template
+function create_email_template($title, $content, $footerText = '') {
+    $currentYear = date('Y');
+    
+    // Get base64 encoded logo
+    $logo_path = __DIR__ . '/../assets/images/imageBg/barcie_logo.jpg';
+    $logo_data = '';
+    if (file_exists($logo_path)) {
+        $logo_base64 = base64_encode(file_get_contents($logo_path));
+        $logo_data = 'data:image/jpeg;base64,' . $logo_base64;
+    }
+    
+    return '
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>' . htmlspecialchars($title) . '</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, \'Helvetica Neue\', Arial, sans-serif; background-color: #f4f4f4;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4;" cellpadding="0" cellspacing="0">
+            <tr>
+                <td align="center" style="padding: 40px 0;">
+                    <!-- Main Container -->
+                    <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" cellpadding="0" cellspacing="0">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                                ' . ($logo_data ? '<img src="' . $logo_data . '" alt="BarCIE Logo" style="width: 80px; height: 80px; margin-bottom: 15px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" />' : '') . '
+                                <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">BarCIE International Center</h1>
+                                <p style="margin: 10px 0 0 0; color: #f0f0f0; font-size: 14px;">La Consolacion University Philippines</p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px 30px;">
+                                ' . $content . '
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
+                                ' . ($footerText ? '<p style="margin: 0 0 15px 0; color: #6c757d; font-size: 13px;">' . $footerText . '</p>' : '') . '
+                                <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 13px;">
+                                    <strong>BarCIE International Center</strong><br>
+                                    La Consolacion University Philippines<br>
+                                    Email: pc.clemente11@gmail.com
+                                </p>
+                                <p style="margin: 15px 0 0 0; color: #adb5bd; font-size: 12px;">
+                                    © ' . $currentYear . ' BarCIE International Center. All rights reserved.
+                                </p>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
+}
+
 // PHPMailer setup using Composer autoloader
 function send_smtp_mail($to, $subject, $body, $altBody = '') {
     try {
@@ -974,28 +1040,87 @@ if ($action === 'create_booking') {
                     error_log("Attempting to send confirmation email to: " . $email);
                     
                     $subject = "Booking Confirmation - BarCIE International Center";
-                    $emailBody = "
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;'>
-                            <h2 style='color: #2d7be5;'>Booking Confirmation</h2>
-                            <p>Dear " . htmlspecialchars($guest_name) . ",</p>
-                            <p>Your booking has been received with the following details:</p>
-                            <div style='background: #f5f5f5; padding: 15px; border-radius: 5px;'>
-                                <p><strong>Receipt Number:</strong> " . htmlspecialchars($receipt_no) . "</p>
-                                <p><strong>Room/Facility:</strong> " . htmlspecialchars($room_data['name']) . "</p>
-                                <p><strong>Check-in:</strong> " . htmlspecialchars($checkin) . "</p>
-                                <p><strong>Check-out:</strong> " . htmlspecialchars($checkout) . "</p>
-                                <p><strong>Number of Occupants:</strong> " . htmlspecialchars($occupants) . "</p>
-                                <p><strong>Status:</strong> Pending approval</p>
-                            </div>";
+                    
+                    // Create professional email content
+                    $emailContent = '
+                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600;">Booking Confirmation</h2>
+                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Thank you for your booking! We have received your reservation request with the following details:
+                        </p>
+                        
+                        <!-- Booking Details Card -->
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f8f9fa; border-radius: 6px; margin-bottom: 25px;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding: 25px;">
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Receipt Number:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($receipt_no) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Room/Facility:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($room_data['name']) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-in Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y', strtotime($checkin)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-out Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Number of Occupants:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($occupants) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Booking Status:</td>
+                                            <td style="padding: 8px 0;">
+                                                <span style="display: inline-block; padding: 4px 12px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 600; border-radius: 4px;">Pending Approval</span>
+                                            </td>
+                                        </tr>';
                     
                     if (!empty($discount_type)) {
-                        $emailBody .= "<p><strong>Discount Applied:</strong> " . htmlspecialchars($discount_type) . " (Pending admin approval)</p>";
+                        $emailContent .= '
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Discount Applied:</td>
+                                            <td style="padding: 8px 0;">
+                                                <span style="display: inline-block; padding: 4px 12px; background-color: #17a2b8; color: #fff; font-size: 13px; font-weight: 600; border-radius: 4px;">' . htmlspecialchars($discount_type) . '</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Discount Status:</td>
+                                            <td style="padding: 8px 0;">
+                                                <span style="display: inline-block; padding: 4px 12px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 600; border-radius: 4px;">Pending Review</span>
+                                            </td>
+                                        </tr>';
                     }
                     
-                    $emailBody .= "
-                            <p>We will review your booking and notify you once it's approved.</p>
-                            <p><em>This is an automated message. Please do not reply to this email.</em></p>
-                        </div>";
+                    $emailContent .= '
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <!-- Next Steps -->
+                        <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
+                            <p style="margin: 0; color: #1976D2; font-size: 14px; line-height: 1.6;">
+                                <strong>📋 What happens next?</strong><br>
+                                Our team will review your booking request and notify you via email once it has been approved. Please keep this receipt number for your records.
+                            </p>
+                        </div>
+                        
+                        <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            If you have any questions or need to make changes to your booking, please contact us with your receipt number.
+                        </p>
+                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Thank you for choosing BarCIE International Center!
+                        </p>';
+                    
+                    $emailBody = create_email_template('Booking Confirmation', $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                     
                     $mail_sent = send_smtp_mail($email, $subject, $emailBody);
                     error_log("Email send result: " . ($mail_sent ? "Success" : "Failed"));
@@ -1250,89 +1375,265 @@ if ($action === 'admin_update_booking') {
         // Send email notification to guest for every status change
         if (!empty($guest_email)) {
             $emailSubject = '';
-            $emailMessage = '';
+            $emailContent = '';
             
             switch ($adminAction) {
                 case 'approve':
                     $emailSubject = 'Booking Approved - BarCIE International Center';
-                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-                        <h2 style="color: #28a745;">✓ Booking Approved</h2>
-                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
-                        <p>Great news! Your booking has been <strong>approved</strong>.</p>
-                        <div style="background: #f0f8f4; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
-                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
-                            <p><strong>Check-in:</strong> ' . htmlspecialchars($checkin) . '</p>
-                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                    $emailContent = '
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                                ✓ APPROVED
+                            </div>
                         </div>
-                        <p style="margin-top: 20px;">We look forward to welcoming you!</p>
-                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
-                    </div>';
+                        
+                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Your Booking Has Been Approved!</h2>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
+                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Great news! Your reservation has been confirmed. We are pleased to welcome you to BarCIE International Center.
+                        </p>
+                        
+                        <!-- Booking Details Card -->
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #28a745;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding: 25px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #155724; font-size: 18px;">Reservation Details</h3>
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #155724; font-size: 14px; font-weight: 600;">Room/Facility:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #155724; font-size: 14px; font-weight: 600;">Check-in Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkin)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #155724; font-size: 14px; font-weight: 600;">Check-out Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
+                            <p style="margin: 0; color: #1976D2; font-size: 14px; line-height: 1.6;">
+                                <strong>📌 Important:</strong> Please arrive during check-in hours and bring a valid ID. If you have any special requests, feel free to contact us in advance.
+                            </p>
+                        </div>
+                        
+                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
+                            We look forward to welcoming you!
+                        </p>';
                     break;
                     
                 case 'reject':
-                    $emailSubject = 'Booking Update - BarCIE International Center';
-                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-                        <h2 style="color: #dc3545;">Booking Status Update</h2>
-                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
-                        <p>We regret to inform you that your booking request could not be approved at this time.</p>
-                        <div style="background: #fff5f5; padding: 15px; border-radius: 5px; border-left: 4px solid #dc3545;">
-                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
-                            <p><strong>Check-in:</strong> ' . htmlspecialchars($checkin) . '</p>
-                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                    $emailSubject = 'Booking Status Update - BarCIE International Center';
+                    $emailContent = '
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="display: inline-block; background-color: #dc3545; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                                ✗ NOT APPROVED
+                            </div>
                         </div>
-                        <p style="margin-top: 20px;">If you have any questions, please contact us.</p>
-                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
-                    </div>';
+                        
+                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Booking Status Update</h2>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
+                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Thank you for your interest in BarCIE International Center. Unfortunately, we are unable to approve your reservation request at this time.
+                        </p>
+                        
+                        <!-- Booking Details Card -->
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #dc3545;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding: 25px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #721c24; font-size: 18px;">Reservation Details</h3>
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #721c24; font-size: 14px; font-weight: 600;">Room/Facility:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #721c24; font-size: 14px; font-weight: 600;">Check-in Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkin)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #721c24; font-size: 14px; font-weight: 600;">Check-out Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            This may be due to availability conflicts or other operational requirements. We apologize for any inconvenience.
+                        </p>
+                        
+                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            If you have questions or would like to discuss alternative dates, please don\'t hesitate to contact us.
+                        </p>';
                     break;
                     
                 case 'checkin':
                     $emailSubject = 'Check-in Confirmed - BarCIE International Center';
-                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-                        <h2 style="color: #17a2b8;">✓ Check-in Confirmed</h2>
-                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
-                        <p>You have been successfully <strong>checked in</strong>.</p>
-                        <div style="background: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 4px solid #17a2b8;">
-                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
-                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                    $emailContent = '
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="display: inline-block; background-color: #17a2b8; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                                ✓ CHECKED IN
+                            </div>
                         </div>
-                        <p style="margin-top: 20px;">Enjoy your stay!</p>
-                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
-                    </div>';
+                        
+                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Welcome to BarCIE!</h2>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
+                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            You have been successfully checked in. We hope you enjoy your stay at BarCIE International Center!
+                        </p>
+                        
+                        <!-- Stay Details Card -->
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #17a2b8;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding: 25px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #0c5460; font-size: 18px;">Your Stay</h3>
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #0c5460; font-size: 14px; font-weight: 600;">Room/Facility:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #0c5460; font-size: 14px; font-weight: 600;">Check-out Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
+                            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                <strong>💡 Reminder:</strong> Please remember your check-out date. If you need any assistance during your stay, our staff is here to help!
+                            </p>
+                        </div>
+                        
+                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
+                            Enjoy your stay!
+                        </p>';
                     break;
                     
                 case 'checkout':
                     $emailSubject = 'Check-out Complete - BarCIE International Center';
-                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-                        <h2 style="color: #6f42c1;">✓ Check-out Complete</h2>
-                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
-                        <p>Your <strong>check-out</strong> has been processed successfully.</p>
-                        <div style="background: #f8f5ff; padding: 15px; border-radius: 5px; border-left: 4px solid #6f42c1;">
-                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
+                    $emailContent = '
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="display: inline-block; background-color: #6f42c1; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                                ✓ CHECKED OUT
+                            </div>
                         </div>
-                        <p style="margin-top: 20px;">Thank you for choosing BarCIE International Center. We hope to see you again!</p>
-                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
-                    </div>';
+                        
+                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Thank You for Staying With Us!</h2>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
+                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Your check-out has been processed successfully. Thank you for choosing BarCIE International Center!
+                        </p>
+                        
+                        <!-- Visit Summary Card -->
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #e2d9f3 0%, #d6c1f0 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #6f42c1;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding: 25px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #4a148c; font-size: 18px;">Visit Summary</h3>
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #4a148c; font-size: 14px; font-weight: 600;">Room/Facility:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
+                            <p style="margin: 0; color: #155724; font-size: 14px; line-height: 1.6;">
+                                <strong>🌟 We hope you enjoyed your stay!</strong><br>
+                                Your feedback is important to us. If you have any comments or suggestions, please feel free to reach out.
+                            </p>
+                        </div>
+                        
+                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
+                            We look forward to welcoming you back in the future!
+                        </p>';
                     break;
                     
                 case 'cancel':
                     $emailSubject = 'Booking Cancelled - BarCIE International Center';
-                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-                        <h2 style="color: #fd7e14;">Booking Cancelled</h2>
-                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
-                        <p>Your booking has been <strong>cancelled</strong>.</p>
-                        <div style="background: #fff8f0; padding: 15px; border-radius: 5px; border-left: 4px solid #fd7e14;">
-                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
-                            <p><strong>Check-in:</strong> ' . htmlspecialchars($checkin) . '</p>
-                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                    $emailContent = '
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="display: inline-block; background-color: #fd7e14; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                                ⚠ CANCELLED
+                            </div>
                         </div>
-                        <p style="margin-top: 20px;">If you did not request this cancellation, please contact us immediately.</p>
-                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
-                    </div>';
+                        
+                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Booking Cancellation Notice</h2>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
+                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            This is to confirm that your reservation has been cancelled.
+                        </p>
+                        
+                        <!-- Cancelled Booking Card -->
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #ffe8d1 0%, #fdd9b5 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #fd7e14;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding: 25px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #8a4000; font-size: 18px;">Cancelled Reservation</h3>
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #8a4000; font-size: 14px; font-weight: 600;">Room/Facility:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #8a4000; font-size: 14px; font-weight: 600;">Check-in Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkin)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #8a4000; font-size: 14px; font-weight: 600;">Check-out Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
+                            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                <strong>⚠️ Important:</strong> If you did not request this cancellation or if this was done in error, please contact us immediately.
+                            </p>
+                        </div>
+                        
+                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            If you would like to make a new reservation, you are welcome to submit another booking request.
+                        </p>';
                     break;
             }
             
-            if ($emailSubject && $emailMessage) {
-                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailMessage);
+            if ($emailSubject && $emailContent) {
+                $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
+                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
                 error_log("Status change email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
             }
         }
@@ -1457,38 +1758,105 @@ if ($action === 'admin_update_discount') {
         // Send email notification about discount decision
         if (!empty($guest_email) && !empty($discount_type)) {
             $emailSubject = '';
-            $emailMessage = '';
+            $emailContent = '';
             
             if ($discountAction === 'approve') {
                 $emailSubject = 'Discount Application Approved - BarCIE';
-                $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-                    <h2 style="color: #28a745;">✓ Discount Approved</h2>
-                    <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
-                    <p>Good news! Your discount application has been <strong>approved</strong>.</p>
-                    <div style="background: #f0f8f4; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
-                        <p><strong>Discount Type:</strong> ' . htmlspecialchars($discount_type) . '</p>
+                $emailContent = '
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                            ✓ DISCOUNT APPROVED
+                        </div>
                     </div>
-                    <p style="margin-top: 20px;">The discounted rate will be applied to your booking.</p>
-                    <p><em>Note: Your booking still needs admin approval if it hasn\'t been approved yet.</em></p>
-                    <p style="margin-top: 10px;"><em>This is an automated message. Please do not reply to this email.</em></p>
-                </div>';
+                    
+                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Your Discount Has Been Approved!</h2>
+                    
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
+                        Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                    </p>
+                    
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                        Great news! After reviewing your application, we are pleased to approve your discount request.
+                    </p>
+                    
+                    <!-- Discount Details Card -->
+                    <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #28a745;" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding: 25px;">
+                                <h3 style="margin: 0 0 15px 0; color: #155724; font-size: 18px; text-align: center;">Approved Discount</h3>
+                                <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td style="padding: 12px 0; text-align: center;">
+                                            <div style="display: inline-block; background-color: #28a745; color: white; padding: 15px 30px; border-radius: 8px; font-size: 18px; font-weight: 700;">
+                                                ' . htmlspecialchars($discount_type) . '
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div style="background-color: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
+                        <p style="margin: 0; color: #0c5460; font-size: 14px; line-height: 1.6;">
+                            <strong>💡 Important:</strong> The discounted rate will be applied to your booking. Please note that your booking itself still requires separate approval if it hasn\'t been approved yet.
+                        </p>
+                    </div>
+                    
+                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
+                        Thank you for choosing BarCIE International Center!
+                    </p>';
             } else {
                 $emailSubject = 'Discount Application Update - BarCIE';
-                $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-                    <h2 style="color: #dc3545;">Discount Application Update</h2>
-                    <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
-                    <p>We regret to inform you that your discount application could not be approved.</p>
-                    <div style="background: #fff5f5; padding: 15px; border-radius: 5px; border-left: 4px solid #dc3545;">
-                        <p><strong>Discount Type:</strong> ' . htmlspecialchars($discount_type) . '</p>
+                $emailContent = '
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="display: inline-block; background-color: #dc3545; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                            ✗ DISCOUNT NOT APPROVED
+                        </div>
                     </div>
-                    <p style="margin-top: 20px;">The standard rate will apply to your booking.</p>
-                    <p><em>Note: Your booking can still be approved separately.</em></p>
-                    <p style="margin-top: 10px;"><em>This is an automated message. Please do not reply to this email.</em></p>
-                </div>';
+                    
+                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Discount Application Update</h2>
+                    
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
+                        Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                    </p>
+                    
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                        Thank you for submitting your discount application. After careful review, we are unable to approve your discount request at this time.
+                    </p>
+                    
+                    <!-- Discount Details Card -->
+                    <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #dc3545;" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding: 25px;">
+                                <h3 style="margin: 0 0 15px 0; color: #721c24; font-size: 18px; text-align: center;">Discount Application</h3>
+                                <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td style="padding: 12px 0; text-align: center;">
+                                            <div style="display: inline-block; background-color: rgba(0,0,0,0.1); color: #721c24; padding: 15px 30px; border-radius: 8px; font-size: 18px; font-weight: 700;">
+                                                ' . htmlspecialchars($discount_type) . '
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
+                        <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                            <strong>💡 Note:</strong> The standard rate will apply to your booking. Your booking can still be approved separately and is not affected by this discount decision.
+                        </p>
+                    </div>
+                    
+                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                        If you have questions about this decision or would like to discuss alternative options, please feel free to contact us.
+                    </p>';
             }
             
-            if ($emailSubject && $emailMessage) {
-                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailMessage);
+            if ($emailSubject && $emailContent) {
+                $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
+                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
                 error_log("Discount decision email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
             }
         }
