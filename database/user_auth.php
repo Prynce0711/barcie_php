@@ -1,25 +1,37 @@
 <?php
+require __DIR__ . '/../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // PHPMailer setup using Composer autoloader
 function send_smtp_mail($to, $subject, $body, $altBody = '') {
     try {
-        // Use Composer autoloader for PHPMailer
-        $autoload_path = __DIR__ . '/../vendor/autoload.php';
+        // Debug logging
+        error_log("=== EMAIL ATTEMPT ===");
+        error_log("To: " . $to);
+        error_log("Subject: " . $subject);
         
-        if (!file_exists($autoload_path)) {
-            error_log('Composer autoloader not found. Please run "composer install".');
-            return false;
-        }
+        $config_path = __DIR__ . '/mail_config.php';
+        error_log("Looking for config at: " . $config_path);
         
-        require_once $autoload_path;
-        
-        $config_path = __DIR__ . '/../mail_config.php';
         if (!file_exists($config_path)) {
-            error_log('Mail config file not found. Email functionality disabled.');
+            error_log('ERROR: Mail config file not found at: ' . $config_path);
             return false;
         }
         
         $config = require $config_path;
-        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        error_log("Config loaded successfully");
+        error_log("SMTP Host: " . $config['host']);
+        error_log("SMTP User: " . $config['username']);
+        
+        $mail = new PHPMailer(true);
+        
+        // Enable verbose debug output
+        $mail->SMTPDebug = 2;
+        $mail->Debugoutput = function($str, $level) {
+            error_log("PHPMailer: " . $str);
+        };
         
         $mail->isSMTP();
         $mail->Host = $config['host'];
@@ -28,19 +40,36 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
         $mail->Password = $config['password'];
         $mail->SMTPSecure = $config['secure'];
         $mail->Port = $config['port'];
+        
+        // SSL/TLS options for local development
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
+        
         $mail->setFrom($config['from_email'], $config['from_name']);
         $mail->addAddress($to);
         $mail->Subject = $subject;
         $mail->Body = $body;
         $mail->AltBody = $altBody ?: strip_tags($body);
         $mail->isHTML(true);
-        $mail->send();
-        return true;
+        
+        $result = $mail->send();
+        error_log("Email sent successfully to: " . $to);
+        error_log("=== EMAIL SUCCESS ===");
+        return $result;
     } catch (Exception $e) {
+        error_log('=== EMAIL FAILED ===');
         error_log('PHPMailer error: ' . $e->getMessage());
+        error_log('Error trace: ' . $e->getTraceAsString());
         return false;
     }
 }
+
+
 session_start();
 include __DIR__ . '/db_connect.php';
 
@@ -85,6 +114,7 @@ function ensureDatabaseStructure($conn) {
             type VARCHAR(50) NOT NULL DEFAULT 'reservation',
             details TEXT,
             status VARCHAR(50) DEFAULT 'pending',
+            discount_status VARCHAR(50) DEFAULT 'none',
             checkin DATETIME NULL,
             checkout DATETIME NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -104,6 +134,7 @@ function ensureDatabaseStructure($conn) {
             'type' => 'VARCHAR(50) NOT NULL DEFAULT "reservation"',
             'details' => 'TEXT',
             'status' => 'VARCHAR(50) DEFAULT "pending"',
+            'discount_status' => 'VARCHAR(50) DEFAULT "none"',
             'checkin' => 'DATETIME NULL',
             'checkout' => 'DATETIME NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
@@ -902,13 +933,15 @@ if ($action === 'create_booking') {
             handleResponse("Number of occupants (" . $occupants . ") exceeds " . $room_data['item_type'] . " capacity (" . $room_data['capacity'] . ").", false, '../Guest.php');
         }
 
-        // Add discount info to details
+        // Add discount info to details and set discount_status
         $discount_info = '';
+        $discount_status = 'none';
         if (!empty($discount_type)) {
             $discount_info = " | Discount: $discount_type | Discount Details: $discount_details | Proof: $discount_proof_path";
+            $discount_status = 'pending'; // Set discount status to pending for admin review
         }
 
-        $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
+        $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Email: $email | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
 
         // Try to insert with room_id and receipt_no columns
         try {
@@ -917,12 +950,12 @@ if ($action === 'create_booking') {
             error_log("Booking Debug - Details: " . substr($details, 0, 100));
             error_log("Booking Debug - Status: $status, Checkin: $checkin, Checkout: $checkout");
 
-            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $conn->error);
             }
 
-            $stmt->bind_param("sisssss", $type, $room_id, $receipt_no, $details, $status, $checkin, $checkout);
+            $stmt->bind_param("sissssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $checkin, $checkout);
             $success = $stmt->execute();
 
             if (!$success) {
@@ -936,41 +969,63 @@ if ($action === 'create_booking') {
                 $update_status->execute();
                 $update_status->close();
 
-                // Send email to admin if discount was applied
-                if (!empty($discount_type)) {
-                    $admin_email = 'pc.clemente11@gmail.com'; // Change to your admin email
-                    $subject = "New Discount Application - $discount_type";
-                    $message = "A guest has applied for a discount.<br><br>" .
-                        "<b>Guest:</b> $guest_name<br>" .
-                        "<b>Email:</b> $email<br>" .
-                        "<b>Contact:</b> $contact<br>" .
-                        "<b>Room/Facility:</b> " . $room_data['name'] . "<br>" .
-                        "<b>Check-in:</b> $checkin<br>" .
-                        "<b>Check-out:</b> $checkout<br>" .
-                        "<b>Discount Type:</b> $discount_type<br>" .
-                        "<b>Discount Details:</b> $discount_details<br>" .
-                        (!empty($discount_proof_path) ? ("<b>Proof:</b> <a href='" . $discount_proof_path . "'>View Proof</a><br>") : "") .
-                        "<br>Please review and approve/reject in the admin portal.";
-                    send_smtp_mail($admin_email, $subject, $message);
+                // Always send confirmation email to guest
+                if (!empty($email)) {
+                    error_log("Attempting to send confirmation email to: " . $email);
+                    
+                    $subject = "Booking Confirmation - BarCIE International Center";
+                    $emailBody = "
+                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;'>
+                            <h2 style='color: #2d7be5;'>Booking Confirmation</h2>
+                            <p>Dear " . htmlspecialchars($guest_name) . ",</p>
+                            <p>Your booking has been received with the following details:</p>
+                            <div style='background: #f5f5f5; padding: 15px; border-radius: 5px;'>
+                                <p><strong>Receipt Number:</strong> " . htmlspecialchars($receipt_no) . "</p>
+                                <p><strong>Room/Facility:</strong> " . htmlspecialchars($room_data['name']) . "</p>
+                                <p><strong>Check-in:</strong> " . htmlspecialchars($checkin) . "</p>
+                                <p><strong>Check-out:</strong> " . htmlspecialchars($checkout) . "</p>
+                                <p><strong>Number of Occupants:</strong> " . htmlspecialchars($occupants) . "</p>
+                                <p><strong>Status:</strong> Pending approval</p>
+                            </div>";
+                    
+                    if (!empty($discount_type)) {
+                        $emailBody .= "<p><strong>Discount Applied:</strong> " . htmlspecialchars($discount_type) . " (Pending admin approval)</p>";
+                    }
+                    
+                    $emailBody .= "
+                            <p>We will review your booking and notify you once it's approved.</p>
+                            <p><em>This is an automated message. Please do not reply to this email.</em></p>
+                        </div>";
+                    
+                    $mail_sent = send_smtp_mail($email, $subject, $emailBody);
+                    error_log("Email send result: " . ($mail_sent ? "Success" : "Failed"));
 
-                    // Send confirmation email to guest
-                    if (!empty($email)) {
-                        $guest_subject = 'Discount Application Received';
-                        $guest_message = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; padding: 24px; background: #fafbfc;'>"
-                            . "<h2 style='color: #2d7be5;'>BarCIE International Center</h2>"
-                            . "<p>Dear <b>" . htmlspecialchars($guest_name) . "</b>,</p>"
-                            . "<p>We have <b>received your discount application</b> for your reservation request at BarCIE International Center.</p>"
-                            . "<ul style='background: #f6f8fa; border-radius: 6px; padding: 16px; list-style: none;'>"
-                            . "<li><b>Room/Facility:</b> " . htmlspecialchars($room_data['name']) . "</li>"
-                            . "<li><b>Check-in:</b> " . htmlspecialchars($checkin) . "</li>"
-                            . "<li><b>Check-out:</b> " . htmlspecialchars($checkout) . "</li>"
-                            . "<li><b>Discount Type:</b> " . htmlspecialchars($discount_type) . "</li>"
-                            . "</ul>"
-                            . "<p style='margin-top: 18px;'>Our team will review your application and notify you by email once your discount is <b>approved or rejected</b>.</p>"
-                            . "<p style='color: #888;'>If you have questions, please reply to this email or contact us at info@barcie.com.</p>"
-                            . "<p style='margin-top: 32px; color: #2d7be5;'><b>Thank you for choosing BarCIE International Center!</b></p>"
-                            . "</div>";
-                        send_smtp_mail($email, $guest_subject, $guest_message);
+                    // If there's a discount, also notify admin
+                    if (!empty($discount_type)) {
+                        $admin_email = 'pc.clemente11@gmail.com';
+                        $admin_subject = "New Discount Application - " . htmlspecialchars($discount_type);
+                        $admin_message = '<div style="font-family: Arial, sans-serif; padding: 20px;">
+                                <h3 style="color: #2d7be5;">New Discount Application</h3>
+                                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+                                    <p><b>Guest:</b> ' . htmlspecialchars($guest_name) . '</p>
+                                    <p><b>Email:</b> ' . htmlspecialchars($email) . '</p>
+                                    <p><b>Contact:</b> ' . htmlspecialchars($contact) . '</p>
+                                    <p><b>Room/Facility:</b> ' . htmlspecialchars($room_data['name']) . '</p>
+                                    <p><b>Check-in:</b> ' . htmlspecialchars($checkin) . '</p>
+                                    <p><b>Check-out:</b> ' . htmlspecialchars($checkout) . '</p>
+                                    <p><b>Discount Type:</b> ' . htmlspecialchars($discount_type) . '</p>
+                                    <p><b>Discount Details:</b> ' . htmlspecialchars($discount_details) . '</p>';
+                        
+                        if (!empty($discount_proof_path)) {
+                            $admin_message .= '<p><b>Proof:</b> <a href="' . htmlspecialchars($discount_proof_path) . '">View Proof</a></p>';
+                        }
+                        
+                        $admin_message .= '</div>
+                                <p style="margin-top: 20px;"><em>Please review this discount application in the admin portal.</em></p>
+                            </div>';
+                        
+                        $admin_mail_sent = send_smtp_mail($admin_email, $admin_subject, $admin_message);
+                        error_log("Admin notification email result: " . ($admin_mail_sent ? "Success" : "Failed"));
                     }
                 }
 
@@ -1036,6 +1091,26 @@ if ($action === 'create_booking') {
                 $update_status->bind_param("i", $room_id);
                 $update_status->execute();
                 $update_status->close();
+                
+                // Send confirmation email to guest
+                if (!empty($contact_number) && preg_match('/@gmail\.com$/i', $contact_number)) {
+                    $subject = 'BarCIE Pencil Booking Confirmation';
+                    $message = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; padding: 24px; background: #fafbfc;'>"
+                        . "<h2 style='color: #2d7be5;'>BarCIE International Center</h2>"
+                        . "<p>Dear Guest,</p>"
+                        . "<p>Your pencil booking request has been <b>received</b>! Here are your details:</p>"
+                        . "<ul style='background: #f6f8fa; border-radius: 6px; padding: 16px; list-style: none;'>"
+                        . "<li><b>Facility:</b> " . htmlspecialchars($room_data['name']) . "</li>"
+                        . "<li><b>Date:</b> " . htmlspecialchars($pencil_date) . "</li>"
+                        . "<li><b>Event:</b> " . htmlspecialchars($event) . "</li>"
+                        . "<li><b>Pax:</b> " . htmlspecialchars($pax) . "</li>"
+                        . "</ul>"
+                        . "<p style='margin-top: 18px;'>We will review your booking and notify you once it is confirmed.</p>"
+                        . "<p style='color: #888;'>If you have questions, please reply to this email or contact us at info@barcie.com.</p>"
+                        . "<p style='margin-top: 32px; color: #2d7be5;'><b>Thank you for choosing BarCIE International Center!</b></p>"
+                        . "</div>";
+                    send_smtp_mail($contact_number, $subject, $message);
+                }
                 
                 handleResponse("Pencil booking saved for " . $room_data['name'] . " on " . $pencil_date, true, '../Guest.php');
             } else {
@@ -1108,7 +1183,7 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
 }
 
 /* ---------------------------
-   ADMIN: update booking
+   ADMIN: update booking status
    --------------------------- */
 if ($action === 'admin_update_booking') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -1147,74 +1222,160 @@ if ($action === 'admin_update_booking') {
     $success = $stmt->execute();
     $stmt->close();
 
-    if ($success && $booking_data && $booking_data['room_id']) {
-    // Notify guest about discount status if discount was applied
-    if ($success && $booking_data && isset($booking_data['details'])) {
+    if ($success && $booking_data) {
+        // Extract guest email and name from details
         $details = $booking_data['details'];
         $guest_email = '';
         $guest_name = 'Guest';
-        $discount_type = '';
+        $room_name = '';
+        $checkin = '';
+        $checkout = '';
+        
         if (preg_match('/Email:\s*([^|]+)/', $details, $matches)) {
             $guest_email = trim($matches[1]);
         }
         if (preg_match('/Guest:\s*([^|]+)/', $details, $matches)) {
             $guest_name = trim($matches[1]);
         }
-        if (preg_match('/Discount: ([^|]+)/', $details, $matches)) {
-            $discount_type = trim($matches[1]);
+        if (preg_match('/(?:Room|Facility):\s*([^|]+)/', $details, $matches)) {
+            $room_name = trim($matches[1]);
         }
-        if ($guest_email && $discount_type) {
-            $subject = '';
-            $message = '';
-            if ($adminAction === 'approve') {
-                $subject = 'Discount Application Approved';
-                $message = "Dear $guest_name,<br><br>Your discount application ($discount_type) has been <b>approved</b>.<br>You may now continue your reservation with the discounted price.<br><br>Thank you for choosing BarCIE International Center.";
-            } elseif ($adminAction === 'reject') {
-                $subject = 'Discount Application Rejected';
-                $message = "Dear $guest_name,<br><br>We regret to inform you that your discount application ($discount_type) was <b>not approved</b>.<br>The original price per day will apply to your reservation.<br><br>Thank you for your understanding.";
+        if (preg_match('/Check-in:\s*([^|]+)/', $details, $matches)) {
+            $checkin = trim($matches[1]);
+        }
+        if (preg_match('/Check-out:\s*([^|]+)/', $details, $matches)) {
+            $checkout = trim($matches[1]);
+        }
+
+        // Send email notification to guest for every status change
+        if (!empty($guest_email)) {
+            $emailSubject = '';
+            $emailMessage = '';
+            
+            switch ($adminAction) {
+                case 'approve':
+                    $emailSubject = 'Booking Approved - BarCIE International Center';
+                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                        <h2 style="color: #28a745;">✓ Booking Approved</h2>
+                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
+                        <p>Great news! Your booking has been <strong>approved</strong>.</p>
+                        <div style="background: #f0f8f4; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
+                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
+                            <p><strong>Check-in:</strong> ' . htmlspecialchars($checkin) . '</p>
+                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                        </div>
+                        <p style="margin-top: 20px;">We look forward to welcoming you!</p>
+                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
+                    </div>';
+                    break;
+                    
+                case 'reject':
+                    $emailSubject = 'Booking Update - BarCIE International Center';
+                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                        <h2 style="color: #dc3545;">Booking Status Update</h2>
+                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
+                        <p>We regret to inform you that your booking request could not be approved at this time.</p>
+                        <div style="background: #fff5f5; padding: 15px; border-radius: 5px; border-left: 4px solid #dc3545;">
+                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
+                            <p><strong>Check-in:</strong> ' . htmlspecialchars($checkin) . '</p>
+                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                        </div>
+                        <p style="margin-top: 20px;">If you have any questions, please contact us.</p>
+                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
+                    </div>';
+                    break;
+                    
+                case 'checkin':
+                    $emailSubject = 'Check-in Confirmed - BarCIE International Center';
+                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                        <h2 style="color: #17a2b8;">✓ Check-in Confirmed</h2>
+                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
+                        <p>You have been successfully <strong>checked in</strong>.</p>
+                        <div style="background: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 4px solid #17a2b8;">
+                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
+                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                        </div>
+                        <p style="margin-top: 20px;">Enjoy your stay!</p>
+                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
+                    </div>';
+                    break;
+                    
+                case 'checkout':
+                    $emailSubject = 'Check-out Complete - BarCIE International Center';
+                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                        <h2 style="color: #6f42c1;">✓ Check-out Complete</h2>
+                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
+                        <p>Your <strong>check-out</strong> has been processed successfully.</p>
+                        <div style="background: #f8f5ff; padding: 15px; border-radius: 5px; border-left: 4px solid #6f42c1;">
+                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
+                        </div>
+                        <p style="margin-top: 20px;">Thank you for choosing BarCIE International Center. We hope to see you again!</p>
+                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
+                    </div>';
+                    break;
+                    
+                case 'cancel':
+                    $emailSubject = 'Booking Cancelled - BarCIE International Center';
+                    $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                        <h2 style="color: #fd7e14;">Booking Cancelled</h2>
+                        <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
+                        <p>Your booking has been <strong>cancelled</strong>.</p>
+                        <div style="background: #fff8f0; padding: 15px; border-radius: 5px; border-left: 4px solid #fd7e14;">
+                            <p><strong>Room/Facility:</strong> ' . htmlspecialchars($room_name) . '</p>
+                            <p><strong>Check-in:</strong> ' . htmlspecialchars($checkin) . '</p>
+                            <p><strong>Check-out:</strong> ' . htmlspecialchars($checkout) . '</p>
+                        </div>
+                        <p style="margin-top: 20px;">If you did not request this cancellation, please contact us immediately.</p>
+                        <p><em>This is an automated message. Please do not reply to this email.</em></p>
+                    </div>';
+                    break;
             }
-            if ($subject && $message) {
-                send_smtp_mail($guest_email, $subject, $message);
+            
+            if ($emailSubject && $emailMessage) {
+                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailMessage);
+                error_log("Status change email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
             }
         }
-    }
+
         // Update room status based on booking status
-        $room_id = $booking_data['room_id'];
-        $room_status = 'available'; // default
-        
-        switch ($adminAction) {
-            case 'approve':
-                $room_status = 'reserved';
-                break;
-            case 'checkin':
-                $room_status = 'occupied';
-                break;
-            case 'checkout':
-                $room_status = 'dirty'; // needs cleaning after checkout
-                break;
-            case 'reject':
-            case 'cancel':
-                // Check if there are other active bookings for this room
-                $check_stmt = $conn->prepare("SELECT COUNT(*) as active_bookings FROM bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending', 'checked_in') AND id != ?");
-                $check_stmt->bind_param("ii", $room_id, $bookingId);
-                $check_stmt->execute();
-                $check_result = $check_stmt->get_result();
-                $check_data = $check_result->fetch_assoc();
-                $check_stmt->close();
-                
-                if ($check_data['active_bookings'] == 0) {
-                    $room_status = 'available';
-                } else {
-                    $room_status = 'reserved'; // keep as reserved if other bookings exist
-                }
-                break;
+        if ($booking_data['room_id']) {
+            $room_id = $booking_data['room_id'];
+            $room_status = 'available'; // default
+            
+            switch ($adminAction) {
+                case 'approve':
+                    $room_status = 'reserved';
+                    break;
+                case 'checkin':
+                    $room_status = 'occupied';
+                    break;
+                case 'checkout':
+                    $room_status = 'dirty'; // needs cleaning after checkout
+                    break;
+                case 'reject':
+                case 'cancel':
+                    // Check if there are other active bookings for this room
+                    $check_stmt = $conn->prepare("SELECT COUNT(*) as active_bookings FROM bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending', 'checked_in') AND id != ?");
+                    $check_stmt->bind_param("ii", $room_id, $bookingId);
+                    $check_stmt->execute();
+                    $check_result = $check_stmt->get_result();
+                    $check_data = $check_result->fetch_assoc();
+                    $check_stmt->close();
+                    
+                    if ($check_data['active_bookings'] == 0) {
+                        $room_status = 'available';
+                    } else {
+                        $room_status = 'reserved'; // keep as reserved if other bookings exist
+                    }
+                    break;
+            }
+            
+            // Update room status
+            $room_update = $conn->prepare("UPDATE items SET room_status = ? WHERE id = ?");
+            $room_update->bind_param("si", $room_status, $room_id);
+            $room_update->execute();
+            $room_update->close();
         }
-        
-        // Update room status
-        $room_update = $conn->prepare("UPDATE items SET room_status = ? WHERE id = ?");
-        $room_update->bind_param("si", $room_status, $room_id);
-        $room_update->execute();
-        $room_update->close();
     }
 
     // Check if this is an AJAX request
@@ -1240,6 +1401,120 @@ if ($action === 'admin_update_booking') {
     } else {
         // Traditional redirect for non-AJAX requests
         $_SESSION['msg'] = $success ? "Booking #$bookingId updated to $newStatus." : "Error updating booking.";
+        redirect('../dashboard.php');
+    }
+}
+
+/* ---------------------------
+   ADMIN: update discount status (SEPARATE ACTION)
+   --------------------------- */
+if ($action === 'admin_update_discount') {
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        die("Access denied. Admin login required.");
+    }
+
+    $bookingId = (int)($_POST['booking_id'] ?? 0);
+    $discountAction = $_POST['discount_action'] ?? ''; // 'approve' or 'reject'
+
+    if (!in_array($discountAction, ['approve', 'reject'])) {
+        $_SESSION['msg'] = "Unknown discount action.";
+        redirect('../dashboard.php');
+    }
+
+    $newDiscountStatus = $discountAction === 'approve' ? 'approved' : 'rejected';
+    
+    // Get booking details first
+    $booking_stmt = $conn->prepare("SELECT details, discount_status FROM bookings WHERE id = ?");
+    $booking_stmt->bind_param("i", $bookingId);
+    $booking_stmt->execute();
+    $booking_result = $booking_stmt->get_result();
+    $booking_data = $booking_result->fetch_assoc();
+    $booking_stmt->close();
+
+    // Update discount status only
+    $stmt = $conn->prepare("UPDATE bookings SET discount_status = ? WHERE id = ?");
+    $stmt->bind_param("si", $newDiscountStatus, $bookingId);
+    $success = $stmt->execute();
+    $stmt->close();
+
+    if ($success && $booking_data) {
+        // Extract guest info from details
+        $details = $booking_data['details'];
+        $guest_email = '';
+        $guest_name = 'Guest';
+        $discount_type = '';
+        
+        if (preg_match('/Email:\s*([^|]+)/', $details, $matches)) {
+            $guest_email = trim($matches[1]);
+        }
+        if (preg_match('/Guest:\s*([^|]+)/', $details, $matches)) {
+            $guest_name = trim($matches[1]);
+        }
+        if (preg_match('/Discount:\s*([^|]+)/', $details, $matches)) {
+            $discount_type = trim($matches[1]);
+        }
+
+        // Send email notification about discount decision
+        if (!empty($guest_email) && !empty($discount_type)) {
+            $emailSubject = '';
+            $emailMessage = '';
+            
+            if ($discountAction === 'approve') {
+                $emailSubject = 'Discount Application Approved - BarCIE';
+                $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                    <h2 style="color: #28a745;">✓ Discount Approved</h2>
+                    <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
+                    <p>Good news! Your discount application has been <strong>approved</strong>.</p>
+                    <div style="background: #f0f8f4; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
+                        <p><strong>Discount Type:</strong> ' . htmlspecialchars($discount_type) . '</p>
+                    </div>
+                    <p style="margin-top: 20px;">The discounted rate will be applied to your booking.</p>
+                    <p><em>Note: Your booking still needs admin approval if it hasn\'t been approved yet.</em></p>
+                    <p style="margin-top: 10px;"><em>This is an automated message. Please do not reply to this email.</em></p>
+                </div>';
+            } else {
+                $emailSubject = 'Discount Application Update - BarCIE';
+                $emailMessage = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+                    <h2 style="color: #dc3545;">Discount Application Update</h2>
+                    <p>Dear ' . htmlspecialchars($guest_name) . ',</p>
+                    <p>We regret to inform you that your discount application could not be approved.</p>
+                    <div style="background: #fff5f5; padding: 15px; border-radius: 5px; border-left: 4px solid #dc3545;">
+                        <p><strong>Discount Type:</strong> ' . htmlspecialchars($discount_type) . '</p>
+                    </div>
+                    <p style="margin-top: 20px;">The standard rate will apply to your booking.</p>
+                    <p><em>Note: Your booking can still be approved separately.</em></p>
+                    <p style="margin-top: 10px;"><em>This is an automated message. Please do not reply to this email.</em></p>
+                </div>';
+            }
+            
+            if ($emailSubject && $emailMessage) {
+                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailMessage);
+                error_log("Discount decision email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
+            }
+        }
+    }
+
+    // Check if this is an AJAX request
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        if ($success) {
+            echo json_encode([
+                'success' => true, 
+                'message' => "Discount " . ($discountAction === 'approve' ? 'approved' : 'rejected') . " successfully.",
+                'discount_status' => $newDiscountStatus
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, 
+                'error' => "Error updating discount status."
+            ]);
+        }
+        exit;
+    } else {
+        $_SESSION['msg'] = $success ? "Discount " . ($discountAction === 'approve' ? 'approved' : 'rejected') . " successfully." : "Error updating discount.";
         redirect('../dashboard.php');
     }
 }

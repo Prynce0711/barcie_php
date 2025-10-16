@@ -1377,10 +1377,10 @@ while ($row = $result->fetch_assoc()) {
                         <th>Type</th>
                         <th>Guest Details</th>
                         <th>Schedule</th>
-                        <th>Status</th>
-                        <th>Discount Application</th>
+                        <th>Booking Status</th>
+                        <th>Discount Status</th>
                         <th>Created</th>
-                        <th>Admin Actions</th>
+                        <th>Booking Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1475,6 +1475,8 @@ while ($row = $result->fetch_assoc()) {
                           $discount_type = '';
                           $discount_details = '';
                           $discount_proof = '';
+                          $discount_status = $booking['discount_status'] ?? 'none';
+                          
                           if (!empty($booking['details'])) {
                             if (preg_match('/Discount: ([^|]+)/', $booking['details'], $matches)) {
                               $discount_type = trim($matches[1]);
@@ -1486,19 +1488,37 @@ while ($row = $result->fetch_assoc()) {
                               $discount_proof = trim($matches[1]);
                             }
                           }
+                          
                           if ($discount_type) {
+                            echo "<div class='mb-2'>";
                             echo "<span class='badge bg-warning text-dark mb-1'>" . htmlspecialchars($discount_type) . "</span><br>";
+                            
+                            // Discount Status Badge
+                            if ($discount_status === 'approved') {
+                              echo "<span class='badge bg-success mb-1'><i class='fas fa-check me-1'></i>Approved</span><br>";
+                            } elseif ($discount_status === 'rejected') {
+                              echo "<span class='badge bg-danger mb-1'><i class='fas fa-times me-1'></i>Rejected</span><br>";
+                            } elseif ($discount_status === 'pending') {
+                              echo "<span class='badge bg-info mb-1'><i class='fas fa-clock me-1'></i>Pending Review</span><br>";
+                            }
+                            
                             if ($discount_details) {
-                              echo "<small class='text-muted'>" . htmlspecialchars($discount_details) . "</small><br>";
+                              echo "<small class='text-muted d-block mb-1'>" . htmlspecialchars($discount_details) . "</small>";
                             }
                             if ($discount_proof) {
-                              echo "<a href='" . htmlspecialchars($discount_proof) . "' target='_blank' class='btn btn-link btn-sm p-0'>View Proof</a><br>";
+                              echo "<a href='" . htmlspecialchars($discount_proof) . "' target='_blank' class='btn btn-link btn-sm p-0 mb-1'><i class='fas fa-file-image me-1'></i>View Proof</a><br>";
                             }
-                            // Admin eligibility buttons (only if pending and not yet approved/rejected)
-                            if ($booking['status'] === 'pending') {
-                              echo "<div class='mt-2'>";
-                              echo "<button class='btn btn-success btn-sm me-1' onclick='updateBookingStatus(" . $booking['id'] . ", \"approved\")'>Eligible</button>";
-                              echo "<button class='btn btn-danger btn-sm' onclick='updateBookingStatus(" . $booking['id'] . ", \"rejected\")'>Not Eligible</button>";
+                            echo "</div>";
+                            
+                            // Discount approval buttons (separate from booking approval)
+                            if ($discount_status === 'pending' || $discount_status === 'none') {
+                              echo "<div class='btn-group btn-group-sm' role='group'>";
+                              echo "<button class='btn btn-success btn-sm' onclick='updateDiscountStatus(" . $booking['id'] . ", \"approve\")' title='Approve Discount'>";
+                              echo "<i class='fas fa-check-circle me-1'></i>Approve";
+                              echo "</button>";
+                              echo "<button class='btn btn-danger btn-sm' onclick='updateDiscountStatus(" . $booking['id'] . ", \"reject\")' title='Reject Discount'>";
+                              echo "<i class='fas fa-times-circle me-1'></i>Reject";
+                              echo "</button>";
                               echo "</div>";
                             }
                           } else {
@@ -1591,8 +1611,19 @@ while ($row = $result->fetch_assoc()) {
                     </thead>
                     <tbody>
                       <?php
-                      // Fetch only bookings with pending discount applications
-                      $discount_query = "SELECT b.*, i.name as room_name, i.item_type, i.room_number FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.status = 'pending' AND b.details LIKE '%Discount:%' ORDER BY b.created_at DESC";
+                      // Fetch bookings with discount applications (pending or any with discount)
+                      $discount_query = "SELECT b.*, i.name as room_name, i.item_type, i.room_number 
+                                        FROM bookings b 
+                                        LEFT JOIN items i ON b.room_id = i.id 
+                                        WHERE b.details LIKE '%Discount:%' 
+                                        ORDER BY 
+                                          CASE b.discount_status 
+                                            WHEN 'pending' THEN 1
+                                            WHEN 'none' THEN 2
+                                            WHEN 'approved' THEN 3
+                                            WHEN 'rejected' THEN 4
+                                          END,
+                                          b.created_at DESC";
                       $discount_result = $conn->query($discount_query);
                       if ($discount_result && $discount_result->num_rows > 0) {
                         while ($booking = $discount_result->fetch_assoc()) {
@@ -1600,7 +1631,9 @@ while ($row = $result->fetch_assoc()) {
                           $discount_type = '';
                           $discount_details = '';
                           $discount_proof = '';
+                          $discount_status = $booking['discount_status'] ?? 'none';
                           $email = '';
+                          
                           if (!empty($booking['details'])) {
                             if (preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
                               $guest_name = trim($matches[1]);
@@ -1618,49 +1651,71 @@ while ($row = $result->fetch_assoc()) {
                               $email = trim($matches[1]);
                             }
                           }
+                          
                           $room_display = $booking['room_name'] ?: 'Unknown';
                           if ($booking['room_number']) {
                             $room_display .= " (#" . $booking['room_number'] . ")";
                           }
+                          
+                          // Status badge class
+                          $status_badge_class = 'secondary';
+                          $status_text = ucfirst($discount_status);
+                          if ($discount_status === 'approved') {
+                            $status_badge_class = 'success';
+                            $status_text = '✓ Approved';
+                          } elseif ($discount_status === 'rejected') {
+                            $status_badge_class = 'danger';
+                            $status_text = '✗ Rejected';
+                          } elseif ($discount_status === 'pending') {
+                            $status_badge_class = 'warning text-dark';
+                            $status_text = '⏳ Pending';
+                          }
+                          
                           echo "<tr>";
                           echo "<td><code>" . htmlspecialchars($booking['receipt_no'] ?: 'N/A') . "</code></td>";
                           echo "<td>" . htmlspecialchars($guest_name) . "<br><small class='text-muted'>" . htmlspecialchars($email) . "</small></td>";
                           echo "<td>" . htmlspecialchars($room_display) . "<br><small class='text-muted'>" . htmlspecialchars(ucfirst($booking['item_type'])) . "</small></td>";
-                          echo "<td><span class='badge bg-warning text-dark'>" . htmlspecialchars($discount_type) . "</span></td>";
+                          echo "<td>";
+                          echo "<span class='badge bg-warning text-dark'>" . htmlspecialchars($discount_type) . "</span><br>";
+                          echo "<span class='badge bg-" . $status_badge_class . " mt-1'>" . $status_text . "</span>";
+                          echo "</td>";
                           echo "<td>" . htmlspecialchars($discount_details) . "</td>";
                           echo "<td>";
                           if ($discount_proof) {
-                            echo "<a href='" . htmlspecialchars($discount_proof) . "' target='_blank' class='btn btn-link btn-sm'>View Proof</a>";
+                            echo "<a href='" . htmlspecialchars($discount_proof) . "' target='_blank' class='btn btn-outline-primary btn-sm'><i class='fas fa-file-image me-1'></i>View Proof</a>";
                           } else {
                             echo "<span class='text-muted'>None</span>";
                           }
                           echo "</td>";
                           echo "<td>";
                           if ($booking['checkin']) {
-                            echo "<strong>In:</strong> " . date('M j, Y H:i', strtotime($booking['checkin'])) . "<br>";
+                            echo "<strong>In:</strong> " . date('M j, Y', strtotime($booking['checkin'])) . "<br>";
                           }
                           if ($booking['checkout']) {
-                            echo "<strong>Out:</strong> " . date('M j, Y H:i', strtotime($booking['checkout']));
+                            echo "<strong>Out:</strong> " . date('M j, Y', strtotime($booking['checkout']));
                           }
                           echo "</td>";
                           echo "<td>";
-                          echo "<form method='post' action='database/user_auth.php' class='d-inline'>";
-                          echo "<input type='hidden' name='action' value='admin_update_booking'>";
-                          echo "<input type='hidden' name='booking_id' value='" . $booking['id'] . "'>";
-                          echo "<input type='hidden' name='admin_action' value='approve'>";
-                          echo "<button type='submit' class='btn btn-success btn-sm me-1'>Approve</button>";
-                          echo "</form>";
-                          echo "<form method='post' action='database/user_auth.php' class='d-inline'>";
-                          echo "<input type='hidden' name='action' value='admin_update_booking'>";
-                          echo "<input type='hidden' name='booking_id' value='" . $booking['id'] . "'>";
-                          echo "<input type='hidden' name='admin_action' value='reject'>";
-                          echo "<button type='submit' class='btn btn-danger btn-sm'>Reject</button>";
-                          echo "</form>";
+                          
+                          // Show action buttons only for pending discounts
+                          if ($discount_status === 'pending' || $discount_status === 'none') {
+                            echo "<div class='btn-group btn-group-sm' role='group'>";
+                            echo "<button class='btn btn-success' onclick='updateDiscountStatus(" . $booking['id'] . ", \"approve\")' title='Approve Discount'>";
+                            echo "<i class='fas fa-check-circle me-1'></i>Approve";
+                            echo "</button>";
+                            echo "<button class='btn btn-danger' onclick='updateDiscountStatus(" . $booking['id'] . ", \"reject\")' title='Reject Discount'>";
+                            echo "<i class='fas fa-times-circle me-1'></i>Reject";
+                            echo "</button>";
+                            echo "</div>";
+                          } else {
+                            echo "<small class='text-muted'>Already " . ($discount_status === 'approved' ? 'approved' : 'rejected') . "</small>";
+                          }
+                          
                           echo "</td>";
                           echo "</tr>";
                         }
                       } else {
-                        echo "<tr><td colspan='8' class='text-center text-muted py-4'><i class='fas fa-percent fa-2x mb-2'></i><br>No pending discount applications.</td></tr>";
+                        echo "<tr><td colspan='8' class='text-center text-muted py-4'><i class='fas fa-percent fa-2x mb-2'></i><br>No discount applications found.</td></tr>";
                       }
                       ?>
                     </tbody>
