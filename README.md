@@ -8,7 +8,102 @@ A comprehensive PHP-based hotel management system for **Barasoain Center for Inn
 
 BarCIE Hotel Management System is a full-featured web application designed to stre5. **Submit Feedback**: Provide service feedback
 
-## 💬 Chat API Endpoints
+## � Professional Email System
+
+The BarCIE system features a comprehensive email notification system that sends beautiful, professional HTML emails for all booking lifecycle events.
+
+### Email Features
+- **8 Different Email Templates**: Each status change triggers a unique, professionally designed email
+- **Beautiful Design**: Modern HTML emails with blue gradient header and BarCIE logo
+- **Embedded Logo**: BarCIE logo included in all emails (base64 encoded)
+- **Responsive Layout**: Works perfectly on desktop and mobile email clients
+- **Status-Specific Styling**: Color-coded badges and cards for each email type
+- **SMTP Integration**: Powered by PHPMailer with Gmail support
+- **Automatic Sending**: Emails sent automatically on all booking/discount status changes
+
+### Email Templates
+
+#### 1. Booking Confirmation
+**When**: Guest submits a new booking  
+**Subject**: "Booking Confirmation - BarCIE International Center"  
+**Contains**: Receipt number, room details, check-in/out dates, pending status, discount info (if applicable)
+
+#### 2. Booking Approved
+**When**: Admin approves the reservation  
+**Subject**: "Booking Approved - BarCIE International Center"  
+**Contains**: Green success badge, reservation details, check-in reminders
+
+#### 3. Booking Rejected
+**When**: Admin rejects the reservation  
+**Subject**: "Booking Status Update - BarCIE International Center"  
+**Contains**: Red status badge, booking details, contact invitation
+
+#### 4. Check-in Confirmed
+**When**: Guest is checked in  
+**Subject**: "Check-in Confirmed - BarCIE International Center"  
+**Contains**: Cyan badge, welcome message, check-out reminder
+
+#### 5. Check-out Complete
+**When**: Guest is checked out  
+**Subject**: "Check-out Complete - BarCIE International Center"  
+**Contains**: Purple badge, thank you message, feedback invitation
+
+#### 6. Booking Cancelled
+**When**: Admin cancels the reservation  
+**Subject**: "Booking Cancelled - BarCIE International Center"  
+**Contains**: Orange warning badge, cancellation details
+
+#### 7. Discount Approved
+**When**: Admin approves discount application (independent of booking)  
+**Subject**: "Discount Application Approved - BarCIE"  
+**Contains**: Green badge, discount type, note about booking approval
+
+#### 8. Discount Rejected
+**When**: Admin rejects discount application  
+**Subject**: "Discount Application Update - BarCIE"  
+**Contains**: Red badge, standard rate notification
+
+### Email Configuration
+
+**SMTP Settings** (in `database/mail_config.php`):
+```php
+return [
+    'host' => 'smtp.gmail.com',
+    'username' => 'your-email@gmail.com',
+    'password' => 'your-app-password',  // Gmail App Password
+    'secure' => 'tls',
+    'port' => 587,
+    'from_email' => 'barcie@gmail.com',
+    'from_name' => 'Barcie International Center'
+];
+```
+
+**Gmail Setup**:
+1. Enable 2-Step Verification on your Gmail account
+2. Generate App Password at: https://myaccount.google.com/apppasswords
+3. Update `mail_config.php` with your credentials
+
+### Testing Email System
+
+**Test SMTP Configuration**:
+```
+http://localhost/barcie_php/test_email.php?email=YOUR_EMAIL@gmail.com
+```
+
+**Test Booking Emails**:
+```
+http://localhost/barcie_php/test_booking_email.php?email=YOUR_EMAIL@gmail.com
+```
+
+### Email Design Specifications
+- **Header**: Blue gradient (#1e3c72 → #2a5298) with embedded BarCIE logo
+- **Logo**: 80x80px circular image with white border
+- **Layout**: 600px width, responsive table-based design
+- **Typography**: Modern sans-serif fonts (Segoe UI, Roboto, Helvetica Neue)
+- **Color Coding**: Status-specific colors (Green, Red, Yellow, Cyan, Purple, Orange)
+- **Compatibility**: Works in Gmail, Outlook, Apple Mail, Yahoo, and all major email clients
+
+## �💬 Chat API Endpoints
 
 The system includes a comprehensive chat API integrated into the `user_auth.php` endpoint for real-time communication between guests and administrators.
 
@@ -121,7 +216,16 @@ php test_chat_endpoints.php
 ### 👨‍💼 Admin Dashboard
 - **Interactive Calendar**: FullCalendar integration with booking visualization
 - **Room & Facility Management**: CRUD operations for rooms and facilities
-- **Booking Management**: Approve, reject, check-in, check-out functionality
+- **Advanced Booking Management**: 
+  - Approve, reject, check-in, check-out functionality
+  - **Separate Discount Approval System**: Independent discount approval/rejection without affecting booking status
+  - Email notifications for all status changes
+  - Dual-action buttons for booking and discount decisions
+- **Email System**: 
+  - Professional HTML email templates with BarCIE branding
+  - Automated notifications for all booking status changes (8 email types)
+  - SMTP integration via PHPMailer with Gmail support
+  - Beautiful blue gradient design with embedded logo
 - **User Management**: Complete user administration interface
 - **Real-time Statistics**: Active bookings, pending approvals, occupancy rates
 - **Dark Mode**: Toggle between light and dark themes
@@ -137,6 +241,12 @@ php test_chat_endpoints.php
 - **Dual Booking System**:
   - **Standard Reservations**: Complete guest information and stay details
   - **Pencil Bookings**: Function hall reservations for events
+  - **Discount Applications**: Apply for student, senior citizen, or PWD discounts with proof upload
+- **Email Notifications**: 
+  - Instant booking confirmation emails with receipt details
+  - Status update notifications (approved, rejected, check-in, check-out, cancelled)
+  - Separate discount approval/rejection notifications
+  - Professional HTML email design with BarCIE branding
 - **Profile Management**: Update personal information and view booking history
 - **Payment Integration**: Multiple payment method support
 - **Feedback System**: Submit and track feedback
@@ -154,9 +264,15 @@ php test_chat_endpoints.php
 ### 📅 Booking System
 - **Reservation Management**: Complete guest reservation workflow
 - **Event Booking**: Specialized pencil booking for function halls
+- **Discount System**: 
+  - Support for student, senior citizen, and PWD discounts
+  - Proof of eligibility upload (ID, certificates)
+  - Separate approval workflow from booking approval
+  - Independent discount and booking status tracking
 - **Status Tracking**: Real-time booking status updates
-- **Receipt Generation**: Automatic receipt number generation
+- **Receipt Generation**: Automatic receipt number generation (BARCIE-YYYYMMDD-XXXX)
 - **Date Validation**: Prevent double bookings and conflicts
+- **Email Notifications**: Automated professional emails for all status changes
 
 ### 💬 Communication System
 - **Real-time Chat**: Instant messaging between guests and administrators
@@ -166,6 +282,14 @@ php test_chat_endpoints.php
 - **Message History**: Persistent chat history and conversation tracking
 - **Authentication Integration**: Secure messaging with user verification
 - **Enhanced UI/UX**: Modern gradient design with smooth animations
+- **Professional Email System**:
+  - 8 different email templates for booking lifecycle
+  - Beautiful HTML design with blue gradient header
+  - BarCIE logo embedded in emails (base64)
+  - Status-specific color coding (green, red, yellow, cyan, purple, orange)
+  - Responsive email layout for all devices
+  - SMTP via PHPMailer with Gmail integration
+  - Automatic email sending on all status changes
 
 ## 🛠️ Technology Stack
 
@@ -208,8 +332,13 @@ barcie_php/
 ├── 📄 Dockerfile             # Docker container configuration
 ├── 📄 docker-compose.yml     # Multi-container orchestration
 ├── 📄 test_chat_endpoints.php # Chat system testing script
+├── 📄 test_email.php         # Email configuration testing
+├── 📄 test_booking_email.php # Booking email testing
 ├── 📄 ADMIN_CHAT_ENHANCEMENT.md # Chat enhancement documentation
 ├── 📄 CHAT_FIXES.md          # Chat integration fixes documentation
+├── 📄 EMAIL_TROUBLESHOOTING.md # Email system troubleshooting guide
+├── 📄 EMAIL_BLUE_THEME_UPDATE.md # Blue email theme documentation
+├── 📄 DASHBOARD_DISCOUNT_UPDATE.md # Discount system documentation
 ├── 📄 .env.example           # Environment variables template
 ├── 📄 .gitignore             # Git ignore patterns
 ├── 📄 .dockerignore          # Docker ignore patterns
@@ -220,9 +349,10 @@ barcie_php/
 │
 ├── 📂 database/
 │   ├── 📄 db_connect.php     # Database connection with env support
-│   ├── 📄 user_auth.php      # Authentication & user management + Chat API
+│   ├── 📄 user_auth.php      # Authentication & user management + Chat API + Email System
 │   ├── 📄 admin_login.php    # Admin authentication
 │   ├── 📄 fetch_items.php    # Room/facility data API
+│   ├── 📄 mail_config.php    # SMTP email configuration
 │   ├── 📄 init_chat.php      # Chat system initialization script
 │   └── 📄 chat_setup.sql     # Chat database schema
 │
@@ -288,13 +418,16 @@ CREATE TABLE items (
 CREATE TABLE bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
+    room_id INT,
     type ENUM('reservation', 'pencil') NOT NULL,
     details TEXT,
     status ENUM('pending', 'confirmed', 'rejected', 'checked_in', 'checked_out', 'cancelled') DEFAULT 'pending',
+    discount_status VARCHAR(20) DEFAULT 'none',  -- Separate discount approval status
     checkin DATETIME,
     checkout DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (room_id) REFERENCES items(id)
 );
 ```
 
@@ -651,6 +784,27 @@ services:
    Check admin_logged_in flag for admin users
    ```
 
+9. **Email Not Sending**
+   ```
+   Problem: Booking confirmation or status emails not received
+   Solution: 
+   - Test email configuration at test_email.php
+   - Verify Gmail App Password is correct in mail_config.php
+   - Check spam/junk folder
+   - Enable 2-Step Verification on Gmail account
+   - Generate new App Password if needed
+   - Check PHP error logs for email errors (C:\xampp\php\logs\php_error.log)
+   - Verify port 587 is not blocked by firewall
+   ```
+
+10. **Discount and Booking Status Confusion**
+   ```
+   Problem: Discount rejection also rejects the booking
+   Solution: Use separate buttons - "Approve/Reject" for booking, separate "Approve Discount/Reject Discount" buttons
+   Verify discount_status column exists in bookings table
+   Check that admin_update_discount action is being called (not admin_update_booking)
+   ```
+
 ### Docker-Specific Troubleshooting
 
 **Container Logs**
@@ -707,6 +861,15 @@ docker-compose exec web chown -R www-data:www-data /var/www/html
 - ✅ **Admin Booking Management (Fixed)**
 - ✅ **JavaScript Error Handling (Enhanced)**
 - ✅ **Vendor Folder Configuration (Resolved)**
+- ✅ **Professional Email System**
+- ✅ **8 HTML Email Templates**
+- ✅ **SMTP Email Integration (Gmail)**
+- ✅ **Separate Discount Approval System**
+- ✅ **Discount Status Tracking**
+- ✅ **Email Notifications for All Status Changes**
+- ✅ **Blue Theme Email Design**
+- ✅ **Embedded Logo in Emails**
+- ✅ **Email Testing Tools**
 
 
 ## 🚀 Deployment & DevOps
@@ -772,6 +935,33 @@ This project is developed as part of a capstone project for educational purposes
 - **Purpose**: Capstone Project
 
 ## 🔄 Version History
+
+- **v2.3.0** - Professional Email System & Discount Management (October 2025)
+  - **Professional Email Templates**: Implemented 8 beautifully designed HTML email templates
+  - **Email System Features**:
+    - Blue gradient header with embedded BarCIE logo (base64)
+    - Status-specific color coding and badges
+    - Responsive design for all email clients
+    - SMTP integration via PHPMailer and Gmail
+    - Automatic email sending on all booking/discount status changes
+  - **Separate Discount Approval System**:
+    - Independent discount approval/rejection workflow
+    - Discount status tracked separately from booking status
+    - Dual-action buttons in admin dashboard
+    - Separate email notifications for discount decisions
+  - **Email Templates**:
+    - Booking Confirmation (Yellow pending badge)
+    - Booking Approved (Green success)
+    - Booking Rejected (Red with empathy)
+    - Check-in Confirmed (Cyan welcome)
+    - Check-out Complete (Purple thank you)
+    - Booking Cancelled (Orange warning)
+    - Discount Approved (Green celebration)
+    - Discount Rejected (Red with standard rate info)
+  - **Testing Tools**: Added test_email.php and test_booking_email.php for email verification
+  - **Documentation**: Created EMAIL_TROUBLESHOOTING.md, EMAIL_BLUE_THEME_UPDATE.md, DASHBOARD_DISCOUNT_UPDATE.md
+  - **Database Enhancement**: Added discount_status column to bookings table
+  - **UI Improvements**: Enhanced dashboard with separate discount management section
 
 - **v2.2.0** - System Stability & Bug Fixes (October 2025)
   - **Fixed Vendor Folder Issues**: Resolved PHPMailer loading errors by implementing proper Composer autoloader usage
