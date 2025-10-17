@@ -1934,10 +1934,7 @@ while ($row = $result->fetch_assoc()) {
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
       <script src="assets/js/dashboard-bootstrap.js"></script>
 
-      <!-- Floating Add New Item Button - Outside all sections for proper positioning -->
-      <button class="floating-add-btn" data-bs-toggle="modal" data-bs-target="#addItemModal" title="Add New Item">
-        <i class="fas fa-plus"></i>
-      </button>
+
 
 </body>
 
