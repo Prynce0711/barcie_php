@@ -36,23 +36,11 @@ header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
-// Check if vendor autoload exists
-if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
-    // Clear output buffer
-    ob_end_clean();
-    
-    echo json_encode([
-        'success' => false,
-        'error' => 'Dependencies missing',
-        'message' => 'Composer vendor directory not found. Run: composer install'
-    ]);
-    exit;
+// Check if vendor autoload exists (optional - only needed for email features)
+$vendor_available = file_exists(__DIR__ . '/../vendor/autoload.php');
+if ($vendor_available) {
+    require __DIR__ . '/../vendor/autoload.php';
 }
-
-require __DIR__ . '/../vendor/autoload.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 // Helper function to create professional email template
 function create_email_template($title, $content, $footerText = '') {
@@ -122,6 +110,14 @@ function create_email_template($title, $content, $footerText = '') {
 
 // PHPMailer setup using Composer autoloader
 function send_smtp_mail($to, $subject, $body, $altBody = '') {
+    global $vendor_available;
+    
+    // If vendor folder not available, skip email silently
+    if (!$vendor_available) {
+        error_log("Email skipped: Vendor folder not available");
+        return true; // Return true so booking continues without email
+    }
+    
     try {
         // Debug logging
         error_log("=== EMAIL ATTEMPT ===");
@@ -141,7 +137,7 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
         error_log("SMTP Host: " . $config['host']);
         error_log("SMTP User: " . $config['username']);
         
-        $mail = new PHPMailer(true);
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
         
         // Enable verbose debug output
         $mail->SMTPDebug = 2;
@@ -177,10 +173,14 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
         error_log("Email sent successfully to: " . $to);
         error_log("=== EMAIL SUCCESS ===");
         return $result;
-    } catch (Exception $e) {
+    } catch (\PHPMailer\PHPMailer\Exception $e) {
         error_log('=== EMAIL FAILED ===');
         error_log('PHPMailer error: ' . $e->getMessage());
         error_log('Error trace: ' . $e->getTraceAsString());
+        return false;
+    } catch (Exception $e) {
+        error_log('=== EMAIL FAILED (General) ===');
+        error_log('Error: ' . $e->getMessage());
         return false;
     }
 }
