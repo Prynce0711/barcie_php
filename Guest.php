@@ -183,42 +183,7 @@ $user_id = 0; // Default guest user ID
       font-weight: 500;
     }
 
-    /* Amenity Cards Styling */
-    .amenity-card {
-      transition: all 0.3s ease;
-      border: 1px solid #e9ecef;
-    }
-
-    .amenity-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-      border-color: #667eea;
-    }
-
-    .amenity-card .card-img-top {
-      transition: transform 0.3s ease;
-    }
-
-    .amenity-card:hover .card-img-top {
-      transform: scale(1.05);
-    }
-
-    .amenity-card .card-body {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .amenity-card:hover .card-body::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-      pointer-events: none;
-    }
-
+    
     /* Responsive calendar */
     @media (max-width: 768px) {
       #guestCalendar {
@@ -286,7 +251,32 @@ $user_id = 0; // Default guest user ID
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <!-- Bootstrap JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Guest Bootstrap JavaScript - LOAD ONCE -->
   <script src="assets/js/guest-bootstrap.js"></script>
+  
+  <!-- Fix Image Loading Errors -->
+  <script>
+    // Handle missing images gracefully - runs after DOM content loaded
+    window.addEventListener('load', function() {
+      // Replace broken images with placeholder
+      document.querySelectorAll('img').forEach(img => {
+        img.addEventListener('error', function() {
+          if (!this.classList.contains('error-handled')) {
+            this.classList.add('error-handled');
+            this.src = 'assets/images/imageBg/barcie_logo.jpg'; // Fallback to logo
+            this.alt = 'Image not available';
+            this.style.opacity = '0.7';
+            console.warn('Image failed to load, using fallback:', this.dataset.originalSrc || 'unknown');
+          }
+        });
+        // Store original src for debugging
+        if (img.src) {
+          img.dataset.originalSrc = img.src;
+        }
+      });
+    });
+  </script>
 
   <script>
     // Enhanced booking form validation and feedback
@@ -1185,6 +1175,575 @@ $user_id = 0; // Default guest user ID
       </section>
     </div> <!-- Close container-fluid -->
   </main>
+
+  <!-- Floating Chatbot -->
+    <div class="chatbot-container" id="chatbotContainer">
+      <div class="chatbot-header">
+        <div class="d-flex align-items-center">
+          <div class="chatbot-avatar me-2">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div>
+            <h6 class="mb-0">BarCIE Assistant</h6>
+            <small class="text-white-50">Ask me anything!</small>
+          </div>
+        </div>
+        <button class="chatbot-close" onclick="toggleChatbot()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="chatbot-messages" id="chatbotMessages">
+        <div class="chatbot-message bot-message">
+          <div class="message-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="message-content">
+            <p>Hello! 👋 I'm your BarCIE assistant. How can I help you today?</p>
+            <div class="quick-replies mt-2">
+              <button class="quick-reply-btn" onclick="sendQuickReply('room availability')">
+                <i class="fas fa-bed me-1"></i>Room Availability
+              </button>
+              <button class="quick-reply-btn" onclick="sendQuickReply('booking process')">
+                <i class="fas fa-calendar me-1"></i>How to Book
+              </button>
+              <button class="quick-reply-btn" onclick="sendQuickReply('pricing')">
+                <i class="fas fa-tag me-1"></i>Pricing
+              </button>
+              <button class="quick-reply-btn" onclick="sendQuickReply('facilities')">
+                <i class="fas fa-building me-1"></i>Facilities
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chatbot-input">
+        <input type="text" id="chatbotInput" placeholder="Type your question..." onkeypress="handleChatbotEnter(event)">
+        <button onclick="sendChatbotMessage()">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chatbot Toggle Button -->
+    <button class="chatbot-toggle" id="chatbotToggle" onclick="toggleChatbot()">
+      <i class="fas fa-comments"></i>
+      <span class="chatbot-badge">1</span>
+    </button>
+
+    <!-- Chatbot Styles -->
+    <style>
+      .chatbot-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .chatbot-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      .chatbot-toggle:active {
+        transform: scale(0.95);
+      }
+
+      .chatbot-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        animation: pulse-badge 2s infinite;
+      }
+
+      @keyframes pulse-badge {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+
+      .chatbot-container {
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        width: 380px;
+        max-width: calc(100vw - 40px);
+        height: 550px;
+        max-height: calc(100vh - 140px);
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        display: none;
+        flex-direction: column;
+        z-index: 998;
+        overflow: hidden;
+        animation: slideUp 0.3s ease;
+      }
+
+      .chatbot-container.active {
+        display: flex;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .chatbot-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 20px 20px 0 0;
+      }
+
+      .chatbot-avatar {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+      }
+
+      .chatbot-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .chatbot-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: rotate(90deg);
+      }
+
+      .chatbot-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .chatbot-message {
+        display: flex;
+        gap: 10px;
+        animation: messageSlide 0.3s ease;
+      }
+
+      @keyframes messageSlide {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .bot-message {
+        align-self: flex-start;
+      }
+
+      .user-message {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+
+      .message-avatar {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .user-message .message-avatar {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      }
+
+      .message-content {
+        max-width: 70%;
+        background: white;
+        padding: 12px 16px;
+        border-radius: 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .user-message .message-content {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+      }
+
+      .message-content p {
+        margin: 0;
+        line-height: 1.5;
+        font-size: 14px;
+      }
+
+      .quick-replies {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .quick-reply-btn {
+        background: #f0f0f0;
+        border: 1px solid #e0e0e0;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #333;
+      }
+
+      .quick-reply-btn:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+        transform: translateY(-2px);
+      }
+
+      .chatbot-input {
+        display: flex;
+        padding: 15px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+        gap: 10px;
+      }
+
+      .chatbot-input input {
+        flex: 1;
+        border: 2px solid #e0e0e0;
+        border-radius: 25px;
+        padding: 12px 20px;
+        font-size: 14px;
+        outline: none;
+        transition: all 0.3s ease;
+      }
+
+      .chatbot-input input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .chatbot-input button {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .chatbot-input button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 10px;
+      }
+
+      .typing-dot {
+        width: 8px;
+        height: 8px;
+        background: #999;
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+      }
+
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes typing {
+        0%, 60%, 100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-10px);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .chatbot-container {
+          width: calc(100vw - 40px);
+          height: calc(100vh - 140px);
+        }
+        
+        .chatbot-toggle {
+          bottom: 15px;
+          right: 15px;
+          width: 55px;
+          height: 55px;
+        }
+      }
+    </style>
+
+    <!-- Chatbot Script -->
+    <script>
+      const chatbotKnowledgeBase = {
+        'room availability': {
+          response: "To check room availability, simply visit our Availability Calendar section. You can also browse our Rooms & Facilities page to see real-time availability status. Green indicators mean the room is available!",
+          quickReplies: ['booking process', 'pricing']
+        },
+        'booking process': {
+          response: "Booking is easy! Navigate to 'Booking & Reservation', choose between Reservation (for rooms) or Pencil Booking (for function halls), fill in the required details, and submit. No account needed! You'll receive a confirmation email.",
+          quickReplies: ['discount', 'payment']
+        },
+        'pricing': {
+          response: "Our pricing varies by room type and facility. Room rates start from ₱1,500/night for standard rooms. Function hall rates depend on capacity and duration. You can see exact prices when browsing our Rooms & Facilities section.",
+          quickReplies: ['discount', 'amenities']
+        },
+        'facilities': {
+          response: "We offer comfortable rooms, function halls for events, free WiFi, complimentary parking, and 24/7 front desk service. All rooms are air-conditioned with modern amenities.",
+          quickReplies: ['room availability', 'booking process']
+        },
+        'discount': {
+          response: "We offer discounts! PWD/Senior Citizens get 20%, LCUP Personnel get 10%, and LCUP Students/Alumni get 7%. Just select your discount type when booking and upload a valid ID.",
+          quickReplies: ['booking process', 'payment']
+        },
+        'payment': {
+          response: "Payment details and methods will be provided after your booking is confirmed. We accept various payment options for your convenience.",
+          quickReplies: ['booking process', 'cancellation']
+        },
+        'cancellation': {
+          response: "For cancellation or modification of bookings, please contact us at +63 912 345 6789 or visit our Contact section. We'll assist you promptly.",
+          quickReplies: ['contact', 'booking process']
+        },
+        'contact': {
+          response: "You can reach us at:\n📞 +63 912 345 6789\n📧 Through our contact form\n🕐 Check-in: 2:00 PM\n🕐 Check-out: 12:00 PM",
+          quickReplies: ['booking process', 'facilities']
+        },
+        'amenities': {
+          response: "All rooms include: Air conditioning, Free WiFi, Clean linens & towels, 24/7 security, and complimentary parking. Function halls have audio-visual equipment available.",
+          quickReplies: ['pricing', 'booking process']
+        },
+        'checkin': {
+          response: "Check-in time is 2:00 PM onwards. Early check-in may be available depending on room availability. Please contact us in advance if you need early check-in.",
+          quickReplies: ['checkout', 'contact']
+        },
+        'checkout': {
+          response: "Check-out time is 12:00 PM. Late check-out may be available upon request and subject to room availability. Additional charges may apply.",
+          quickReplies: ['checkin', 'payment']
+        }
+      };
+
+      function toggleChatbot() {
+        const container = document.getElementById('chatbotContainer');
+        const toggle = document.getElementById('chatbotToggle');
+        const badge = toggle.querySelector('.chatbot-badge');
+        
+        container.classList.toggle('active');
+        
+        if (container.classList.contains('active')) {
+          document.getElementById('chatbotInput').focus();
+          if (badge) badge.style.display = 'none';
+        }
+      }
+
+      function sendChatbotMessage() {
+        const input = document.getElementById('chatbotInput');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        addUserMessage(message);
+        input.value = '';
+        
+        setTimeout(() => {
+          showTypingIndicator();
+          setTimeout(() => {
+            hideTypingIndicator();
+            const response = generateResponse(message);
+            addBotMessage(response.text, response.quickReplies);
+          }, 1000);
+        }, 300);
+      }
+
+      function handleChatbotEnter(event) {
+        if (event.key === 'Enter') {
+          sendChatbotMessage();
+        }
+      }
+
+      function sendQuickReply(query) {
+        addUserMessage(query);
+        setTimeout(() => {
+          showTypingIndicator();
+          setTimeout(() => {
+            hideTypingIndicator();
+            const response = generateResponse(query);
+            addBotMessage(response.text, response.quickReplies);
+          }, 800);
+        }, 300);
+      }
+
+      function addUserMessage(message) {
+        const messagesContainer = document.getElementById('chatbotMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'chatbot-message user-message';
+        messageDiv.innerHTML = `
+          <div class="message-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="message-content">
+            <p>${message}</p>
+          </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+        scrollToBottom();
+      }
+
+      function addBotMessage(message, quickReplies = []) {
+        const messagesContainer = document.getElementById('chatbotMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'chatbot-message bot-message';
+        
+        let quickRepliesHTML = '';
+        if (quickReplies.length > 0) {
+          quickRepliesHTML = '<div class="quick-replies mt-2">';
+          quickReplies.forEach(reply => {
+            const label = reply.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            quickRepliesHTML += `<button class="quick-reply-btn" onclick="sendQuickReply('${reply}')"><i class="fas fa-arrow-right me-1"></i>${label}</button>`;
+          });
+          quickRepliesHTML += '</div>';
+        }
+        
+        messageDiv.innerHTML = `
+          <div class="message-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="message-content">
+            <p>${message}</p>
+            ${quickRepliesHTML}
+          </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+        scrollToBottom();
+      }
+
+      function showTypingIndicator() {
+        const messagesContainer = document.getElementById('chatbotMessages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'chatbot-message bot-message typing-indicator-message';
+        typingDiv.innerHTML = `
+          <div class="message-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="message-content">
+            <div class="typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+        `;
+        messagesContainer.appendChild(typingDiv);
+        scrollToBottom();
+      }
+
+      function hideTypingIndicator() {
+        const typing = document.querySelector('.typing-indicator-message');
+        if (typing) typing.remove();
+      }
+
+      function generateResponse(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        for (const [key, value] of Object.entries(chatbotKnowledgeBase)) {
+          if (lowerMessage.includes(key) || lowerMessage.includes(key.replace(/ /g, ''))) {
+            return {
+              text: value.response,
+              quickReplies: value.quickReplies || []
+            };
+          }
+        }
+        
+        if (lowerMessage.includes('thank') || lowerMessage.includes('thanks')) {
+          return {
+            text: "You're welcome! Is there anything else I can help you with?",
+            quickReplies: ['room availability', 'booking process', 'contact']
+          };
+        }
+        
+        if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+          return {
+            text: "Hello! How can I assist you today?",
+            quickReplies: ['room availability', 'booking process', 'facilities']
+          };
+        }
+        
+        return {
+          text: "I'd be happy to help! Here are some topics I can assist you with. Please choose one or ask me anything specific about BarCIE International Center.",
+          quickReplies: ['room availability', 'booking process', 'pricing', 'facilities']
+        };
+      }
+
+      function scrollToBottom() {
+        const messagesContainer = document.getElementById('chatbotMessages');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    </script>
 
   <footer class="footer">
     <p>© BarCIE International Center 2025</p>

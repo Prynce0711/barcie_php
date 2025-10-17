@@ -1863,30 +1863,32 @@ function ensureSectionsWork() {
   console.log('Backup initialization completed');
 }
 
-// Multiple initialization attempts
+// SINGLE initialization - prevent duplicate execution
 console.log('=== GUEST PORTAL INITIALIZATION SEQUENCE ===');
 
-// Immediate initialization if DOM is ready
-if (document.readyState !== 'loading') {
-  console.log('DOM already ready, initializing immediately');
-  initializeGuestPortal();
-} else {
-  console.log('DOM still loading, waiting for DOMContentLoaded');
-  document.addEventListener('DOMContentLoaded', initializeGuestPortal);
-}
-
-// Backup initialization after 2 seconds
-setTimeout(() => {
-  console.log('Running backup initialization check...');
-  ensureSectionsWork();
-}, 2000);
-
-// Final fallback after 4 seconds
-setTimeout(() => {
-  console.log('Running final fallback check...');
-  const activeSection = document.querySelector('.content-section.active');
-  if (!activeSection) {
-    console.log('Still no active sections, forcing home section');
-    showSection('overview');
+// Flag to prevent duplicate initialization
+if (!window.guestPortalInitialized) {
+  window.guestPortalInitialized = false;
+  
+  // Immediate initialization if DOM is ready
+  if (document.readyState !== 'loading') {
+    console.log('DOM already ready, initializing immediately');
+    if (!window.guestPortalInitialized) {
+      window.guestPortalInitialized = true;
+      initializeGuestPortal();
+    }
+  } else {
+    console.log('DOM still loading, waiting for DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!window.guestPortalInitialized) {
+        window.guestPortalInitialized = true;
+        initializeGuestPortal();
+      }
+    });
   }
-}, 4000);
+  
+  // Removed duplicate backup initialization
+  // Removed duplicate fallback initialization
+} else {
+  console.log('Guest portal already initialized, skipping duplicate initialization');
+}
