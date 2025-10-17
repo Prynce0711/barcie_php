@@ -446,20 +446,29 @@ async function loadItems() {
     const response = await res.json();
     console.log("Guest: Raw response:", response);
     
-    // user_auth.php returns a plain array of items. Older API returned { success:true, items: [...] }
+    // Handle both old and new response formats
     let items = [];
-    if (Array.isArray(response)) {
-      items = response;
-      console.log("Guest: Got plain array of items:", items.length);
-    } else if (response && response.success && Array.isArray(response.items)) {
+    if (response && response.success && Array.isArray(response.items)) {
+      // New format: { success: true, items: [...], count: X }
       items = response.items;
       console.log("Guest: Got wrapped items array:", items.length);
+    } else if (Array.isArray(response)) {
+      // Old format: plain array
+      items = response;
+      console.log("Guest: Got plain array of items:", items.length);
     } else if (response && Array.isArray(response.data)) {
+      // Alternative format: { data: [...] }
       items = response.data;
       console.log("Guest: Got data array:", items.length);
     } else {
+      console.warn("Guest: Unexpected response format:", response);
+      
+      // If response has error property, show it
+      if (response && response.error) {
+        throw new Error(response.message || response.error);
+      }
+      
       items = [];
-      console.warn("Guest: No items found in response:", response);
     }
 
     // Store items globally for filtering

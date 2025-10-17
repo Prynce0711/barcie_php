@@ -1,8 +1,13 @@
 <?php
-// Disable error display for API endpoints to prevent HTML errors in JSON responses
-ini_set('display_errors', 0);
+// Enable error display temporarily for debugging on live server
+ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
+
+// Add CORS headers for debugging
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -344,10 +349,61 @@ fixMissingRoomIds($conn);
    --------------------------- */
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
+    // Debug endpoint
+    if ($_GET['action'] === 'debug_connection') {
+        header('Content-Type: application/json');
+        try {
+            $debug_info = [
+                'php_version' => phpversion(),
+                'mysql_extension' => extension_loaded('mysqli'),
+                'db_connected' => isset($conn) && !$conn->connect_error,
+                'db_error' => isset($conn) ? $conn->connect_error : 'No connection object',
+                'current_time' => date('Y-m-d H:i:s'),
+                'get_params' => $_GET,
+                'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown'
+            ];
+            
+            if (isset($conn) && !$conn->connect_error) {
+                // Test query
+                $test_query = $conn->query("SELECT COUNT(*) as count FROM items");
+                if ($test_query) {
+                    $test_result = $test_query->fetch_assoc();
+                    $debug_info['items_count'] = $test_result['count'];
+                } else {
+                    $debug_info['items_query_error'] = $conn->error;
+                }
+            }
+            
+            echo json_encode($debug_info, JSON_PRETTY_PRINT);
+        } catch (Exception $e) {
+            echo json_encode([
+                'error' => 'Debug failed',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+        exit;
+    }
+
     if ($_GET['action'] === 'fetch_items') {
         header('Content-Type: application/json');
         try {
-            $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image FROM items ORDER BY created_at DESC";
+            // Check database connection
+            if (!isset($conn)) {
+                throw new Exception("Database connection not initialized");
+            }
+            
+            if ($conn->connect_error) {
+                throw new Exception("Database connection failed: " . $conn->connect_error);
+            }
+            
+            // Check if items table exists
+            $table_check = $conn->query("SHOW TABLES LIKE 'items'");
+            if (!$table_check || $table_check->num_rows == 0) {
+                throw new Exception("Items table does not exist in database");
+            }
+            
+            $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, room_status FROM items ORDER BY created_at DESC";
             $res = $conn->query($sql);
             
             if (!$res) {
@@ -359,13 +415,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                 $items[] = $r;
             }
             
-            echo json_encode($items);
+            // Always return success response with items array
+            echo json_encode([
+                'success' => true,
+                'items' => $items,
+                'count' => count($items)
+            ]);
+            
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'error' => 'Failed to fetch items',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'file' => basename($e->getFile()),
+                'line' => $e->getLine()
             ]);
             error_log("fetch_items error: " . $e->getMessage());
         }
