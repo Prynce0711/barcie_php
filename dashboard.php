@@ -5,7 +5,7 @@ require __DIR__ . '/database/db_connect.php';
 
 // ✅ Auth check: only admins can access
 if (!isset($_SESSION['admin_id'])) {
-  header("Location: admin_login.php");
+  header("Location: index.php");
   exit;
 }
 
@@ -123,7 +123,7 @@ for ($i = 11; $i >= 0; $i--) {
   $month_name = date('M Y', strtotime("-$i months"));
   $result = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE DATE_FORMAT(created_at, '%Y-%m') = '$month'");
   $count = $result ? $result->fetch_assoc()['count'] : 0;
-  $monthly_bookings[] = ['month' => $month_name, 'count' => (int)$count];
+  $monthly_bookings[] = ['month' => $month_name, 'count' => (int) $count];
 }
 
 // Booking status distribution
@@ -132,7 +132,7 @@ $statuses = ['pending', 'approved', 'confirmed', 'checked_in', 'checked_out', 'c
 foreach ($statuses as $status) {
   $result = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status='$status'");
   $count = $result ? $result->fetch_assoc()['count'] : 0;
-  $status_distribution[$status] = (int)$count;
+  $status_distribution[$status] = (int) $count;
 }
 
 // Additional booking statistics
@@ -197,14 +197,8 @@ while ($row = $result->fetch_assoc()) {
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- FullCalendar CSS & JS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-  <!-- Bootstrap JavaScript -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Custom JavaScript -->
-  <script src="assets/js/dashboard-bootstrap.js" defer></script>
   <!-- Custom CSS -->
   <link rel="stylesheet" href="assets/css/dashboard.css">
 </head>
@@ -220,11 +214,6 @@ while ($row = $result->fetch_assoc()) {
   <!-- Mobile Menu Toggle -->
   <button class="mobile-menu-toggle d-lg-none" onclick="toggleSidebar()">
     <i class="fas fa-bars"></i>
-  </button>
-
-  <!-- Floating Add New Item Button -->
-  <button class="floating-add-btn" data-bs-toggle="modal" data-bs-target="#addItemModal" title="Add New Item">
-    <i class="fas fa-plus"></i>
   </button>
 
   <!-- Sidebar -->
@@ -456,9 +445,12 @@ while ($row = $result->fetch_assoc()) {
                   </div>
                   <div class="col-auto">
                     <div class="btn-group btn-group-sm">
-                      <button class="btn btn-outline-primary" type="button" onclick="refreshChart('7days')">7 Days</button>
-                      <button class="btn btn-outline-primary" type="button" onclick="refreshChart('30days')">30 Days</button>
-                      <button class="btn btn-outline-primary active" type="button" onclick="refreshChart('12months')">Year</button>
+                      <button class="btn btn-outline-primary" type="button" onclick="refreshChart('7days')">7
+                        Days</button>
+                      <button class="btn btn-outline-primary" type="button" onclick="refreshChart('30days')">30
+                        Days</button>
+                      <button class="btn btn-outline-primary active" type="button"
+                        onclick="refreshChart('12months')">Year</button>
                     </div>
                   </div>
                 </div>
@@ -488,36 +480,36 @@ while ($row = $result->fetch_assoc()) {
                   $total_for_percentage = $total_bookings > 0 ? $total_bookings : 1;
                   $status_colors = [
                     'pending' => 'warning',
-                    'approved' => 'success', 
+                    'approved' => 'success',
                     'confirmed' => 'success',
                     'checked_in' => 'info',
                     'checked_out' => 'secondary',
                     'cancelled' => 'danger',
                     'rejected' => 'danger'
                   ];
-                  
+
                   foreach ($status_distribution as $status => $count):
                     if ($count > 0):
                       $percentage = round(($count / $total_for_percentage) * 100, 1);
                       $color_class = $status_colors[$status] ?? 'secondary';
                       $display_name = ucfirst(str_replace('_', ' ', $status));
-                  ?>
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div class="d-flex align-items-center">
-                      <div class="legend-dot bg-<?php echo $color_class; ?> me-2"></div>
-                      <small><?php echo $display_name; ?></small>
-                    </div>
-                    <small class="text-muted fw-bold"><?php echo $percentage; ?>%</small>
-                  </div>
-                  <?php 
+                      ?>
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                          <div class="legend-dot bg-<?php echo $color_class; ?> me-2"></div>
+                          <small><?php echo $display_name; ?></small>
+                        </div>
+                        <small class="text-muted fw-bold"><?php echo $percentage; ?>%</small>
+                      </div>
+                      <?php
                     endif;
-                  endforeach; 
-                  
-                  if ($total_bookings == 0): 
-                  ?>
-                  <div class="text-center text-muted">
-                    <small>No bookings data</small>
-                  </div>
+                  endforeach;
+
+                  if ($total_bookings == 0):
+                    ?>
+                    <div class="text-center text-muted">
+                      <small>No bookings data</small>
+                    </div>
                   <?php endif; ?>
                 </div>
               </div>
@@ -700,14 +692,14 @@ while ($row = $result->fetch_assoc()) {
           } elseif ($row['status'] == 'checked_out') {
             $title = "🚪 Checked Out: " . $room_facility;
             $color = '#8b5cf6';  // Purple - matches custom purple color
-          } elseif ($row['status'] == 'pending') {                                                                                                                              
+          } elseif ($row['status'] == 'pending') {
             $title = "⏳ Pending: " . $room_facility;
             $color = '#f59e0b';  // Orange - matches warning color
           } elseif ($row['status'] == 'cancelled' || $row['status'] == 'rejected') {
             $title = "❌ Cancelled: " . $room_facility;
             $color = '#ef4444';  // Red - matches danger color
           } else {
-            $title = ucfirst($row['status']) . ": " . $room_facility;                                                                
+            $title = ucfirst($row['status']) . ": " . $room_facility;
             $color = '#6c757d';  // Gray for unknown status
           }
 
@@ -754,9 +746,9 @@ while ($row = $result->fetch_assoc()) {
           completedBookingsCount: <?php echo $completed_bookings_count; ?>,
           feedbackStats: <?php echo json_encode($feedback_stats); ?>
         };
-        
+
         // Initialize dashboard when document is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
           // Set data for charts
           setDashboardData(
             window.calendarEvents,
@@ -1218,7 +1210,7 @@ while ($row = $result->fetch_assoc()) {
             </div>
 
             <!-- Delete Confirmation Modal -->
-            <div class="modal fade" id="deleteModal<?= $item['id'] ?>" tabindex="-1">
+            <div class="modal fade" id="deleteModal<?= $item['id'] ?>" data-bs-backdrop="false" tabindex="-1">
               <div class="modal-dialog">
                 <div class="modal-content">
                   <div class="modal-header">
@@ -1245,7 +1237,7 @@ while ($row = $result->fetch_assoc()) {
 
 
         <!-- Add Item Modal -->
-        <div class="modal fade" id="addItemModal" tabindex="-1">
+        <div class="modal fade" id="addItemModal" data-bs-backdrop="false" tabindex="-1">
           <div class="modal-dialog modal-lg">
             <div class="modal-content">
               <div class="modal-header">
@@ -1255,15 +1247,6 @@ while ($row = $result->fetch_assoc()) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <form method="POST" enctype="multipart/form-data">
-                <!-- Action Buttons at Top -->
-                <div class="modal-body border-bottom pb-3 mb-3">
-                  <div class="d-flex gap-2 justify-content-end">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                      <i class="fas fa-times me-1"></i>Cancel
-                    </button>
-
-                  </div>
-                </div>
                 <div class="modal-body">
                   <input type="hidden" name="add_item" value="1">
 
@@ -1279,7 +1262,7 @@ while ($row = $result->fetch_assoc()) {
                         <option value="">Select Type</option>
                         <option value="room">Room</option>
                         <option value="facility">Facility</option>
-                        <option value="amenities">Amenities</option>
+                        
                       </select>
                     </div>
 
@@ -1310,6 +1293,14 @@ while ($row = $result->fetch_assoc()) {
                       <div class="form-text">Optional: Upload an image for this room or facility</div>
                     </div>
                   </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                  </button>
+                  <button type="submit" class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i>Add Item
+                  </button>
                 </div>
               </form>
             </div>
@@ -1476,7 +1467,7 @@ while ($row = $result->fetch_assoc()) {
                           $discount_details = '';
                           $discount_proof = '';
                           $discount_status = $booking['discount_status'] ?? 'none';
-                          
+
                           if (!empty($booking['details'])) {
                             if (preg_match('/Discount: ([^|]+)/', $booking['details'], $matches)) {
                               $discount_type = trim($matches[1]);
@@ -1488,11 +1479,11 @@ while ($row = $result->fetch_assoc()) {
                               $discount_proof = trim($matches[1]);
                             }
                           }
-                          
+
                           if ($discount_type) {
                             echo "<div class='mb-2'>";
                             echo "<span class='badge bg-warning text-dark mb-1'>" . htmlspecialchars($discount_type) . "</span><br>";
-                            
+
                             // Discount Status Badge
                             if ($discount_status === 'approved') {
                               echo "<span class='badge bg-success mb-1'><i class='fas fa-check me-1'></i>Approved</span><br>";
@@ -1501,7 +1492,7 @@ while ($row = $result->fetch_assoc()) {
                             } elseif ($discount_status === 'pending') {
                               echo "<span class='badge bg-info mb-1'><i class='fas fa-clock me-1'></i>Pending Review</span><br>";
                             }
-                            
+
                             if ($discount_details) {
                               echo "<small class='text-muted d-block mb-1'>" . htmlspecialchars($discount_details) . "</small>";
                             }
@@ -1509,7 +1500,7 @@ while ($row = $result->fetch_assoc()) {
                               echo "<a href='" . htmlspecialchars($discount_proof) . "' target='_blank' class='btn btn-link btn-sm p-0 mb-1'><i class='fas fa-file-image me-1'></i>View Proof</a><br>";
                             }
                             echo "</div>";
-                            
+
                             // Discount approval buttons (separate from booking approval)
                             if ($discount_status === 'pending' || $discount_status === 'none') {
                               echo "<div class='btn-group btn-group-sm' role='group'>";
@@ -1633,7 +1624,7 @@ while ($row = $result->fetch_assoc()) {
                           $discount_proof = '';
                           $discount_status = $booking['discount_status'] ?? 'none';
                           $email = '';
-                          
+
                           if (!empty($booking['details'])) {
                             if (preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
                               $guest_name = trim($matches[1]);
@@ -1651,12 +1642,12 @@ while ($row = $result->fetch_assoc()) {
                               $email = trim($matches[1]);
                             }
                           }
-                          
+
                           $room_display = $booking['room_name'] ?: 'Unknown';
                           if ($booking['room_number']) {
                             $room_display .= " (#" . $booking['room_number'] . ")";
                           }
-                          
+
                           // Status badge class
                           $status_badge_class = 'secondary';
                           $status_text = ucfirst($discount_status);
@@ -1670,7 +1661,7 @@ while ($row = $result->fetch_assoc()) {
                             $status_badge_class = 'warning text-dark';
                             $status_text = '⏳ Pending';
                           }
-                          
+
                           echo "<tr>";
                           echo "<td><code>" . htmlspecialchars($booking['receipt_no'] ?: 'N/A') . "</code></td>";
                           echo "<td>" . htmlspecialchars($guest_name) . "<br><small class='text-muted'>" . htmlspecialchars($email) . "</small></td>";
@@ -1696,7 +1687,7 @@ while ($row = $result->fetch_assoc()) {
                           }
                           echo "</td>";
                           echo "<td>";
-                          
+
                           // Show action buttons only for pending discounts
                           if ($discount_status === 'pending' || $discount_status === 'none') {
                             echo "<div class='btn-group btn-group-sm' role='group'>";
@@ -1710,7 +1701,7 @@ while ($row = $result->fetch_assoc()) {
                           } else {
                             echo "<small class='text-muted'>Already " . ($discount_status === 'approved' ? 'approved' : 'rejected') . "</small>";
                           }
-                          
+
                           echo "</td>";
                           echo "</tr>";
                         }
@@ -1880,6 +1871,11 @@ while ($row = $result->fetch_assoc()) {
         ?>
 
 
+
+
+
+
+
       </script>
 
       <!-- Rooms & Facilities JavaScript -->
@@ -1894,8 +1890,55 @@ while ($row = $result->fetch_assoc()) {
 
       <!-- All styles moved to dashboard.css for better organization -->
 
+      <!-- Additional Edit Form Initialization -->
+      <script>
+        // Ensure edit forms work immediately after page load
+        document.addEventListener('DOMContentLoaded', function () {
+          // Wait for everything to load, then force re-initialize edit forms
+          setTimeout(function () {
+            console.log('Forcing edit form initialization...');
 
+            // Initialize edit forms directly
+            if (typeof setupEditFormToggles === 'function') {
+              setupEditFormToggles();
+            }
 
+            // Debug: log all edit buttons and forms found
+            const editButtons = document.querySelectorAll('.edit-toggle-btn');
+            const editForms = document.querySelectorAll('[id^="editForm"]');
+
+            console.log('Edit buttons found:', editButtons.length);
+            console.log('Edit forms found:', editForms.length);
+
+            editButtons.forEach((btn, index) => {
+              console.log(`Edit button ${index + 1} - Item ID:`, btn.getAttribute('data-item-id'));
+            });
+          }, 1000);
+        });
+
+        // Backup function to manually initialize edit forms if needed
+        function forceInitializeEditForms() {
+          if (typeof setupEditFormToggles === 'function') {
+            setupEditFormToggles();
+            console.log('Edit forms manually re-initialized');
+          }
+        }
+
+        // Make it globally accessible for debugging
+        window.forceInitializeEditForms = forceInitializeEditForms;
+      </script>
+
+      <!-- Load JavaScript files at the end of body for better performance -->
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+      <script src="assets/js/dashboard-bootstrap.js"></script>
+
+      <!-- Floating Add New Item Button - Outside all sections for proper positioning -->
+      <button class="floating-add-btn" data-bs-toggle="modal" data-bs-target="#addItemModal" title="Add New Item">
+        <i class="fas fa-plus"></i>
+      </button>
 
 </body>
+
 </html>

@@ -22,11 +22,22 @@ function initializeDashboard() {
   setupBookingForms();
   // setupCommunication(); // Temporarily disabled to fix feedback system
   initializeFeedbackManagement();
-  
+
   // Initialize calendar & items functionality
   initializeCalendarNavigation();
   initializeRoomSearch();
   initializeRoomCalendar();
+
+  // Initialize edit forms and rooms functionality after a short delay
+  setTimeout(() => {
+    initializeEditForms();
+
+    // Initialize rooms-specific functionality
+    initializeRoomsFiltering();
+    initializeRoomsSearch();
+
+    console.log("Rooms and facilities functionality initialized");
+  }, 500);
 }
 
 // Wait for Chart.js to be loaded before initializing charts
@@ -40,6 +51,14 @@ function waitForChartJS() {
 
 // Initialize Bootstrap Components
 function setupBootstrapComponents() {
+  console.log("Setting up Bootstrap components...");
+  
+  // Check if Bootstrap is loaded
+  if (typeof bootstrap === 'undefined') {
+    console.error("Bootstrap is not loaded!");
+    return;
+  }
+
   // Initialize tooltips
   const tooltipTriggerList = [].slice.call(
     document.querySelectorAll('[data-bs-toggle="tooltip"]')
@@ -47,6 +66,7 @@ function setupBootstrapComponents() {
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
+  console.log(`Initialized ${tooltipTriggerList.length} tooltips`);
 
   // Initialize popovers
   const popoverTriggerList = [].slice.call(
@@ -55,12 +75,38 @@ function setupBootstrapComponents() {
   popoverTriggerList.map(function (popoverTriggerEl) {
     return new bootstrap.Popover(popoverTriggerEl);
   });
+  console.log(`Initialized ${popoverTriggerList.length} popovers`);
 
-  // Initialize modals
-  const modalList = [].slice.call(document.querySelectorAll(".modal"));
-  modalList.map(function (modalEl) {
-    return new bootstrap.Modal(modalEl);
-  });
+  // Initialize modals - Bootstrap handles data-bs-toggle automatically
+  // We don't need to manually initialize, but we can verify they exist
+  const modalList = document.querySelectorAll(".modal");
+  console.log(`Found ${modalList.length} modals in the page`);
+  
+  // Verify the Add Item modal specifically
+  const addItemModal = document.getElementById("addItemModal");
+  if (addItemModal) {
+    console.log("✓ Add Item Modal found and ready");
+  } else {
+    console.error("✗ Add Item Modal NOT found!");
+  }
+  
+  // Verify the floating button
+  const floatingBtn = document.querySelector(".floating-add-btn");
+  if (floatingBtn) {
+    console.log("✓ Floating Add Button found");
+    console.log("Button attributes:", {
+      toggle: floatingBtn.getAttribute('data-bs-toggle'),
+      target: floatingBtn.getAttribute('data-bs-target')
+    });
+  } else {
+    console.error("✗ Floating Add Button NOT found!");
+  }
+  
+  // Verify delete modals
+  const deleteModals = document.querySelectorAll('[id^="deleteModal"]');
+  console.log(`Found ${deleteModals.length} delete modals`);
+  
+  console.log("Bootstrap components setup complete!");
 }
 
 // Mobile Menu Setup
@@ -163,6 +209,24 @@ function showSection(sectionId) {
         detail: { section: sectionId },
       })
     );
+
+    // Re-initialize edit forms when rooms section is shown
+    if (sectionId === "rooms") {
+      setTimeout(() => {
+        // Only re-initialize if not already done
+        if (!window.roomsInitialized) {
+          initializeEditForms();
+          initializeRoomsFiltering();
+          initializeRoomsSearch();
+          window.roomsInitialized = true;
+          console.log("Rooms functionality fully initialized");
+        } else {
+          // Just refresh edit forms
+          initializeEditForms();
+          console.log("Edit forms refreshed for rooms section");
+        }
+      }, 100);
+    }
   }
 
   // Close mobile menu if open
@@ -217,49 +281,6 @@ function initializeCalendar() {
   }
 
   // Dashboard Calendar (smaller version)
-  initializeDashboardCalendar();
-}
-
-// Dashboard Mini Calendar Initialization
-function initializeDashboardCalendar() {
-  const dashboardCalendarEl = document.getElementById("dashboardCalendar");
-  if (dashboardCalendarEl && typeof FullCalendar !== "undefined") {
-    const events = window.bookingEvents || [];
-
-    const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
-      initialView: "dayGridMonth",
-      height: 300,
-      headerToolbar: {
-        left: "prev,next",
-        center: "title",
-        right: "",
-      },
-      events: events.map((event) => ({
-        id: event.id,
-        title: `${event.title} | ${event.status}`,
-        start: event.start,
-        end: event.end,
-        color:
-          event.status === "approved"
-            ? "green"
-            : event.status === "pending"
-            ? "orange"
-            : "red",
-      })),
-      eventClick: function (info) {
-        showToast(
-          `Booking ID: ${info.event.id}\nDetails: ${
-            info.event.title
-          }\nStart: ${info.event.start.toLocaleString()}\nEnd: ${
-            info.event.end ? info.event.end.toLocaleString() : "N/A"
-          }`,
-          "info"
-        );
-      },
-    });
-
-    dashboardCalendar.render();
-  }
 }
 
 // Show Booking Details in Modal
@@ -781,26 +802,109 @@ function initializeCounters() {
 
 // Setup Edit Form Toggles
 function setupEditFormToggles() {
-  document.querySelectorAll(".card").forEach((card) => {
-    const toggleBtn = card.querySelector("button.edit-form"); // the toggle button
-    const editForm = card.querySelector("form.edit-form"); // the hidden form
+  const editButtons = document.querySelectorAll(".edit-toggle-btn");
+  const cancelButtons = document.querySelectorAll(".edit-cancel-btn");
 
-    if (toggleBtn && editForm) {
-      toggleBtn.addEventListener("click", () => {
-        if (
-          editForm.style.display === "none" ||
-          editForm.style.display === ""
-        ) {
-          editForm.style.display = "block";
-          toggleBtn.textContent = "Close Edit";
-        } else {
-          editForm.style.display = "none";
-          toggleBtn.textContent = "Edit";
-        }
-      });
-    }
+  console.log(
+    "Setting up edit form toggles - Edit buttons found:",
+    editButtons.length,
+    "Cancel buttons found:",
+    cancelButtons.length
+  );
+
+  // Handle edit toggle buttons
+  editButtons.forEach((toggleBtn) => {
+    // Remove existing listeners to prevent duplicates
+    toggleBtn.removeEventListener("click", handleEditToggle);
+    toggleBtn.addEventListener("click", handleEditToggle);
+    console.log(
+      "Added click listener to edit button for item:",
+      toggleBtn.getAttribute("data-item-id")
+    );
+  });
+
+  // Handle cancel buttons
+  cancelButtons.forEach((cancelBtn) => {
+    // Remove existing listeners to prevent duplicates
+    cancelBtn.removeEventListener("click", handleEditCancel);
+    cancelBtn.addEventListener("click", handleEditCancel);
+    console.log(
+      "Added click listener to cancel button for item:",
+      cancelBtn.getAttribute("data-item-id")
+    );
   });
 }
+
+// Handler functions for better cleanup
+function handleEditToggle(e) {
+  e.preventDefault();
+  console.log("Edit toggle clicked");
+
+  const toggleBtn = e.target.closest(".edit-toggle-btn");
+  const itemId = toggleBtn.getAttribute("data-item-id");
+  const editFormContainer = document.getElementById(`editForm${itemId}`);
+
+  console.log(
+    "Toggle button:",
+    toggleBtn,
+    "Item ID:",
+    itemId,
+    "Form container:",
+    editFormContainer
+  );
+
+  if (editFormContainer) {
+    const isHidden =
+      editFormContainer.style.display === "none" ||
+      editFormContainer.style.display === "";
+
+    console.log("Form is currently hidden:", isHidden);
+
+    if (isHidden) {
+      editFormContainer.style.display = "block";
+      toggleBtn.innerHTML = '<i class="fas fa-times me-1"></i>Cancel';
+      toggleBtn.classList.remove("btn-outline-primary");
+      toggleBtn.classList.add("btn-outline-secondary");
+      console.log("Edit form shown for item:", itemId);
+    } else {
+      editFormContainer.style.display = "none";
+      toggleBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Edit';
+      toggleBtn.classList.remove("btn-outline-secondary");
+      toggleBtn.classList.add("btn-outline-primary");
+      console.log("Edit form hidden for item:", itemId);
+    }
+  } else {
+    console.error("Edit form container not found for item:", itemId);
+  }
+}
+
+function handleEditCancel(e) {
+  e.preventDefault();
+  console.log("Edit cancel clicked");
+
+  const cancelBtn = e.target.closest(".edit-cancel-btn");
+  const itemId = cancelBtn.getAttribute("data-item-id");
+  const editFormContainer = document.getElementById(`editForm${itemId}`);
+  const toggleBtn = document.querySelector(
+    `[data-item-id="${itemId}"].edit-toggle-btn`
+  );
+
+  console.log("Cancel button:", cancelBtn, "Item ID:", itemId);
+
+  if (editFormContainer) {
+    editFormContainer.style.display = "none";
+    console.log("Edit form hidden for item:", itemId);
+  }
+
+  if (toggleBtn) {
+    toggleBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Edit';
+    toggleBtn.classList.remove("btn-outline-secondary");
+    toggleBtn.classList.add("btn-outline-primary");
+    console.log("Edit button reset for item:", itemId);
+  }
+}
+
+
 
 // Booking Type Toggle Function (Global)
 function toggleBookingForm() {
@@ -857,12 +961,7 @@ function setupBookingForms() {
   generateReceiptNumber();
 }
 
-// Pencil Booking Reminder
-function pencilReminder() {
-  return confirm(
-    "Please note: This is a pencil booking. Final confirmation and payment will be required later."
-  );
-}
+
 
 // Receipt Number Generation (from guest.js)
 async function generateReceiptNumber() {
@@ -892,410 +991,9 @@ async function generateReceiptNumber() {
   }
 }
 
-// Fallback receipt number generator
-function generateFallbackReceiptNumber() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const seconds = String(now.getSeconds()).padStart(2, "0");
 
-  const receiptNo = `BARCIE-${year}${month}${day}-${hours}${minutes}${seconds}`;
 
-  const receiptField =
-    document.querySelector('input[name="receipt_no"]') ||
-    document.getElementById("receipt_no");
-  if (receiptField) {
-    receiptField.value = receiptNo;
-    receiptField.classList.add("is-valid");
-    showToast("Fallback receipt number generated: " + receiptNo, "warning");
-  }
-}
 
-// Communication System Setup
-function setupCommunication() {
-  initializeChatSystem();
-}
-
-// Initialize Chat System
-function initializeChatSystem() {
-  const chatForm = document.getElementById("chat-form");
-  const chatInput = document.getElementById("chat-input");
-
-  // Load conversations on page load
-  loadConversations();
-
-  // Set up periodic refresh for real-time updates
-  setInterval(() => {
-    if (window.currentChatUser) {
-      loadChatMessages(window.currentChatUser.id, window.currentChatUser.type);
-    }
-    loadConversations();
-  }, 3000); // Refresh every 3 seconds
-
-  // Handle message sending
-  if (chatForm && chatInput) {
-    chatForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const message = chatInput.value.trim();
-
-      if (message && window.currentChatUser) {
-        sendChatMessage(message);
-        chatInput.value = "";
-      } else if (!window.currentChatUser) {
-        showToast("Please select a conversation first", "warning");
-      }
-    });
-
-    // Add quick response functionality
-    chatInput.addEventListener("keydown", function (e) {
-      if (e.key === "Tab") {
-        e.preventDefault();
-        showQuickResponses();
-      }
-    });
-  }
-
-  // Add professional welcome message
-  setTimeout(() => {
-    if (!window.currentChatUser) {
-      showSystemMessage(
-        "Customer Support System initialized. Ready to assist guests."
-      );
-    }
-  }, 1000);
-}
-
-// Show quick response templates
-function showQuickResponses() {
-  const chatInput = document.getElementById("chat-input");
-  const quickResponses = [
-    "Hello! How can I assist you today?",
-    "Thank you for contacting us. Let me help you with that.",
-    "I understand your concern. Let me look into this for you.",
-    "Is there anything else I can help you with?",
-    "Thank you for your patience. Your issue has been resolved.",
-    "I'll escalate this to our management team right away.",
-  ];
-
-  // Create quick response dropdown
-  let dropdown = document.getElementById("quick-response-dropdown");
-  if (dropdown) {
-    dropdown.remove();
-  }
-
-  dropdown = document.createElement("div");
-  dropdown.id = "quick-response-dropdown";
-  dropdown.className =
-    "position-absolute bg-white border rounded shadow-lg p-2";
-  dropdown.style.cssText = `
-        bottom: 60px;
-        left: 50px;
-        right: 50px;
-        z-index: 1000;
-        max-height: 200px;
-        overflow-y: auto;
-    `;
-
-  quickResponses.forEach((response) => {
-    const btn = document.createElement("button");
-    btn.className =
-      "btn btn-sm btn-outline-primary d-block w-100 text-start mb-1";
-    btn.textContent = response;
-    btn.onclick = () => {
-      chatInput.value = response;
-      dropdown.remove();
-      chatInput.focus();
-    };
-    dropdown.appendChild(btn);
-  });
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "btn btn-sm btn-secondary d-block w-100 mt-2";
-  closeBtn.textContent = "Close Templates";
-  closeBtn.onclick = () => dropdown.remove();
-  dropdown.appendChild(closeBtn);
-
-  chatInput.parentElement.appendChild(dropdown);
-
-  // Auto-close after 10 seconds
-  setTimeout(() => {
-    if (dropdown.parentElement) {
-      dropdown.remove();
-    }
-  }, 10000);
-}
-
-// Show system message
-function showSystemMessage(message) {
-  const chatMessages = document.getElementById("chat-messages");
-  if (!chatMessages) {
-    return;
-  }
-
-  const systemMsg = document.createElement("div");
-  systemMsg.className =
-    "alert alert-info alert-dismissible fade show mx-3 mb-3";
-  systemMsg.innerHTML = `
-        <i class="fas fa-info-circle me-2"></i>
-        <strong>System:</strong> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-
-  chatMessages.appendChild(systemMsg);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Load conversations list
-async function loadConversations() {
-  try {
-    const response = await fetch(
-      `database/user_auth.php?action=get_chat_conversations&user_id=1&user_type=admin`
-    );
-    const data = await response.json();
-
-    if (data.success) {
-      displayConversations(data.conversations);
-    } else {
-      console.error("Error loading conversations:", data.error);
-    }
-  } catch (error) {
-    console.error("Network error loading conversations:", error);
-  }
-}
-
-// Display conversations in the sidebar
-function displayConversations(conversations) {
-  const conversationsList = document.getElementById("conversations-list");
-  const totalUnread = document.getElementById("total-unread");
-
-  if (!conversationsList) {
-    return;
-  }
-
-  let totalUnreadCount = 0;
-
-  if (conversations.length === 0) {
-    conversationsList.innerHTML = `
-            <div class="text-center text-muted p-4">
-                <i class="fas fa-comment-slash fa-2x mb-3 opacity-50"></i>
-                <p>No conversations yet</p>
-                <small>Conversations will appear when guests send messages</small>
-            </div>
-        `;
-    return;
-  }
-
-  let conversationsHtml = "";
-
-  conversations.forEach((conv) => {
-    const unreadCount = conv.admin_unread_count || 0;
-    totalUnreadCount += unreadCount;
-
-    const lastMessageTime = conv.last_message_time
-      ? new Date(conv.last_message_time).toLocaleString()
-      : "No messages";
-
-    const isActive =
-      window.currentChatUser &&
-      window.currentChatUser.id === conv.guest_id &&
-      window.currentChatUser.type === "guest";
-
-    conversationsHtml += `
-            <div class="conversation-item ${isActive ? "active" : ""}" 
-                 data-guest-id="${conv.guest_id}" 
-                 data-guest-name="${conv.guest_name || "Guest"}"
-                 data-guest-email="${conv.guest_email || ""}">
-                <div class="d-flex align-items-center">
-                    <div class="avatar-circle bg-primary text-white me-3">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h6 class="mb-1">${conv.guest_name || "Guest User"}</h6>
-                        <p class="mb-0 text-muted small">${
-                          conv.last_message || "No messages yet"
-                        }</p>
-                        <small class="text-muted">${lastMessageTime}</small>
-                    </div>
-                    ${
-                      unreadCount > 0
-                        ? `<span class="badge bg-danger unread-badge">${unreadCount}</span>`
-                        : ""
-                    }
-                </div>
-            </div>
-        `;
-  });
-
-  conversationsList.innerHTML = conversationsHtml;
-
-  // Update total unread count
-  if (totalUnreadCount > 0) {
-    totalUnread.textContent = totalUnreadCount;
-    totalUnread.style.display = "inline";
-  } else {
-    totalUnread.style.display = "none";
-  }
-
-  // Add click handlers
-  conversationsList.querySelectorAll(".conversation-item").forEach((item) => {
-    item.addEventListener("click", function () {
-      const { guestId, guestName, guestEmail } = this.dataset;
-
-      selectConversation(guestId, guestName, guestEmail);
-    });
-  });
-}
-
-// Select a conversation
-function selectConversation(guestId, guestName, guestEmail) {
-  window.currentChatUser = {
-    id: parseInt(guestId),
-    type: "guest",
-    name: guestName,
-    email: guestEmail,
-  };
-
-  // Update UI
-  const chatHeader = document.getElementById("chat-header");
-  const chatInputArea = document.getElementById("chat-input-area");
-  const chatWithName = document.getElementById("chat-with-name");
-  const chatWithEmail = document.getElementById("chat-with-email");
-
-  if (chatHeader) {
-    chatHeader.style.display = "block";
-  }
-  if (chatInputArea) {
-    chatInputArea.style.display = "block";
-  }
-  if (chatWithName) {
-    chatWithName.textContent = guestName;
-  }
-  if (chatWithEmail) {
-    chatWithEmail.textContent = guestEmail;
-  }
-
-  // Update active conversation in sidebar
-  document.querySelectorAll(".conversation-item").forEach((item) => {
-    item.classList.remove("active");
-  });
-  document
-    .querySelector(`[data-guest-id="${guestId}"]`)
-    ?.classList.add("active");
-
-  // Load messages for this conversation
-  loadChatMessages(guestId, "guest");
-}
-
-// Load chat messages
-async function loadChatMessages(otherUserId, otherUserType) {
-  try {
-    const response = await fetch(
-      `database/user_auth.php?action=get_chat_messages&user_id=1&user_type=admin&other_user_id=${otherUserId}&other_user_type=${otherUserType}`
-    );
-    const data = await response.json();
-
-    if (data.success) {
-      displayChatMessages(data.messages);
-    } else {
-      console.error("Error loading messages:", data.error);
-    }
-  } catch (error) {
-    console.error("Network error loading messages:", error);
-  }
-}
-
-// Display chat messages
-function displayChatMessages(messages) {
-  const chatMessages = document.getElementById("chat-messages");
-  if (!chatMessages) {
-    return;
-  }
-
-  if (messages.length === 0) {
-    chatMessages.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="fas fa-comment-dots fa-2x mb-3 opacity-25"></i>
-                <h6>No messages yet</h6>
-                <p>Start a conversation with this guest</p>
-            </div>
-        `;
-    return;
-  }
-
-  let messagesHtml = "";
-
-  messages.forEach((message) => {
-    const isFromAdmin = message.sender_type === "admin";
-    const messageClass = isFromAdmin ? "sent" : "received";
-    const messageTime = new Date(message.created_at).toLocaleString();
-
-    messagesHtml += `
-            <div class="chat-message ${messageClass}">
-                <div class="message-content">
-                    ${escapeHtml(message.message)}
-                    <div class="message-time">${messageTime}</div>
-                </div>
-            </div>
-        `;
-  });
-
-  chatMessages.innerHTML = messagesHtml;
-
-  // Scroll to bottom
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Send chat message
-async function sendChatMessage(message) {
-  if (!window.currentChatUser) {
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append("action", "send_chat_message");
-    formData.append("sender_id", "1"); // Admin ID
-    formData.append("sender_type", "admin");
-    formData.append("receiver_id", window.currentChatUser.id.toString());
-    formData.append("receiver_type", window.currentChatUser.type);
-    formData.append("message", message);
-
-    const response = await fetch("database/user_auth.php", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      // Reload messages to show the new message
-      loadChatMessages(window.currentChatUser.id, window.currentChatUser.type);
-      showToast("Message sent successfully", "success");
-    } else {
-      showToast("Error sending message: " + data.error, "error");
-    }
-  } catch (error) {
-    console.error("Network error sending message:", error);
-    showToast("Network error sending message", "error");
-  }
-}
-
-// Utility function to escape HTML
-function escapeHtml(text) {
-  const map = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;",
-  };
-  return text.replace(/[&<>"']/g, function (m) {
-    return map[m];
-  });
-}
 
 // Chart.js Initialization
 function initializeCharts() {
@@ -1304,29 +1002,29 @@ function initializeCharts() {
     setTimeout(initializeCharts, 500);
     return;
   }
-  
+
   // Bookings Overview Chart (Line Chart)
   const bookingsChartElement = document.getElementById("bookingsChart");
   if (bookingsChartElement) {
     const ctx = bookingsChartElement.getContext("2d");
-    
+
     // Check if data exists and has content
     const monthlyData = window.monthlyBookingsData || [];
-    
+
     // Destroy existing chart if it exists
     if (window.bookingsChartInstance) {
       window.bookingsChartInstance.destroy();
     }
-    
+
     if (monthlyData && monthlyData.length > 0) {
       const labels = monthlyData.map((item) => {
-        return item.month || item.label || 'Unknown';
+        return item.month || item.label || "Unknown";
       });
-      
+
       const data = monthlyData.map((item) => {
         return parseInt(item.count) || 0;
       });
-      
+
       try {
         window.bookingsChartInstance = new Chart(ctx, {
           type: "line",
@@ -1353,12 +1051,12 @@ function initializeCharts() {
             plugins: {
               legend: {
                 display: true,
-                position: 'top'
+                position: "top",
               },
               title: {
                 display: true,
-                text: 'Booking Trends'
-              }
+                text: "Booking Trends",
+              },
             },
             scales: {
               x: {
@@ -1367,8 +1065,8 @@ function initializeCharts() {
                 },
                 title: {
                   display: true,
-                  text: 'Month'
-                }
+                  text: "Month",
+                },
               },
               y: {
                 beginAtZero: true,
@@ -1377,22 +1075,31 @@ function initializeCharts() {
                 },
                 title: {
                   display: true,
-                  text: 'Number of Bookings'
-                }
+                  text: "Number of Bookings",
+                },
               },
             },
           },
         });
       } catch (error) {
-        console.error('Error creating bookings chart:', error);
+        console.error("Error creating bookings chart:", error);
       }
     } else {
       // Display "No data" message
-      ctx.clearRect(0, 0, bookingsChartElement.width, bookingsChartElement.height);
-      ctx.fillStyle = '#6c757d';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('No booking data available', bookingsChartElement.width / 2, bookingsChartElement.height / 2);
+      ctx.clearRect(
+        0,
+        0,
+        bookingsChartElement.width,
+        bookingsChartElement.height
+      );
+      ctx.fillStyle = "#6c757d";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "No booking data available",
+        bookingsChartElement.width / 2,
+        bookingsChartElement.height / 2
+      );
     }
   }
 
@@ -1400,21 +1107,22 @@ function initializeCharts() {
   const statusChartElement = document.getElementById("statusChart");
   if (statusChartElement) {
     const ctx = statusChartElement.getContext("2d");
-    
+
     // Check if data exists and has content
     const statusData = window.statusDistributionData || {};
-    
+
     // Destroy existing chart if it exists
     if (window.statusChartInstance) {
       window.statusChartInstance.destroy();
     }
-    
+
     const statusLabels = Object.keys(statusData);
-    const statusValues = Object.values(statusData).map(val => parseInt(val) || 0);
-    const hasData = statusValues.some(value => value > 0);
-    
+    const statusValues = Object.values(statusData).map(
+      (val) => parseInt(val) || 0
+    );
+    const hasData = statusValues.some((value) => value > 0);
+
     if (hasData) {
-      
       try {
         window.statusChartInstance = new Chart(ctx, {
           type: "doughnut",
@@ -1450,22 +1158,26 @@ function initializeCharts() {
               },
               title: {
                 display: true,
-                text: 'Booking Status Distribution'
-              }
+                text: "Booking Status Distribution",
+              },
             },
             cutout: "60%",
           },
         });
       } catch (error) {
-        console.error('Error creating status chart:', error);
+        console.error("Error creating status chart:", error);
       }
     } else {
       // Display "No data" message
       ctx.clearRect(0, 0, statusChartElement.width, statusChartElement.height);
-      ctx.fillStyle = '#6c757d';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('No status data available', statusChartElement.width / 2, statusChartElement.height / 2);
+      ctx.fillStyle = "#6c757d";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "No status data available",
+        statusChartElement.width / 2,
+        statusChartElement.height / 2
+      );
     }
   }
 
@@ -1499,18 +1211,18 @@ function setDashboardData(events, monthlyData, statusData, stats) {
     bookingEvents: events || [],
     monthlyBookingsData: monthlyData || [],
     statusDistributionData: statusData || {},
-    dashboardStats: stats || {}
+    dashboardStats: stats || {},
   };
-  
+
   // Make variables globally accessible for chart functions
   window.bookingEvents = events || [];
   window.monthlyBookingsData = monthlyData || [];
   window.statusDistributionData = statusData || {};
   window.dashboardStats = stats || {};
-  
+
   // Wait for DOM to be ready before initializing charts
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
       setTimeout(() => {
         initializeCharts();
       }, 100);
@@ -1526,123 +1238,159 @@ function setDashboardData(events, monthlyData, statusData, stats) {
 // Refresh chart with different timeframes (using existing database data for now)
 function refreshChart(timeframe, event) {
   // Update active button
-  const buttons = document.querySelectorAll('.btn-group .btn');
-  buttons.forEach(btn => btn.classList.remove('active'));
+  const buttons = document.querySelectorAll(".btn-group .btn");
+  buttons.forEach((btn) => btn.classList.remove("active"));
   if (event && event.target) {
-    event.target.classList.add('active');
+    event.target.classList.add("active");
   }
-  
+
   // Note: Since we removed API calls, we're using the existing monthly data
   // In a real application, you could reload the page with a timeframe parameter
   // or implement server-side filtering
-  
-  if (timeframe === '7days' || timeframe === '30days') {
-      // For demo purposes, show a subset of data for shorter timeframes
-      let filteredData = window.monthlyBookingsData;
-      if (timeframe === '7days') {
-        filteredData = window.monthlyBookingsData.slice(-7);
-      } else if (timeframe === '30days') {
-        filteredData = window.monthlyBookingsData.slice(-5);
-      }
-      
-      // Update the chart with filtered data
-      if (window.bookingsChartInstance) {
-        window.bookingsChartInstance.data.labels = filteredData.map(item => item.month);
-        window.bookingsChartInstance.data.datasets[0].data = filteredData.map(item => item.count);
-        window.bookingsChartInstance.update();
-      }
+
+  if (timeframe === "7days" || timeframe === "30days") {
+    // For demo purposes, show a subset of data for shorter timeframes
+    let filteredData = window.monthlyBookingsData;
+    if (timeframe === "7days") {
+      filteredData = window.monthlyBookingsData.slice(-7);
+    } else if (timeframe === "30days") {
+      filteredData = window.monthlyBookingsData.slice(-5);
     }
-  else if (window.bookingsChartInstance) {
-        window.bookingsChartInstance.data.labels = window.monthlyBookingsData.map(item => item.month);
-        window.bookingsChartInstance.data.datasets[0].data = window.monthlyBookingsData.map(item => item.count);
-        window.bookingsChartInstance.update();
-      }
-  
-  showToast(`Chart updated to show ${timeframe} view`, 'info');
+
+    // Update the chart with filtered data
+    if (window.bookingsChartInstance) {
+      window.bookingsChartInstance.data.labels = filteredData.map(
+        (item) => item.month
+      );
+      window.bookingsChartInstance.data.datasets[0].data = filteredData.map(
+        (item) => item.count
+      );
+      window.bookingsChartInstance.update();
+    }
+  } else if (window.bookingsChartInstance) {
+    window.bookingsChartInstance.data.labels = window.monthlyBookingsData.map(
+      (item) => item.month
+    );
+    window.bookingsChartInstance.data.datasets[0].data =
+      window.monthlyBookingsData.map((item) => item.count);
+    window.bookingsChartInstance.update();
+  }
+
+  showToast(`Chart updated to show ${timeframe} view`, "info");
 }
 
 // Initialize Rooms Filtering Function
 function initializeRoomsFiltering() {
   // Filter buttons functionality
-  const filterButtons = document.querySelectorAll('.filter-btn');
-  const roomCards = document.querySelectorAll('.room-card, .facility-card');
-  
+  const filterButtons = document.querySelectorAll(".filter-btn");
+  const roomCards = document.querySelectorAll(".item-card");
+
   if (filterButtons.length > 0) {
-    filterButtons.forEach(button => {
-      button.addEventListener('click', function() {
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", function () {
         const filterType = this.dataset.filter;
-        
+
         // Update active button
-        filterButtons.forEach(btn => btn.classList.remove('active'));
-        this.classList.add('active');
-        
+        filterButtons.forEach((btn) => btn.classList.remove("active"));
+        this.classList.add("active");
+
         // Filter rooms/facilities
-        roomCards.forEach(card => {
-          const cardType = card.dataset.type || card.classList.contains('room-card') ? 'room' : 'facility';
-          
-          if (filterType === 'all' || cardType === filterType) {
-            card.style.display = 'block';
-            card.classList.remove('d-none');
+        roomCards.forEach((card) => {
+          const cardType = card.dataset.type;
+
+          if (filterType === "all" || cardType === filterType) {
+            card.style.display = "block";
+            card.classList.remove("d-none");
           } else {
-            card.style.display = 'none';
-            card.classList.add('d-none');
+            card.style.display = "none";
+            card.classList.add("d-none");
           }
         });
       });
     });
   }
-  
+
   // Type filter radio buttons (if they exist)
-  const typeFilters = document.querySelectorAll('input[name="type_filter"]');
+  const typeFilters = document.querySelectorAll(
+    'input[name="type_filter"], .type-filter'
+  );
   if (typeFilters.length > 0) {
-    typeFilters.forEach(filter => {
-      filter.addEventListener('change', function() {
+    typeFilters.forEach((filter) => {
+      filter.addEventListener("change", function () {
         const selectedType = this.value;
-        
-        roomCards.forEach(card => {
-          const cardType = card.dataset.type || (card.classList.contains('room-card') ? 'room' : 'facility');
-          
-          if (selectedType === 'all' || cardType === selectedType) {
-            card.style.display = 'block';
-            card.classList.remove('d-none');
+
+        // Update counts for each type
+        updateTypeCounts();
+
+        roomCards.forEach((card) => {
+          const cardType = card.dataset.type;
+
+          if (selectedType === "all" || cardType === selectedType) {
+            card.style.display = "block";
+            card.classList.remove("d-none");
           } else {
-            card.style.display = 'none';
-            card.classList.add('d-none');
+            card.style.display = "none";
+            card.classList.add("d-none");
           }
         });
-        
       });
     });
   }
+
+  // Update type counts
+  updateTypeCounts();
 }
 
-// Initialize Rooms Search Function  
+// Helper function to update type counts
+function updateTypeCounts() {
+  const allItems = document.querySelectorAll(".item-card");
+  const roomItems = document.querySelectorAll('.item-card[data-type="room"]');
+  const facilityItems = document.querySelectorAll(
+    '.item-card[data-type="facility"]'
+  );
+
+  // Update count badges
+  const allCount = document.querySelector('.type-count[data-type="all"]');
+  const roomCount = document.querySelector('.type-count[data-type="room"]');
+  const facilityCount = document.querySelector(
+    '.type-count[data-type="facility"]'
+  );
+
+  if (allCount) allCount.textContent = allItems.length;
+  if (roomCount) roomCount.textContent = roomItems.length;
+  if (facilityCount) facilityCount.textContent = facilityItems.length;
+}
+
+// Initialize Rooms Search Function
 function initializeRoomsSearch() {
-  const searchInput = document.querySelector('#rooms-search, .rooms-search-input');
-  const roomCards = document.querySelectorAll('.room-card, .facility-card');
-  
+  const searchInput = document.querySelector(
+    "#searchItems, #rooms-search, .rooms-search-input"
+  );
+  const roomCards = document.querySelectorAll(".item-card");
+
   if (searchInput) {
-    searchInput.addEventListener('input', function() {
+    searchInput.addEventListener("input", function () {
       const searchTerm = this.value.toLowerCase().trim();
-      
-      roomCards.forEach(card => {
-        const title = card.querySelector('.card-title, .room-title, .facility-title');
-        const description = card.querySelector('.card-text, .room-description, .facility-description');
-        
-        let cardText = '';
+
+      roomCards.forEach((card) => {
+        const title = card.querySelector(".card-title");
+        const description = card.querySelector(".card-text");
+        const searchableData = card.dataset.searchable || "";
+
+        let cardText = searchableData;
         if (title) {
-          cardText += title.textContent.toLowerCase();
+          cardText += " " + title.textContent.toLowerCase();
         }
         if (description) {
-          cardText += ' ' + description.textContent.toLowerCase();
+          cardText += " " + description.textContent.toLowerCase();
         }
-        
-        if (searchTerm === '' || cardText.includes(searchTerm)) {
-          card.style.display = 'block';
-          card.classList.remove('d-none');
+
+        if (searchTerm === "" || cardText.includes(searchTerm)) {
+          card.style.display = "block";
+          card.classList.remove("d-none");
         } else {
-          card.style.display = 'none';
-          card.classList.add('d-none');
+          card.style.display = "none";
+          card.classList.add("d-none");
         }
       });
     });
@@ -1651,55 +1399,10 @@ function initializeRoomsSearch() {
 
 // Initialize Edit Forms Function
 function initializeEditForms() {
-  const editButtons = document.querySelectorAll('.edit-btn, .btn-edit');
-  const editForms = document.querySelectorAll('.edit-form');
-  
-  editButtons.forEach(button => {
-    button.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      const targetForm = this.dataset.target || this.getAttribute('data-bs-target');
-      const formElement = document.querySelector(targetForm) || this.closest('.card').querySelector('.edit-form');
-      
-      if (formElement) {
-        formElement.style.display = formElement.style.display === 'none' ? 'block' : 'none';
-        formElement.classList.toggle('d-none');
-        
-        // Update button text
-        if (formElement.style.display === 'block' || !formElement.classList.contains('d-none')) {
-          this.innerHTML = '<i class="fas fa-times"></i> Cancel';
-          this.classList.remove('btn-outline-primary');
-          this.classList.add('btn-outline-secondary');
-        } else {
-          this.innerHTML = '<i class="fas fa-edit"></i> Edit';
-          this.classList.remove('btn-outline-secondary');
-          this.classList.add('btn-outline-primary');
-        }
-      }
-    });
-  });
-  
-  // Cancel button functionality
-  const cancelButtons = document.querySelectorAll('.cancel-edit, .btn-cancel');
-  cancelButtons.forEach(button => {
-    button.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      const form = this.closest('.edit-form');
-      if (form) {
-        form.style.display = 'none';
-        form.classList.add('d-none');
-        
-        // Reset the edit button
-        const editButton = form.parentElement.querySelector('.edit-btn, .btn-edit');
-        if (editButton) {
-          editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
-          editButton.classList.remove('btn-outline-secondary');
-          editButton.classList.add('btn-outline-primary');
-        }
-      }
-    });
-  });
+  // Initialize edit form toggles with the correct selectors
+  setupEditFormToggles();
+
+  console.log("Edit forms initialized with proper event handlers");
 }
 
 // Function to refresh dashboard data
@@ -1720,27 +1423,27 @@ try {
   window.toggleBookingForm = toggleBookingForm;
   window.pencilReminder = pencilReminder;
   window.generateReceiptNumber = generateReceiptNumber;
-  
+
   // Calendar & Items functions
   window.initializeCalendarNavigation = initializeCalendarNavigation;
   window.initializeRoomSearch = initializeRoomSearch;
   window.initializeRoomCalendar = initializeRoomCalendar;
   window.generateRoomEvents = generateRoomEvents;
-  
+
   // Dashboard data function
   window.setDashboardData = setDashboardData;
-  
+
   // Rooms management functions
   window.initializeRoomsFiltering = initializeRoomsFiltering;
   window.initializeRoomsSearch = initializeRoomsSearch;
   window.initializeEditForms = initializeEditForms;
-  
+
   // Chart functions
   window.initializeCharts = initializeCharts;
   window.refreshDashboardData = refreshDashboardData;
 } catch (error) {
   console.warn("Error assigning global functions:", error);
-}// Feedback Management System
+} // Feedback Management System
 function initializeFeedbackManagement() {
   // Initialize feedback section when it becomes active
   document.addEventListener("sectionChanged", function (e) {
@@ -2027,22 +1730,22 @@ window.respondToFeedback = respondToFeedback;
 
 // Calendar & Items Navigation Functions
 function initializeCalendarNavigation() {
-  const calendarViewBtn = document.getElementById('calendar-view-btn');
-  const roomListBtn = document.getElementById('room-list-btn');
-  const calendarContent = document.getElementById('calendar-view-content');
-  const roomListContent = document.getElementById('room-list-content');
+  const calendarViewBtn = document.getElementById("calendar-view-btn");
+  const roomListBtn = document.getElementById("room-list-btn");
+  const calendarContent = document.getElementById("calendar-view-content");
+  const roomListContent = document.getElementById("room-list-content");
 
   if (calendarViewBtn && roomListBtn && calendarContent && roomListContent) {
     // Calendar View Button
-    calendarViewBtn.addEventListener('click', function() {
+    calendarViewBtn.addEventListener("click", function () {
       // Update button states
-      calendarViewBtn.classList.add('active');
-      roomListBtn.classList.remove('active');
-      
+      calendarViewBtn.classList.add("active");
+      roomListBtn.classList.remove("active");
+
       // Show/hide content
-      calendarContent.style.display = 'block';
-      roomListContent.style.display = 'none';
-      
+      calendarContent.style.display = "block";
+      roomListContent.style.display = "none";
+
       // Re-render calendar if it exists
       if (window.roomCalendarInstance) {
         setTimeout(() => window.roomCalendarInstance.render(), 100);
@@ -2050,42 +1753,43 @@ function initializeCalendarNavigation() {
     });
 
     // Room List Button
-    roomListBtn.addEventListener('click', function() {
+    roomListBtn.addEventListener("click", function () {
       // Update button states
-      roomListBtn.classList.add('active');
-      calendarViewBtn.classList.remove('active');
-      
+      roomListBtn.classList.add("active");
+      calendarViewBtn.classList.remove("active");
+
       // Show/hide content
-      calendarContent.style.display = 'none';
-      roomListContent.style.display = 'block';
+      calendarContent.style.display = "none";
+      roomListContent.style.display = "block";
     });
   }
 }
 
 function initializeRoomSearch() {
-  const searchInput = document.getElementById('room-search');
+  const searchInput = document.getElementById("room-search");
   if (searchInput) {
-    searchInput.addEventListener('input', function() {
+    searchInput.addEventListener("input", function () {
       const searchTerm = this.value.toLowerCase();
-      const roomItems = document.querySelectorAll('.room-card, .room-item');
-      
-      roomItems.forEach(item => {
-        const roomName = item.getAttribute('data-room-name') || '';
-        const roomNumber = item.getAttribute('data-room-number') || '';
-        const itemType = item.getAttribute('data-item-type') || '';
+      const roomItems = document.querySelectorAll(".item-card, .room-item");
+
+      roomItems.forEach((item) => {
+        const roomName = item.getAttribute("data-room-name") || "";
+        const roomNumber = item.getAttribute("data-room-number") || "";
+        const itemType = item.getAttribute("data-item-type") || "";
         const text = item.textContent.toLowerCase();
-        
-        const matches = text.includes(searchTerm) || 
-                       roomName.includes(searchTerm) || 
-                       roomNumber.includes(searchTerm) || 
-                       itemType.includes(searchTerm);
-        
+
+        const matches =
+          text.includes(searchTerm) ||
+          roomName.includes(searchTerm) ||
+          roomNumber.includes(searchTerm) ||
+          itemType.includes(searchTerm);
+
         if (matches) {
-          item.style.display = '';
-          item.classList.remove('d-none');
+          item.style.display = "";
+          item.classList.remove("d-none");
         } else {
-          item.style.display = 'none';
-          item.classList.add('d-none');
+          item.style.display = "none";
+          item.classList.add("d-none");
         }
       });
     });
@@ -2093,7 +1797,7 @@ function initializeRoomSearch() {
 }
 
 function initializeRoomCalendar() {
-  const calendarEl = document.getElementById('roomCalendar');
+  const calendarEl = document.getElementById("roomCalendar");
   if (!calendarEl || typeof FullCalendar === "undefined") {
     return;
   }
@@ -2102,16 +1806,16 @@ function initializeRoomCalendar() {
   const roomEvents = generateRoomEvents();
 
   window.roomCalendarInstance = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
+    initialView: "dayGridMonth",
     headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek,timeGridDay",
     },
     events: roomEvents,
-    eventDisplay: 'block',
+    eventDisplay: "block",
     dayMaxEvents: true,
-    height: 'auto',
+    height: "auto",
     aspectRatio: 1.8,
     eventOverlap: false,
     slotEventOverlap: false,
@@ -2120,13 +1824,14 @@ function initializeRoomCalendar() {
     nowIndicator: true,
     businessHours: {
       daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-      startTime: '08:00',
-      endTime: '20:00',
+      startTime: "08:00",
+      endTime: "20:00",
     },
     eventClick: function (info) {
       const { title } = info.event;
-      const { itemName, roomNumber, guest, status, checkIn, checkOut } = info.event.extendedProps;
-      
+      const { itemName, roomNumber, guest, status, checkIn, checkOut } =
+        info.event.extendedProps;
+
       let details = `${title}<br><br>`;
       if (itemName) {
         details += `Item: ${itemName}<br>`;
@@ -2146,7 +1851,7 @@ function initializeRoomCalendar() {
       if (checkOut) {
         details += `Check-out: ${checkOut}<br>`;
       }
-      
+
       showToast(details, "info");
     },
     dateClick: function (info) {
@@ -2155,7 +1860,7 @@ function initializeRoomCalendar() {
     eventDidMount: function (info) {
       // Add tooltips or additional styling if needed
       info.el.title = info.event.title;
-    }
+    },
   });
 
   window.roomCalendarInstance.render();
@@ -2163,10 +1868,10 @@ function initializeRoomCalendar() {
 
 function generateRoomEvents() {
   // Events will be populated by PHP in the dashboard.php script
-  if (typeof window.roomEvents !== 'undefined') {
+  if (typeof window.roomEvents !== "undefined") {
     return window.roomEvents;
   }
-  
+
   return [];
 }
 
@@ -2191,33 +1896,33 @@ window.toggleSidebar = function () {
 
 // Booking Management Functions
 async function updateBookingStatus(bookingId, newStatus) {
-  console.log('updateBookingStatus called with:', bookingId, newStatus);
-  
+  console.log("updateBookingStatus called with:", bookingId, newStatus);
+
   if (!bookingId || !newStatus) {
-    console.error('Invalid parameters:', { bookingId, newStatus });
+    console.error("Invalid parameters:", { bookingId, newStatus });
     showToast("Invalid booking ID or status", "error");
     return;
   }
 
   // Show confirmation dialog for certain actions
   const actionMap = {
-    'approved': 'approve',
-    'confirmed': 'approve', 
-    'rejected': 'reject',
-    'cancelled': 'cancel',
-    'checked_in': 'checkin',
-    'checked_out': 'checkout'
+    approved: "approve",
+    confirmed: "approve",
+    rejected: "reject",
+    cancelled: "cancel",
+    checked_in: "checkin",
+    checked_out: "checkout",
   };
 
   const action = actionMap[newStatus] || newStatus;
-  
+
   // Confirm action
   const confirmMessages = {
-    'approve': 'Are you sure you want to approve this booking?',
-    'reject': 'Are you sure you want to reject this booking?',
-    'cancel': 'Are you sure you want to cancel this booking?',
-    'checkin': 'Confirm guest check-in?',
-    'checkout': 'Confirm guest check-out?'
+    approve: "Are you sure you want to approve this booking?",
+    reject: "Are you sure you want to reject this booking?",
+    cancel: "Are you sure you want to cancel this booking?",
+    checkin: "Confirm guest check-in?",
+    checkout: "Confirm guest check-out?",
   };
 
   if (confirmMessages[action] && !confirm(confirmMessages[action])) {
@@ -2228,40 +1933,43 @@ async function updateBookingStatus(bookingId, newStatus) {
     // Show loading state - get the button from the onclick event
     const button = window.event?.target || document.activeElement;
     const originalText = button?.innerHTML;
-    if (button && button.tagName === 'BUTTON') {
+    if (button && button.tagName === "BUTTON") {
       button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
       button.disabled = true;
     }
 
     // Prepare form data
     const formData = new FormData();
-    formData.append('action', 'admin_update_booking');
-    formData.append('booking_id', bookingId);
-    formData.append('admin_action', action);
+    formData.append("action", "admin_update_booking");
+    formData.append("booking_id", bookingId);
+    formData.append("admin_action", action);
 
     // Send AJAX request
-    const response = await fetch('database/user_auth.php', {
-      method: 'POST',
+    const response = await fetch("database/user_auth.php", {
+      method: "POST",
       headers: {
-        'X-Requested-With': 'XMLHttpRequest'
+        "X-Requested-With": "XMLHttpRequest",
       },
-      body: formData
+      body: formData,
     });
 
     const data = await response.json();
 
     if (data.success) {
-      showToast(data.message || `Booking updated to ${newStatus} successfully!`, "success");
-      
+      showToast(
+        data.message || `Booking updated to ${newStatus} successfully!`,
+        "success"
+      );
+
       // Reload the page after a short delay to show updated status
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } else {
-      throw new Error(data.error || 'Unknown error occurred');
+      throw new Error(data.error || "Unknown error occurred");
     }
   } catch (error) {
-    console.error('Error updating booking status:', error);
+    console.error("Error updating booking status:", error);
     showToast(`Error updating booking: ${error.message}`, "error");
   } finally {
     // Restore button state
@@ -2274,21 +1982,26 @@ async function updateBookingStatus(bookingId, newStatus) {
 
 // Discount Management Function (SEPARATE from booking approval)
 async function updateDiscountStatus(bookingId, discountAction) {
-  console.log('updateDiscountStatus called with:', bookingId, discountAction);
-  
+  console.log("updateDiscountStatus called with:", bookingId, discountAction);
+
   if (!bookingId || !discountAction) {
-    console.error('Invalid parameters:', { bookingId, discountAction });
+    console.error("Invalid parameters:", { bookingId, discountAction });
     showToast("Invalid booking ID or discount action", "error");
     return;
   }
 
   // Confirm action
   const confirmMessages = {
-    'approve': 'Are you sure you want to APPROVE this discount application?\n\nNote: This only approves the discount, not the booking itself.',
-    'reject': 'Are you sure you want to REJECT this discount application?\n\nNote: The booking can still be approved separately with standard rates.'
+    approve:
+      "Are you sure you want to APPROVE this discount application?\n\nNote: This only approves the discount, not the booking itself.",
+    reject:
+      "Are you sure you want to REJECT this discount application?\n\nNote: The booking can still be approved separately with standard rates.",
   };
 
-  if (confirmMessages[discountAction] && !confirm(confirmMessages[discountAction])) {
+  if (
+    confirmMessages[discountAction] &&
+    !confirm(confirmMessages[discountAction])
+  ) {
     return;
   }
 
@@ -2296,41 +2009,45 @@ async function updateDiscountStatus(bookingId, discountAction) {
     // Show loading state
     const button = window.event?.target || document.activeElement;
     const originalText = button?.innerHTML;
-    if (button && button.tagName === 'BUTTON') {
+    if (button && button.tagName === "BUTTON") {
       button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
       button.disabled = true;
     }
 
     // Prepare form data
     const formData = new FormData();
-    formData.append('action', 'admin_update_discount');
-    formData.append('booking_id', bookingId);
-    formData.append('discount_action', discountAction);
+    formData.append("action", "admin_update_discount");
+    formData.append("booking_id", bookingId);
+    formData.append("discount_action", discountAction);
 
     // Send AJAX request
-    const response = await fetch('database/user_auth.php', {
-      method: 'POST',
+    const response = await fetch("database/user_auth.php", {
+      method: "POST",
       headers: {
-        'X-Requested-With': 'XMLHttpRequest'
+        "X-Requested-With": "XMLHttpRequest",
       },
-      body: formData
+      body: formData,
     });
 
     const data = await response.json();
 
     if (data.success) {
-      const actionText = discountAction === 'approve' ? 'approved' : 'rejected';
-      showToast(data.message || `Discount ${actionText} successfully! Guest will be notified via email.`, "success");
-      
+      const actionText = discountAction === "approve" ? "approved" : "rejected";
+      showToast(
+        data.message ||
+          `Discount ${actionText} successfully! Guest will be notified via email.`,
+        "success"
+      );
+
       // Reload the page after a short delay to show updated status
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } else {
-      throw new Error(data.error || 'Unknown error occurred');
+      throw new Error(data.error || "Unknown error occurred");
     }
   } catch (error) {
-    console.error('Error updating discount status:', error);
+    console.error("Error updating discount status:", error);
     showToast(`Error updating discount: ${error.message}`, "error");
   } finally {
     // Restore button state
@@ -2349,18 +2066,20 @@ function viewBookingDetails(bookingId) {
   }
 
   // Find the booking row
-  const bookingRow = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
+  const bookingRow = document.querySelector(
+    `tr[data-booking-id="${bookingId}"]`
+  );
   if (!bookingRow) {
     showToast("Booking details not found", "error");
     return;
   }
 
   // Extract details from the row
-// sourcery skip: use-object-destructuring
+  // sourcery skip: use-object-destructuring
   const cells = bookingRow.cells;
   let details = '<div class="booking-details-modal">';
-  details += '<h6>Booking Information</h6>';
-  
+  details += "<h6>Booking Information</h6>";
+
   // Correct mapping based on the actual table structure:
   // 0: Receipt #, 1: Room/Facility, 2: Type, 3: Guest Details, 4: Schedule, 5: Status, 6: Discount Application, 7: Created, 8: Admin Actions
   try {
@@ -2389,15 +2108,15 @@ function viewBookingDetails(bookingId) {
       details += `<p><strong>Created:</strong> ${cells[7].textContent.trim()}</p>`;
     }
   } catch (error) {
-    console.error('Error extracting booking details:', error);
+    console.error("Error extracting booking details:", error);
     details += '<p class="text-danger">Error loading booking details</p>';
   }
-  
-  details += '</div>';
+
+  details += "</div>";
 
   // Create and show modal
-  const modal = document.createElement('div');
-  modal.className = 'modal fade';
+  const modal = document.createElement("div");
+  modal.className = "modal fade";
   modal.id = `booking-details-modal-${bookingId}`;
   modal.innerHTML = `
     <div class="modal-dialog modal-lg">
@@ -2419,18 +2138,18 @@ function viewBookingDetails(bookingId) {
   `;
 
   document.body.appendChild(modal);
-  
+
   try {
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
 
     // Remove modal after it's hidden
-    modal.addEventListener('hidden.bs.modal', () => {
+    modal.addEventListener("hidden.bs.modal", () => {
       modal.remove();
     });
   } catch (error) {
-    console.error('Error showing modal:', error);
-    showToast('Error displaying booking details', 'error');
+    console.error("Error showing modal:", error);
+    showToast("Error displaying booking details", "error");
     modal.remove();
   }
 }
@@ -2438,21 +2157,24 @@ function viewBookingDetails(bookingId) {
 // Booking filter functions
 function filterBookings() {
   try {
-    const statusFilter = document.getElementById('statusFilter')?.value?.toLowerCase() || '';
-    const typeFilter = document.getElementById('typeFilter')?.value?.toLowerCase() || '';
-    const guestSearch = document.getElementById('guestSearch')?.value?.toLowerCase() || '';
-    const bookingRows = document.querySelectorAll('#bookingsTable tbody tr');
+    const statusFilter =
+      document.getElementById("statusFilter")?.value?.toLowerCase() || "";
+    const typeFilter =
+      document.getElementById("typeFilter")?.value?.toLowerCase() || "";
+    const guestSearch =
+      document.getElementById("guestSearch")?.value?.toLowerCase() || "";
+    const bookingRows = document.querySelectorAll("#bookingsTable tbody tr");
 
     if (!bookingRows || bookingRows.length === 0) {
-      console.warn('No booking rows found to filter');
+      console.warn("No booking rows found to filter");
       return;
     }
 
-    bookingRows.forEach(row => {
+    bookingRows.forEach((row) => {
       try {
-        const status = (row.dataset.status || '').toLowerCase();
-        const type = (row.dataset.type || '').toLowerCase();
-        const guestText = (row.dataset.guest || '').toLowerCase();
+        const status = (row.dataset.status || "").toLowerCase();
+        const type = (row.dataset.type || "").toLowerCase();
+        const guestText = (row.dataset.guest || "").toLowerCase();
 
         let showRow = true;
 
@@ -2461,7 +2183,7 @@ function filterBookings() {
           showRow = false;
         }
 
-        // Type filter  
+        // Type filter
         if (typeFilter && !type.includes(typeFilter)) {
           showRow = false;
         }
@@ -2473,18 +2195,18 @@ function filterBookings() {
 
         // Show/hide row
         if (showRow) {
-          row.style.display = '';
-          row.classList.remove('d-none');
+          row.style.display = "";
+          row.classList.remove("d-none");
         } else {
-          row.style.display = 'none';
-          row.classList.add('d-none');
+          row.style.display = "none";
+          row.classList.add("d-none");
         }
       } catch (rowError) {
-        console.error('Error processing booking row:', rowError, row);
+        console.error("Error processing booking row:", rowError, row);
       }
     });
   } catch (error) {
-    console.error('Error filtering bookings:', error);
+    console.error("Error filtering bookings:", error);
     showToast("Error filtering bookings", "error");
   }
 }
@@ -2492,30 +2214,30 @@ function filterBookings() {
 function resetFilters() {
   try {
     // Reset filter controls
-    const statusFilter = document.getElementById('statusFilter');
-    const typeFilter = document.getElementById('typeFilter');
-    const guestSearch = document.getElementById('guestSearch');
+    const statusFilter = document.getElementById("statusFilter");
+    const typeFilter = document.getElementById("typeFilter");
+    const guestSearch = document.getElementById("guestSearch");
 
     if (statusFilter) {
-      statusFilter.value = '';
+      statusFilter.value = "";
     }
     if (typeFilter) {
-      typeFilter.value = '';
+      typeFilter.value = "";
     }
     if (guestSearch) {
-      guestSearch.value = '';
+      guestSearch.value = "";
     }
 
     // Show all rows
-    const bookingRows = document.querySelectorAll('#bookingsTable tbody tr');
-    bookingRows.forEach(row => {
-      row.style.display = '';
-      row.classList.remove('d-none');
+    const bookingRows = document.querySelectorAll("#bookingsTable tbody tr");
+    bookingRows.forEach((row) => {
+      row.style.display = "";
+      row.classList.remove("d-none");
     });
 
     showToast("Filters reset", "info");
   } catch (error) {
-    console.error('Error resetting filters:', error);
+    console.error("Error resetting filters:", error);
     showToast("Error resetting filters", "error");
   }
 }
@@ -2527,4 +2249,41 @@ window.viewBookingDetails = viewBookingDetails;
 window.filterBookings = filterBookings;
 window.resetFilters = resetFilters;
 
+// Debug function to test modal functionality
+window.testAddItemModal = function () {
+  console.log("Testing Add Item Modal...");
+  const modal = document.getElementById("addItemModal");
+  if (modal) {
+    console.log("Modal element found:", modal);
+    try {
+      const bsModal = new bootstrap.Modal(modal);
+      bsModal.show();
+      console.log("Modal shown successfully");
+    } catch (error) {
+      console.error("Error showing modal:", error);
+    }
+  } else {
+    console.error("Modal element not found");
+  }
+};
 
+// Debug function to test edit buttons
+window.testEditButtons = function () {
+  console.log("Testing Edit Buttons...");
+  const editButtons = document.querySelectorAll(".edit-toggle-btn");
+  console.log("Found edit buttons:", editButtons.length);
+  editButtons.forEach((btn, index) => {
+    console.log(
+      `Edit button ${index + 1}:`,
+      btn,
+      "Item ID:",
+      btn.getAttribute("data-item-id")
+    );
+  });
+
+  const editForms = document.querySelectorAll('[id^="editForm"]');
+  console.log("Found edit forms:", editForms.length);
+  editForms.forEach((form, index) => {
+    console.log(`Edit form ${index + 1}:`, form.id);
+  });
+};

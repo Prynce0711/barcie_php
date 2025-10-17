@@ -1,4 +1,9 @@
 <?php
+// Disable error display for API endpoints to prevent HTML errors in JSON responses
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+error_reporting(E_ALL);
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -137,7 +142,31 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
 
 
 session_start();
-include __DIR__ . '/db_connect.php';
+
+// Include database connection with error handling
+try {
+    include __DIR__ . '/db_connect.php';
+    
+    // Check if connection was successful
+    if (!isset($conn) || $conn->connect_error) {
+        throw new Exception("Database connection failed: " . ($conn->connect_error ?? 'Unknown error'));
+    }
+} catch (Exception $e) {
+    // For API requests, return JSON error
+    if (isset($_GET['action']) || isset($_POST['action'])) {
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Database connection failed',
+            'message' => 'Please try again later'
+        ]);
+        exit;
+    } else {
+        // For regular page requests, show error
+        die("Database connection error. Please try again later.");
+    }
+}
 
 // Helper function for redirect
 function redirect($url) {
@@ -317,11 +346,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
     if ($_GET['action'] === 'fetch_items') {
         header('Content-Type: application/json');
-        $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image FROM items ORDER BY created_at DESC";
-        $res = $conn->query($sql);
-        $items = [];
-        while ($r = $res->fetch_assoc()) $items[] = $r;
-        echo json_encode($items);
+        try {
+            $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image FROM items ORDER BY created_at DESC";
+            $res = $conn->query($sql);
+            
+            if (!$res) {
+                throw new Exception("Query failed: " . $conn->error);
+            }
+            
+            $items = [];
+            while ($r = $res->fetch_assoc()) {
+                $items[] = $r;
+            }
+            
+            echo json_encode($items);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to fetch items',
+                'message' => $e->getMessage()
+            ]);
+            error_log("fetch_items error: " . $e->getMessage());
+        }
         $conn->close();
         exit;
     }
@@ -372,12 +419,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             // Check if connection exists and is valid
             if (!isset($conn)) {
                 throw new Exception("Database connection not established");
-                
             }
             
-
             if ($conn->connect_error) {
                 throw new Exception("Database connection failed: " . $conn->connect_error);
+            }
+            
+            // Check if required tables exist
+            $bookingsCheck = $conn->query("SHOW TABLES LIKE 'bookings'");
+            if (!$bookingsCheck || $bookingsCheck->num_rows == 0) {
+                throw new Exception("Bookings table does not exist");
+            }
+            
+            $itemsCheck = $conn->query("SHOW TABLES LIKE 'items'");
+            if (!$itemsCheck || $itemsCheck->num_rows == 0) {
+                throw new Exception("Items table does not exist");
             }
             
             // Fetch bookings with room/facility information
@@ -518,9 +574,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             // Return error response
             http_response_code(500); 
             echo json_encode([
+                'success' => false,
                 'error' => 'Failed to fetch availability data',
                 'message' => $e->getMessage(),
-                'debug' => 'Check server logs for details'
+                'events' => [] // Return empty array as fallback
             ]);
         }
         
@@ -534,26 +591,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             // Get the current date for receipt format
             $currentDate = date('Ymd');
             
+            // Check if bookings table exists
+            $tableCheck = $conn->query("SHOW TABLES LIKE 'bookings'");
+            if (!$tableCheck || $tableCheck->num_rows == 0) {
+                throw new Exception("Bookings table does not exist");
+            }
+            
             // Check if receipt_no column exists and its type
             $checkColumn = $conn->query("SHOW COLUMNS FROM bookings LIKE 'receipt_no'");
+            if (!$checkColumn) {
+                throw new Exception("Failed to check table structure: " . $conn->error);
+            }
+            
             if ($checkColumn->num_rows == 0) {
                 // Add receipt_no column as VARCHAR
-                $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
+                $alterResult = $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
+                if (!$alterResult) {
+                    throw new Exception("Failed to add receipt_no column: " . $conn->error);
+                }
             } else {
                 // Check if it's the wrong type and fix it
                 $columnInfo = $checkColumn->fetch_assoc();
                 if (strpos(strtolower($columnInfo['Type']), 'int') !== false) {
                     // Drop and recreate as VARCHAR
                     $conn->query("ALTER TABLE bookings DROP COLUMN receipt_no");
-                    $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
+                    $alterResult = $conn->query("ALTER TABLE bookings ADD COLUMN receipt_no VARCHAR(50) NULL AFTER id");
+                    if (!$alterResult) {
+                        throw new Exception("Failed to fix receipt_no column: " . $conn->error);
+                    }
                 }
             }
             
             // Get the highest receipt number for today from receipt_no column
             $stmt = $conn->prepare("SELECT receipt_no FROM bookings WHERE receipt_no LIKE ? ORDER BY receipt_no DESC LIMIT 1");
+            if (!$stmt) {
+                throw new Exception("Failed to prepare statement: " . $conn->error);
+            }
+            
             $datePattern = "BARCIE-{$currentDate}-%";
             $stmt->bind_param("s", $datePattern);
-            $stmt->execute();
+            
+            if (!$stmt->execute()) {
+                throw new Exception("Failed to execute query: " . $stmt->error);
+            }
+            
             $result = $stmt->get_result();
             
             if ($row = $result->fetch_assoc()) {
@@ -583,10 +664,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             $stmt->close();
             
         } catch (Exception $e) {
+            http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Failed to generate receipt number',
+                'message' => $e->getMessage()
             ]);
+            error_log("get_receipt_no error: " . $e->getMessage());
         }
         $conn->close();
         exit;
