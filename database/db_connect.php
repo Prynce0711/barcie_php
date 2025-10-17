@@ -5,9 +5,9 @@
 
 
 // Database connection details (allow environment overrides for Docker)
-$host = getenv('DB_HOST') ?: "10.20.0.2"; // Change to your Docker host IP if needed
-$user = getenv('DB_USER') ?: "root";       // Default username in XAMPP / Docker
-$pass = getenv('DB_PASS') ?: "root";           // Default password in XAMPP / Docker
+$host = getenv('DB_HOST') ?: "10.20.0.2"; // Live database server
+$user = getenv('DB_USER') ?: "root";       // Default username
+$pass = getenv('DB_PASS') ?: "root";       // Live database password
 $dbname = getenv('DB_NAME') ?: "barcie_db";
 
 
