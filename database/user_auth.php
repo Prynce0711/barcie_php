@@ -1,13 +1,53 @@
 <?php
+// Catch all errors and convert to JSON for API endpoints
+function handleFatalError() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Clear any output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Fatal Error',
+            'message' => $error['message'],
+            'file' => basename($error['file']),
+            'line' => $error['line']
+        ]);
+        exit;
+    }
+}
+register_shutdown_function('handleFatalError');
+
+// Start output buffering to catch any stray output
+ob_start();
+
 // Enable error display temporarily for debugging on live server
-ini_set('display_errors', 1);
+ini_set('display_errors', 0); // Changed to 0 to prevent HTML errors
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
-// Add CORS headers for debugging
+// Add CORS headers FIRST before any output
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
+
+// Check if vendor autoload exists
+if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    // Clear output buffer
+    ob_end_clean();
+    
+    echo json_encode([
+        'success' => false,
+        'error' => 'Dependencies missing',
+        'message' => 'Composer vendor directory not found. Run: composer install'
+    ]);
+    exit;
+}
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -150,13 +190,32 @@ session_start();
 
 // Include database connection with error handling
 try {
-    include __DIR__ . '/db_connect.php';
+    // Check if db_connect.php exists
+    $db_file = __DIR__ . '/db_connect.php';
+    if (!file_exists($db_file)) {
+        throw new Exception("Database configuration file not found: db_connect.php");
+    }
+    
+    include $db_file;
     
     // Check if connection was successful
-    if (!isset($conn) || $conn->connect_error) {
-        throw new Exception("Database connection failed: " . ($conn->connect_error ?? 'Unknown error'));
+    if (!isset($conn)) {
+        throw new Exception("Database connection object not created. Check db_connect.php");
     }
+    
+    if ($conn->connect_error) {
+        throw new Exception("MySQL connection failed: " . $conn->connect_error);
+    }
+    
 } catch (Exception $e) {
+    // Clear any output buffer
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    // Log error
+    error_log("Database connection error: " . $e->getMessage());
+    
     // For API requests, return JSON error
     if (isset($_GET['action']) || isset($_POST['action'])) {
         header('Content-Type: application/json');
@@ -164,7 +223,12 @@ try {
         echo json_encode([
             'success' => false,
             'error' => 'Database connection failed',
-            'message' => 'Please try again later'
+            'message' => $e->getMessage(),
+            'debug_info' => [
+                'file_exists' => file_exists(__DIR__ . '/db_connect.php'),
+                'php_version' => phpversion(),
+                'mysqli_extension' => extension_loaded('mysqli')
+            ]
         ]);
         exit;
     } else {
@@ -349,18 +413,45 @@ fixMissingRoomIds($conn);
    --------------------------- */
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
+    // Simple ping endpoint - no database required
+    if ($_GET['action'] === 'ping') {
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'message' => 'API is responding',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'php_version' => phpversion(),
+            'server' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown'
+        ]);
+        exit;
+    }
+
     // Debug endpoint
     if ($_GET['action'] === 'debug_connection') {
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
         try {
             $debug_info = [
+                'success' => true,
                 'php_version' => phpversion(),
-                'mysql_extension' => extension_loaded('mysqli'),
+                'mysqli_extension' => extension_loaded('mysqli'),
+                'json_extension' => extension_loaded('json'),
+                'db_file_exists' => file_exists(__DIR__ . '/db_connect.php'),
                 'db_connected' => isset($conn) && !$conn->connect_error,
-                'db_error' => isset($conn) ? $conn->connect_error : 'No connection object',
+                'db_error' => isset($conn) && $conn->connect_error ? $conn->connect_error : null,
                 'current_time' => date('Y-m-d H:i:s'),
                 'get_params' => $_GET,
-                'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown'
+                'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+                'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? 'Unknown'
             ];
             
             if (isset($conn) && !$conn->connect_error) {
@@ -372,11 +463,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                 } else {
                     $debug_info['items_query_error'] = $conn->error;
                 }
+                
+                // Check bookings table
+                $test_query2 = $conn->query("SELECT COUNT(*) as count FROM bookings");
+                if ($test_query2) {
+                    $test_result2 = $test_query2->fetch_assoc();
+                    $debug_info['bookings_count'] = $test_result2['count'];
+                } else {
+                    $debug_info['bookings_query_error'] = $conn->error;
+                }
             }
             
             echo json_encode($debug_info, JSON_PRETTY_PRINT);
         } catch (Exception $e) {
             echo json_encode([
+                'success' => false,
                 'error' => 'Debug failed',
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -386,6 +487,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'fetch_items') {
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
         try {
             // Check database connection
@@ -438,6 +544,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'debug_bookings') {
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
         
         try {
@@ -475,6 +586,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'fetch_guest_availability') {
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET');
@@ -650,6 +766,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'get_receipt_no') {
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
         try {
             // Get the current date for receipt format
@@ -741,6 +862,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'get_available_count') {
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET');
