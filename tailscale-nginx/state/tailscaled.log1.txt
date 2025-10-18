@@ -1,0 +1,7 @@
+{"logtail":{"client_time":"2025-10-18T03:14:25.331563477Z","proc_id":1150757203,"proc_seq":124},"metrics":"N24netmon_link_changeS0202N30netmon_link_change_majorS0402N40controlclient_auto_status_queuedS0602N1etstun_out_to_wgS0806N28tstun_out_to_wg_dropS0a06N36tstun_out_to_wg_drop_filterS0c04N2cmagicsock_rebind_callsS0e02N2cmagicsock_restun_callsS1002N34magicsock_update_endpointsS1202N2cwgengine_major_changesS1402N18profiles_newS1602N24profiles_migrationS1802N34profiles_migration_successS1a02N46gauge_dns_manager_linux_mode_directS1c02","text":"tailscaled got signal terminated; shutting down\n"}
+{"logtail":{"client_time":"2025-10-18T03:14:25.332074903Z","proc_id":1150757203,"proc_seq":125},"text":"control: client.Shutdown ...\n"}
+{"logtail":{"client_time":"2025-10-18T03:14:25.332340229Z","proc_id":1150757203,"proc_seq":126},"text":"control: updateRoutine: exiting\n"}
+{"logtail":{"client_time":"2025-10-18T03:14:25.33256008Z","proc_id":1150757203,"proc_seq":127},"v":1,"text":"control: WaitLoginURL: register request: Post \"https://controlplane.tailscale.com/machine/register\": context canceled\n"}
+{"logtail":{"client_time":"2025-10-18T03:14:25.332774844Z","proc_id":1150757203,"proc_seq":128},"text":"control: authRoutine: exiting\n"}
+{"logtail":{"client_time":"2025-10-18T03:14:25.332950643Z","proc_id":1150757203,"proc_seq":129},"v":1,"text":"control: mapRoutine: context done.\n"}
+{"logtail":{"client_time":"2025-10-18T03:14:25.333139363Z","proc_id":1150757203,"proc_seq":130},"text":"control: mapRoutine: exiting\n"}

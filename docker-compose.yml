@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   web:
-    image: carlxd0711/barcie:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: barcie:local
     ports:
       - "7080:80"
     environment:
@@ -10,6 +13,14 @@ services:
       - DB_USER=${DB_USER:-root}
       - DB_PASS=${DB_PASS:-root}
       - DB_NAME=${DB_NAME:-barcie_db}
+      # SMTP settings for PHPMailer (override in .env or CI)
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-tls}
+      - FROM_EMAIL=${FROM_EMAIL:-barcieinternationalcenter@gmail.com}
+      - FROM_NAME=${FROM_NAME:-Barcie International Center}
     depends_on:
       - db
     networks:
