@@ -1,0 +1,103 @@
+/* Extracted inline styles from Guest.php for maintainability */
+.available-now-card {
+  transition: all 0.3s ease;
+}
+.available-now-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(23, 162, 184, 0.2);
+  border-color: #17a2b8;
+}
+.availability-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #fff;
+  z-index: 10;
+}
+.availability-badge.available {
+  background-color: #28a745;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+.availability-badge.occupied {
+  background-color: #dc3545;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+.card-image {
+  position: relative;
+  overflow: hidden;
+}
+.available-now-card:hover .card-body {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9f7fd 100%);
+}
+.available-now-card:active {
+  transform: translateY(-2px);
+}
+.legend-color {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.availability-legend {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dee2e6;
+}
+.fc-event {
+  border: none !important;
+  font-size: 0.75rem;
+}
+.fc-event-title {
+  font-weight: 500;
+}
+@media (max-width: 768px) {
+  #guestCalendar {
+    min-height: 250px !important;
+  }
+  .availability-legend {
+    margin-top: 1rem;
+  }
+}
+.detail-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+.detail-item:last-child {
+  border-bottom: none;
+}
+.modal-lg {
+  max-width: 800px;
+}
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+.card-actions .btn {
+  flex: 1;
+  transition: all 0.3s ease;
+}
+.card-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.booking-form-highlight {
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+  }
+}
