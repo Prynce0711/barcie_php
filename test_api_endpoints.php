@@ -12,9 +12,11 @@ echo "<style>
 // Test 1: fetch_items
 echo "<div class='test'>";
 echo "<h2>Test 1: Fetch Items</h2>";
-echo "<p><strong>Endpoint:</strong> database/user_auth.php?action=fetch_items</p>";
+echo "<p><strong>Endpoint:</strong> api/items.php</p>";
 
-$url1 = "http://localhost/barcie_php/database/user_auth.php?action=fetch_items";
+$base = (isset($_SERVER['HTTP_HOST']) ? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : 'http://localhost');
+$basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+$url1 = $base . $basePath . "/api/items.php";
 $response1 = @file_get_contents($url1);
 
 if ($response1 === false) {
@@ -35,9 +37,9 @@ echo "</div>";
 // Test 2: get_receipt_no
 echo "<div class='test'>";
 echo "<h2>Test 2: Get Receipt Number</h2>";
-echo "<p><strong>Endpoint:</strong> database/user_auth.php?action=get_receipt_no</p>";
+echo "<p><strong>Endpoint:</strong> api/receipt.php</p>";
 
-$url2 = "http://localhost/barcie_php/database/user_auth.php?action=get_receipt_no";
+$url2 = $base . $basePath . "/api/receipt.php";
 $response2 = @file_get_contents($url2);
 
 if ($response2 === false) {
@@ -57,9 +59,9 @@ echo "</div>";
 // Test 3: fetch_guest_availability
 echo "<div class='test'>";
 echo "<h2>Test 3: Fetch Guest Availability</h2>";
-echo "<p><strong>Endpoint:</strong> database/user_auth.php?action=fetch_guest_availability</p>";
+echo "<p><strong>Endpoint:</strong> api/availability.php</p>";
 
-$url3 = "http://localhost/barcie_php/database/user_auth.php?action=fetch_guest_availability";
+$url3 = $base . $basePath . "/api/availability.php";
 $response3 = @file_get_contents($url3);
 
 if ($response3 === false) {
@@ -77,9 +79,29 @@ if ($response3 === false) {
 }
 echo "</div>";
 
+// Test 4: Available Count
+echo "<div class='test'>";
+echo "<h2>Test 4: Available Count</h2>";
+echo "<p><strong>Endpoint:</strong> api/available_count.php</p>";
+$url4 = $base . $basePath . "/api/available_count.php";
+$response4 = @file_get_contents($url4);
+if ($response4 === false) {
+    echo "<p class='error'>❌ Failed to connect to endpoint</p>";
+} else {
+    $data4 = json_decode($response4, true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+        echo "<p class='success'>✅ JSON response valid</p>";
+        echo "<pre>" . json_encode($data4, JSON_PRETTY_PRINT) . "</pre>";
+    } else {
+        echo "<p class='error'>❌ Invalid JSON response</p>";
+        echo "<pre>" . htmlspecialchars($response4) . "</pre>";
+    }
+}
+echo "</div>";
+
 // Test 4: Check database connection
 echo "<div class='test'>";
-echo "<h2>Test 4: Database Connection</h2>";
+echo "<h2>Test 5: Database Connection</h2>";
 try {
     include 'database/db_connect.php';
     if ($conn && !$conn->connect_error) {
@@ -104,9 +126,28 @@ try {
 }
 echo "</div>";
 
-// Test 5: Check PHP errors
+// Test 6: Health
 echo "<div class='test'>";
-echo "<h2>Test 5: PHP Error Log</h2>";
+echo "<h2>Test 6: API Health</h2>";
+$health = $base . $basePath . "/api/health.php";
+$responseH = @file_get_contents($health);
+if ($responseH === false) {
+    echo "<p class='error'>❌ Failed to connect to health endpoint</p>";
+} else {
+    $dataH = json_decode($responseH, true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+        echo "<p class='success'>✅ Health OK</p>";
+        echo "<pre>" . json_encode($dataH, JSON_PRETTY_PRINT) . "</pre>";
+    } else {
+        echo "<p class='error'>❌ Invalid JSON response</p>";
+        echo "<pre>" . htmlspecialchars($responseH) . "</pre>";
+    }
+}
+echo "</div>";
+
+// Test 7: Check PHP errors
+echo "<div class='test'>";
+echo "<h2>Test 7: PHP Error Log</h2>";
 $error_log = ini_get('error_log');
 echo "<p><strong>Error log location:</strong> " . ($error_log ?: 'Default location') . "</p>";
 echo "<p><strong>Display errors:</strong> " . (ini_get('display_errors') ? 'ON' : 'OFF') . "</p>";
