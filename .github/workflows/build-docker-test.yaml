@@ -23,4 +23,4 @@ jobs:
           username: "carlxd0711"
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push the Docker image
-        run: docker push carlxd0711/barcie:latest
+        run: docker push carlxd0711/barcie:test
