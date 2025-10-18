@@ -364,7 +364,7 @@ class ClassLoader
      */
     public function setApcuPrefix($apcuPrefix)
     {
-        $this->apcuPrefix = (function_exists('apcu_fetch') && function_exists('apcu_add') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOLEAN)) ? $apcuPrefix : null;
+        $this->apcuPrefix = function_exists('apcu_fetch') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOLEAN) ? $apcuPrefix : null;
     }
 
     /**
@@ -448,8 +448,7 @@ class ClassLoader
         if ($this->classMapAuthoritative || isset($this->missingClasses[$class])) {
             return false;
         }
-        if (null !== $this->apcuPrefix && function_exists('apcu_fetch')) {
-            $hit = false;
+        if (null !== $this->apcuPrefix) {
             $file = apcu_fetch($this->apcuPrefix.$class, $hit);
             if ($hit) {
                 return $file;
@@ -463,7 +462,7 @@ class ClassLoader
             $file = $this->findFileWithExtension($class, '.hh');
         }
 
-        if (null !== $this->apcuPrefix && function_exists('apcu_add')) {
+        if (null !== $this->apcuPrefix) {
             apcu_add($this->apcuPrefix.$class, $file);
         }
 

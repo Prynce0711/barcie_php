@@ -313,7 +313,7 @@ function setupBookingForms() {
 // Receipt Number Generation (from guest.js)
 async function generateReceiptNumber() {
   try {
-    const response = await fetch("database/user_auth.php?action=get_receipt_no");
+  const response = await fetch("api/receipt.php");
     const data = await response.json();
 
     if (data && data.success && data.receipt_no) {
@@ -433,10 +433,10 @@ function syncOverviewWithRooms() {
 
 // Load Items (from inline script) - Enhanced for overview integration
 async function loadItems() {
-  console.log("Guest: Loading items from user_auth.php...");
+  console.log("Guest: Loading items from API...");
   
   try {
-    const res = await fetch("database/user_auth.php?action=fetch_items");
+  const res = await fetch("api/items.php");
     console.log("Guest: Response status:", res.status);
     
     if (!res.ok) {
@@ -1150,7 +1150,7 @@ async function fetchRealAvailability() {
   availableElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
   
   try {
-    const response = await fetch('database/user_auth.php?action=get_available_count');
+  const response = await fetch('api/available_count.php');
     const data = await response.json();
 
     if (data && data.success) {
@@ -1570,7 +1570,7 @@ function initializeGuestCalendar() {
     events: function(fetchInfo, successCallback, failureCallback) {
       console.log('=== FETCHING CALENDAR DATA ===');
       console.log('Fetching guest availability data...');
-      fetch('database/user_auth.php?action=fetch_guest_availability')
+  fetch('api/availability.php')
         .then(response => {
           console.log('Response received:', response);
           if (!response.ok) {
@@ -1786,7 +1786,7 @@ window.testSectionSwitching = function() {
 window.testItemsLoading = async function() {
   console.log("Testing items loading...");
   try {
-    const response = await fetch("database/user_auth.php?action=fetch_items");
+    const response = await fetch("api/items.php");
     const data = await response.json();
     console.log("Raw API response:", data);
     console.log("Response type:", Array.isArray(data) ? 'array' : typeof data);
