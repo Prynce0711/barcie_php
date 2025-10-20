@@ -493,7 +493,7 @@ while ($row = $result->fetch_assoc()) {
                       $percentage = round(($count / $total_for_percentage) * 100, 1);
                       $color_class = $status_colors[$status] ?? 'secondary';
                       $display_name = ucfirst(str_replace('_', ' ', $status));
-                      ?>
+                  ?>
                       <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="d-flex align-items-center">
                           <div class="legend-dot bg-<?php echo $color_class; ?> me-2"></div>
@@ -501,7 +501,7 @@ while ($row = $result->fetch_assoc()) {
                         </div>
                         <small class="text-muted fw-bold"><?php echo $percentage; ?>%</small>
                       </div>
-                      <?php
+                    <?php
                     endif;
                   endforeach;
 
@@ -582,7 +582,7 @@ while ($row = $result->fetch_assoc()) {
                 ];
                 foreach ($ratings as $star => $data):
                   $percentage = $total_reviews > 0 ? ($data['count'] / $total_reviews * 100) : 0;
-                  ?>
+                ?>
                   <div class="d-flex align-items-center mb-2">
                     <div class="me-2" style="width: 20px;">
                       <small class="text-muted"><?php echo $star; ?>★</small>
@@ -748,7 +748,7 @@ while ($row = $result->fetch_assoc()) {
         };
 
         // Initialize dashboard when document is ready
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
           // Set data for charts
           setDashboardData(
             window.calendarEvents,
@@ -916,7 +916,7 @@ while ($row = $result->fetch_assoc()) {
                         $type_label = ucfirst($item_type);
                         $capacity_label = $item_type == 'room' ? 'guests' : 'people';
                         $price_label = $item_type == 'room' ? '/night' : '/day';
-                        ?>
+                    ?>
 
                         <div class="room-card p-3 border-bottom room-item" data-room-name="<?= strtolower($item_name) ?>"
                           data-room-number="<?= strtolower($room_number) ?>" data-item-type="<?= $item_type ?>">
@@ -943,7 +943,7 @@ while ($row = $result->fetch_assoc()) {
                                   Room #<?= htmlspecialchars($room_number) ?> • <?= $item['capacity'] ?>
                                   <?= $capacity_label ?>
                                 <?php else: ?>
-                                  Facility • <?= $item['capacity'] ?>       <?= $capacity_label ?>
+                                  Facility • <?= $item['capacity'] ?> <?= $capacity_label ?>
                                 <?php endif; ?>
                               </small>
                               <div class="mt-1">
@@ -990,7 +990,7 @@ while ($row = $result->fetch_assoc()) {
                           </div>
                         </div>
 
-                        <?php
+                    <?php
                       }
                     } else {
                       echo '<div class="text-center text-muted p-4">
@@ -1262,7 +1262,7 @@ while ($row = $result->fetch_assoc()) {
                         <option value="">Select Type</option>
                         <option value="room">Room</option>
                         <option value="facility">Facility</option>
-                        
+
                       </select>
                     </div>
 
@@ -1747,7 +1747,7 @@ while ($row = $result->fetch_assoc()) {
       <!-- Custom JavaScript for Calendar Section -->
       <script>
         // Initialize room calendar when the document is ready
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
           initializeRoomCalendar();
           initializeCalendarNavigation();
           initializeRoomSearch();
@@ -1782,7 +1782,7 @@ while ($row = $result->fetch_assoc()) {
               startTime: '08:00',
               endTime: '20:00',
             },
-            eventClick: function (info) {
+            eventClick: function(info) {
               // Show event details
               const itemType = info.event.extendedProps.itemType || 'Item';
               const itemName = info.event.extendedProps.itemName || info.event.title;
@@ -1796,12 +1796,12 @@ while ($row = $result->fetch_assoc()) {
               const roomInfo = roomNumber ? `\nRoom Number: #${roomNumber}` : '';
               alert(`${itemType}: ${itemName}${roomInfo}\nGuest: ${guest}\nStatus: ${status}\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nBooking Details: ${details}`);
             },
-            dateClick: function (info) {
+            dateClick: function(info) {
               // Handle date click - show available items for that date
               console.log('Date clicked:', info.dateStr);
               // You could open a modal here to show all items available on this date
             },
-            eventDidMount: function (info) {
+            eventDidMount: function(info) {
               // Add custom styling or tooltips
               if (!info.event.extendedProps.hasReservation) {
                 info.el.style.opacity = '0.6';
@@ -1846,7 +1846,7 @@ while ($row = $result->fetch_assoc()) {
               $color = '#6f42c1'; // purple
             if ($status == 'pending')
               $color = '#fd7e14'; // orange (warning)
-        
+
             echo "window.roomEvents.push({\n";
             echo "  id: 'booking-{$booking['id']}',\n";
             echo "  title: '{$display_title}',\n";
@@ -1869,19 +1869,12 @@ while ($row = $result->fetch_assoc()) {
           }
         }
         ?>
-
-
-
-
-
-
-
       </script>
 
       <!-- Rooms & Facilities JavaScript -->
       <script>
         // Initialize rooms and facilities functionality
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
           initializeRoomsFiltering();
           initializeRoomsSearch();
           initializeEditForms();
@@ -1893,9 +1886,9 @@ while ($row = $result->fetch_assoc()) {
       <!-- Additional Edit Form Initialization -->
       <script>
         // Ensure edit forms work immediately after page load
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
           // Wait for everything to load, then force re-initialize edit forms
-          setTimeout(function () {
+          setTimeout(function() {
             console.log('Forcing edit form initialization...');
 
             // Initialize edit forms directly
