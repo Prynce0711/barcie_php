@@ -147,13 +147,14 @@
 body {
   font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont,
     Roboto, Arial, sans-serif;
-  background: var(--gradient-background, #f8fafc);
-  color: var(--text-primary, #2d3748);
+  background: #f0f4f8;
+  color: #1a202c;
   min-height: 100vh;
-  transition: all var(--transition-slow);
-  line-height: 1.6;
+  transition: all 0.3s ease;
+  line-height: 1.65;
   font-weight: 400;
   overflow-x: hidden;
+  font-size: 15px;
 }
 
 /* Ensure all text elements have proper colors by default */
@@ -657,6 +658,11 @@ header p {
   position: relative;
   overflow: hidden;
   max-height: max-content;
+}
+
+/* Show dashboard section by default (fallback if JS doesn't load) */
+#dashboard-section {
+  display: block;
 }
 
 .content-section.active {

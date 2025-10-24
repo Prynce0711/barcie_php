@@ -186,22 +186,34 @@ function setupAdminLogin() {
 
       const formData = new FormData(adminForm);
 
+      // USE DEBUG VERSION - Change to 'admin_login.php' for production
+      const loginUrl = 'src/database/admin_login_debug.php';
+      console.log('🔍 Sending login request to:', loginUrl);
+
       try {
-        const res = await fetch('src/database/admin_login.php', { method: 'POST', body: formData });
+        const res = await fetch(loginUrl, { method: 'POST', body: formData });
         const data = await res.json();
+        
+        console.log('📥 Response received:', data);
 
         if (data.success) {
+          console.log('✅ Login successful!');
           submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Success!';
           setTimeout(() => {
             window.location.href = 'dashboard.php';
           }, 1000);
         } else {
+          console.error('❌ Login failed:', data.message);
+          if (data.debug) {
+            console.log('🔍 Debug info:', data.debug);
+          }
           adminError.textContent = data.message || 'Login failed.';
           adminError.classList.remove('d-none');
           submitBtn.innerHTML = originalText;
           submitBtn.disabled = false;
         }
-      } catch {
+      } catch (error) {
+        console.error('❌ Fetch error:', error);
         adminError.textContent = 'Something went wrong. Try again.';
         adminError.classList.remove('d-none');
         submitBtn.innerHTML = originalText;

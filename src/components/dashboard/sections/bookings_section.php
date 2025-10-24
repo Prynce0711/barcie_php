@@ -52,18 +52,18 @@
 
           <!-- Bookings Table -->
           <div class="table-responsive">
-            <table class="table table-striped table-hover" id="bookingsTable">
+            <table class="table table-hover align-middle" id="bookingsTable">
               <thead class="table-dark">
                 <tr>
-                  <th>Booking ID</th>
-                  <th>Guest</th>
-                  <th>Type</th>
-                  <th>Details</th>
-                  <th>Check-in</th>
-                  <th>Check-out</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Actions</th>
+                  <th style="width: 7%;">Receipt #</th>
+                  <th style="width: 10%;">Room/Facility</th>
+                  <th style="width: 6%;">Type</th>
+                  <th style="width: 15%;">Guest Details</th>
+                  <th style="width: 11%;">Schedule</th>
+                  <th style="width: 8%;">Booking Status</th>
+                  <th style="width: 8%;">Discount Status</th>
+                  <th style="width: 8%;">Created</th>
+                  <th style="width: 9%;">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,11 +92,9 @@
               <thead class="table-light">
                 <tr>
                   <th>Guest Name</th>
-                  <th>Discount Type</th>
-                  <th>Percentage</th>
-                  <th>Supporting Documents</th>
-                  <th>Original Amount</th>
-                  <th>Discounted Amount</th>
+                  <th>Room/Facility</th>
+                  <th>Type</th>
+                  <th>Schedule</th>
                   <th>Status</th>
                   <th>Date Applied</th>
                   <th>Actions</th>

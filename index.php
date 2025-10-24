@@ -15,9 +15,7 @@
 
   <?php include 'src/components/landing/sections/services.php'; ?>
 
-  <?php include 'src/components/landing/modals/user_auth.php'; ?>
-
-  <?php include 'src/components/landing/modals/admin_login.php'; ?>
+  <?php include 'src/components/landing/modals/admin_login_modal.php'; ?>
 
   <?php include 'src/components/landing/sections/contact.php'; ?>
 

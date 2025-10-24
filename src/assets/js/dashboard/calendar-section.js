@@ -1,11 +1,12 @@
 // Calendar Section JavaScript
-// Initialize calendar functionality when document is ready
+// Functions for calendar functionality - called by dashboard-bootstrap.js
 
-document.addEventListener('DOMContentLoaded', function () {
-  initializeRoomCalendar();
-  initializeCalendarNavigation();
-  initializeRoomSearch();
-});
+// Don't auto-initialize - let dashboard-bootstrap.js handle it
+// document.addEventListener('DOMContentLoaded', function () {
+//   initializeRoomCalendar();
+//   initializeCalendarNavigation();
+//   initializeRoomSearch();
+// });
 
 function initializeRoomCalendar() {
   const calendarEl = document.getElementById('roomCalendar');

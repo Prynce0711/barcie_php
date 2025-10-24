@@ -1,12 +1,13 @@
 // Rooms Section JavaScript
-// Initialize rooms functionality when document is ready
+// Functions for rooms functionality - called by dashboard-bootstrap.js
 
-document.addEventListener('DOMContentLoaded', function () {
-  initializeRoomsFiltering();
-  initializeRoomsSearch();
-  initializeEditForms();
-  updateItemCounts();
-});
+// Don't auto-initialize - let dashboard-bootstrap.js handle it
+// document.addEventListener('DOMContentLoaded', function () {
+//   initializeRoomsFiltering();
+//   initializeRoomsSearch();
+//   initializeEditForms();
+//   updateItemCounts();
+// });
 
 function initializeRoomsFiltering() {
   // Type filter buttons

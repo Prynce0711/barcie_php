@@ -1,15 +1,24 @@
 // Enhanced Dashboard JavaScript with Bootstrap Integration
+console.log("📄 dashboard-bootstrap.js file is loading...");
 
 // Preserve original functionality while adding Bootstrap enhancements
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("🚀 DOMContentLoaded fired - starting initialization...");
   // Add a small delay to ensure all elements are ready
   setTimeout(() => {
+    console.log("⏱️ Delay complete - calling initializeDashboard()...");
     initializeDashboard();
   }, 100);
 });
 
+console.log("📄 dashboard-bootstrap.js event listeners registered");
+
 function initializeDashboard() {
   console.log("Dashboard initialization started...");
+  console.log("📍 Checking DOM elements...");
+  console.log("  - Sidebar links:", document.querySelectorAll(".nav-link-custom").length);
+  console.log("  - Content sections:", document.querySelectorAll(".content-section").length);
+  
   setupBootstrapComponents();
   setupMobileMenu();
   setupSectionNavigation();
@@ -28,6 +37,14 @@ function initializeDashboard() {
   initializeCalendarNavigation();
   initializeRoomSearch();
   initializeRoomCalendar();
+  
+  // Initialize bookings functionality
+  if (typeof initializeBookingsFiltering === 'function') {
+    initializeBookingsFiltering();
+  }
+  if (typeof initializeBookingsActions === 'function') {
+    initializeBookingsActions();
+  }
 
   // Initialize edit forms and rooms functionality after a short delay
   setTimeout(() => {
@@ -36,6 +53,7 @@ function initializeDashboard() {
     // Initialize rooms-specific functionality
     initializeRoomsFiltering();
     initializeRoomsSearch();
+    updateTypeCounts(); // Update the counts on page load
 
     console.log("Rooms and facilities functionality initialized");
   }, 500);
@@ -165,7 +183,7 @@ function setupSectionNavigation() {
     console.log(`Setting up link ${index + 1}: ${sectionId}`);
     
     link.addEventListener("click", function (e) {
-      e.preventDefault();
+      // Don't prevent default - let the hash navigation work
       console.log("Navigation clicked:", sectionId);
       const sectionId = this.getAttribute("data-section");
       showSection(sectionId);
@@ -191,18 +209,39 @@ function setupSectionNavigation() {
       .forEach((l) => l.classList.remove("active"));
     initialActiveLink.classList.add("active");
   }
+  
+  // Listen for hash changes (browser back/forward buttons)
+  window.addEventListener('hashchange', function() {
+    const hash = window.location.hash.substring(1); // Remove the '#'
+    if (hash) {
+      console.log("Hash changed to:", hash);
+      showSection(hash);
+      
+      // Update active link
+      document.querySelectorAll(".nav-link-custom").forEach((l) => l.classList.remove("active"));
+      const activeLink = document.querySelector(`.nav-link-custom[data-section="${hash}"]`);
+      if (activeLink) {
+        activeLink.classList.add("active");
+      }
+    }
+  });
 }
 
 // Enhanced Section Switching
 function showSection(sectionId) {
-  console.log("showSection called with:", sectionId);
+  console.log("🔄 showSection called with:", sectionId);
   
   // Hide all sections - use both CSS classes and display property for consistency
   const allSections = document.querySelectorAll(".content-section");
-  console.log("Found sections:", allSections.length);
+  console.log("📦 Found sections:", allSections.length);
+  
+  if (allSections.length === 0) {
+    console.error("❌ NO SECTIONS FOUND! Check if .content-section elements exist in DOM");
+    return;
+  }
   
   allSections.forEach((section, index) => {
-    console.log(`Hiding section ${index + 1}: ${section.id}`);
+    console.log(`  Hiding section ${index + 1}: ${section.id || 'NO ID'}`);
     // Remove all display classes first
     section.classList.remove("d-block", "active");
     section.classList.add("d-none");
@@ -211,14 +250,17 @@ function showSection(sectionId) {
 
   // Show target section
   const targetSection = document.getElementById(sectionId);
-  console.log("Target section element:", targetSection);
+  console.log("🎯 Target section element:", targetSection);
   
   if (targetSection) {
-    console.log("Showing target section:", sectionId);
+    console.log("✅ Showing target section:", sectionId);
     // Remove d-none first, then add d-block
     targetSection.classList.remove("d-none");
     targetSection.classList.add("d-block", "active");
     targetSection.style.display = "block";
+    
+    console.log("  - Classes after:", targetSection.className);
+    console.log("  - Display style:", targetSection.style.display);
 
     // Add animation
     targetSection.style.animation = "slideInFromRight 0.5s ease";
@@ -234,7 +276,7 @@ function showSection(sectionId) {
     );
 
     // Re-initialize edit forms when rooms section is shown
-    if (sectionId === "rooms") {
+    if (sectionId === "rooms-section") {
       setTimeout(() => {
         // Only re-initialize if not already done
         if (!window.roomsInitialized) {
@@ -2268,11 +2310,18 @@ function resetFilters() {
 }
 
 // Make functions globally available
+window.setDashboardData = setDashboardData;
 window.updateBookingStatus = updateBookingStatus;
 window.updateDiscountStatus = updateDiscountStatus;
 window.viewBookingDetails = viewBookingDetails;
 window.filterBookings = filterBookings;
 window.resetFilters = resetFilters;
+
+console.log("✅ Global functions exposed:", {
+  setDashboardData: typeof window.setDashboardData,
+  updateBookingStatus: typeof window.updateBookingStatus,
+  viewBookingDetails: typeof window.viewBookingDetails
+});
 
 // Debug function to test modal functionality
 window.testAddItemModal = function () {

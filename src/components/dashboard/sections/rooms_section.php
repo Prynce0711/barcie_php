@@ -47,9 +47,7 @@
                       <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text" class="form-control" id="searchItems" placeholder="Search by name, room number, or description...">
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                          <i class="fas fa-plus me-1"></i>Add New
-                        </button>
+                       
                       </div>
                     </div>
                   </div>
