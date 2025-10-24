@@ -31,14 +31,14 @@ if ($discount_result && $discount_result->num_rows > 0):
             <i class="fas fa-user"></i>
           </div>
           <div>
-            <div class="fw-bold"><?= htmlspecialchars($guest_name) ?></div>
-            <small class="text-muted"><?= htmlspecialchars($discount['receipt_no']) ?></small>
+            <div class="fw-bold"><?= htmlspecialchars($guest_name ?? 'Guest') ?></div>
+            <small class="text-muted"><?= htmlspecialchars($discount['receipt_no'] ?? '') ?></small>
           </div>
         </div>
       </td>
       <td>
         <span class="badge bg-info px-3 py-2">
-          <?= htmlspecialchars($room_facility) ?>
+          <?= htmlspecialchars($room_facility ?? 'Unassigned') ?>
         </span>
       </td>
       <td>
