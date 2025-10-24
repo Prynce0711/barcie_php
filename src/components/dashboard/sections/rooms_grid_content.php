@@ -31,11 +31,11 @@ while ($item = $res->fetch_assoc()): ?>
 
           <?php if ($item['room_number']): ?>
             <p class="text-muted mb-2">
-              <i class="fas fa-door-open me-1"></i>Room #<?= htmlspecialchars($item['room_number']) ?>
+              <i class="fas fa-door-open me-1"></i>Room #<?= htmlspecialchars($item['room_number'] ?? '') ?>
             </p>
           <?php endif; ?>
 
-          <p class="card-text text-muted small mb-3"><?= htmlspecialchars($item['description']) ?></p>
+          <p class="card-text text-muted small mb-3"><?= htmlspecialchars($item['description'] ?? '') ?></p>
 
           <div class="row text-center mb-3">
             <div class="col-6">
