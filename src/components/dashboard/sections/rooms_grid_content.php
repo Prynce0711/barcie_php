@@ -3,7 +3,7 @@
 $res = $conn->query("SELECT * FROM items ORDER BY item_type, created_at DESC");
 while ($item = $res->fetch_assoc()): ?>
   <div class="col-lg-4 col-md-6 mb-4 item-card" data-type="<?= $item['item_type'] ?>"
-    data-searchable="<?= strtolower($item['name'] . ' ' . $item['room_number'] . ' ' . $item['description']) ?>">
+    data-searchable="<?= strtolower(($item['name'] ?? '') . ' ' . ($item['room_number'] ?? '') . ' ' . ($item['description'] ?? '')) ?>">
     <div class="card border-0 shadow-sm h-100 hover-lift">
       <!-- Item Image -->
       <div class="position-relative">
