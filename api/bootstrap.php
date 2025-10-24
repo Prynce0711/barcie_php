@@ -57,7 +57,7 @@ function json_error($message, $status = 400, $extra = []) {
 }
 
 // Include DB connection
-$db_file = __DIR__ . '/../database/db_connect.php';
+$db_file = __DIR__ . '/../src/database/db_connect.php';
 if (!file_exists($db_file)) {
     json_error('Database configuration file not found', 500);
 }

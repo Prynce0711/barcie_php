@@ -38,8 +38,8 @@ header('Content-Type: text/html; charset=utf-8');
 
     <!-- Test 2: Database Connection -->
     <div class="test <?php
-        try {
-            include 'database/db_connect.php';
+            try {
+            include 'src/database/db_connect.php';
             echo ($conn && !$conn->connect_error) ? 'success' : 'error';
         } catch (Exception $e) {
             echo 'error';
@@ -48,7 +48,7 @@ header('Content-Type: text/html; charset=utf-8');
         <h2>🗄️ Database Connection</h2>
         <?php
         try {
-            include 'database/db_connect.php';
+            include 'src/database/db_connect.php';
             if ($conn && !$conn->connect_error) {
                 echo '<p><span class="status ok">CONNECTED</span></p>';
                 echo '<p><strong>Database:</strong> ' . ($conn->query("SELECT DATABASE()")->fetch_row()[0] ?? 'Unknown') . '</p>';
@@ -126,10 +126,10 @@ header('Content-Type: text/html; charset=utf-8');
             container.innerHTML = '';
             
             const endpoints = [
-                { name: 'Debug Connection', url: 'database/user_auth.php?action=debug_connection' },
-                { name: 'Fetch Items', url: 'database/user_auth.php?action=fetch_items' },
-                { name: 'Fetch Availability', url: 'database/user_auth.php?action=fetch_guest_availability' },
-                { name: 'Get Receipt Number', url: 'database/user_auth.php?action=get_receipt_no' }
+                { name: 'Debug Connection', url: 'src/database/user_auth.php?action=debug_connection' },
+                { name: 'Fetch Items', url: 'src/database/user_auth.php?action=fetch_items' },
+                { name: 'Fetch Availability', url: 'src/database/user_auth.php?action=fetch_guest_availability' },
+                { name: 'Get Receipt Number', url: 'src/database/user_auth.php?action=get_receipt_no' }
             ];
             
             for (const endpoint of endpoints) {
@@ -166,9 +166,9 @@ header('Content-Type: text/html; charset=utf-8');
         <h2>📁 Critical Files</h2>
         <?php
         $files = [
-            'database/db_connect.php' => 'Database Config',
-            'database/user_auth.php' => 'API Handler',
-            'assets/js/guest-bootstrap.js' => 'Guest JS',
+            'src/database/db_connect.php' => 'Database Config',
+            'src/database/user_auth.php' => 'API Handler',
+            'assets/js/guest/guest-bootstrap.js' => 'Guest JS',
             'Guest.php' => 'Guest Portal'
         ];
         
