@@ -1,4 +1,3 @@
-
 <?php
 // Include data processing logic
 require_once __DIR__ . '/src/components/dashboard/data_processing.php';
