@@ -1,3 +1,4 @@
+
 <?php
 // Include data processing logic
 require_once __DIR__ . '/src/components/dashboard/data_processing.php';
@@ -20,6 +21,7 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="src/assets/css/dashboard.css">
+  <link rel="stylesheet" href="src/assets/css/dashboard-enhancements.css">
 </head>
 
 
@@ -142,19 +144,33 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
           feedbackStats: <?php echo json_encode($feedback_stats); ?>
         };
 
-        // Initialize dashboard when document is ready
-        document.addEventListener('DOMContentLoaded', function () {
-          console.log("Dashboard page initialization starting...");
+        // Initialize dashboard when ALL scripts are loaded (not just DOM ready)
+        window.addEventListener('load', function () {
+          console.log("🚀 Dashboard page initialization starting...");
+          console.log("📊 Checking data availability:");
+          console.log("  - calendarEvents:", window.calendarEvents ? window.calendarEvents.length + ' events' : 'NOT SET');
+          console.log("  - monthlyBookingsData:", window.monthlyBookingsData ? 'SET (' + JSON.stringify(window.monthlyBookingsData).substring(0, 50) + '...)' : 'NOT SET');
+          console.log("  - statusDistributionData:", window.statusDistributionData ? 'SET (' + JSON.stringify(window.statusDistributionData).substring(0, 50) + '...)' : 'NOT SET');
+          console.log("  - dashboardStats:", window.dashboardStats ? 'SET' : 'NOT SET');
           
-          // Set data for charts (this is needed for dashboard-bootstrap.js)
-          setDashboardData(
-            window.calendarEvents,
-            window.monthlyBookingsData,
-            window.statusDistributionData,
-            window.dashboardStats
-          );
-          
-          console.log("Dashboard data set, waiting for dashboard-bootstrap.js to initialize...");
+          // Wait for dashboard-bootstrap.js to load before calling setDashboardData
+          if (typeof setDashboardData === 'function') {
+            console.log("✅ setDashboardData function found");
+            try {
+              setDashboardData(
+                window.calendarEvents,
+                window.monthlyBookingsData,
+                window.statusDistributionData,
+                window.dashboardStats
+              );
+              console.log("✅ Dashboard data set successfully");
+            } catch (error) {
+              console.error("❌ Error calling setDashboardData:", error);
+            }
+          } else {
+            console.error("❌ setDashboardData function not found - dashboard-bootstrap.js may not be loaded");
+            console.log("Available functions:", Object.keys(window).filter(k => typeof window[k] === 'function').slice(0, 20));
+          }
         });
       </script>
 
@@ -165,12 +181,12 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
         <?php include 'src/components/dashboard/sections/calendar_section.php'; ?>
       </section>
 
-      <section id="rooms" class="content-section">
+      <section id="rooms-section" class="content-section">
         <?php include 'src/components/dashboard/sections/rooms_section.php'; ?>
       </section>
 
       <!-- Bookings Management -->
-      <section id="bookings" class="content-section">
+      <section id="bookings-section" class="content-section">
         <?php include 'src/components/dashboard/sections/bookings_section.php'; ?>
       </section>
 
@@ -185,75 +201,8 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
 
 
 
-      <!-- Custom JavaScript for Calendar Section -->
+      <!-- Generate PHP room events and make them globally available -->
       <script>
-        // Initialize room calendar when the document is ready
-        document.addEventListener('DOMContentLoaded', function () {
-          initializeRoomCalendar();
-          initializeCalendarNavigation();
-          initializeRoomSearch();
-        });
-
-        function initializeRoomCalendar() {
-          const calendarEl = document.getElementById('roomCalendar');
-          if (!calendarEl) return;
-
-          // Generate room events based on current booking data
-          const roomEvents = generateRoomEvents();
-
-          calendarInstance = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-              left: 'prev,next today',
-              center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            events: roomEvents,
-            eventDisplay: 'block',
-            dayMaxEvents: true, // When too many events, show "+X more"
-            height: 'auto',
-            aspectRatio: 1.8,
-            eventOverlap: false, // Prevent event overlap
-            slotEventOverlap: false,
-            displayEventTime: true,
-            displayEventEnd: true,
-            nowIndicator: true, // Show current time indicator
-            businessHours: {
-              daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // 0=Sunday, 1=Monday, etc.
-              startTime: '08:00',
-              endTime: '20:00',
-            },
-            eventClick: function (info) {
-              // Show event details
-              const itemType = info.event.extendedProps.itemType || 'Item';
-              const itemName = info.event.extendedProps.itemName || info.event.title;
-              const roomNumber = info.event.extendedProps.roomNumber || '';
-              const guest = info.event.extendedProps.guest || 'Unknown';
-              const status = info.event.extendedProps.status || 'Unknown';
-              const checkin = info.event.extendedProps.checkin || 'Unknown';
-              const checkout = info.event.extendedProps.checkout || 'Unknown';
-              const details = info.event.extendedProps.details || 'No details';
-
-              const roomInfo = roomNumber ? `\nRoom Number: #${roomNumber}` : '';
-              alert(`${itemType}: ${itemName}${roomInfo}\nGuest: ${guest}\nStatus: ${status}\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nBooking Details: ${details}`);
-            },
-            dateClick: function (info) {
-              // Handle date click - show available items for that date
-              console.log('Date clicked:', info.dateStr);
-              // You could open a modal here to show all items available on this date
-            },
-            eventDidMount: function (info) {
-              // Add custom styling or tooltips
-              if (!info.event.extendedProps.hasReservation) {
-                info.el.style.opacity = '0.6';
-              }
-            }
-          });
-
-          calendarInstance.render();
-        }
-
-        // Generate PHP room events and make them globally available
         window.roomEvents = [];
         <?php
         // Generate JavaScript events using proper room_id relationship
@@ -319,16 +268,6 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
 
       </script>
 
-      <!-- Rooms & Facilities JavaScript -->
-      <script>
-        // Initialize rooms and facilities functionality
-        document.addEventListener('DOMContentLoaded', function () {
-          initializeRoomsFiltering();
-          initializeRoomsSearch();
-          initializeEditForms();
-        });
-      </script>
-
       <!-- All styles moved to dashboard.css for better organization -->
 
       <!-- Additional Edit Form Initialization -->
@@ -373,13 +312,24 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-  <script src="src/assets/js/dashboard/dashboard-bootstrap.js"></script>
-  <!-- Section-specific JavaScript files -->
-  <script src="src/assets/js/dashboard/calendar-section.js"></script>
-  <script src="src/assets/js/dashboard/rooms-section.js"></script>
-  <script src="src/assets/js/dashboard/bookings-section.js"></script>
-  <!-- Verification script for testing -->
-  <script src="src/assets/js/verify-structure.js"></script>
+      
+      <!-- Dashboard JavaScript files -->
+      <script src="src/assets/js/dashboard/dashboard-bootstrap.js" onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
+      <script src="src/assets/js/dashboard/calendar-section.js" onerror="console.error('❌ Failed to load calendar-section.js')"></script>
+      <script src="src/assets/js/dashboard/rooms-section.js" onerror="console.error('❌ Failed to load rooms-section.js')"></script>
+      <script src="src/assets/js/dashboard/bookings-section.js" onerror="console.error('❌ Failed to load bookings-section.js')"></script>
+      <script src="src/assets/js/verify-structure.js" onerror="console.error('❌ Failed to load verify-structure.js')"></script>
+      
+      <!-- Verify script loading -->
+      <script>
+        console.log('📦 Checking loaded scripts...');
+        console.log('setDashboardData:', typeof setDashboardData);
+        console.log('initializeCalendarNavigation:', typeof initializeCalendarNavigation);
+        console.log('initializeRoomSearch:', typeof initializeRoomSearch);
+        console.log('initializeRoomsFiltering:', typeof initializeRoomsFiltering);
+        console.log('FullCalendar:', typeof FullCalendar);
+        console.log('Chart:', typeof Chart);
+      </script>
 
       <!-- Additional utility functions -->
       <script>
@@ -389,6 +339,16 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
           if (sidebar) {
             sidebar.classList.toggle('open');
           }
+          
+          // Add overlay when sidebar is open on mobile
+          let overlay = document.querySelector('.sidebar-overlay');
+          if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'sidebar-overlay';
+            overlay.onclick = toggleSidebar;
+            document.body.appendChild(overlay);
+          }
+          overlay.classList.toggle('active');
         }
 
         // Dark mode toggle
@@ -401,6 +361,20 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
             icon.className = 'fas fa-moon';
           }
         }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+          const sidebar = document.querySelector('.sidebar');
+          const toggleBtn = document.querySelector('.mobile-menu-toggle');
+          
+          if (window.innerWidth < 992) {
+            if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
+              sidebar.classList.remove('open');
+              const overlay = document.querySelector('.sidebar-overlay');
+              if (overlay) overlay.classList.remove('active');
+            }
+          }
+        });
 
         // Make functions globally available
         window.toggleSidebar = toggleSidebar;

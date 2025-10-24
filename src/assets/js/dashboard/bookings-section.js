@@ -1,10 +1,11 @@
 // Bookings Section JavaScript
-// Initialize bookings functionality when document is ready
+// Functions for bookings functionality - called by dashboard-bootstrap.js
 
-document.addEventListener('DOMContentLoaded', function () {
-  initializeBookingsFiltering();
-  initializeBookingsActions();
-});
+// Don't auto-initialize - let dashboard-bootstrap.js handle it
+// document.addEventListener('DOMContentLoaded', function () {
+//   initializeBookingsFiltering();
+//   initializeBookingsActions();
+// });
 
 function filterBookings() {
   const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
@@ -103,11 +104,162 @@ function updateBookingStatus(bookingId, newStatus) {
 }
 
 function viewBookingDetails(bookingId) {
-  // For now, just show an alert. You can implement a modal later
-  alert(`Viewing details for booking #${bookingId}`);
+  // Fetch booking details and show in a modal
+  fetch(`api/get_booking_details.php?id=${bookingId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showBookingDetailsModal(data.booking);
+      } else {
+        alert('Error loading booking details: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to load booking details');
+    });
+}
+
+function showBookingDetailsModal(booking) {
+  // Create modal HTML
+  const modalHTML = `
+    <div class="modal fade" id="bookingDetailsModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border: none; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+          <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0; padding: 1.5rem;">
+            <h5 class="modal-title" style="font-weight: 600;"><i class="fas fa-file-invoice me-2"></i>Booking Details</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" style="padding: 2rem; background: #f8f9fa;">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #667eea;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Receipt Number</label>
+                  <div class="fw-bold" style="color: #2d3748; font-size: 1rem;">${booking.receipt_no || 'N/A'}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #667eea;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Booking Type</label>
+                  <div><span class="badge" style="background: ${booking.type === 'reservation' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'}; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 20px;">${booking.type === 'reservation' ? 'Reservation' : 'Pencil Booking'}</span></div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #48bb78;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Guest Name</label>
+                  <div class="fw-bold" style="color: #2d3748; font-size: 1rem;"><i class="fas fa-user me-2" style="color: #48bb78;"></i>${booking.guest_name || 'N/A'}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #48bb78;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Guest Contact</label>
+                  <div style="color: #2d3748;"><i class="fas fa-phone me-2" style="color: #48bb78;"></i>${booking.guest_contact || 'N/A'}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #4299e1;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Room/Facility</label>
+                  <div class="fw-bold" style="color: #2d3748; font-size: 1rem;"><i class="fas fa-bed me-2" style="color: #4299e1;"></i>${booking.room_name || 'Unassigned'}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #4299e1;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Booking Status</label>
+                  <div><span class="badge" style="background: ${getStatusGradient(booking.status)}; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 20px;">${booking.status.replace('_', ' ').toUpperCase()}</span></div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #ed8936;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Check-in Date</label>
+                  <div class="fw-bold" style="color: #2d3748;"><i class="fas fa-calendar-check me-2" style="color: #ed8936;"></i>${formatDate(booking.checkin)}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #ed8936;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Check-out Date</label>
+                  <div class="fw-bold" style="color: #2d3748;"><i class="fas fa-calendar-times me-2" style="color: #ed8936;"></i>${formatDate(booking.checkout)}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #9f7aea;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Discount Status</label>
+                  <div><span class="badge" style="background: ${getDiscountGradient(booking.discount_status)}; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 20px;">${booking.discount_status || 'None'}</span></div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #9f7aea;">
+                  <label class="text-muted small mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Created At</label>
+                  <div style="color: #2d3748;"><i class="fas fa-clock me-2" style="color: #9f7aea;"></i>${formatDateTime(booking.created_at)}</div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="p-3 rounded" style="background: white; border-left: 4px solid #38b2ac;">
+                  <label class="text-muted small mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fas fa-info-circle me-2" style="color: #38b2ac;"></i>Additional Details</label>
+                  <div class="rounded p-3" style="background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%); color: #2d3748; border: 1px solid #bee3f8; font-size: 0.9rem; line-height: 1.6;">${booking.details || 'No additional details'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer" style="background: white; border-top: 1px solid #e2e8f0; border-radius: 0 0 12px 12px; padding: 1rem 2rem;">
+            <button type="button" class="btn" data-bs-dismiss="modal" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.6rem 2rem; border-radius: 25px; border: none; font-weight: 500; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
   
-  // TODO: Implement modal or redirect to booking details page
-  // Example: showBookingModal(bookingId);
+  // Remove existing modal if any
+  const existingModal = document.getElementById('bookingDetailsModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Add modal to body
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('bookingDetailsModal'));
+  modal.show();
+  
+  // Clean up modal after it's hidden
+  document.getElementById('bookingDetailsModal').addEventListener('hidden.bs.modal', function() {
+    this.remove();
+  });
+}
+
+function getStatusGradient(status) {
+  const gradients = {
+    'pending': 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)',
+    'approved': 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)',
+    'confirmed': 'linear-gradient(135deg, #74b9ff 0%, #0984e3 100%)',
+    'checked_in': 'linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)',
+    'checked_out': 'linear-gradient(135deg, #b2bec3 0%, #636e72 100%)',
+    'cancelled': 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)',
+    'rejected': 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)'
+  };
+  return gradients[status] || 'linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%)';
+}
+
+function getDiscountGradient(status) {
+  const gradients = {
+    'pending': 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)',
+    'approved': 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)',
+    'rejected': 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)',
+    'none': 'linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%)'
+  };
+  return gradients[status] || 'linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%)';
+}
+
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function formatDateTime(dateString) {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function deleteBooking(bookingId) {

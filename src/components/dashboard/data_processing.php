@@ -4,7 +4,7 @@
 // Include this file in the main dashboard.php
 
 session_start();
-require __DIR__ . '/../../src/database/db_connect.php';
+require __DIR__ . '/../../database/db_connect.php';
 
 // ✅ Auth check: only admins can access
 if (!isset($_SESSION['admin_id'])) {

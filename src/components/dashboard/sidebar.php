@@ -1,20 +1,33 @@
 <!-- Sidebar -->
   <div class="sidebar">
-    <h2><i class="fas fa-hotel me-2"></i>Hotel Admin</h2>
-    <a href="#" class="nav-link-custom active" data-section="dashboard-section">
-      <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-    </a>
-    <a href="#" class="nav-link-custom" data-section="calendar-section">
-      <i class="fas fa-calendar-check me-2"></i>Calendar & Items
-    </a>
-    <a href="#" class="nav-link-custom" data-section="rooms">
-      <i class="fas fa-door-open me-2"></i>Rooms & Facilities
-    </a>
-    <a href="#" class="nav-link-custom" data-section="bookings">
-      <i class="fas fa-calendar-alt me-2"></i>Bookings
-    </a>
+    <h2>
+      <i class="fas fa-hotel me-2"></i>
+      <span>Hotel Admin</span>
+    </h2>
+    
+    <div class="sidebar-nav">
+      <a href="#dashboard-section" class="nav-link-custom active" data-section="dashboard-section">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="#calendar-section" class="nav-link-custom" data-section="calendar-section">
+        <i class="fas fa-calendar-check"></i>
+        <span>Calendar & Items</span>
+      </a>
+      <a href="#rooms-section" class="nav-link-custom" data-section="rooms-section">
+        <i class="fas fa-door-open"></i>
+        <span>Rooms & Facilities</span>
+      </a>
+      <a href="#bookings-section" class="nav-link-custom" data-section="bookings-section">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Bookings</span>
+      </a>
+    </div>
 
-    <a href="index.php" class="btn btn-danger mt-3">
-      <i class="fas fa-sign-out-alt me-2"></i>Logout
-    </a>
+    <div class="mt-auto pt-4">
+      <a href="index.php" class="btn btn-danger w-100 d-flex align-items-center justify-content-center">
+        <i class="fas fa-sign-out-alt me-2"></i>
+        <span>Logout</span>
+      </a>
+    </div>
   </div>

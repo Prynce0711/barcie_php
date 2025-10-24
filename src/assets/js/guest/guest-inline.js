@@ -1,3 +1,4 @@
+// cSpell:ignore barcie checkin lcuppersonnel lcupstudent LCUP
 // Handle missing images gracefully
 window.addEventListener('load', function () {
   document.querySelectorAll('img').forEach(img => {
