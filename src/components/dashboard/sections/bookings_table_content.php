@@ -47,7 +47,7 @@ while ($booking = $bookings->fetch_assoc()):
     <!-- Room/Facility -->
     <td>
       <div style="line-height: 1.3;">
-        <strong style="font-size: 0.75rem;"><?= htmlspecialchars($room_facility) ?></strong>
+        <strong style="font-size: 0.75rem;"><?= htmlspecialchars($room_facility ?? 'Unassigned') ?></strong>
       </div>
     </td>
     
@@ -61,12 +61,12 @@ while ($booking = $bookings->fetch_assoc()):
     <!-- Guest Details -->
     <td>
       <div style="line-height: 1.3;">
-        <strong style="font-size: 0.75rem;"><?= htmlspecialchars($guest_name) ?></strong><br>
+        <strong style="font-size: 0.75rem;"><?= htmlspecialchars($guest_name ?? 'Guest') ?></strong><br>
         <?php if ($guest_phone): ?>
-          <small style="font-size: 0.65rem;"><i class="fas fa-phone"></i> <?= htmlspecialchars($guest_phone) ?></small><br>
+          <small style="font-size: 0.65rem;"><i class="fas fa-phone"></i> <?= htmlspecialchars($guest_phone ?? '') ?></small><br>
         <?php endif; ?>
         <?php if ($guest_email): ?>
-          <small style="font-size: 0.65rem;" class="text-truncate d-inline-block" style="max-width: 150px;"><i class="fas fa-envelope"></i> <?= htmlspecialchars($guest_email) ?></small>
+          <small style="font-size: 0.65rem;" class="text-truncate d-inline-block" style="max-width: 150px;"><i class="fas fa-envelope"></i> <?= htmlspecialchars($guest_email ?? '') ?></small>
         <?php endif; ?>
       </div>
     </td>
