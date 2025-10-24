@@ -85,12 +85,12 @@ while ($item = $res->fetch_assoc()): ?>
 
               <div class="col-md-6 mb-3">
                 <label class="form-label">Room Number</label>
-                <input type="text" class="form-control" name="room_number" value="<?= htmlspecialchars($item['room_number']) ?>">
+                <input type="text" class="form-control" name="room_number" value="<?= htmlspecialchars($item['room_number'] ?? '') ?>">
               </div>
 
               <div class="col-12 mb-3">
                 <label class="form-label">Description</label>
-                <textarea class="form-control" name="description" rows="3"><?= htmlspecialchars($item['description']) ?></textarea>
+                <textarea class="form-control" name="description" rows="3"><?= htmlspecialchars($item['description'] ?? '') ?></textarea>
               </div>
 
               <div class="col-md-6 mb-3">
