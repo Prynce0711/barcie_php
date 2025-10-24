@@ -85,7 +85,7 @@ if ($items_result && $items_result->num_rows > 0) {
           </h6>
           <small class="text-muted">
             <?php if ($item_type == 'room'): ?>
-              Room #<?= htmlspecialchars($room_number) ?> • <?= $item['capacity'] ?> <?= $capacity_label ?>
+              Room #<?= htmlspecialchars($room_number ?? '') ?> • <?= $item['capacity'] ?> <?= $capacity_label ?>
             <?php else: ?>
               Facility • <?= $item['capacity'] ?> <?= $capacity_label ?>
             <?php endif; ?>
