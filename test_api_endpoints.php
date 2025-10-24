@@ -103,7 +103,7 @@ echo "</div>";
 echo "<div class='test'>";
 echo "<h2>Test 5: Database Connection</h2>";
 try {
-    include 'database/db_connect.php';
+    include 'src/database/db_connect.php';
     if ($conn && !$conn->connect_error) {
         echo "<p class='success'>✅ Database connected successfully</p>";
         
