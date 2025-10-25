@@ -7,7 +7,11 @@ while ($item = $res->fetch_assoc()): ?>
     <div class="card border-0 shadow-sm h-100 hover-lift">
       <!-- Item Image -->
       <div class="position-relative">
-        <?php if ($item['image'] && file_exists($item['image'])): ?>
+        <?php 
+        $imagePath = $item['image'] ?? '';
+        $imageExists = !empty($imagePath) && file_exists(__DIR__ . '/../../../../' . $imagePath);
+        ?>
+        <?php if ($imageExists): ?>
           <img src="<?= htmlspecialchars($item['image']) ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>">
         <?php else: ?>
           <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);">
