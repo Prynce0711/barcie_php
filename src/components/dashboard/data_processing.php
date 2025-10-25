@@ -20,6 +20,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // DELETE ITEM
     if ($action === "delete" && isset($_POST['id'])) {
       $id = intval($_POST['id']);
+      
+      // Get the image path before deleting
       $stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
       $stmt->bind_param("i", $id);
       $stmt->execute();
@@ -27,12 +29,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $stmt->fetch();
       $stmt->close();
 
-      if ($img && file_exists($img))
-        unlink($img);
+      // Delete the image file if it exists
+      if ($img) {
+        $image_full_path = __DIR__ . "/../../../" . $img;
+        if (file_exists($image_full_path)) {
+          unlink($image_full_path);
+          error_log("Deleted image file: $image_full_path");
+        }
+      }
 
+      // Delete the database record
       $stmt = $conn->prepare("DELETE FROM items WHERE id=?");
       $stmt->bind_param("i", $id);
-      $stmt->execute();
+      
+      if ($stmt->execute()) {
+        error_log("Item deleted successfully: ID=$id");
+      } else {
+        error_log("Failed to delete item: " . $stmt->error);
+      }
+      
       $stmt->close();
       header("Location: dashboard.php#rooms");
       exit;
@@ -41,29 +56,54 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // UPDATE ITEM
     if ($action === "update" && isset($_POST['id'])) {
       $id = intval($_POST['id']);
-      $name = $_POST['name'];
-      $type = $_POST['item_type'];
-      $room_number = $_POST['room_number'] ?: null;
-      $description = $_POST['description'] ?: null;
-      $capacity = $_POST['capacity'] ?: 0;
-      $price = $_POST['price'] ?: 0;
+      $name = trim($_POST['name']);
+      $type = trim($_POST['item_type']);
+      $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
+      $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
+      $capacity = intval($_POST['capacity'] ?? 0);
+      $price = floatval($_POST['price'] ?? 0);
 
       $image_path = $_POST['old_image'] ?? null;
+      
+      // Handle new image upload
       if (!empty($_FILES['image']['name'])) {
-        $target_dir = "uploads/";
-        if (!file_exists($target_dir))
+        $target_dir = __DIR__ . "/../../../uploads/";
+        if (!file_exists($target_dir)) {
           mkdir($target_dir, 0777, true);
-        $target_file = $target_dir . time() . "_" . basename($_FILES["image"]["name"]);
-        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-          $image_path = $target_file;
-          if (!empty($_POST['old_image']) && file_exists($_POST['old_image']))
-            unlink($_POST['old_image']);
+        }
+        
+        // Generate unique filename
+        $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (in_array($file_extension, $allowed_extensions)) {
+          $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
+          $target_file = $target_dir . $unique_filename;
+          
+          if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+            // Delete old image if exists
+            if (!empty($_POST['old_image'])) {
+              $old_image_full_path = __DIR__ . "/../../../" . $_POST['old_image'];
+              if (file_exists($old_image_full_path)) {
+                unlink($old_image_full_path);
+              }
+            }
+            
+            // Store relative path from root
+            $image_path = "uploads/" . $unique_filename;
+          }
         }
       }
 
       $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=? WHERE id=?");
       $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $id);
-      $stmt->execute();
+      
+      if ($stmt->execute()) {
+        error_log("Item updated successfully: ID=$id, Name=$name, Image=$image_path");
+      } else {
+        error_log("Failed to update item: " . $stmt->error);
+      }
+      
       $stmt->close();
       header("Location: dashboard.php#rooms");
       exit;
@@ -110,27 +150,47 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   // ADD ITEM
   if (isset($_POST['add_item'])) {
-    $name = $_POST['name'];
-    $type = $_POST['item_type'];
-    $room_number = $_POST['room_number'] ?: null;
-    $description = $_POST['description'] ?: null;
-    $capacity = $_POST['capacity'] ?: 0;
-    $price = $_POST['price'] ?: 0;
+    $name = trim($_POST['name']);
+    $type = trim($_POST['item_type']);
+    $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
+    $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
+    $capacity = intval($_POST['capacity'] ?? 0);
+    $price = floatval($_POST['price'] ?? 0);
 
+    // Handle image upload
     $image_path = null;
     if (!empty($_FILES['image']['name'])) {
-      $target_dir = "uploads/";
-      if (!file_exists($target_dir))
+      $target_dir = __DIR__ . "/../../../uploads/";
+      if (!file_exists($target_dir)) {
         mkdir($target_dir, 0777, true);
-      $target_file = $target_dir . time() . "_" . basename($_FILES["image"]["name"]);
-      if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-        $image_path = $target_file;
+      }
+      
+      // Generate unique filename
+      $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
+      $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      
+      if (in_array($file_extension, $allowed_extensions)) {
+        $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
+        $target_file = $target_dir . $unique_filename;
+        
+        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+          // Store relative path from root
+          $image_path = "uploads/" . $unique_filename;
+        }
       }
     }
 
-    $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+    // Insert with default room_status = 'available'
+    $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
     $stmt->bind_param("ssssids", $name, $type, $room_number, $description, $capacity, $price, $image_path);
-    $stmt->execute();
+    
+    if ($stmt->execute()) {
+      $new_item_id = $conn->insert_id;
+      error_log("New item added successfully: ID=$new_item_id, Name=$name, Type=$type, Image=$image_path");
+    } else {
+      error_log("Failed to insert item: " . $stmt->error);
+    }
+    
     $stmt->close();
     header("Location: dashboard.php#rooms");
     exit;
