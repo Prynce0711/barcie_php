@@ -44,8 +44,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       
       if ($stmt->execute()) {
         error_log("Item deleted successfully: ID=$id");
+        $_SESSION['success_message'] = "Item deleted successfully!";
       } else {
         error_log("Failed to delete item: " . $stmt->error);
+        $_SESSION['error_message'] = "Failed to delete item: " . $stmt->error;
       }
       
       $stmt->close();
@@ -63,13 +65,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $capacity = intval($_POST['capacity'] ?? 0);
       $price = floatval($_POST['price'] ?? 0);
 
-      $image_path = $_POST['old_image'] ?? null;
+      // Get current image path from database first
+      $current_image_stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
+      $current_image_stmt->bind_param("i", $id);
+      $current_image_stmt->execute();
+      $current_image_stmt->bind_result($current_image);
+      $current_image_stmt->fetch();
+      $current_image_stmt->close();
+
+      $image_path = $current_image; // Use current image as default
       
       // Handle new image upload
-      if (!empty($_FILES['image']['name'])) {
+      if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        // Security: Validate file size (max 5MB)
+        $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
+        if ($_FILES['image']['size'] > $max_file_size) {
+          error_log("File too large: " . $_FILES['image']['size'] . " bytes");
+          $_SESSION['error_message'] = "Image file is too large. Maximum size is 5MB.";
+          header("Location: dashboard.php#rooms");
+          exit;
+        }
+        
         $target_dir = __DIR__ . "/../../../uploads/";
         if (!file_exists($target_dir)) {
-          mkdir($target_dir, 0777, true);
+          mkdir($target_dir, 0755, true); // More secure permissions
         }
         
         // Generate unique filename
@@ -77,31 +96,68 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         
         if (in_array($file_extension, $allowed_extensions)) {
+          // Security: Verify it's actually an image using getimagesize
+          $image_info = @getimagesize($_FILES["image"]["tmp_name"]);
+          if ($image_info === false) {
+            error_log("Invalid image file - not a real image");
+            $_SESSION['error_message'] = "Invalid image file. Please upload a valid image.";
+            header("Location: dashboard.php#rooms");
+            exit;
+          }
+          
+          // Security: Verify MIME type
+          $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+          if (!in_array($image_info['mime'], $allowed_mime_types)) {
+            error_log("Invalid MIME type: " . $image_info['mime']);
+            $_SESSION['error_message'] = "Invalid image format. Please upload JPG, PNG, GIF, or WebP.";
+            header("Location: dashboard.php#rooms");
+            exit;
+          }
+          
           $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
           $target_file = $target_dir . $unique_filename;
           
           if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-            // Delete old image if exists
-            if (!empty($_POST['old_image'])) {
-              $old_image_full_path = __DIR__ . "/../../../" . $_POST['old_image'];
-              if (file_exists($old_image_full_path)) {
-                unlink($old_image_full_path);
-              }
-            }
+            // Security: Set restrictive file permissions
+            chmod($target_file, 0644);
             
             // Store relative path from root
             $image_path = "uploads/" . $unique_filename;
+            
+            // Delete old image if exists and is different
+            if (!empty($current_image) && $current_image !== $image_path) {
+              $old_image_full_path = __DIR__ . "/../../../" . $current_image;
+              if (file_exists($old_image_full_path)) {
+                unlink($old_image_full_path);
+                error_log("Deleted old image: $old_image_full_path");
+              }
+            }
+            
+            error_log("New image uploaded: $image_path");
+          } else {
+            error_log("Failed to move uploaded file to: $target_file");
+            $_SESSION['error_message'] = "Failed to upload image. Please try again.";
+            header("Location: dashboard.php#rooms");
+            exit;
           }
+        } else {
+          error_log("Invalid file extension: $file_extension");
+          $_SESSION['error_message'] = "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.";
+          header("Location: dashboard.php#rooms");
+          exit;
         }
       }
 
+      // Update the database
       $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=? WHERE id=?");
       $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $id);
       
       if ($stmt->execute()) {
-        error_log("Item updated successfully: ID=$id, Name=$name, Image=$image_path");
+        error_log("Item updated successfully: ID=$id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
+        $_SESSION['success_message'] = "Item updated successfully!";
       } else {
         error_log("Failed to update item: " . $stmt->error);
+        $_SESSION['error_message'] = "Failed to update item: " . $stmt->error;
       }
       
       $stmt->close();
@@ -159,10 +215,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Handle image upload
     $image_path = null;
-    if (!empty($_FILES['image']['name'])) {
+    if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+      // Security: Validate file size (max 5MB)
+      $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
+      if ($_FILES['image']['size'] > $max_file_size) {
+        error_log("File too large: " . $_FILES['image']['size'] . " bytes");
+        $_SESSION['error_message'] = "Image file is too large. Maximum size is 5MB.";
+        header("Location: dashboard.php#rooms");
+        exit;
+      }
+      
       $target_dir = __DIR__ . "/../../../uploads/";
       if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0777, true);
+        mkdir($target_dir, 0755, true); // More secure permissions
       }
       
       // Generate unique filename
@@ -170,13 +235,45 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
       
       if (in_array($file_extension, $allowed_extensions)) {
+        // Security: Verify it's actually an image using getimagesize
+        $image_info = @getimagesize($_FILES["image"]["tmp_name"]);
+        if ($image_info === false) {
+          error_log("Invalid image file - not a real image");
+          $_SESSION['error_message'] = "Invalid image file. Please upload a valid image.";
+          header("Location: dashboard.php#rooms");
+          exit;
+        }
+        
+        // Security: Verify MIME type
+        $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($image_info['mime'], $allowed_mime_types)) {
+          error_log("Invalid MIME type: " . $image_info['mime']);
+          $_SESSION['error_message'] = "Invalid image format. Please upload JPG, PNG, GIF, or WebP.";
+          header("Location: dashboard.php#rooms");
+          exit;
+        }
+        
         $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
         $target_file = $target_dir . $unique_filename;
         
         if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+          // Security: Set restrictive file permissions
+          chmod($target_file, 0644);
+          
           // Store relative path from root
           $image_path = "uploads/" . $unique_filename;
+          error_log("Image uploaded successfully: $image_path");
+        } else {
+          error_log("Failed to move uploaded file to: $target_file");
+          $_SESSION['error_message'] = "Failed to upload image. Please try again.";
+          header("Location: dashboard.php#rooms");
+          exit;
         }
+      } else {
+        error_log("Invalid file extension: $file_extension");
+        $_SESSION['error_message'] = "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.";
+        header("Location: dashboard.php#rooms");
+        exit;
       }
     }
 
@@ -186,9 +283,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     if ($stmt->execute()) {
       $new_item_id = $conn->insert_id;
-      error_log("New item added successfully: ID=$new_item_id, Name=$name, Type=$type, Image=$image_path");
+      error_log("New item added successfully: ID=$new_item_id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
+      $_SESSION['success_message'] = "Item added successfully!";
     } else {
       error_log("Failed to insert item: " . $stmt->error);
+      $_SESSION['error_message'] = "Failed to add item: " . $stmt->error;
     }
     
     $stmt->close();

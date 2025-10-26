@@ -21,6 +21,7 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
   <!-- Custom CSS -->
   <link rel="stylesheet" href="src/assets/css/dashboard.css">
   <link rel="stylesheet" href="src/assets/css/dashboard-enhancements.css">
+  <link rel="stylesheet" href="src/assets/css/page-state.css">
 </head>
 
 
@@ -44,7 +45,21 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
     <div class="container-fluid px-2" style="max-width: 100%;">
       <div class="row">
         <div class="col-12">
-       
+          <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($_SESSION['success_message']) ?>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['success_message']); ?>
+          <?php endif; ?>
+          
+          <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($_SESSION['error_message']) ?>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['error_message']); ?>
+          <?php endif; ?>
         </div>
       </div>
 
@@ -311,6 +326,9 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+      
+      <!-- Page State Manager - Load FIRST -->
+      <script src="src/assets/js/page-state-manager.js"></script>
       
       <!-- Dashboard JavaScript files -->
       <script src="src/assets/js/dashboard/dashboard-bootstrap.js" onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
