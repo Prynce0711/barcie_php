@@ -22,11 +22,13 @@
   <?php include 'src/components/landing/footer.php'; ?>
 
   <!-- Landing Page JavaScript -->
-  <script src="src/assets/js/landing/main.js"></script>
-  <script src="src/assets/js/landing/auth.js"></script>
+  <?php $v = time(); // Cache busting ?>
+  <script src="src/assets/js/page-state-manager.js?v=<?php echo $v; ?>"></script>
+  <script src="src/assets/js/landing/main.js?v=<?php echo $v; ?>"></script>
+  <script src="src/assets/js/landing/auth.js?v=<?php echo $v; ?>"></script>
   
   <!-- Component Verification Script (for testing) -->
-  <script src="src/assets/js/landing/verify-components.js"></script>
+  <script src="src/assets/js/landing/verify-components.js?v=<?php echo $v; ?>"></script>
 
 </body>
 </html>

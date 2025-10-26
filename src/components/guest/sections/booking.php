@@ -17,7 +17,7 @@
   <label><input type="radio" name="bookingType" value="reservation" checked onchange="toggleBookingForm()"> Reservation</label>
   <label><input type="radio" name="bookingType" value="pencil" onchange="toggleBookingForm()"> Pencil Booking (Function Hall)</label>
 
-  <form id="reservationForm" method="POST" action="/barcie_php/src/database/user_auth.php" class="compact-form">
+  <form id="reservationForm" method="POST" action="src/database/user_auth.php" class="compact-form">
     <h3>Reservation Form</h3>
     <input type="hidden" name="action" value="create_booking">
     <input type="hidden" name="booking_type" value="reservation">
@@ -138,7 +138,7 @@
     </div>
   </form>
 
-  <form id="pencilForm" method="POST" action="/barcie_php/src/database/user_auth.php" class="compact-form" style="display:none;">
+  <form id="pencilForm" method="POST" action="src/database/user_auth.php" class="compact-form" style="display:none;">
     <h3>Pencil Booking Form (Function Hall)</h3>
     <input type="hidden" name="action" value="create_booking">
     <input type="hidden" name="booking_type" value="pencil">
