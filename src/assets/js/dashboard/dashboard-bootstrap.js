@@ -48,14 +48,28 @@ function initializeDashboard() {
 
   // Initialize edit forms and rooms functionality after a short delay
   setTimeout(() => {
+    console.log('🔧 Initializing edit forms and rooms functionality...');
+    
+    // Count items first
+    updateTypeCountsFromDOM();
+    
+    // Initialize edit forms
     initializeEditForms();
 
     // Initialize rooms-specific functionality
-    initializeRoomsFiltering();
-    initializeRoomsSearch();
-    updateTypeCounts(); // Update the counts on page load
+    if (typeof initializeRoomsFiltering === 'function') {
+      initializeRoomsFiltering();
+    }
+    if (typeof initializeRoomsSearch === 'function') {
+      initializeRoomsSearch();
+    }
 
-    console.log("Rooms and facilities functionality initialized");
+    console.log("✅ Rooms and facilities functionality initialized");
+    
+    // Log what we found
+    const editButtons = document.querySelectorAll('.edit-toggle-btn');
+    const editForms = document.querySelectorAll('[id^="editForm"]');
+    console.log(`Found ${editButtons.length} edit buttons and ${editForms.length} edit forms`);
   }, 500);
 }
 
@@ -814,15 +828,15 @@ function setupItemManagement() {
         .forEach((btn) =>
           btn.classList.toggle("active", btn.value === e.target.value)
         );
-      filterItems();
+      filterItemsInRoomsSection();
     });
   });
 
-  // Initialize counters
-  initializeCounters();
+  // Initialize counters from existing items (PHP-rendered)
+  updateTypeCountsFromDOM();
 
-  // Initial item load
-  loadItems();
+  // DON'T call loadItems() - items are already rendered by PHP
+  // loadItems();
 
   // Setup edit form toggles if they exist
   setupEditFormToggles();
@@ -971,6 +985,48 @@ function handleEditCancel(e) {
   }
 }
 
+// Helper function to count items from PHP-rendered DOM
+function updateTypeCountsFromDOM() {
+  const allItems = document.querySelectorAll('.item-card');
+  const roomItems = document.querySelectorAll('.item-card[data-type="room"]');
+  const facilityItems = document.querySelectorAll('.item-card[data-type="facility"]');
+  
+  console.log('Counting items from DOM:', {
+    all: allItems.length,
+    rooms: roomItems.length,
+    facilities: facilityItems.length
+  });
+  
+  // Update badges in filter buttons
+  const allBadge = document.querySelector('.type-count[data-type="all"]');
+  const roomBadge = document.querySelector('.type-count[data-type="room"]');
+  const facilityBadge = document.querySelector('.type-count[data-type="facility"]');
+  
+  if (allBadge) allBadge.textContent = allItems.length;
+  if (roomBadge) roomBadge.textContent = roomItems.length;
+  if (facilityBadge) facilityBadge.textContent = facilityItems.length;
+}
+
+// Filter function for PHP-rendered items
+function filterItemsInRoomsSection() {
+  const selectedType = document.querySelector('input[name="type_filter"]:checked');
+  if (!selectedType) return;
+  
+  const selectedValue = selectedType.value;
+  const items = document.querySelectorAll('.item-card');
+  
+  console.log('Filtering items:', selectedValue);
+  
+  items.forEach(item => {
+    const itemType = item.getAttribute('data-type');
+    
+    if (selectedValue === 'all' || itemType === selectedValue) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
 
 
 // Booking Type Toggle Function (Global)
