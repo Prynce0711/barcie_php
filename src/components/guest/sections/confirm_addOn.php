@@ -367,9 +367,9 @@
 
         const fd = new FormData(currentForm);
 
-        // Get the form action URL properly
+        // Get the form action URL properly - use relative path to avoid environment-specific issues
         const actionAttr = currentForm.getAttribute('action');
-        const targetUrl = actionAttr || '/barcie_php/src/database/user_auth.php';
+        const targetUrl = actionAttr || 'src/database/user_auth.php';
         
         console.debug('Submitting booking to', targetUrl);
 
@@ -378,19 +378,29 @@
           body: fd,
           credentials: 'same-origin',
           headers: {
-            'Accept': 'application/json' // Signal that we expect JSON response
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest' // Ensure server detects this as AJAX
           }
         });
 
         console.debug('Response status:', res.status, 'Content-Type:', res.headers.get('content-type'));
 
-        // Try to parse as JSON
-        let jsonResponse;
+        // Parse response safely. If response is not JSON, capture body text for debugging.
+        let jsonResponse = null;
         try {
-          jsonResponse = await res.json();
-          console.debug('JSON response:', jsonResponse);
+          const contentType = (res.headers.get('content-type') || '').toLowerCase();
+          if (contentType.includes('application/json')) {
+            jsonResponse = await res.json();
+            console.debug('JSON response:', jsonResponse);
+          } else {
+            // Non-JSON response (likely HTML error page). Read text for diagnostics.
+            const text = await res.text();
+            console.warn('Non-JSON response body:', text);
+            // Attach the raw text to a simple object so downstream code can show it
+            jsonResponse = { success: false, message: 'Server returned non-JSON response', _raw: text };
+          }
         } catch (e) {
-          console.warn('Failed to parse JSON response:', e);
+          console.warn('Failed to parse response:', e);
           jsonResponse = null;
         }
 
@@ -401,7 +411,7 @@
           alert(jsonResponse.message || 'Booking submitted successfully!');
           
           setTimeout(() => {
-            window.location.href = '/barcie_php/Guest.php#booking';
+            window.location.href = 'Guest.php#booking';
           }, 300);
           return;
         }
