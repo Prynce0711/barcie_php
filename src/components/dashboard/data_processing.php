@@ -206,6 +206,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   // ADD ITEM
   if (isset($_POST['add_item'])) {
+    // DEBUG: Log incoming POST and FILES data
+    error_log("=== ADD ITEM DEBUG START ===");
+    error_log("POST data: " . print_r($_POST, true));
+    error_log("FILES data: " . print_r($_FILES, true));
+    error_log("Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'not set'));
+    
     $name = trim($_POST['name']);
     $type = trim($_POST['item_type']);
     $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
@@ -215,7 +221,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Handle image upload
     $image_path = null;
+    error_log("Checking for image upload...");
+    
+    if (empty($_FILES['image']['name'])) {
+      error_log("No image file uploaded - FILES[image][name] is empty");
+    } elseif ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+      error_log("Image upload error code: " . $_FILES['image']['error']);
+      $upload_errors = [
+        UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+        UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+        UPLOAD_ERR_PARTIAL => 'File partially uploaded',
+        UPLOAD_ERR_NO_FILE => 'No file uploaded',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing temp directory',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write to disk',
+        UPLOAD_ERR_EXTENSION => 'PHP extension stopped upload'
+      ];
+      error_log("Upload error: " . ($upload_errors[$_FILES['image']['error']] ?? 'Unknown error'));
+    }
+    
     if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+      error_log("Image file received: " . $_FILES['image']['name'] . " (" . $_FILES['image']['size'] . " bytes)");
+      
       // Security: Validate file size (max 5MB)
       $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
       if ($_FILES['image']['size'] > $max_file_size) {
@@ -256,15 +282,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
         $target_file = $target_dir . $unique_filename;
         
+        error_log("Attempting to move uploaded file from: " . $_FILES["image"]["tmp_name"] . " to: " . $target_file);
+        
         if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
           // Security: Set restrictive file permissions
           chmod($target_file, 0644);
           
           // Store relative path from root
           $image_path = "uploads/" . $unique_filename;
-          error_log("Image uploaded successfully: $image_path");
+          error_log("Image uploaded successfully: $image_path (full path: $target_file)");
         } else {
           error_log("Failed to move uploaded file to: $target_file");
+          error_log("Target directory exists: " . (is_dir($target_dir) ? 'YES' : 'NO'));
+          error_log("Target directory writable: " . (is_writable($target_dir) ? 'YES' : 'NO'));
+          error_log("Temp file exists: " . (file_exists($_FILES["image"]["tmp_name"]) ? 'YES' : 'NO'));
           $_SESSION['error_message'] = "Failed to upload image. Please try again.";
           header("Location: dashboard.php#rooms");
           exit;
@@ -278,15 +309,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     // Insert with default room_status = 'available'
+    error_log("Preparing to insert item with image_path: " . ($image_path ?? 'NULL'));
+    
     $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
     $stmt->bind_param("ssssids", $name, $type, $room_number, $description, $capacity, $price, $image_path);
     
     if ($stmt->execute()) {
       $new_item_id = $conn->insert_id;
       error_log("New item added successfully: ID=$new_item_id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
+      error_log("=== ADD ITEM DEBUG END (SUCCESS) ===");
       $_SESSION['success_message'] = "Item added successfully!";
     } else {
       error_log("Failed to insert item: " . $stmt->error);
+      error_log("=== ADD ITEM DEBUG END (FAILED) ===");
       $_SESSION['error_message'] = "Failed to add item: " . $stmt->error;
     }
     

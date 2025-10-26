@@ -509,9 +509,11 @@ async function loadItems() {
       const roomStatus = item.room_status || 'available';
       card.dataset.availability = ['available', 'clean'].includes(roomStatus) ? "available" : "occupied";
       
-      const imageUrl = item.image && item.image.trim() !== '' 
-        ? item.image 
-        : 'src/assets/images/imageBg/barcie_logo.jpg';
+      // Ensure proper image path - add leading slash if missing for absolute path
+      let imageUrl = item.image && item.image.trim() !== '' ? item.image : 'src/assets/images/imageBg/barcie_logo.jpg';
+      if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+        imageUrl = '/' + imageUrl;
+      }
       
       card.innerHTML = `
         <div class="card-image">
@@ -667,7 +669,7 @@ function populateItemModal(modal, item) {
     <div class="row">
       <div class="col-md-6">
         ${item.image ? `
-          <img src="${item.image}" class="img-fluid rounded mb-3" alt="${item.name}" style="max-height: 300px; width: 100%; object-fit: cover;">
+          <img src="${item.image.startsWith('http') || item.image.startsWith('/') ? item.image : '/' + item.image}" class="img-fluid rounded mb-3" alt="${item.name}" style="max-height: 300px; width: 100%; object-fit: cover;">
         ` : `
           <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 200px;">
             <i class="fas ${item.item_type === 'room' ? 'fa-bed' : 'fa-building'} fa-3x text-muted"></i>
@@ -1250,7 +1252,7 @@ function loadFeaturedItems() {
                 }">
                     ${
                       item.image
-                        ? `<img src="${item.image}" class="card-img-top" style="height:120px;object-fit:cover;" alt="${item.name}">`
+                        ? `<img src="${item.image.startsWith('http') || item.image.startsWith('/') ? item.image : '/' + item.image}" class="card-img-top" style="height:120px;object-fit:cover;" alt="${item.name}">`
                         : ""
                     }
                     <div class="card-body p-3">
