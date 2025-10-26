@@ -9,6 +9,10 @@ while ($item = $res->fetch_assoc()): ?>
       <div class="position-relative">
         <?php 
         $imagePath = $item['image'] ?? '';
+        // Add leading slash for absolute path if not present
+        if (!empty($imagePath) && !str_starts_with($imagePath, '/') && !str_starts_with($imagePath, 'http')) {
+          $imagePath = '/' . $imagePath;
+        }
         // Check if image exists - correct path from document root
         $imageFullPath = $_SERVER['DOCUMENT_ROOT'] . '/' . ltrim($imagePath, '/');
         $imageExists = !empty($imagePath) && file_exists($imageFullPath);
@@ -110,9 +114,14 @@ while ($item = $res->fetch_assoc()): ?>
 
               <div class="col-12 mb-3">
                 <label class="form-label">Change Image</label>
-                <?php if (!empty($item['image'])): ?>
+                <?php if (!empty($item['image'])): 
+                  $displayImagePath = $item['image'];
+                  if (!str_starts_with($displayImagePath, '/') && !str_starts_with($displayImagePath, 'http')) {
+                    $displayImagePath = '/' . $displayImagePath;
+                  }
+                ?>
                   <div class="mb-2">
-                    <img src="<?= htmlspecialchars($item['image']) ?>" alt="Current Image" style="max-width: 150px; max-height: 100px; object-fit: cover;" class="rounded">
+                    <img src="<?= htmlspecialchars($displayImagePath) ?>" alt="Current Image" style="max-width: 150px; max-height: 100px; object-fit: cover;" class="rounded">
                     <p class="text-muted small mb-0">Current image</p>
                   </div>
                 <?php endif; ?>

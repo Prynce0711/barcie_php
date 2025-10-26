@@ -189,7 +189,11 @@
     html += '</div>';
     html += '<div class="col-4 text-end">';
     if (currentItem.image) {
-      html += `<img src="${escapeHtml(currentItem.image)}" style="max-width:120px;border-radius:6px;object-fit:cover;">`;
+      let imgSrc = currentItem.image;
+      if (!imgSrc.startsWith('http') && !imgSrc.startsWith('/')) {
+        imgSrc = '/' + imgSrc;
+      }
+      html += `<img src="${escapeHtml(imgSrc)}" style="max-width:120px;border-radius:6px;object-fit:cover;">`;
     }
     html += '</div>';
     html += '</div>';
