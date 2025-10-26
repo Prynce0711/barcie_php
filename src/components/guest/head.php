@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="src/assets/css/guest.css">
   <link rel="stylesheet" href="src/assets/css/guest-enhanced.css">
   <link rel="stylesheet" href="src/assets/css/guest-inline.css">
+  <link rel="stylesheet" href="src/assets/css/page-state.css">
   
   <!-- Vendor JS -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>

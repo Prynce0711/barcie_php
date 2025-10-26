@@ -75,6 +75,21 @@ function initializeBookingsActions() {
 
 // Booking management functions
 function updateBookingStatus(bookingId, newStatus) {
+  // Map the status to admin action
+  const actionMap = {
+    'approved': 'approve',
+    'rejected': 'reject',
+    'checked_in': 'checkin',
+    'checked_out': 'checkout',
+    'cancelled': 'cancel'
+  };
+  
+  const adminAction = actionMap[newStatus];
+  if (!adminAction) {
+    alert('Invalid status update requested.');
+    return;
+  }
+  
   if (!confirm(`Are you sure you want to change this booking status to "${newStatus.replace('_', ' ')}"?`)) {
     return;
   }
@@ -82,11 +97,12 @@ function updateBookingStatus(bookingId, newStatus) {
   // Create a form and submit it
   const form = document.createElement('form');
   form.method = 'POST';
+  form.action = 'src/database/user_auth.php';
   form.style.display = 'none';
 
   const actionInput = document.createElement('input');
   actionInput.name = 'action';
-  actionInput.value = 'update_booking_status';
+  actionInput.value = 'admin_update_booking';
   form.appendChild(actionInput);
 
   const idInput = document.createElement('input');
@@ -94,10 +110,10 @@ function updateBookingStatus(bookingId, newStatus) {
   idInput.value = bookingId;
   form.appendChild(idInput);
 
-  const statusInput = document.createElement('input');
-  statusInput.name = 'new_status';
-  statusInput.value = newStatus;
-  form.appendChild(statusInput);
+  const adminActionInput = document.createElement('input');
+  adminActionInput.name = 'admin_action';
+  adminActionInput.value = adminAction;
+  form.appendChild(adminActionInput);
 
   document.body.appendChild(form);
   form.submit();

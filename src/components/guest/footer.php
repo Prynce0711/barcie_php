@@ -5,6 +5,9 @@
   </div>
 </div>
 
+<!-- Page State Manager - Load FIRST -->
+<script src="src/assets/js/page-state-manager.js"></script>
+
 <script src="src/assets/js/guest/sidebar-mobile.js" defer></script>
 </body>
 </html>

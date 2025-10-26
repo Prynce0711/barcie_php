@@ -37,9 +37,9 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
 // Check if vendor autoload exists (optional - only needed for email features)
-$vendor_available = file_exists(__DIR__ . '/../vendor/autoload.php');
+$vendor_available = file_exists(__DIR__ . '/../../vendor/autoload.php');
 if ($vendor_available) {
-    require __DIR__ . '/../vendor/autoload.php';
+    require __DIR__ . '/../../vendor/autoload.php';
 }
 
 // Helper function to create professional email template
@@ -1681,6 +1681,13 @@ if ($action === 'admin_update_booking') {
 
         // Send email notification to guest for every status change
         if (!empty($guest_email)) {
+            error_log("========================================");
+            error_log("ADMIN UPDATE EMAIL - Booking ID: $bookingId");
+            error_log("Action: $adminAction → Status: $newStatus");
+            error_log("Guest: $guest_name");
+            error_log("Email: $guest_email");
+            error_log("========================================");
+            
             $emailSubject = '';
             $emailContent = '';
             
@@ -1939,10 +1946,20 @@ if ($action === 'admin_update_booking') {
             }
             
             if ($emailSubject && $emailContent) {
+                error_log("ADMIN UPDATE EMAIL - Sending email...");
+                error_log("Subject: $emailSubject");
                 $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                 $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
-                error_log("Status change email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
+                error_log("ADMIN UPDATE EMAIL - Result: " . ($email_sent ? "SUCCESS" : "FAILED"));
+                error_log("========================================");
+            } else {
+                error_log("ADMIN UPDATE EMAIL - Skipped: No email template for action '$adminAction'");
+                error_log("========================================");
             }
+        } else {
+            error_log("ADMIN UPDATE EMAIL - Skipped: No email address found in booking details");
+            error_log("Booking ID: $bookingId");
+            error_log("========================================");
         }
 
         // Update room status based on booking status
@@ -2064,6 +2081,14 @@ if ($action === 'admin_update_discount') {
 
         // Send email notification about discount decision
         if (!empty($guest_email) && !empty($discount_type)) {
+            error_log("========================================");
+            error_log("DISCOUNT UPDATE EMAIL - Booking ID: $bookingId");
+            error_log("Action: $discountAction");
+            error_log("Discount Type: $discount_type");
+            error_log("Guest: $guest_name");
+            error_log("Email: $guest_email");
+            error_log("========================================");
+            
             $emailSubject = '';
             $emailContent = '';
             
@@ -2162,9 +2187,11 @@ if ($action === 'admin_update_discount') {
             }
             
             if ($emailSubject && $emailContent) {
+                error_log("DISCOUNT UPDATE EMAIL - Sending email...");
+                error_log("Subject: $emailSubject");
                 $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                 $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
-                error_log("Discount decision email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
+                error_log("DISCOUNT UPDATE EMAIL - Result: " . ($email_sent ? "SUCCESS" : "FAILED"));
             }
         }
     }

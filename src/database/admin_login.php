@@ -44,8 +44,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->bind_result($id, $storedPassword);
         $stmt->fetch();
 
-        // If passwords are hashed in DB, use: password_verify($password, $storedPassword)
-        if ($password === $storedPassword) {
+        // Support both hashed (bcrypt) and plain text passwords
+        $passwordValid = false;
+        
+        // Check if password is hashed (bcrypt starts with $2y$ and is 60 chars)
+        if (strlen($storedPassword) == 60 && substr($storedPassword, 0, 4) === '$2y$') {
+            // Hashed password - use password_verify
+            $passwordValid = password_verify($password, $storedPassword);
+        } else {
+            // Plain text password - use direct comparison
+            $passwordValid = ($password === $storedPassword);
+        }
+
+        if ($passwordValid) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_id'] = $id;
             $_SESSION['admin_username'] = $username;

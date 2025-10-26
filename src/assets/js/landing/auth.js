@@ -46,12 +46,31 @@ function setupAdminLogin() {
 
       const formData = new FormData(adminForm);
 
-      // USE DEBUG VERSION - Change to 'admin_login.php' for production
-      const loginUrl = 'src/database/admin_login_debug.php';
+      // Production login endpoint
+      const loginUrl = 'src/database/admin_login.php';
       console.log('🔍 Sending login request to:', loginUrl);
 
       try {
-        const res = await fetch(loginUrl, { method: 'POST', body: formData });
+        const res = await fetch(loginUrl, { 
+          method: 'POST', 
+          body: formData,
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        // Check if response is OK
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status} - ${res.statusText}`);
+        }
+        
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await res.text();
+          console.error('❌ Non-JSON response received:', text.substring(0, 200));
+          throw new Error('Server returned HTML instead of JSON. Check if admin_login.php exists.');
+        }
+        
         const data = await res.json();
         
         console.log('📥 Response received:', data);
@@ -59,9 +78,16 @@ function setupAdminLogin() {
         if (data.success) {
           console.log('✅ Login successful!');
           submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Success!';
-          setTimeout(() => {
-            window.location.href = 'dashboard.php';
-          }, 1000);
+          
+          // Set admin role in state manager
+          if (window.BarcieStateManager) {
+            window.BarcieStateManager.handleLoginSuccess('admin');
+          } else {
+            // Fallback if state manager not loaded
+            setTimeout(() => {
+              window.location.href = 'dashboard.php#dashboard';
+            }, 1000);
+          }
         } else {
           console.error('❌ Login failed:', data.message);
           if (data.debug) {

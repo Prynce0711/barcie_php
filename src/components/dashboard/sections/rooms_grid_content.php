@@ -67,10 +67,9 @@ while ($item = $res->fetch_assoc()): ?>
 
         <!-- Hidden Edit Form -->
         <div class="edit-form-container mt-3" id="editForm<?= $item['id'] ?>" style="display: none;">
-          <form method="POST" enctype="multipart/form-data" class="border-top pt-3">
+          <form method="POST" action="" enctype="multipart/form-data" class="border-top pt-3">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="id" value="<?= $item['id'] ?>">
-            <input type="hidden" name="old_image" value="<?= $item['image'] ?>">
 
             <div class="row">
               <div class="col-12 mb-3">
@@ -104,12 +103,19 @@ while ($item = $res->fetch_assoc()): ?>
 
               <div class="col-md-6 mb-3">
                 <label class="form-label">Price (₱)</label>
-                <input type="number" class="form-control" name="price" value="<?= $item['price'] ?>" required>
+                <input type="number" class="form-control" name="price" value="<?= $item['price'] ?>" step="0.01" required>
               </div>
 
               <div class="col-12 mb-3">
                 <label class="form-label">Change Image</label>
+                <?php if (!empty($item['image'])): ?>
+                  <div class="mb-2">
+                    <img src="<?= htmlspecialchars($item['image']) ?>" alt="Current Image" style="max-width: 150px; max-height: 100px; object-fit: cover;" class="rounded">
+                    <p class="text-muted small mb-0">Current image</p>
+                  </div>
+                <?php endif; ?>
                 <input type="file" class="form-control" name="image" accept="image/*">
+                <div class="form-text">Leave empty to keep current image</div>
               </div>
             </div>
 
