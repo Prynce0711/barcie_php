@@ -253,7 +253,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       
       $target_dir = __DIR__ . "/../../../uploads/";
       if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0755, true); // More secure permissions
+        error_log("Creating uploads directory: $target_dir");
+        if (!mkdir($target_dir, 0755, true)) {
+          error_log("FAILED to create uploads directory!");
+          $_SESSION['error_message'] = "Upload directory does not exist and could not be created. Contact administrator.";
+          header("Location: dashboard.php#rooms");
+          exit;
+        }
+        error_log("Uploads directory created successfully");
+      }
+      
+      // Verify directory is writable
+      if (!is_writable($target_dir)) {
+        error_log("Uploads directory is NOT writable: $target_dir");
+        error_log("Directory permissions: " . substr(sprintf('%o', fileperms($target_dir)), -4));
+        $_SESSION['error_message'] = "Upload directory is not writable. Contact administrator.";
+        header("Location: dashboard.php#rooms");
+        exit;
       }
       
       // Generate unique filename
