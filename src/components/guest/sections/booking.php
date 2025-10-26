@@ -17,7 +17,7 @@
   <label><input type="radio" name="bookingType" value="reservation" checked onchange="toggleBookingForm()"> Reservation</label>
   <label><input type="radio" name="bookingType" value="pencil" onchange="toggleBookingForm()"> Pencil Booking (Function Hall)</label>
 
-  <form id="reservationForm" method="POST" action="../../src/database/user_auth.php" class="compact-form">
+  <form id="reservationForm" method="POST" action="/barcie_php/src/database/user_auth.php" class="compact-form">
     <h3>Reservation Form</h3>
     <input type="hidden" name="action" value="create_booking">
     <input type="hidden" name="booking_type" value="reservation">
@@ -130,13 +130,15 @@
         <input type="text" name="company_contact" placeholder="Optional">
       </label>
 
-      <button type="submit" id="reservationSubmitBtn">
+      <!-- Payment moved into confirm modal -->
+
+      <button type="button" id="reservationSubmitBtn">
         <i class="fas fa-calendar-check me-2"></i>Confirm Reservation
       </button>
     </div>
   </form>
 
-  <form id="pencilForm" method="POST" action="../../src/database/user_auth.php" class="compact-form" style="display:none;">
+  <form id="pencilForm" method="POST" action="/barcie_php/src/database/user_auth.php" class="compact-form" style="display:none;">
     <h3>Pencil Booking Form (Function Hall)</h3>
     <input type="hidden" name="action" value="create_booking">
     <input type="hidden" name="booking_type" value="pencil">
@@ -218,9 +220,34 @@
         <input type="text" name="company_number" placeholder="Optional">
       </label>
 
+      <!-- Payment moved into confirm modal -->
+
       <button type="submit" id="pencilSubmitBtn" onclick="return pencilReminder()">
         <i class="fas fa-edit me-2"></i>Submit Pencil Booking
       </button>
     </div>
   </form>
 </section>
+<?php
+// Include the confirm add-on modal (shows when reservation/pencil form is submitted)
+include __DIR__ . '/confirm_addOn.php';
+?>
+
+<script>
+// Toggle bank details when payment method changes
+document.addEventListener('DOMContentLoaded', function () {
+  function toggleDetails(selectId, detailsId) {
+    const sel = document.getElementById(selectId);
+    const details = document.getElementById(detailsId);
+    if (!sel || !details) return;
+    function update() {
+      details.style.display = (sel.value === 'bank') ? 'block' : 'none';
+    }
+    sel.addEventListener('change', update);
+    update();
+  }
+
+  toggleDetails('reservation_payment_method', 'reservation_bank_details');
+  toggleDetails('pencil_payment_method', 'pencil_bank_details');
+});
+</script>
