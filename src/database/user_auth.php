@@ -245,11 +245,19 @@ function redirect($url) {
 
 // Helper function for AJAX responses
 function handleResponse($message, $success = true, $redirectUrl = null) {
-    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    // Detect AJAX/Fetch requests by checking for XMLHttpRequest header or JSON content type preference
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ||
+              (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
     
     if ($isAjax) {
+        // Clear any output buffer to prevent mixed content
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
+        http_response_code($success ? 200 : 400);
         echo json_encode([
             'success' => $success,
             'message' => $message,
@@ -258,11 +266,7 @@ function handleResponse($message, $success = true, $redirectUrl = null) {
         exit;
     } else {
         // Traditional behavior for non-AJAX requests
-        if ($success) {
-            $_SESSION['booking_msg'] = $message;
-        } else {
-            $_SESSION['booking_msg'] = $message;
-        }
+        $_SESSION['booking_msg'] = $message;
         redirect($redirectUrl);
     }
 }
@@ -1159,6 +1163,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 $action = $_POST['action'] ?? '';
 
 
+// SECURITY: Disable legacy guest user login/signup via this endpoint.
+// If a POST contains a 'password' field it is likely a login/signup attempt from
+// the old guest auth UI. We intentionally block these requests and return a
+// clear JSON response so external callers know guest accounts are disabled.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['password'])) {
+    // Clear any output buffer
+    while (ob_get_level()) ob_end_clean();
+    header('Content-Type: application/json');
+    http_response_code(403);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Guest accounts disabled',
+        'message' => 'User login/signup is no longer supported. Please contact the administrator for access.'
+    ]);
+    $conn->close();
+    exit;
+}
+
+
 
 /* ---------------------------
    CREATE BOOKING
@@ -1311,7 +1334,12 @@ if ($action === 'create_booking') {
 
                 // Always send confirmation email to guest
                 if (!empty($email)) {
-                    error_log("Attempting to send confirmation email to: " . $email);
+                    error_log("========================================");
+                    error_log("BOOKING EMAIL - Starting email send process");
+                    error_log("Recipient: " . $email);
+                    error_log("Guest: " . $guest_name);
+                    error_log("Receipt: " . $receipt_no);
+                    error_log("========================================");
                     
                     $subject = "Booking Confirmation - BarCIE International Center";
                     
@@ -1396,11 +1424,14 @@ if ($action === 'create_booking') {
                     
                     $emailBody = create_email_template('Booking Confirmation', $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                     
+                    error_log("BOOKING EMAIL - Calling send_smtp_mail()");
                     $mail_sent = send_smtp_mail($email, $subject, $emailBody);
-                    error_log("Email send result: " . ($mail_sent ? "Success" : "Failed"));
+                    error_log("BOOKING EMAIL - Send result: " . ($mail_sent ? "SUCCESS" : "FAILED"));
+                    error_log("========================================");
 
                     // If there's a discount, also notify admin
                     if (!empty($discount_type)) {
+                        error_log("DISCOUNT EMAIL - Sending admin notification");
                         $admin_email = 'pc.clemente11@gmail.com';
                         $admin_subject = "New Discount Application - " . htmlspecialchars($discount_type);
                         $admin_message = '<div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -1424,8 +1455,10 @@ if ($action === 'create_booking') {
                             </div>';
                         
                         $admin_mail_sent = send_smtp_mail($admin_email, $admin_subject, $admin_message);
-                        error_log("Admin notification email result: " . ($admin_mail_sent ? "Success" : "Failed"));
+                        error_log("DISCOUNT EMAIL - Admin notification result: " . ($admin_mail_sent ? "SUCCESS" : "FAILED"));
                     }
+                } else {
+                    error_log("BOOKING EMAIL - Skipped: No email address provided");
                 }
 
                 handleResponse("Reservation saved successfully with receipt number: $receipt_no for " . $room_data['name'], true, '../Guest.php');
