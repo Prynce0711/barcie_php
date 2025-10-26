@@ -44,10 +44,15 @@
                   <div class="col-md-6">
                     <div class="mb-3">
                       <label class="form-label">Search Items</label>
-                      <div class="input-group">
+                      <div class="input-group mb-3">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text" class="form-control" id="searchItems" placeholder="Search by name, room number, or description...">
-                       
+                      </div>
+                      <!-- Add New Button -->
+                      <div class="d-grid">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                          <i class="fas fa-plus me-2"></i>Add New Room / Facility
+                        </button>
                       </div>
                     </div>
                   </div>
