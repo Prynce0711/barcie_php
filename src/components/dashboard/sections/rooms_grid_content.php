@@ -9,10 +9,12 @@ while ($item = $res->fetch_assoc()): ?>
       <div class="position-relative">
         <?php 
         $imagePath = $item['image'] ?? '';
-        $imageExists = !empty($imagePath) && file_exists(__DIR__ . '/../../../../' . $imagePath);
+        // Check if image exists - correct path from document root
+        $imageFullPath = $_SERVER['DOCUMENT_ROOT'] . '/' . ltrim($imagePath, '/');
+        $imageExists = !empty($imagePath) && file_exists($imageFullPath);
         ?>
         <?php if ($imageExists): ?>
-          <img src="<?= htmlspecialchars($item['image']) ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>">
+          <img src="<?= htmlspecialchars($imagePath) ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.parentElement.innerHTML='<div class=\'card-img-top d-flex align-items-center justify-content-center\' style=\'height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);\'><i class=\'fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted\'></i></div>';">
         <?php else: ?>
           <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);">
             <i class="fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted"></i>
