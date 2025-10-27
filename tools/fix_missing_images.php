@@ -85,10 +85,11 @@ if ($items_res) while ($r = $items_res->fetch_assoc()) $items[] = $r;
     <div class="item">
       <h3><?php echo htmlspecialchars($it['name']); ?> (<?php echo htmlspecialchars($it['item_type']); ?>)</h3>
       <p>ID: <?php echo $it['id']; ?> | Room number: <?php echo htmlspecialchars($it['room_number']); ?></p>
-      <form method="POST" enctype="multipart/form-data">
+      <form class="attach-form" method="POST" enctype="multipart/form-data" data-item-id="<?php echo $it['id']; ?>">
         <input type="hidden" name="item_id" value="<?php echo $it['id']; ?>">
         <label>Upload image: <input type="file" name="image" accept="image/*" required></label>
         <button type="submit">Attach image</button>
+        <div class="progress" style="display:none;margin-top:8px;"><progress value="0" max="100"></progress> <span class="pct">0%</span></div>
       </form>
     </div>
   <?php endforeach; endif; ?>
@@ -96,4 +97,85 @@ if ($items_res) while ($r = $items_res->fetch_assoc()) $items[] = $r;
   <hr>
   <p>Manual option: you can also upload files directly into <code>/uploads/</code> and then use the SQL below to set the value, e.g.: <code>UPDATE items SET image='uploads/yourfile.jpg' WHERE id=123;</code></p>
 </body>
+<script>
+// Chunked uploader for large files: sends multiple small POSTs to api/upload_chunk.php
+document.addEventListener('DOMContentLoaded', function(){
+  const forms = document.querySelectorAll('.attach-form');
+  const serverMax = <?php echo json_encode(ini_get('upload_max_filesize')); ?>; // string like '2M'
+
+  function parseSize(s){
+    if (!s) return 0;
+    s = s.toString().trim();
+    const unit = s.slice(-1).toUpperCase();
+    let num = parseFloat(s);
+    if (unit === 'G') num *= 1024*1024*1024;
+    else if (unit === 'M') num *= 1024*1024;
+    else if (unit === 'K') num *= 1024;
+    return Math.floor(num);
+  }
+
+  const maxChunk = Math.min(parseSize(serverMax) || (2*1024*1024), 1024*1024*1.5); // prefer 1.5MB chunks
+
+  forms.forEach(form => {
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      const fileInput = form.querySelector('input[type=file]');
+      if (!fileInput.files || fileInput.files.length === 0) return alert('Select a file');
+      const f = fileInput.files[0];
+      const itemId = form.dataset.itemId || form.querySelector('input[name=item_id]').value || '';
+      const progressWrap = form.querySelector('.progress');
+      const progressBar = progressWrap ? progressWrap.querySelector('progress') : null;
+      const pct = progressWrap ? progressWrap.querySelector('.pct') : null;
+
+      // If file is smaller than server max, submit classic POST via Fetch FormData to existing handler
+      if (f.size <= maxChunk) {
+        // fall back to normal form POST to same page to keep behavior consistent
+        const fd = new FormData();
+        fd.append('item_id', itemId);
+        fd.append('image', f);
+        fetch(window.location.href, {method:'POST', body: fd, credentials: 'same-origin'})
+          .then(r => r.text())
+          .then(txt => { alert('Upload completed (small file). Reload the page to see changes.'); location.reload(); })
+          .catch(err => alert('Upload failed: ' + err));
+        return;
+      }
+
+      // Chunked upload
+      const uploadId = 'upl_' + Date.now() + '_' + Math.random().toString(36).slice(2,9);
+      const totalChunks = Math.ceil(f.size / maxChunk);
+      progressWrap.style.display = '';
+
+      let current = 0;
+      (function sendNext(){
+        const start = current * maxChunk;
+        const end = Math.min(start + maxChunk, f.size);
+        const blob = f.slice(start, end);
+        const fd = new FormData();
+        fd.append('upload_id', uploadId);
+        fd.append('filename', f.name);
+        fd.append('chunk_index', current);
+        fd.append('total_chunks', totalChunks);
+        fd.append('item_id', itemId);
+        fd.append('chunk', blob, f.name + '.part.' + current);
+
+        fetch('/api/upload_chunk.php', {method:'POST', body: fd, credentials: 'same-origin'})
+          .then(r => r.json())
+          .then(json => {
+            if (!json.ok) throw new Error(json.error || 'Upload error');
+            const percent = Math.round(((current+1)/totalChunks)*100);
+            if (progressBar) progressBar.value = percent;
+            if (pct) pct.textContent = percent + '%';
+            current++;
+            if (current < totalChunks) sendNext();
+            else {
+              alert('Upload complete. Reloading to show updated image.');
+              location.reload();
+            }
+          })
+          .catch(err => { alert('Chunk upload failed: ' + err.message); });
+      })();
+    });
+  });
+});
+</script>
 </html>
