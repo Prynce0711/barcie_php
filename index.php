@@ -11,7 +11,6 @@
 
   <?php include 'components/landing/sections/about.php'; ?>
 
-
   <?php include 'components/landing/sections/services.php'; ?>
 
   <?php include 'components/landing/modals/admin_login_modal.php'; ?>
