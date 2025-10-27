@@ -1,0 +1,59 @@
+/* Styles for Caterings and Event Stylists card layouts */
+.partners-section .section-title {
+  font-weight: 700;
+  color: var(--text-dark, #2c3e50);
+}
+
+.partners-grid .card {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.partners-grid .card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+}
+
+.partners-grid .card-img-top {
+  height: 160px;
+  object-fit: contain;
+  background: #fff;
+  padding: 1rem;
+}
+
+.partners-grid .card-body {
+  padding: 1rem 1rem 1.25rem;
+}
+
+.partners-grid .partner-title a {
+  color: #1e3c72;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.partners-grid .partner-title a:hover {
+  text-decoration: underline;
+}
+
+.partner-phones {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* responsive tweaks */
+@media (max-width: 576px) {
+  .partners-grid .card-img-top {
+    height: 120px;
+    padding: 0.6rem;
+  }
+}
+
+/* Small helper to keep the logo area visually consistent */
+.partner-logo-wrap {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:160px;
+}
