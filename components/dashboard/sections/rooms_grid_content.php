@@ -9,13 +9,22 @@ while ($item = $res->fetch_assoc()): ?>
       <div class="position-relative">
         <?php 
         $imagePath = $item['image'] ?? '';
-        // Add leading slash for absolute path if not present
-        if (!empty($imagePath) && !str_starts_with($imagePath, '/') && !str_starts_with($imagePath, 'http')) {
-          $imagePath = '/' . $imagePath;
+        $imageExists = false;
+        
+        if (!empty($imagePath)) {
+          // Get project root from current file location (3 levels up from components/dashboard/sections)
+          $projectRoot = realpath(__DIR__ . '/../../..');
+          $imageFullPath = $projectRoot . '/' . ltrim($imagePath, '/');
+          $imageExists = file_exists($imageFullPath);
+          
+          // Construct web path for src attribute
+          if ($imageExists) {
+            // Ensure path starts with / for web access
+            if (!str_starts_with($imagePath, '/') && !str_starts_with($imagePath, 'http')) {
+              $imagePath = '/' . $imagePath;
+            }
+          }
         }
-        // Check if image exists - correct path from document root
-        $imageFullPath = $_SERVER['DOCUMENT_ROOT'] . '/' . ltrim($imagePath, '/');
-        $imageExists = !empty($imagePath) && file_exists($imageFullPath);
         ?>
         <?php if ($imageExists): ?>
           <img src="<?= htmlspecialchars($imagePath) ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.parentElement.innerHTML='<div class=\'card-img-top d-flex align-items-center justify-content-center\' style=\'height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);\'><i class=\'fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted\'></i></div>';">
@@ -115,16 +124,22 @@ while ($item = $res->fetch_assoc()): ?>
               <div class="col-12 mb-3">
                 <label class="form-label">Change Image</label>
                 <?php if (!empty($item['image'])): 
+                  // Use the same logic as above for consistency
                   $displayImagePath = $item['image'];
-                  if (!str_starts_with($displayImagePath, '/') && !str_starts_with($displayImagePath, 'http')) {
-                    $displayImagePath = '/' . $displayImagePath;
-                  }
+                  $projectRoot = realpath(__DIR__ . '/../../..');
+                  $imageFullPath = $projectRoot . '/' . ltrim($displayImagePath, '/');
+                  
+                  if (file_exists($imageFullPath)) {
+                    // Ensure path starts with / for web access
+                    if (!str_starts_with($displayImagePath, '/') && !str_starts_with($displayImagePath, 'http')) {
+                      $displayImagePath = '/' . $displayImagePath;
+                    }
                 ?>
                   <div class="mb-2">
-                    <img src="<?= htmlspecialchars($displayImagePath) ?>" alt="Current Image" style="max-width: 150px; max-height: 100px; object-fit: cover;" class="rounded">
+                    <img src="<?= htmlspecialchars($displayImagePath) ?>" alt="Current Image" style="max-width: 150px; max-height: 100px; object-fit: cover;" class="rounded" onerror="this.style.display='none'; this.nextElementSibling.textContent='Image not found';">
                     <p class="text-muted small mb-0">Current image</p>
                   </div>
-                <?php endif; ?>
+                <?php } endif; ?>
                 <input type="file" class="form-control" name="image" accept="image/*">
                 <div class="form-text">Leave empty to keep current image</div>
               </div>
