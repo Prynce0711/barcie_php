@@ -86,6 +86,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           exit;
         }
         
+          // Security: Validate file size (max 20MB)
+          $max_file_size = 20 * 1024 * 1024; // 20MB in bytes
+          if ($_FILES['image']['size'] > $max_file_size) {
+            error_log("File too large: " . $_FILES['image']['size'] . " bytes");
+            $_SESSION['error_message'] = "Image file is too large. Maximum size is 20MB.";
+            header("Location: dashboard.php#rooms");
+            exit;
+          }
+        
         $target_dir = __DIR__ . "/../../../uploads/";
         if (!file_exists($target_dir)) {
           mkdir($target_dir, 0755, true); // More secure permissions
@@ -242,11 +251,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
       error_log("Image file received: " . $_FILES['image']['name'] . " (" . $_FILES['image']['size'] . " bytes)");
       
-      // Security: Validate file size (max 5MB)
-      $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
+      // Security: Validate file size (max 20MB)
+      $max_file_size = 20 * 1024 * 1024; // 20MB in bytes
       if ($_FILES['image']['size'] > $max_file_size) {
         error_log("File too large: " . $_FILES['image']['size'] . " bytes");
-        $_SESSION['error_message'] = "Image file is too large. Maximum size is 5MB.";
+        $_SESSION['error_message'] = "Image file is too large. Maximum size is 20MB.";
         header("Location: dashboard.php#rooms");
         exit;
       }

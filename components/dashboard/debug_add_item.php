@@ -45,6 +45,7 @@ $debug['files_raw'] = $_FILES;
 $debug['php'] = [
     'version' => phpversion(),
     'sapi' => PHP_SAPI,
+    // upload_max_filesize should be set to 20M in php.ini for 20MB uploads
     'upload_max_filesize' => ini_get('upload_max_filesize'),
     'post_max_size' => ini_get('post_max_size'),
     'file_uploads' => ini_get('file_uploads'),
