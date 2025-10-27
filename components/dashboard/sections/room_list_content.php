@@ -70,8 +70,27 @@ if ($items_result && $items_result->num_rows > 0) {
       data-room-number="<?= strtolower($room_number) ?>" data-item-type="<?= $item_type ?>">
       <div class="row align-items-center">
         <div class="col-md-2">
-          <?php if ($item['image'] && file_exists($item['image'])): ?>
-            <img src="<?= htmlspecialchars($item['image']) ?>" class="img-fluid rounded" style="width: 80px; height: 60px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>">
+          <?php 
+          $imagePath = $item['image'] ?? '';
+          $imageExists = false;
+          
+          if (!empty($imagePath)) {
+            // Get project root from current file location (3 levels up from components/dashboard/sections)
+            $projectRoot = realpath(__DIR__ . '/../../..');
+            $imageFullPath = $projectRoot . '/' . ltrim($imagePath, '/');
+            $imageExists = file_exists($imageFullPath);
+            
+            // Construct web path for src attribute
+            if ($imageExists) {
+              // Ensure path starts with / for web access
+              if (!str_starts_with($imagePath, '/') && !str_starts_with($imagePath, 'http')) {
+                $imagePath = '/' . $imagePath;
+              }
+            }
+          }
+          ?>
+          <?php if ($imageExists): ?>
+            <img src="<?= htmlspecialchars($imagePath) ?>" class="img-fluid rounded" style="width: 80px; height: 60px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.parentElement.innerHTML='<div class=\'bg-light rounded d-flex align-items-center justify-content-center\' style=\'width: 80px; height: 60px;\'><i class=\'fas fa-<?= $type_icon ?> text-muted fa-2x\'></i></div>';">
           <?php else: ?>
             <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 60px;">
               <i class="fas fa-<?= $type_icon ?> text-muted fa-2x"></i>
