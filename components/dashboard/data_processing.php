@@ -215,6 +215,46 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   // ADD ITEM
   if (isset($_POST['add_item'])) {
+    // --- Preflight: ensure PHP ini limits allow our desired 20MB uploads ---
+    /**
+     * Convert php.ini shorthand (e.g. '2M', '512K') to bytes
+     * @param string|int $size
+     * @return int bytes
+     */
+    function php_size_to_bytes($size) {
+      if (is_numeric($size)) return (int)$size;
+      $unit = strtolower(substr($size, -1));
+      $bytes = (float) rtrim($size, 'bBkKmMgG');
+      switch ($unit) {
+        case 'g':
+          $bytes *= 1024;
+        case 'm':
+          $bytes *= 1024;
+        case 'k':
+          $bytes *= 1024;
+      }
+      return (int) $bytes;
+    }
+
+    $required_bytes = 20 * 1024 * 1024; // 20MB
+    $ini_upload_max = ini_get('upload_max_filesize');
+    $ini_post_max = ini_get('post_max_size');
+    $upload_max_bytes = php_size_to_bytes($ini_upload_max);
+    $post_max_bytes = php_size_to_bytes($ini_post_max);
+
+    if ($upload_max_bytes < $required_bytes || $post_max_bytes < $required_bytes) {
+      // Compose friendly message with tips for sysadmin
+      $msg = "Server PHP limits prevent uploads of 20MB. " .
+             "Current settings: upload_max_filesize={$ini_upload_max}, post_max_size={$ini_post_max}. ";
+      $msg .= "Ask your host to increase both to at least 20M (php.ini: upload_max_filesize=20M; post_max_size=20M). ";
+      $msg .= "If using PHP-FPM, restart the service after changing php.ini. For shared hosts you may be able to set this via .htaccess or a .user.ini file.\n";
+
+      error_log("Upload preflight blocked: " . $msg);
+      $_SESSION['error_message'] = $msg;
+      header("Location: dashboard.php#rooms");
+      exit;
+    }
+
     // DEBUG: Log incoming POST and FILES data
     error_log("=== ADD ITEM DEBUG START ===");
     error_log("POST data: " . print_r($_POST, true));
@@ -235,7 +275,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($_FILES['image']['name'])) {
       error_log("No image file uploaded - FILES[image][name] is empty");
     } elseif ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-      error_log("Image upload error code: " . $_FILES['image']['error']);
+      $errCode = $_FILES['image']['error'];
+      error_log("Image upload error code: " . $errCode);
       $upload_errors = [
         UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
         UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
@@ -245,7 +286,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         UPLOAD_ERR_CANT_WRITE => 'Failed to write to disk',
         UPLOAD_ERR_EXTENSION => 'PHP extension stopped upload'
       ];
-      error_log("Upload error: " . ($upload_errors[$_FILES['image']['error']] ?? 'Unknown error'));
+      $human = ($upload_errors[$errCode] ?? 'Unknown error');
+      error_log("Upload error: " . $human);
+
+      // If the error is related to server limits, provide a clear admin-facing message
+      if (in_array($errCode, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+        $ini_upload_max = ini_get('upload_max_filesize');
+        $ini_post_max = ini_get('post_max_size');
+        $msg = "Upload failed: {$human}. Server settings: upload_max_filesize={$ini_upload_max}, post_max_size={$ini_post_max}. ";
+        $msg .= "Increase both values to at least 20M (php.ini: upload_max_filesize=20M; post_max_size=20M). " .
+                "If using PHP-FPM, restart the service after changing php.ini. For shared hosts you can try a .user.ini or .htaccess with php_value settings if allowed.";
+        error_log("Upload limit error: " . $msg);
+        $_SESSION['error_message'] = $msg;
+        header("Location: dashboard.php#rooms");
+        exit;
+      }
     }
     
     if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
