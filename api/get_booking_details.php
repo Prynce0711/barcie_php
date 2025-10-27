@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once '../src/database/db_connect.php';
+require_once '../database/db_connect.php';
 
 if (!isset($_GET['id']) || empty($_GET['id'])) {
   echo json_encode(['success' => false, 'message' => 'Booking ID is required']);

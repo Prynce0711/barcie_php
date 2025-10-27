@@ -97,7 +97,7 @@ function updateBookingStatus(bookingId, newStatus) {
   // Create a form and submit it
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = 'src/database/user_auth.php';
+  form.action = 'database/user_auth.php';
   form.style.display = 'none';
 
   const actionInput = document.createElement('input');

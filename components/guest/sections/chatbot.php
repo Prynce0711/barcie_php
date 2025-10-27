@@ -36,5 +36,5 @@
   <span class="chatbot-badge">1</span>
 </button>
 
-<link rel="stylesheet" href="src/assets/css/chatbot.css">
-<script src="src/assets/js/guest/chatbot.js" defer></script>
+<link rel="stylesheet" href="assets/css/chatbot.css">
+<script src="assets/js/guest/chatbot.js" defer></script>

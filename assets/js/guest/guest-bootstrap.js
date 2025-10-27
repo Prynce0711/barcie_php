@@ -510,7 +510,7 @@ async function loadItems() {
       card.dataset.availability = ['available', 'clean'].includes(roomStatus) ? "available" : "occupied";
       
       // Ensure proper image path - add leading slash if missing for absolute path
-      let imageUrl = item.image && item.image.trim() !== '' ? item.image : 'src/assets/images/imageBg/barcie_logo.jpg';
+      let imageUrl = item.image && item.image.trim() !== '' ? item.image : 'assets/images/imageBg/barcie_logo.jpg';
       if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
         imageUrl = '/' + imageUrl;
       }
@@ -519,7 +519,7 @@ async function loadItems() {
         <div class="card-image">
           <img src="${imageUrl}" 
                style="width:100%;height:200px;object-fit:cover;border-radius:15px 15px 0 0;" 
-               onerror="this.onerror=null; this.src='src/assets/images/imageBg/barcie_logo.jpg';"
+               onerror="this.onerror=null; this.src='assets/images/imageBg/barcie_logo.jpg';"
                alt="${item.name}">
           <div class="availability-badge ${card.dataset.availability}">
             <i class="fas ${card.dataset.availability === 'available' ? 'fa-check-circle' : 'fa-times-circle'}"></i>

@@ -47,7 +47,7 @@ function setupAdminLogin() {
       const formData = new FormData(adminForm);
 
       // Production login endpoint
-      const loginUrl = 'src/database/admin_login.php';
+      const loginUrl = 'database/admin_login.php';
       console.log('🔍 Sending login request to:', loginUrl);
 
       try {

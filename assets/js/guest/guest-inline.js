@@ -5,7 +5,7 @@ window.addEventListener('load', function () {
     img.addEventListener('error', function () {
       if (!this.classList.contains('error-handled')) {
         this.classList.add('error-handled');
-        this.src = 'src/assets/images/imageBg/barcie_logo.jpg';
+        this.src = 'assets/images/imageBg/barcie_logo.jpg';
         this.alt = 'Image not available';
         this.style.opacity = '0.7';
         console.warn('Image failed to load, using fallback:', this.dataset.originalSrc || 'unknown');
@@ -83,7 +83,7 @@ window.addEventListener('load', function () {
       submitBtn.disabled = true;
       const formData = new FormData(form);
       const urlEncodedData = new URLSearchParams(formData).toString();
-      fetch('src/database/user_auth.php', {
+      fetch('database/user_auth.php', {
         method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }, body: urlEncodedData
       })
       .then(r => r.json())
@@ -128,7 +128,7 @@ window.addEventListener('load', function () {
         submitFeedbackBtn.disabled = true;
         const formData = new FormData(this);
         const urlEncodedData = new URLSearchParams(formData).toString();
-        fetch('src/database/user_auth.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }, body: urlEncodedData })
+        fetch('database/user_auth.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }, body: urlEncodedData })
           .then(r => r.json())
           .then(data => {
             if (data.success) {
