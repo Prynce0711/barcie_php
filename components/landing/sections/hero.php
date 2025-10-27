@@ -21,7 +21,7 @@
       </div>
       <div class="col-lg-6" data-aos="fade-left">
         <div class="glass-card p-4">
-          <img src="src/assets/images/imageBg/barcie_logo.jpg" alt="BarCIE Hotel" class="img-fluid rounded-3 shadow-lg">
+          <img src="assets/images/imageBg/barcie_logo.jpg" alt="BarCIE Hotel" class="img-fluid rounded-3 shadow-lg">
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 <?php
 // Include data processing logic
-require_once __DIR__ . '/src/components/dashboard/data_processing.php';
+require_once __DIR__ . '/components/dashboard/data_processing.php';
 ?>
 
 <!DOCTYPE html>
@@ -9,7 +9,7 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/png" href="src/assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Admin Dashboard</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -19,9 +19,9 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
   <!-- FullCalendar CSS & JS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="src/assets/css/dashboard.css">
-  <link rel="stylesheet" href="src/assets/css/dashboard-enhancements.css">
-  <link rel="stylesheet" href="src/assets/css/page-state.css">
+  <link rel="stylesheet" href="assets/css/dashboard.css">
+  <link rel="stylesheet" href="assets/css/dashboard-enhancements.css">
+  <link rel="stylesheet" href="assets/css/page-state.css">
 </head>
 
 
@@ -36,7 +36,7 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
   </button>
 
   <!-- Sidebar -->
-  <?php include 'src/components/dashboard/sidebar.php'; ?>
+  <?php include 'components/dashboard/sidebar.php'; ?>
 
 
 
@@ -65,7 +65,7 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
 
       <!-- Dashboard Section -->
       <section id="dashboard-section" class="content-section">
-  <?php include 'src/components/dashboard/sections/dashboard_section.php'; ?>
+  <?php include 'components/dashboard/sections/dashboard_section.php'; ?>
       </section>
 
       <?php
@@ -192,16 +192,16 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
 
       <!-- Calendar & Rooms Section -->
       <section id="calendar-section" class="content-section">
-        <?php include 'src/components/dashboard/sections/calendar_section.php'; ?>
+        <?php include 'components/dashboard/sections/calendar_section.php'; ?>
       </section>
 
       <section id="rooms-section" class="content-section">
-        <?php include 'src/components/dashboard/sections/rooms_section.php'; ?>
+        <?php include 'components/dashboard/sections/rooms_section.php'; ?>
       </section>
 
       <!-- Bookings Management -->
       <section id="bookings-section" class="content-section">
-        <?php include 'src/components/dashboard/sections/bookings_section.php'; ?>
+        <?php include 'components/dashboard/sections/bookings_section.php'; ?>
       </section>
 
 
@@ -324,21 +324,21 @@ require_once __DIR__ . '/src/components/dashboard/data_processing.php';
 
       <!-- Load JavaScript files at the end of body for better performance -->
   <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
-  <?php include 'src/components/dashboard/sections/add_item_modal.php'; ?>
+  <?php include 'components/dashboard/sections/add_item_modal.php'; ?>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
       
       <!-- Page State Manager - Load FIRST -->
-      <script src="src/assets/js/page-state-manager.js"></script>
+      <script src="assets/js/page-state-manager.js"></script>
       
       <!-- Dashboard JavaScript files -->
-      <script src="src/assets/js/dashboard/dashboard-bootstrap.js" onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
-      <script src="src/assets/js/dashboard/calendar-section.js" onerror="console.error('❌ Failed to load calendar-section.js')"></script>
-      <script src="src/assets/js/dashboard/rooms-section.js" onerror="console.error('❌ Failed to load rooms-section.js')"></script>
-      <script src="src/assets/js/dashboard/bookings-section.js" onerror="console.error('❌ Failed to load bookings-section.js')"></script>
-      <script src="src/assets/js/verify-structure.js" onerror="console.error('❌ Failed to load verify-structure.js')"></script>
+      <script src="assets/js/dashboard/dashboard-bootstrap.js" onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
+      <script src="assets/js/dashboard/calendar-section.js" onerror="console.error('❌ Failed to load calendar-section.js')"></script>
+      <script src="assets/js/dashboard/rooms-section.js" onerror="console.error('❌ Failed to load rooms-section.js')"></script>
+      <script src="assets/js/dashboard/bookings-section.js" onerror="console.error('❌ Failed to load bookings-section.js')"></script>
+      <script src="assets/js/verify-structure.js" onerror="console.error('❌ Failed to load verify-structure.js')"></script>
       
       <!-- Verify script loading -->
       <script>

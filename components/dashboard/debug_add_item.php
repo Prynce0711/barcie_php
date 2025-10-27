@@ -2,7 +2,7 @@
 // Comprehensive Debug endpoint for "Add New Item" form
 // Usage:
 // - Temporarily point your Add Item form to this file with ?debug=1
-//   e.g. <form action="src/components/dashboard/debug_add_item.php?debug=1" method="POST" enctype="multipart/form-data">
+//   e.g. <form action="components/dashboard/debug_add_item.php?debug=1" method="POST" enctype="multipart/form-data">
 // - Submit the form. This script will capture POST and FILES, attempt to move uploaded files
 //   to uploads/debug-uploads/, perform image checks, capture environment info, and write a detailed
 //   JSON debug report to uploads/debug-logs/. It returns JSON to the browser as well.
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: text/html; charset=utf-8');
     echo "<h2>Add Item Debug Endpoint</h2>";
     echo "<p>Submit the Add Item form to this endpoint with <code>?debug=1</code>.</p>";
-    echo "<pre>&lt;form action=\"src/components/dashboard/debug_add_item.php?debug=1\" method=\"POST\" enctype=\"multipart/form-data\"&gt;...&lt;/form&gt;</pre>";
+    echo "<pre>&lt;form action=\"components/dashboard/debug_add_item.php?debug=1\" method=\"POST\" enctype=\"multipart/form-data\"&gt;...&lt;/form&gt;</pre>";
     echo "<p>Response and a JSON log will be created under <code>/uploads/debug-logs/</code>.</p>";
     exit;
 }

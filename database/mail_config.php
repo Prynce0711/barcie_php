@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Load environment variables from .env file
 $autoload = __DIR__ . '/../../vendor/autoload.php';
 if (file_exists($autoload)) {

@@ -716,7 +716,7 @@ function getOrCreateToastContainer() {
 // Item Management Functions
 async function loadItems() {
   try {
-    const res = await fetch("src/database/fetch_items.php");
+    const res = await fetch("database/fetch_items.php");
     const items = await res.json();
     const container = document.getElementById("cards-grid");
     if (container) {
@@ -1090,7 +1090,7 @@ function setupBookingForms() {
 async function generateReceiptNumber() {
   try {
     const response = await fetch(
-      "src/database/user_auth.php?action=get_receipt_no"
+      "database/user_auth.php?action=get_receipt_no"
     );
     const data = await response.json();
 
@@ -1585,11 +1585,11 @@ function initializeFeedbackManagement() {
 async function loadFeedbackData(limit = 50, offset = 0) {
   try {
     // First initialize the feedback table
-    await fetch("src/database/user_auth.php?action=init_feedback_table");
+    await fetch("database/user_auth.php?action=init_feedback_table");
 
     // Then load the feedback data
     const response = await fetch(
-      `src/database/user_auth.php?action=get_feedback_data&limit=${limit}&offset=${offset}`
+      `database/user_auth.php?action=get_feedback_data&limit=${limit}&offset=${offset}`
     );
     const data = await response.json();
 
@@ -2068,7 +2068,7 @@ async function updateBookingStatus(bookingId, newStatus) {
     formData.append("admin_action", action);
 
     // Send AJAX request
-    const response = await fetch("src/database/user_auth.php", {
+    const response = await fetch("database/user_auth.php", {
       method: "POST",
       headers: {
         "X-Requested-With": "XMLHttpRequest",
@@ -2144,7 +2144,7 @@ async function updateDiscountStatus(bookingId, discountAction) {
     formData.append("discount_action", discountAction);
 
     // Send AJAX request
-    const response = await fetch("src/database/user_auth.php", {
+    const response = await fetch("database/user_auth.php", {
       method: "POST",
       headers: {
         "X-Requested-With": "XMLHttpRequest",

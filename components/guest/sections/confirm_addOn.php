@@ -157,7 +157,7 @@
   async function fetchItemById(id) {
     try {
       // Use the project-relative fetch path to be consistent with dashboard script
-      const res = await fetch('src/database/fetch_items.php');
+      const res = await fetch('database/fetch_items.php');
       if (!res.ok) return null;
       const items = await res.json();
       return items.find(it => Number(it.id) === Number(id)) || null;
@@ -373,7 +373,8 @@
 
         // Get the form action URL properly - use relative path to avoid environment-specific issues
         const actionAttr = currentForm.getAttribute('action');
-        const targetUrl = actionAttr || 'src/database/user_auth.php';
+        // Use form action if specified, otherwise default to user_auth.php
+        const targetUrl = actionAttr || 'database/user_auth.php';
         
         console.debug('Submitting booking to', targetUrl);
 
