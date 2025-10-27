@@ -89,13 +89,18 @@ if ($items_result && $items_result->num_rows > 0) {
             }
           }
           ?>
-          <?php if ($imageExists): ?>
-            <img src="<?= htmlspecialchars($imagePath) ?>" class="img-fluid rounded" style="width: 80px; height: 60px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.parentElement.innerHTML='<div class=\'bg-light rounded d-flex align-items-center justify-content-center\' style=\'width: 80px; height: 60px;\'><i class=\'fas fa-<?= $type_icon ?> text-muted fa-2x\'></i></div>';">
-          <?php else: ?>
-            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 60px;">
-              <i class="fas fa-<?= $type_icon ?> text-muted fa-2x"></i>
-            </div>
-          <?php endif; ?>
+          <?php
+          // Build a web-safe image path (prefer DB value, fall back to logo)
+          $webImage = '/assets/images/imageBg/barcie_logo.jpg';
+          if (!empty($imagePath)) {
+            if (str_starts_with($imagePath, 'http') || str_starts_with($imagePath, '/')) {
+              $webImage = $imagePath;
+            } else {
+              $webImage = '/' . ltrim($imagePath, '/');
+            }
+          }
+          ?>
+          <img src="<?= htmlspecialchars($webImage) ?>" class="img-fluid rounded" style="width: 80px; height: 60px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'bg-light rounded d-flex align-items-center justify-content-center\' style=\'width: 80px; height: 60px;\'><i class=\'fas fa-<?= $type_icon ?> text-muted fa-2x\'></i></div>';">
         </div>
         <div class="col-md-3">
           <h6 class="mb-1">

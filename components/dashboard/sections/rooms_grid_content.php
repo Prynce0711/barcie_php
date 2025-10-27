@@ -8,31 +8,18 @@ while ($item = $res->fetch_assoc()): ?>
       <!-- Item Image -->
       <div class="position-relative">
         <?php 
+        // Always construct a web path for image preview; fall back to logo when empty
         $imagePath = $item['image'] ?? '';
-        $imageExists = false;
-        
+        $webImage = '/assets/images/imageBg/barcie_logo.jpg';
         if (!empty($imagePath)) {
-          // Get project root from current file location (3 levels up from components/dashboard/sections)
-          $projectRoot = realpath(__DIR__ . '/../../..');
-          $imageFullPath = $projectRoot . '/' . ltrim($imagePath, '/');
-          $imageExists = file_exists($imageFullPath);
-          
-          // Construct web path for src attribute
-          if ($imageExists) {
-            // Ensure path starts with / for web access
-            if (!str_starts_with($imagePath, '/') && !str_starts_with($imagePath, 'http')) {
-              $imagePath = '/' . $imagePath;
-            }
+          if (str_starts_with($imagePath, 'http') || str_starts_with($imagePath, '/')) {
+            $webImage = $imagePath;
+          } else {
+            $webImage = '/' . ltrim($imagePath, '/');
           }
         }
         ?>
-        <?php if ($imageExists): ?>
-          <img src="<?= htmlspecialchars($imagePath) ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.parentElement.innerHTML='<div class=\'card-img-top d-flex align-items-center justify-content-center\' style=\'height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);\'><i class=\'fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted\'></i></div>';">
-        <?php else: ?>
-          <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);">
-            <i class="fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted"></i>
-          </div>
-        <?php endif; ?>
+        <img src="<?= htmlspecialchars($webImage) ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.parentElement.innerHTML='<div class=\'card-img-top d-flex align-items-center justify-content-center\' style=\'height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);\'><i class=\'fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted\'></i></div>';">
 
         <!-- Type Badge -->
         <div class="position-absolute top-0 end-0 m-2">
