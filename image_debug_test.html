@@ -27,7 +27,7 @@
                     let html = `<h2>Found ${data.items.length} items from database:</h2>`;
                     
                     data.items.forEach((item, index) => {
-                        let imageUrl = item.image && item.image.trim() !== '' ? item.image : 'assets/images/imageBg/barcie_logo.jpg';
+                        let imageUrl = item.image && item.image.trim() !== '' ? item.image : '/assets/images/imageBg/barcie_logo.jpg';
                         
                         // Apply same logic as guest-bootstrap.js
                         if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
