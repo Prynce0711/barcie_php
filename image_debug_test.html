@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .image-test { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
+        .image-test img { max-width: 200px; max-height: 150px; margin: 10px 0; }
+        .success { border-color: green; background-color: #f0fff0; }
+        .error { border-color: red; background-color: #fff0f0; }
+    </style>
+</head>
+<body>
+    <h1>Image Debug Test</h1>
+    
+    <div id="api-results">Loading database items...</div>
+
+    <script>
+        async function testImages() {
+            const container = document.getElementById('api-results');
+            
+            try {
+                const response = await fetch('database/user_auth.php?action=fetch_items');
+                const data = await response.json();
+                
+                if (data.success && data.items) {
+                    let html = `<h2>Found ${data.items.length} items from database:</h2>`;
+                    
+                    data.items.forEach((item, index) => {
+                        let imageUrl = item.image && item.image.trim() !== '' ? item.image : 'assets/images/imageBg/barcie_logo.jpg';
+                        
+                        // Apply same logic as guest-bootstrap.js
+                        if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                            imageUrl = '/' + imageUrl;
+                        }
+                        
+                        html += `
+                            <div class="image-test" id="test-${index}">
+                                <h3>${item.name} (${item.item_type})</h3>
+                                <p><strong>Raw image path from DB:</strong> <code>${item.image || 'NULL'}</code></p>
+                                <p><strong>Processed path:</strong> <code>${imageUrl}</code></p>
+                                <img src="${imageUrl}" 
+                                     alt="${item.name}"
+                                     onload="document.getElementById('test-${index}').className += ' success'; console.log('✓ Image loaded:', '${imageUrl}');"
+                                     onerror="document.getElementById('test-${index}').className += ' error'; console.error('✗ Image failed:', '${imageUrl}');">
+                                <p><strong>Status:</strong> <span id="status-${index}">Loading...</span></p>
+                            </div>
+                        `;
+                    });
+                    
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div class="error">Error: ${data.error || 'Failed to load items'}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+        
+        testImages();
+    </script>
+</body>
+</html>
