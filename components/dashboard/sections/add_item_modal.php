@@ -100,6 +100,21 @@
         <div class="modal-body">
           <input type="hidden" name="add_item" value="1">
 
+          <!-- Add-ons repeater -->
+          <div class="col-12 mb-3">
+            <label class="form-label">Add-ons (optional)</label>
+            <div id="addonsRepeater" class="mb-2">
+              <!-- Repeater rows inserted here -->
+            </div>
+            <div>
+              <button type="button" id="addAddonBtn" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-plus me-1"></i>Add Add-on
+              </button>
+              <div class="form-text">Define add-ons specific to this room/facility (e.g. Breakfast, Extra Bed). These will be offered to guests during booking.</div>
+            </div>
+            <input type="hidden" name="addons_json" id="addons_json" value="">
+          </div>
+
           <div class="row">
             <div class="col-12 mb-3">
               <label class="form-label">Name <span class="text-danger">*</span></label>
@@ -144,6 +159,60 @@
         </div>
 
             <script>
+              // Add-ons repeater script
+              (function(){
+                function createAddonRow(addon) {
+                  addon = addon || {label:'', price:'', pricing:'per_event'};
+                  const row = document.createElement('div');
+                  row.className = 'd-flex gap-2 align-items-center mb-2 addon-row';
+                  row.innerHTML = `
+                    <input type="text" class="form-control form-control-sm addon-label" placeholder="Add-on name (e.g. Breakfast)" value="${addon.label}">
+                    <input type="number" min="0" step="1" class="form-control form-control-sm addon-price" placeholder="Price" value="${addon.price}">
+                    <select class="form-select form-select-sm addon-pricing">
+                      <option value="per_person" ${addon.pricing==='per_person'?'selected':''}>Per Person</option>
+                      <option value="per_night" ${addon.pricing==='per_night'?'selected':''}>Per Night</option>
+                      <option value="per_event" ${addon.pricing==='per_event'?'selected':''}>Per Event</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-danger remove-addon-btn"><i class="fas fa-trash"></i></button>
+                  `;
+                  row.querySelector('.remove-addon-btn').addEventListener('click', () => { row.remove(); updateHidden(); });
+                  return row;
+                }
+
+                function updateHidden(){
+                  const rows = document.querySelectorAll('#addonsRepeater .addon-row');
+                  const addons = [];
+                  rows.forEach(r => {
+                    const label = r.querySelector('.addon-label').value.trim();
+                    const price = r.querySelector('.addon-price').value.trim();
+                    const pricing = r.querySelector('.addon-pricing').value;
+                    if (label !== '') addons.push({label, price: Number(price||0), pricing});
+                  });
+                  document.getElementById('addons_json').value = JSON.stringify(addons);
+                }
+
+                document.getElementById('addAddonBtn').addEventListener('click', function(){
+                  const r = createAddonRow();
+                  document.getElementById('addonsRepeater').appendChild(r);
+                  r.querySelector('.addon-label').focus();
+                  r.addEventListener('input', updateHidden);
+                  updateHidden();
+                });
+
+                // Ensure hidden input is updated before submit
+                var form = document.querySelector('#addItemModal form');
+                if (form) {
+                  form.addEventListener('submit', function(){ updateHidden(); });
+                }
+
+                // If modal has data-addons attribute (editing), prefill
+                document.addEventListener('DOMContentLoaded', function(){
+                  const pre = document.getElementById('addonsRepeater');
+                  if (!pre) return;
+                  // nothing prefilled by default; admin can add
+                });
+              })();
+
               // Move modal to document.body to avoid ancestor clipping/stacking issues
               (function () {
                 function moveModal() {
