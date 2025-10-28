@@ -203,8 +203,16 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <section id="bookings-section" class="content-section">
         <?php include 'components/dashboard/sections/bookings_section.php'; ?>
       </section>
+    
+
+      <!-- Feedback Section -->
+      <section id="feedback-section" class="content-section">
+        <?php include 'components/dashboard/sections/feedback_section.php'; ?>
+      </section>
 
 
+
+      
 
       <!-- Footer -->
       <div class="footer">

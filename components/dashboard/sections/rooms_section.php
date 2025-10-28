@@ -1,4 +1,4 @@
-<!-- Rooms & Facilities Section -->
+
 <!-- Rooms & Facilities Header -->
 <div class="row mb-4">
   <div class="col-12">

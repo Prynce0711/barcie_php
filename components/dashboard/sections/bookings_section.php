@@ -97,11 +97,48 @@
                   <th>Schedule</th>
                   <th>Status</th>
                   <th>Date Applied</th>
+                  <th>Proof of ID</th> <!-- Added column for uploaded ID -->
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <?php include 'discount_applications_content.php'; ?>
+                <?php
+                // Include uploaded discount proof images in the discount applications section
+                $discountApplications = [
+                  [
+                    'guest_name' => 'John Doe',
+                    'room_facility' => 'Room 101',
+                    'type' => 'Room',
+                    'schedule' => '2025-10-30',
+                    'status' => 'Pending',
+                    'date_applied' => '2025-10-28',
+                    'proof_image' => 'uploads/discount_proof_john_doe.jpg' // Example uploaded proof
+                  ],
+                  // Add more applications as needed
+                ];
+
+                foreach ($discountApplications as $application) {
+                  echo '<tr>';
+                  echo '<td>' . htmlspecialchars($application['guest_name']) . '</td>';
+                  echo '<td>' . htmlspecialchars($application['room_facility']) . '</td>';
+                  echo '<td>' . htmlspecialchars($application['type']) . '</td>';
+                  echo '<td>' . htmlspecialchars($application['schedule']) . '</td>';
+                  echo '<td>' . htmlspecialchars($application['status']) . '</td>';
+                  echo '<td>' . htmlspecialchars($application['date_applied']) . '</td>';
+                  echo '<td>';
+                  if (!empty($application['proof_image'])) {
+                    echo '<img src="' . htmlspecialchars($application['proof_image']) . '" alt="Proof Image" style="max-width: 100px; max-height: 100px;">';
+                  } else {
+                    echo 'No ID uploaded';
+                  }
+                  echo '</td>';
+                  echo '<td>';
+                  echo '<button class="btn btn-success btn-sm">Approve</button> ';
+                  echo '<button class="btn btn-danger btn-sm">Reject</button>';
+                  echo '</td>';
+                  echo '</tr>';
+                }
+                ?>
               </tbody>
             </table>
           </div>

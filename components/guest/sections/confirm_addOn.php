@@ -35,12 +35,15 @@
             <div><strong>Branch:</strong> Malolos Mc Arthur</div>
           </div>
 
+
           <div class="d-flex justify-content-between align-items-center mt-3">
             <div>
               <small class="text-muted">Note: Add-ons are optional and will be added to your booking total.</small>
             </div>
             <div>
-              <strong>Total: ₱<span id="previewTotal">0</span></strong>
+              <strong>Original Total: ₱<span id="originalTotal">0</span></strong><br>
+              <strong>Discount (<span id="discountPercent">0</span>%): -₱<span id="discountAmount">0</span></strong><br>
+              <strong>Final Total: ₱<span id="previewTotal">0</span></strong>
             </div>
           </div>
         </div>
@@ -124,7 +127,7 @@
     } catch (err) { return 1; }
   }
 
-  // Recalculate preview total
+  // Update recalcTotal to include detailed breakdown
   function recalcTotal() {
     let base = 0;
     let nights = 1;
@@ -159,9 +162,32 @@
       }
     });
 
+    const discountType = document.getElementById('discount_type');
+    const discountPercent = discountType && discountType.value ? getDiscountPercent(discountType.value) : 0;
     const total = base + addonsTotal;
-    previewTotal.textContent = total.toLocaleString();
-    return total;
+    const discountAmount = total * (discountPercent / 100);
+    const finalTotal = total - discountAmount;
+
+    document.getElementById('originalTotal').textContent = total.toLocaleString();
+    document.getElementById('discountPercent').textContent = discountPercent;
+    document.getElementById('discountAmount').textContent = discountAmount.toLocaleString();
+    previewTotal.textContent = finalTotal.toLocaleString();
+
+    return finalTotal;
+  }
+
+  // Helper function to get discount percentage based on type
+  function getDiscountPercent(type) {
+    switch (type) {
+      case 'pwd_senior':
+        return 20;
+      case 'lcuppersonnel':
+        return 10;
+      case 'lcupstudent':
+        return 7;
+      default:
+        return 0;
+    }
   }
 
   // Helper: find room data from server
@@ -197,6 +223,17 @@
       html += `<p><strong>Time:</strong> ${escapeHtml((currentBooking.time_from || '') + ' - ' + (currentBooking.time_to || ''))}</p>`;
       html += `<p><strong>Base Fee:</strong> ₱${Number(currentItem.price).toLocaleString()}</p>`;
     }
+
+    // Add discount preview
+    const discountType = document.getElementById('discount_type');
+    const discountDetails = document.getElementById('discount_details');
+    if (discountType && discountType.value) {
+      html += `<p><strong>Discount:</strong> ${escapeHtml(discountType.options[discountType.selectedIndex].text)}</p>`;
+      if (discountDetails && discountDetails.value) {
+        html += `<p><strong>Details:</strong> ${escapeHtml(discountDetails.value)}</p>`;
+      }
+    }
+
     html += '</div>';
     html += '<div class="col-4 text-end">';
     if (currentItem.image) {
@@ -362,7 +399,7 @@
     try {
       // If focus is currently inside the modal, move it to a safe element
       // before hiding to avoid aria-hidden on a focused descendant.
-      const active = document.activeElement;
+      const active = document.activeElement;  
       if (active && modalEl.contains(active)) {
         // prefer returning focus to the original form's primary button
         const fallback = currentForm.querySelector('#reservationSubmitBtn') || currentForm.querySelector('#pencilSubmitBtn') || document.body;

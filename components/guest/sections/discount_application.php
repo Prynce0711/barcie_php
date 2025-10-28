@@ -33,7 +33,9 @@
       const proof = document.getElementById('discount_proof_section');
       const details = document.getElementById('discount_details_section');
       const info = document.getElementById('discount_info_text');
-      if (!sel || !proof || !details || !info) return;
+      const proofInput = document.getElementById('discount_proof');
+
+      if (!sel || !proof || !details || !info || !proofInput) return;
 
       const v = sel.value;
       if (!v) {
@@ -41,6 +43,7 @@
         details.style.display = 'none';
         info.style.display = 'none';
         info.textContent = '';
+        proofInput.required = false; // Make proof not required when no discount is selected
         return;
       }
 
@@ -48,6 +51,7 @@
       proof.style.display = 'block';
       details.style.display = 'block';
       info.style.display = 'block';
+      proofInput.required = true; // Make proof required when a discount is selected
 
       // Helpful messages per type
       let msg = '';
