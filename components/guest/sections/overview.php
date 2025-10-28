@@ -57,7 +57,7 @@
           </div>
           <h4 class="card-title text-info" id="available-rooms">0</h4>
           <p class="card-text text-muted">Available Now</p>
-          <small class="text-info"><i class="fas fa-mouse-pointer me-1"></i>Click to view calendar</small>
+         
         </div>
       </div>
     </div>
@@ -86,11 +86,7 @@
               </button>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
-              <button class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4" onclick="showSection('communication')">
-                <i class="fas fa-phone fa-3x mb-3"></i>
-                <span class="fw-bold">Contact Us</span>
-                <small class="text-muted mt-1">Get in touch with our team</small>
-              </button>
+              
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
               <button class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4" onclick="showSection('feedback')">

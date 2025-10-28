@@ -1017,3 +1017,14 @@ img {
   transition-duration: 0.2s;
   transition-timing-function: ease;
 }
+
+/* ========== FEEDBACK SECTION STYLES ========== */
+.feedback-controls { gap: 0.5rem; }
+.feedback-message { max-width: 540px; }
+.rating-display .fa-star { margin-right: 2px; }
+.rating-display .fa-star.text-warning { color: #f59e0b !important; }
+.view-feedback-btn { min-width: 64px; }
+
+@media (max-width: 767px) {
+  .feedback-message { white-space: normal; }
+}
