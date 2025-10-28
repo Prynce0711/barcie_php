@@ -65,6 +65,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $capacity = intval($_POST['capacity'] ?? 0);
       $price = floatval($_POST['price'] ?? 0);
 
+      // Add-ons JSON (optional)
+      $addons_json = null;
+      if (!empty($_POST['addons_json'])) {
+        // Ensure valid JSON; if invalid, set to null to avoid DB errors
+        $tmp = json_decode($_POST['addons_json'], true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $addons_json = json_encode($tmp); // re-encode to normalize
+        } else {
+          error_log('Invalid addons_json supplied in update: ' . $_POST['addons_json']);
+        }
+      }
+
       // Get current image path from database first
       $current_image_stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
       $current_image_stmt->bind_param("i", $id);
@@ -158,8 +170,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       }
 
       // Update the database
-      $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=? WHERE id=?");
-      $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $id);
+      // include addons column in update if present
+      if ($addons_json !== null) {
+        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, addons=? WHERE id=?");
+        $stmt->bind_param("ssssidssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $addons_json, $id);
+      } else {
+        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=? WHERE id=?");
+        $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $id);
+      }
       
       if ($stmt->execute()) {
         error_log("Item updated successfully: ID=$id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
@@ -261,7 +279,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     error_log("FILES data: " . print_r($_FILES, true));
     error_log("Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'not set'));
     
-    $name = trim($_POST['name']);
+  $name = trim($_POST['name']);
     $type = trim($_POST['item_type']);
     $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
     $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
@@ -390,9 +408,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Insert with default room_status = 'available'
     error_log("Preparing to insert item with image_path: " . ($image_path ?? 'NULL'));
-    
-    $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
-    $stmt->bind_param("ssssids", $name, $type, $room_number, $description, $capacity, $price, $image_path);
+    // Handle addons for new item (optional)
+    $addons_json = null;
+    if (!empty($_POST['addons_json'])) {
+      $tmp = json_decode($_POST['addons_json'], true);
+      if (json_last_error() === JSON_ERROR_NONE) {
+        $addons_json = json_encode($tmp);
+      } else {
+        error_log('Invalid addons_json supplied in add: ' . $_POST['addons_json']);
+      }
+    }
+
+    if ($addons_json !== null) {
+      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, addons, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
+      $stmt->bind_param("ssssidss", $name, $type, $room_number, $description, $capacity, $price, $image_path, $addons_json);
+    } else {
+      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
+      $stmt->bind_param("ssssids", $name, $type, $room_number, $description, $capacity, $price, $image_path);
+    }
     
     if ($stmt->execute()) {
       $new_item_id = $conn->insert_id;

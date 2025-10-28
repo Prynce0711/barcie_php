@@ -61,12 +61,14 @@
  * - On confirm, appends add-on fields to the original form and submits
  */
 (function () {
-  // Add-on catalogue - edit prices as needed
-  const ADDONS = [
-    { id: 'addon_breakfast', label: 'Breakfast (per person / per night)', price: 150 },
-    { id: 'addon_extra_bed', label: 'Extra Bed (per night)', price: 500 },
-    { id: 'addon_airport', label: 'Airport Transfer (one-way)', price: 800 }
+  // Default add-on catalogue - admin can override per-item via DB
+  const DEFAULT_ADDONS = [
+    { id: 'addon_breakfast', label: 'Breakfast (per person / per night)', price: 150, pricing: 'per_person' },
+    { id: 'addon_extra_bed', label: 'Extra Bed (per night)', price: 500, pricing: 'per_night' },
+    { id: 'addon_airport', label: 'Airport Transfer (one-way)', price: 800, pricing: 'per_event' }
   ];
+  // will be populated from item data when previewed
+  let AVAILABLE_ADDONS = [];
 
   const modalEl = document.getElementById('confirmAddOnModal');
   const previewDetails = document.getElementById('previewDetails');
@@ -81,18 +83,24 @@
   // Build add-ons UI
   function renderAddons() {
     addonsList.innerHTML = '';
-    ADDONS.forEach(addon => {
+    const list = (currentItem && Array.isArray(currentItem.addons) && currentItem.addons.length) ? currentItem.addons : DEFAULT_ADDONS;
+    AVAILABLE_ADDONS = list;
+
+    list.forEach((addon, idx) => {
+      const aid = addon.id ? addon.id : ('addon_' + idx + '_' + addon.label.replace(/\s+/g,'_').toLowerCase());
+      const price = Number(addon.price || 0);
+      const pricing = addon.pricing || 'per_event';
       const wrapper = document.createElement('div');
       wrapper.className = 'form-check';
       wrapper.innerHTML = `
-        <input class="form-check-input addon-checkbox" type="checkbox" value="${addon.id}" id="${addon.id}" data-price="${addon.price}">
-        <label class="form-check-label" for="${addon.id}">${addon.label} — ₱${addon.price}</label>
+        <input class="form-check-input addon-checkbox" type="checkbox" value="${aid}" id="${aid}" data-price="${price}" data-pricing="${pricing}">
+        <label class="form-check-label" for="${aid}">${escapeHtml(addon.label || addon.name || 'Add-on')} — ₱${price}</label>
         <div class="mt-1" style="display:none;"><small class="text-muted addon-qty-text">Quantity: <input type="number" min="1" value="1" class="addon-qty form-control form-control-sm" style="width:80px; display:inline-block; margin-left:8px;"></small></div>
       `;
       addonsList.appendChild(wrapper);
     });
 
-    // Show qty input for per-person addons (breakfast) and per-night addons
+    // Show qty input when checkbox toggled
     document.querySelectorAll('.addon-checkbox').forEach(cb => {
       cb.addEventListener('change', e => {
         const container = e.target.closest('.form-check');
@@ -135,14 +143,17 @@
     document.querySelectorAll('.addon-checkbox').forEach(cb => {
       if (cb.checked) {
         const price = Number(cb.dataset.price || 0);
+        const pricing = cb.dataset.pricing || 'per_event';
         const qtyInput = cb.closest('.form-check').querySelector('.addon-qty');
         const qty = qtyInput ? Math.max(1, parseInt(qtyInput.value || '1')) : 1;
-        // For breakfast, charge per person per night when reservation
-        if (cb.id === 'addon_breakfast' && currentBooking && currentBooking.type === 'reservation') {
-          const perPerson = qty; // user can change qty for breakfast (use occupants)
+
+        if (pricing === 'per_person' && currentBooking && currentBooking.type === 'reservation') {
           const occupants = Number(currentBooking.occupants || 1);
-          addonsTotal += price * occupants * nights;
+          addonsTotal += price * occupants * nights * qty;
+        } else if (pricing === 'per_night' && currentBooking && currentBooking.type === 'reservation') {
+          addonsTotal += price * qty * nights;
         } else {
+          // per_event or fallback
           addonsTotal += price * qty;
         }
       }
