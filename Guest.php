@@ -107,6 +107,9 @@ $user_id = 0; // Default guest user ID
   <!-- Sidebar -->
   <?php include __DIR__ . '/includes/guest/sidebar.php'; ?>
 
+
+
+  
   <!-- Main Content -->
   <main class="main-content">
     <div class="container-fluid">
