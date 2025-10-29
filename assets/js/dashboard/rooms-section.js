@@ -175,7 +175,7 @@ function handleItemFormSubmit(event) {
   
   if (!validateItemForm(form)) {
     event.preventDefault();
-    alert('Please fill in all required fields.');
+    showAdminAlert('Please fill in all required fields.', 'warning');
     return false;
   }
   
@@ -228,6 +228,44 @@ function setupImagePreview() {
 
 // Initialize image preview when document is ready
 document.addEventListener('DOMContentLoaded', setupImagePreview);
+
+// Inline admin alert helper for rooms section (fallback if a global helper isn't available)
+function showAdminAlert(message, type = 'danger', duration = 6000) {
+  try {
+    // If a global helper exists (from bookings-section.js), reuse it
+    if (typeof window.showAdminAlert === 'function' && window.showAdminAlert !== showAdminAlert) {
+      return window.showAdminAlert(message, type, duration);
+    }
+  } catch (e) { /* ignore */ }
+
+  let container = document.getElementById('admin_discount_alert');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'admin_discount_alert';
+    container.style.position = 'fixed';
+    container.style.top = '1rem';
+    container.style.right = '1rem';
+    container.style.zIndex = 1080;
+    document.body.appendChild(container);
+  }
+
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+  alertDiv.role = 'alert';
+  alertDiv.style.minWidth = '260px';
+  alertDiv.innerHTML = `
+    <div style="font-size:0.95rem;">${message}</div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+
+  container.appendChild(alertDiv);
+
+  if (duration > 0) {
+    setTimeout(() => {
+      try { bootstrap && bootstrap.Alert && bootstrap.Alert.getOrCreateInstance(alertDiv).close(); } catch (e) { alertDiv.remove(); }
+    }, duration);
+  }
+}
 
 // Export functions for global access
 window.hideAllEditForms = hideAllEditForms;

@@ -174,7 +174,7 @@
                         <i class="fas fa-comments text-white"></i>
                       </div>
                       <div class="action-content">
-                        <h6 class="mb-1">Guest Messages</h6>
+                        <h6 class="mb-1">View Feedback</h6>
                         <small class="text-muted">View feedback and support</small>
                       </div>
                     </div>

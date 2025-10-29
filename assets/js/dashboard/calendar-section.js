@@ -47,8 +47,50 @@ function initializeRoomCalendar() {
       const checkout = info.event.extendedProps.checkout || 'Unknown';
       const details = info.event.extendedProps.details || 'No details';
 
-      const roomInfo = roomNumber ? `\nRoom Number: #${roomNumber}` : '';
-      alert(`${itemType}: ${itemName}${roomInfo}\nGuest: ${guest}\nStatus: ${status}\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nBooking Details: ${details}`);
+      // If bookingId is present, use the central booking details modal function if available
+      const bookingId = info.event.extendedProps.bookingId || null;
+      if (bookingId && typeof viewBookingDetails === 'function') {
+        // reuse the admin booking details fetch/modal
+        viewBookingDetails(bookingId);
+        return;
+      }
+
+      // Otherwise show a modal with the event details (replaces alert())
+      const roomInfo = roomNumber ? `<div><strong>Room Number:</strong> #${roomNumber}</div>` : '';
+      const modalHTML = `
+        <div class="modal fade" id="calendarEventInfoModal" tabindex="-1">
+          <div class="modal-dialog modal-md">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">${itemType}: ${itemName}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                ${roomInfo}
+                <div><strong>Guest:</strong> ${guest}</div>
+                <div><strong>Status:</strong> ${status}</div>
+                <div><strong>Check-in:</strong> ${checkin}</div>
+                <div><strong>Check-out:</strong> ${checkout}</div>
+                <hr />
+                <div><strong>Details:</strong></div>
+                <div>${details}</div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Remove existing modal if any
+      const existing = document.getElementById('calendarEventInfoModal');
+      if (existing) existing.remove();
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      const modalEl = document.getElementById('calendarEventInfoModal');
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+      modalEl.addEventListener('hidden.bs.modal', function() { this.remove(); });
     },
     dateClick: function (info) {
       console.log('Date clicked:', info.dateStr);

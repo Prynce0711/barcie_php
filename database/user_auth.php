@@ -303,6 +303,8 @@ function ensureDatabaseStructure($conn) {
             'details' => 'TEXT',
             'status' => 'VARCHAR(50) DEFAULT "pending"',
             'discount_status' => 'VARCHAR(50) DEFAULT "none"',
+            // Dedicated column to store path to uploaded discount proof (if any)
+            'proof_of_id' => 'VARCHAR(255) NULL',
             'checkin' => 'DATETIME NULL',
             'checkout' => 'DATETIME NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
@@ -314,6 +316,11 @@ function ensureDatabaseStructure($conn) {
                 $sql = "ALTER TABLE bookings ADD COLUMN $column $definition";
                 $conn->query($sql);
             }
+        }
+
+        // Migration: if an older typo'd column 'proof_of_if' exists, rename it to 'proof_of_id'
+        if (columnExists($conn, 'bookings', 'proof_of_if') && !columnExists($conn, 'bookings', 'proof_of_id')) {
+            $conn->query("ALTER TABLE bookings CHANGE COLUMN `proof_of_if` `proof_of_id` VARCHAR(255) NULL");
         }
 
         // Remove user_id column if it exists (handle foreign key constraints first)
@@ -412,9 +419,11 @@ function fixMissingRoomIds($conn) {
 fixMissingRoomIds($conn);
 
 /* ---------------------------
-   GET: fetch_items (JSON)
-   Usage: database/user_auth.php?action=fetch_items
-   --------------------------- */
+    POST/REQUEST actions
+    Accept action from either POST (preferred for form submissions) or GET (for convenience).
+    Using $_REQUEST allows fetch() clients that send 'action' in the URL query or request body to be accepted.
+*/
+$action = $_REQUEST['action'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
     // Simple ping endpoint - no database required
@@ -1199,6 +1208,13 @@ if ($action === 'create_booking') {
     $discount_proof_path = '';
 
     // Handle file upload for discount proof
+    // NOTE: Client-side validation (filename heuristics) is performed in the browser, but
+    // server-side validation is still required for security and correctness. Recommended server-side checks:
+    //  - Validate MIME type and extension (image/pdf) and enforce a reasonable max filesize.
+    //  - Scan the uploaded filename or run OCR (Tesseract) to detect keywords like
+    //    "la consolacion", "lcup", "senior", "senior citizen" for automated hints.
+    //  - Always store the original and a safely-named copy; do not trust user-provided filenames.
+    //  - Keep discount_status = 'pending' and allow manual admin review of the uploaded proof.
     if (!empty($discount_type) && isset($_FILES['discount_proof']) && $_FILES['discount_proof']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = __DIR__ . '/../uploads/';
         if (!is_dir($upload_dir)) {
@@ -1210,6 +1226,7 @@ if ($action === 'create_booking') {
         $target_path = $upload_dir . $file_name;
         if (move_uploaded_file($file_tmp, $target_path)) {
             $discount_proof_path = 'uploads/' . $file_name;
+            error_log("Discount proof uploaded to: " . $discount_proof_path);
         }
     }
 
@@ -1299,9 +1316,12 @@ if ($action === 'create_booking') {
         // Add discount info to details and set discount_status
         $discount_info = '';
         $discount_status = 'none';
+        // store a separate column value for proof path (nullable)
+        $proof_of_id = null;
         if (!empty($discount_type)) {
             $discount_info = " | Discount: $discount_type | Discount Details: $discount_details | Proof: $discount_proof_path";
             $discount_status = 'pending'; // Set discount status to pending for admin review
+            if (!empty($discount_proof_path)) $proof_of_id = $discount_proof_path;
         }
 
         $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Email: $email | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
@@ -1313,16 +1333,23 @@ if ($action === 'create_booking') {
             error_log("Booking Debug - Details: " . substr($details, 0, 100));
             error_log("Booking Debug - Status: $status, Checkin: $checkin, Checkout: $checkout");
 
-            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            // Include proof_of_id column so uploaded proof path is stored separately
+            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, proof_of_id, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $conn->error);
             }
-
-            $stmt->bind_param("sissssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $checkin, $checkout);
+            $stmt->bind_param("sisssssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $proof_of_id, $checkin, $checkout);
             $success = $stmt->execute();
 
             if (!$success) {
                 throw new Exception("Execute failed: " . $stmt->error);
+            }
+
+            // Log stored proof path for debugging
+            if (!empty($proof_of_id)) {
+                error_log("Stored proof_of_id for booking (receipt: $receipt_no): " . $proof_of_id);
+            } else {
+                error_log("No proof_of_id stored for booking (receipt: $receipt_no)");
             }
 
             if ($success) {
@@ -1619,7 +1646,8 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
    --------------------------- */
 if ($action === 'admin_update_booking') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        die("Access denied. Admin login required.");
+        // Return JSON for AJAX clients; for normal requests redirect with session message
+        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }
 
     $bookingId = (int)($_POST['booking_id'] ?? 0);
@@ -2035,7 +2063,8 @@ if ($action === 'admin_update_booking') {
    --------------------------- */
 if ($action === 'admin_update_discount') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        die("Access denied. Admin login required.");
+        // Return JSON for AJAX clients; for normal requests redirect with session message
+        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }
 
     $bookingId = (int)($_POST['booking_id'] ?? 0);
@@ -2226,7 +2255,8 @@ if ($action === 'admin_update_discount') {
    --------------------------- */
 if ($action === 'admin_delete_user') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        die("Access denied. Admin login required.");
+        // Return JSON for AJAX clients; for normal requests redirect with session message
+        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }
 
     $userId = (int)($_POST['user_id'] ?? 0);
@@ -2355,6 +2385,11 @@ if ($action === 'get_booking_details') {
     exit;
 }
 
+// Ensure any remaining requests get a JSON error instead of plain text
+if (!headers_sent()) {
+    header('Content-Type: application/json');
+}
+echo json_encode([ 'success' => false, 'error' => 'Invalid request.' ]);
 $conn->close();
-die("Invalid request.");
+exit;
 ?>

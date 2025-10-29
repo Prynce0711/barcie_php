@@ -2017,6 +2017,54 @@ window.toggleSidebar = function () {
   }
 };
 
+// Promise-based confirmation modal helper
+function showConfirmModal(message, options = {}) {
+  return new Promise((resolve) => {
+    const modalId = 'confirm-modal-' + Date.now();
+    const title = options.title || 'Please confirm';
+    const confirmText = options.confirmText || 'Confirm';
+    const cancelText = options.cancelText || 'Cancel';
+
+    const modalHTML = `
+      <div class="modal fade" id="${modalId}" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">${title}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">${message.replace(/\n/g,'<br/>')}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${cancelText}</button>
+              <button type="button" class="btn btn-primary btn-sm" id="${modalId}-confirm">${confirmText}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modalEl = document.getElementById(modalId);
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+
+    const cleanup = () => {
+      try { bsModal.hide(); } catch(e) {}
+      setTimeout(() => { modalEl.remove(); }, 300);
+    };
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+      resolve(false);
+      try { modalEl.remove(); } catch(e) {}
+    }, { once: true });
+
+    document.getElementById(`${modalId}-confirm`).addEventListener('click', function () {
+      resolve(true);
+      cleanup();
+    }, { once: true });
+  });
+}
+
 // Booking Management Functions
 async function updateBookingStatus(bookingId, newStatus) {
   console.log("updateBookingStatus called with:", bookingId, newStatus);
@@ -2048,8 +2096,10 @@ async function updateBookingStatus(bookingId, newStatus) {
     checkout: "Confirm guest check-out?",
   };
 
-  if (confirmMessages[action] && !confirm(confirmMessages[action])) {
-    return;
+  // Show inline confirmation modal instead of native confirm()
+  if (confirmMessages[action]) {
+    const confirmed = await showConfirmModal(confirmMessages[action], { title: 'Please confirm' });
+    if (!confirmed) return;
   }
 
   try {
@@ -2121,11 +2171,9 @@ async function updateDiscountStatus(bookingId, discountAction) {
       "Are you sure you want to REJECT this discount application?\n\nNote: The booking can still be approved separately with standard rates.",
   };
 
-  if (
-    confirmMessages[discountAction] &&
-    !confirm(confirmMessages[discountAction])
-  ) {
-    return;
+  if (confirmMessages[discountAction]) {
+    const confirmed = await showConfirmModal(confirmMessages[discountAction], { title: 'Confirm discount action' });
+    if (!confirmed) return;
   }
 
   try {
