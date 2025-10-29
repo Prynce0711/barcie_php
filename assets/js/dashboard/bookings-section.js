@@ -73,6 +73,90 @@ function initializeBookingsActions() {
   console.log('Bookings actions initialized');
 }
 
+// Inline admin alert helper — replaces alert() usage in admin pages
+function showAdminAlert(message, type = 'danger', duration = 6000) {
+  let container = document.getElementById('admin_discount_alert');
+
+  // If an admin alert container doesn't exist, create a floating one
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'admin_discount_alert';
+    container.style.position = 'fixed';
+    container.style.top = '1rem';
+    container.style.right = '1rem';
+    container.style.zIndex = 1080; // above modals
+    document.body.appendChild(container);
+  }
+
+  const alertId = 'admin-alert-' + Date.now();
+  const alertDiv = document.createElement('div');
+  alertDiv.id = alertId;
+  alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+  alertDiv.role = 'alert';
+  alertDiv.style.minWidth = '260px';
+  alertDiv.innerHTML = `
+    <div style="font-size:0.95rem;">${message}</div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+
+  container.appendChild(alertDiv);
+
+  if (duration > 0) {
+    setTimeout(() => {
+      try { bootstrap && bootstrap.Alert && bootstrap.Alert.getOrCreateInstance(alertDiv).close(); } catch (e) { alertDiv.remove(); }
+    }, duration);
+  }
+}
+
+// Inline confirmation modal helper (returns Promise<boolean>)
+function showConfirmModal(message, options = {}) {
+  return new Promise((resolve) => {
+    const modalId = 'confirm-modal-' + Date.now();
+    const title = options.title || 'Please confirm';
+    const confirmText = options.confirmText || 'Confirm';
+    const cancelText = options.cancelText || 'Cancel';
+
+    const modalHTML = `
+      <div class="modal fade" id="${modalId}" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">${title}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">${message.replace(/\n/g,'<br/>')}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${cancelText}</button>
+              <button type="button" class="btn btn-primary btn-sm" id="${modalId}-confirm">${confirmText}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Insert and show modal
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modalEl = document.getElementById(modalId);
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+
+    const cleanup = () => {
+      try { bsModal.hide(); } catch(e) {}
+      setTimeout(() => { modalEl.remove(); }, 300);
+    };
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+      resolve(false);
+      try { modalEl.remove(); } catch(e) {}
+    }, { once: true });
+
+    document.getElementById(`${modalId}-confirm`).addEventListener('click', function () {
+      resolve(true);
+      cleanup();
+    }, { once: true });
+  });
+}
+
 // Booking management functions
 function updateBookingStatus(bookingId, newStatus) {
   // Map the status to admin action
@@ -86,37 +170,37 @@ function updateBookingStatus(bookingId, newStatus) {
   
   const adminAction = actionMap[newStatus];
   if (!adminAction) {
-    alert('Invalid status update requested.');
+    showAdminAlert('Invalid status update requested.', 'warning');
     return;
   }
   
-  if (!confirm(`Are you sure you want to change this booking status to "${newStatus.replace('_', ' ')}"?`)) {
-    return;
-  }
+  showConfirmModal(`Are you sure you want to change this booking status to "${newStatus.replace('_', ' ')}"?`).then((confirmed) => {
+    if (!confirmed) return;
 
-  // Create a form and submit it
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = 'database/user_auth.php';
-  form.style.display = 'none';
+    // Create a form and submit it
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'database/user_auth.php';
+    form.style.display = 'none';
 
-  const actionInput = document.createElement('input');
-  actionInput.name = 'action';
-  actionInput.value = 'admin_update_booking';
-  form.appendChild(actionInput);
+    const actionInput = document.createElement('input');
+    actionInput.name = 'action';
+    actionInput.value = 'admin_update_booking';
+    form.appendChild(actionInput);
 
-  const idInput = document.createElement('input');
-  idInput.name = 'booking_id';
-  idInput.value = bookingId;
-  form.appendChild(idInput);
+    const idInput = document.createElement('input');
+    idInput.name = 'booking_id';
+    idInput.value = bookingId;
+    form.appendChild(idInput);
 
-  const adminActionInput = document.createElement('input');
-  adminActionInput.name = 'admin_action';
-  adminActionInput.value = adminAction;
-  form.appendChild(adminActionInput);
+    const adminActionInput = document.createElement('input');
+    adminActionInput.name = 'admin_action';
+    adminActionInput.value = adminAction;
+    form.appendChild(adminActionInput);
 
-  document.body.appendChild(form);
-  form.submit();
+    document.body.appendChild(form);
+    form.submit();
+  });
 }
 
 function viewBookingDetails(bookingId) {
@@ -127,12 +211,12 @@ function viewBookingDetails(bookingId) {
       if (data.success) {
         showBookingDetailsModal(data.booking);
       } else {
-        alert('Error loading booking details: ' + data.message);
+        showAdminAlert('Error loading booking details: ' + (data.message || 'Unknown error'), 'danger');
       }
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('Failed to load booking details');
+      showAdminAlert('Failed to load booking details', 'danger');
     });
 }
 
@@ -279,59 +363,59 @@ function formatDateTime(dateString) {
 }
 
 function deleteBooking(bookingId) {
-  if (!confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
-    return;
-  }
+  showConfirmModal('Are you sure you want to delete this booking? This action cannot be undone.').then((confirmed) => {
+    if (!confirmed) return;
 
-  // Create a form and submit it
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.style.display = 'none';
+    // Create a form and submit it
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
 
-  const actionInput = document.createElement('input');
-  actionInput.name = 'action';
-  actionInput.value = 'delete_booking';
-  form.appendChild(actionInput);
+    const actionInput = document.createElement('input');
+    actionInput.name = 'action';
+    actionInput.value = 'delete_booking';
+    form.appendChild(actionInput);
 
-  const idInput = document.createElement('input');
-  idInput.name = 'booking_id';
-  idInput.value = bookingId;
-  form.appendChild(idInput);
+    const idInput = document.createElement('input');
+    idInput.name = 'booking_id';
+    idInput.value = bookingId;
+    form.appendChild(idInput);
 
-  document.body.appendChild(form);
-  form.submit();
+    document.body.appendChild(form);
+    form.submit();
+  });
 }
 
 // Discount management functions
 function processDiscount(discountId, action) {
   const actionText = action === 'approved' ? 'approve' : 'reject';
   
-  if (!confirm(`Are you sure you want to ${actionText} this discount application?`)) {
-    return;
-  }
+  showConfirmModal(`Are you sure you want to ${actionText} this discount application?`).then((confirmed) => {
+    if (!confirmed) return;
 
-  // Create a form and submit it
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.style.display = 'none';
+    // Create a form and submit it
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
 
-  const actionInput = document.createElement('input');
-  actionInput.name = 'action';
-  actionInput.value = 'process_discount';
-  form.appendChild(actionInput);
+    const actionInput = document.createElement('input');
+    actionInput.name = 'action';
+    actionInput.value = 'process_discount';
+    form.appendChild(actionInput);
 
-  const idInput = document.createElement('input');
-  idInput.name = 'discount_id';
-  idInput.value = discountId;
-  form.appendChild(idInput);
+    const idInput = document.createElement('input');
+    idInput.name = 'discount_id';
+    idInput.value = discountId;
+    form.appendChild(idInput);
 
-  const statusInput = document.createElement('input');
-  statusInput.name = 'discount_action';
-  statusInput.value = action;
-  form.appendChild(statusInput);
+    const statusInput = document.createElement('input');
+    statusInput.name = 'discount_action';
+    statusInput.value = action;
+    form.appendChild(statusInput);
 
-  document.body.appendChild(form);
-  form.submit();
+    document.body.appendChild(form);
+    form.submit();
+  });
 }
 
 // Auto-refresh bookings every 30 seconds (optional)

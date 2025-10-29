@@ -258,6 +258,41 @@
     currentForm = form;
     currentBooking = bookingData;
 
+    // If a discount type is selected but no proof file is attached, do not show the modal.
+    try {
+      const discountTypeField = currentForm.querySelector('[name="discount_type"]');
+      const proofField = currentForm.querySelector('[name="discount_proof"]');
+      if (discountTypeField && discountTypeField.value) {
+        const hasFile = proofField && proofField.files && proofField.files.length > 0;
+        if (!hasFile) {
+          // Show inline alert in the discount card (if available) instead of native alert()
+          const msg = 'You selected a discount but did not attach a proof image/file. Please attach your ID/proof or deselect the discount to proceed.';
+          // Prefer showing the alert right after the proof asterisk if available
+          let proofAlert = null;
+          try { proofAlert = (currentForm && currentForm.querySelector('#discount_proof_alert')) || document.getElementById('discount_proof_alert'); } catch (e) { proofAlert = null; }
+          let discountInfo = proofAlert || document.getElementById('discount_info_text') || (currentForm && currentForm.querySelector('#discount_info_text'));
+          if (discountInfo) {
+            // If using the small inline spot (proofAlert), wrap message in small markup to avoid large blocks
+            if (proofAlert === discountInfo) {
+              discountInfo.innerHTML = '<small class="text-danger fw-semibold" style="display:inline-block; margin-left:6px;">' + msg + '</small>';
+              try { discountInfo.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* ignore */ }
+              setTimeout(() => { try { discountInfo.innerHTML = ''; } catch (e) {} }, 8000);
+            } else {
+              discountInfo.innerHTML = '<div class="alert alert-danger mb-0">' + msg + '</div>';
+              discountInfo.style.display = 'block';
+              try { discountInfo.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* ignore */ }
+              setTimeout(() => { try { discountInfo.style.display = 'none'; } catch (e) {} }, 8000);
+            }
+          } else {
+            try { alert(msg); } catch (e) { /* ignore */ }
+          }
+          // Focus the proof input if available
+          try { if (proofField) proofField.focus(); } catch (e) { /* ignore */ }
+          return;
+        }
+      }
+    } catch (e) { /* ignore any DOM errors and proceed */ }
+
     // fetch item data
     currentItem = await fetchItemById(bookingData.room_id);
     if (!currentItem) {
@@ -417,6 +452,44 @@
         confirmBtn.disabled = true;
         confirmBtn.innerHTML = 'Processing...';
 
+        // If user selected a discount but did not attach a proof image/file,
+        // automatically clear the discount selection so the booking can proceed.
+        try {
+          const discountTypeField = currentForm.querySelector('[name="discount_type"]');
+          const discountDetailsField = currentForm.querySelector('[name="discount_details"]');
+          const proofField = currentForm.querySelector('[name="discount_proof"]');
+          if (discountTypeField && discountTypeField.value) {
+            const hasFile = proofField && proofField.files && proofField.files.length > 0;
+            if (!hasFile) {
+              // Clear discount selection and details so server treats it as no discount
+              discountTypeField.value = '';
+              if (discountDetailsField) discountDetailsField.value = '';
+              // If proofField exists, clear it to avoid sending empty file
+              if (proofField) try { proofField.value = ''; proofField.required = false; } catch (e) { /* ignore */ }
+              // Inform user briefly using inline alert if available
+              const infoMsg = 'No discount proof attached — your booking will proceed without a discount.';
+              try {
+                // Prefer the compact inline spot next to the asterisk if available
+                let proofAlert = null;
+                try { proofAlert = (currentForm && currentForm.querySelector('#discount_proof_alert')) || document.getElementById('discount_proof_alert'); } catch (e) { proofAlert = null; }
+                let discountInfo = proofAlert || document.getElementById('discount_info_text') || (currentForm && currentForm.querySelector('#discount_info_text'));
+                if (discountInfo) {
+                  if (proofAlert === discountInfo) {
+                    discountInfo.innerHTML = '<small class="text-info" style="display:inline-block; margin-left:6px;">' + infoMsg + '</small>';
+                    setTimeout(() => { try { discountInfo.innerHTML = ''; } catch (e) {} }, 6000);
+                  } else {
+                    discountInfo.innerHTML = '<div class="alert alert-info mb-0">' + infoMsg + '</div>';
+                    discountInfo.style.display = 'block';
+                    setTimeout(() => { try { discountInfo.style.display = 'none'; } catch (e) {} }, 6000);
+                  }
+                } else {
+                  try { alert(infoMsg); } catch (e) { /* ignore */ }
+                }
+              } catch (e) { /* ignore */ }
+            }
+          }
+        } catch (e) { /* ignore errors */ }
+
         const fd = new FormData(currentForm);
 
         // Get the form action URL properly - use relative path to avoid environment-specific issues
@@ -426,6 +499,115 @@
         
         console.debug('Submitting booking to', targetUrl);
 
+        // If the form includes an uploaded discount proof file, prefer XHR so we can show upload progress
+        const proofInput = currentForm.querySelector('#discount_proof');
+        const hasProof = fd.has('discount_proof') && fd.get('discount_proof') && fd.get('discount_proof').size > 0;
+
+        if (hasProof) {
+          // enforce client-side validation flag (set by discount_application.js)
+          if (proofInput && proofInput.dataset && proofInput.dataset.validProof !== '1') {
+            alert('Uploaded proof did not pass preliminary validation: ' + (proofInput.dataset.validReason || 'Please upload a valid ID/proof for the selected discount.'));
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = 'Confirm & Proceed';
+            return;
+          }
+
+          // Use XMLHttpRequest to get upload progress events
+          await new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', targetUrl, true);
+            xhr.withCredentials = true;
+            // Indicate AJAX so server-side can detect if needed
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.setRequestHeader('Accept', 'application/json');
+
+            // Find progress UI elements in the page (guest form preview area)
+            const progressWrap = document.getElementById('discount_upload_progress');
+            const progressBar = progressWrap ? progressWrap.querySelector('.progress-bar') : null;
+            const cancelBtn = document.getElementById('discount_upload_cancel');
+            const uploadControls = document.getElementById('discount_upload_controls');
+
+            xhr.upload.onprogress = function(e) {
+              if (progressWrap) progressWrap.style.display = 'block';
+              if (uploadControls) uploadControls.style.display = 'block';
+              if (cancelBtn) cancelBtn.style.display = 'inline-block';
+              if (e.lengthComputable && progressBar) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = pct + '%';
+                progressBar.textContent = pct + '%';
+                confirmBtn.innerHTML = 'Uploading... ' + pct + '%';
+              } else if (progressBar) {
+                progressBar.style.width = '10%';
+                progressBar.textContent = 'Uploading...';
+                confirmBtn.innerHTML = 'Uploading...';
+              }
+            };
+
+            // Expose current upload XHR so cancel button can abort
+            window.currentBookingUploadXhr = xhr;
+
+            // Wire cancel button if available
+            if (cancelBtn) {
+              cancelBtn.onclick = function() {
+                if (window.currentBookingUploadXhr) {
+                  window.currentBookingUploadXhr.abort();
+                  window.currentBookingUploadXhr = null;
+                  if (progressBar) { progressBar.style.width = '0%'; progressBar.textContent = 'Cancelled'; }
+                  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = 'Confirm & Proceed'; }
+                  if (uploadControls) uploadControls.style.display = 'none';
+                  alert('Upload cancelled. You can choose a different file or try again.');
+                }
+              };
+            }
+
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState !== 4) return;
+              // Hide cancel once done
+              if (cancelBtn) cancelBtn.style.display = 'none';
+              if (progressWrap) progressWrap.style.display = 'none';
+              if (uploadControls) uploadControls.style.display = 'none';
+              window.currentBookingUploadXhr = null;
+
+              let jsonResponse = null;
+              try {
+                const contentType = (xhr.getResponseHeader('Content-Type') || '').toLowerCase();
+                if (contentType.includes('application/json')) jsonResponse = JSON.parse(xhr.responseText);
+                else jsonResponse = { success: false, message: 'Server returned non-JSON response', _raw: xhr.responseText };
+              } catch (e) {
+                jsonResponse = null;
+              }
+
+              if (xhr.status >= 200 && xhr.status < 300 && jsonResponse && jsonResponse.success) {
+                alert(jsonResponse.message || 'Booking submitted successfully!');
+                setTimeout(() => { window.location.href = 'Guest.php#booking'; }, 300);
+                resolve();
+                return;
+              }
+
+              const errorMsg = (jsonResponse && (jsonResponse.message || jsonResponse.error)) || 'Booking submission failed. Please try again.';
+              alert(errorMsg);
+              confirmBtn.disabled = false;
+              confirmBtn.innerHTML = 'Confirm & Proceed';
+              resolve();
+            };
+
+            xhr.onerror = function() {
+              if (progressBar) { progressBar.style.width = '0%'; progressBar.textContent = 'Error'; }
+              alert('An error occurred uploading the file. Please check your connection and try again.');
+              confirmBtn.disabled = false;
+              confirmBtn.innerHTML = 'Confirm & Proceed';
+              window.currentBookingUploadXhr = null;
+              if (uploadControls) uploadControls.style.display = 'none';
+              resolve();
+            };
+
+            xhr.send(fd);
+          });
+
+          return;
+        }
+
+        // No file upload or proof - use fetch as before
         const res = await fetch(targetUrl, {
           method: 'POST',
           body: fd,
