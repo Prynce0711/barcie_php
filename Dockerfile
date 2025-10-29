@@ -26,6 +26,9 @@ RUN set -eux; \
 # Copy the rest of the application
 COPY . /var/www/html/
 
+# Add PHP upload limits
+COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Ensure correct ownership
 RUN chown -R www-data:www-data /var/www/html
 
