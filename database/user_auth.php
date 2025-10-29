@@ -37,9 +37,9 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
 // Check if vendor autoload exists (optional - only needed for email features)
-$vendor_available = file_exists(__DIR__ . '/../vendor/autoload.php');
+$vendor_available = file_exists(__DIR__ . '/../../vendor/autoload.php');
 if ($vendor_available) {
-    require __DIR__ . '/../vendor/autoload.php';
+    require __DIR__ . '/../../vendor/autoload.php';
 }
 
 // Helper function to create professional email template
@@ -245,11 +245,19 @@ function redirect($url) {
 
 // Helper function for AJAX responses
 function handleResponse($message, $success = true, $redirectUrl = null) {
-    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    // Detect AJAX/Fetch requests by checking for XMLHttpRequest header or JSON content type preference
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ||
+              (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
     
     if ($isAjax) {
+        // Clear any output buffer to prevent mixed content
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         header('Content-Type: application/json');
+        http_response_code($success ? 200 : 400);
         echo json_encode([
             'success' => $success,
             'message' => $message,
@@ -258,11 +266,7 @@ function handleResponse($message, $success = true, $redirectUrl = null) {
         exit;
     } else {
         // Traditional behavior for non-AJAX requests
-        if ($success) {
-            $_SESSION['booking_msg'] = $message;
-        } else {
-            $_SESSION['booking_msg'] = $message;
-        }
+        $_SESSION['booking_msg'] = $message;
         redirect($redirectUrl);
     }
 }
@@ -299,6 +303,8 @@ function ensureDatabaseStructure($conn) {
             'details' => 'TEXT',
             'status' => 'VARCHAR(50) DEFAULT "pending"',
             'discount_status' => 'VARCHAR(50) DEFAULT "none"',
+            // Dedicated column to store path to uploaded discount proof (if any)
+            'proof_of_id' => 'VARCHAR(255) NULL',
             'checkin' => 'DATETIME NULL',
             'checkout' => 'DATETIME NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
@@ -310,6 +316,11 @@ function ensureDatabaseStructure($conn) {
                 $sql = "ALTER TABLE bookings ADD COLUMN $column $definition";
                 $conn->query($sql);
             }
+        }
+
+        // Migration: if an older typo'd column 'proof_of_if' exists, rename it to 'proof_of_id'
+        if (columnExists($conn, 'bookings', 'proof_of_if') && !columnExists($conn, 'bookings', 'proof_of_id')) {
+            $conn->query("ALTER TABLE bookings CHANGE COLUMN `proof_of_if` `proof_of_id` VARCHAR(255) NULL");
         }
 
         // Remove user_id column if it exists (handle foreign key constraints first)
@@ -408,9 +419,11 @@ function fixMissingRoomIds($conn) {
 fixMissingRoomIds($conn);
 
 /* ---------------------------
-   GET: fetch_items (JSON)
-   Usage: database/user_auth.php?action=fetch_items
-   --------------------------- */
+    POST/REQUEST actions
+    Accept action from either POST (preferred for form submissions) or GET (for convenience).
+    Using $_REQUEST allows fetch() clients that send 'action' in the URL query or request body to be accepted.
+*/
+$action = $_REQUEST['action'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
     // Simple ping endpoint - no database required
@@ -1159,6 +1172,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 $action = $_POST['action'] ?? '';
 
 
+// SECURITY: Disable legacy guest user login/signup via this endpoint.
+// If a POST contains a 'password' field it is likely a login/signup attempt from
+// the old guest auth UI. We intentionally block these requests and return a
+// clear JSON response so external callers know guest accounts are disabled.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['password'])) {
+    // Clear any output buffer
+    while (ob_get_level()) ob_end_clean();
+    header('Content-Type: application/json');
+    http_response_code(403);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Guest accounts disabled',
+        'message' => 'User login/signup is no longer supported. Please contact the administrator for access.'
+    ]);
+    $conn->close();
+    exit;
+}
+
+
 
 /* ---------------------------
    CREATE BOOKING
@@ -1176,6 +1208,13 @@ if ($action === 'create_booking') {
     $discount_proof_path = '';
 
     // Handle file upload for discount proof
+    // NOTE: Client-side validation (filename heuristics) is performed in the browser, but
+    // server-side validation is still required for security and correctness. Recommended server-side checks:
+    //  - Validate MIME type and extension (image/pdf) and enforce a reasonable max filesize.
+    //  - Scan the uploaded filename or run OCR (Tesseract) to detect keywords like
+    //    "la consolacion", "lcup", "senior", "senior citizen" for automated hints.
+    //  - Always store the original and a safely-named copy; do not trust user-provided filenames.
+    //  - Keep discount_status = 'pending' and allow manual admin review of the uploaded proof.
     if (!empty($discount_type) && isset($_FILES['discount_proof']) && $_FILES['discount_proof']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = __DIR__ . '/../uploads/';
         if (!is_dir($upload_dir)) {
@@ -1187,6 +1226,7 @@ if ($action === 'create_booking') {
         $target_path = $upload_dir . $file_name;
         if (move_uploaded_file($file_tmp, $target_path)) {
             $discount_proof_path = 'uploads/' . $file_name;
+            error_log("Discount proof uploaded to: " . $discount_proof_path);
         }
     }
 
@@ -1276,9 +1316,12 @@ if ($action === 'create_booking') {
         // Add discount info to details and set discount_status
         $discount_info = '';
         $discount_status = 'none';
+        // store a separate column value for proof path (nullable)
+        $proof_of_id = null;
         if (!empty($discount_type)) {
             $discount_info = " | Discount: $discount_type | Discount Details: $discount_details | Proof: $discount_proof_path";
             $discount_status = 'pending'; // Set discount status to pending for admin review
+            if (!empty($discount_proof_path)) $proof_of_id = $discount_proof_path;
         }
 
         $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Email: $email | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
@@ -1290,16 +1333,23 @@ if ($action === 'create_booking') {
             error_log("Booking Debug - Details: " . substr($details, 0, 100));
             error_log("Booking Debug - Status: $status, Checkin: $checkin, Checkout: $checkout");
 
-            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            // Include proof_of_id column so uploaded proof path is stored separately
+            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, proof_of_id, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $conn->error);
             }
-
-            $stmt->bind_param("sissssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $checkin, $checkout);
+            $stmt->bind_param("sisssssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $proof_of_id, $checkin, $checkout);
             $success = $stmt->execute();
 
             if (!$success) {
                 throw new Exception("Execute failed: " . $stmt->error);
+            }
+
+            // Log stored proof path for debugging
+            if (!empty($proof_of_id)) {
+                error_log("Stored proof_of_id for booking (receipt: $receipt_no): " . $proof_of_id);
+            } else {
+                error_log("No proof_of_id stored for booking (receipt: $receipt_no)");
             }
 
             if ($success) {
@@ -1311,7 +1361,12 @@ if ($action === 'create_booking') {
 
                 // Always send confirmation email to guest
                 if (!empty($email)) {
-                    error_log("Attempting to send confirmation email to: " . $email);
+                    error_log("========================================");
+                    error_log("BOOKING EMAIL - Starting email send process");
+                    error_log("Recipient: " . $email);
+                    error_log("Guest: " . $guest_name);
+                    error_log("Receipt: " . $receipt_no);
+                    error_log("========================================");
                     
                     $subject = "Booking Confirmation - BarCIE International Center";
                     
@@ -1396,11 +1451,14 @@ if ($action === 'create_booking') {
                     
                     $emailBody = create_email_template('Booking Confirmation', $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                     
+                    error_log("BOOKING EMAIL - Calling send_smtp_mail()");
                     $mail_sent = send_smtp_mail($email, $subject, $emailBody);
-                    error_log("Email send result: " . ($mail_sent ? "Success" : "Failed"));
+                    error_log("BOOKING EMAIL - Send result: " . ($mail_sent ? "SUCCESS" : "FAILED"));
+                    error_log("========================================");
 
                     // If there's a discount, also notify admin
                     if (!empty($discount_type)) {
+                        error_log("DISCOUNT EMAIL - Sending admin notification");
                         $admin_email = 'pc.clemente11@gmail.com';
                         $admin_subject = "New Discount Application - " . htmlspecialchars($discount_type);
                         $admin_message = '<div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -1424,8 +1482,10 @@ if ($action === 'create_booking') {
                             </div>';
                         
                         $admin_mail_sent = send_smtp_mail($admin_email, $admin_subject, $admin_message);
-                        error_log("Admin notification email result: " . ($admin_mail_sent ? "Success" : "Failed"));
+                        error_log("DISCOUNT EMAIL - Admin notification result: " . ($admin_mail_sent ? "SUCCESS" : "FAILED"));
                     }
+                } else {
+                    error_log("BOOKING EMAIL - Skipped: No email address provided");
                 }
 
                 handleResponse("Reservation saved successfully with receipt number: $receipt_no for " . $room_data['name'], true, '../Guest.php');
@@ -1586,7 +1646,8 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
    --------------------------- */
 if ($action === 'admin_update_booking') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        die("Access denied. Admin login required.");
+        // Return JSON for AJAX clients; for normal requests redirect with session message
+        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }
 
     $bookingId = (int)($_POST['booking_id'] ?? 0);
@@ -1648,6 +1709,13 @@ if ($action === 'admin_update_booking') {
 
         // Send email notification to guest for every status change
         if (!empty($guest_email)) {
+            error_log("========================================");
+            error_log("ADMIN UPDATE EMAIL - Booking ID: $bookingId");
+            error_log("Action: $adminAction → Status: $newStatus");
+            error_log("Guest: $guest_name");
+            error_log("Email: $guest_email");
+            error_log("========================================");
+            
             $emailSubject = '';
             $emailContent = '';
             
@@ -1906,10 +1974,20 @@ if ($action === 'admin_update_booking') {
             }
             
             if ($emailSubject && $emailContent) {
+                error_log("ADMIN UPDATE EMAIL - Sending email...");
+                error_log("Subject: $emailSubject");
                 $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                 $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
-                error_log("Status change email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
+                error_log("ADMIN UPDATE EMAIL - Result: " . ($email_sent ? "SUCCESS" : "FAILED"));
+                error_log("========================================");
+            } else {
+                error_log("ADMIN UPDATE EMAIL - Skipped: No email template for action '$adminAction'");
+                error_log("========================================");
             }
+        } else {
+            error_log("ADMIN UPDATE EMAIL - Skipped: No email address found in booking details");
+            error_log("Booking ID: $bookingId");
+            error_log("========================================");
         }
 
         // Update room status based on booking status
@@ -1985,7 +2063,8 @@ if ($action === 'admin_update_booking') {
    --------------------------- */
 if ($action === 'admin_update_discount') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        die("Access denied. Admin login required.");
+        // Return JSON for AJAX clients; for normal requests redirect with session message
+        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }
 
     $bookingId = (int)($_POST['booking_id'] ?? 0);
@@ -2031,6 +2110,14 @@ if ($action === 'admin_update_discount') {
 
         // Send email notification about discount decision
         if (!empty($guest_email) && !empty($discount_type)) {
+            error_log("========================================");
+            error_log("DISCOUNT UPDATE EMAIL - Booking ID: $bookingId");
+            error_log("Action: $discountAction");
+            error_log("Discount Type: $discount_type");
+            error_log("Guest: $guest_name");
+            error_log("Email: $guest_email");
+            error_log("========================================");
+            
             $emailSubject = '';
             $emailContent = '';
             
@@ -2129,9 +2216,11 @@ if ($action === 'admin_update_discount') {
             }
             
             if ($emailSubject && $emailContent) {
+                error_log("DISCOUNT UPDATE EMAIL - Sending email...");
+                error_log("Subject: $emailSubject");
                 $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                 $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
-                error_log("Discount decision email to {$guest_email}: " . ($email_sent ? "Success" : "Failed"));
+                error_log("DISCOUNT UPDATE EMAIL - Result: " . ($email_sent ? "SUCCESS" : "FAILED"));
             }
         }
     }
@@ -2166,7 +2255,8 @@ if ($action === 'admin_update_discount') {
    --------------------------- */
 if ($action === 'admin_delete_user') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        die("Access denied. Admin login required.");
+        // Return JSON for AJAX clients; for normal requests redirect with session message
+        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }
 
     $userId = (int)($_POST['user_id'] ?? 0);
@@ -2295,6 +2385,11 @@ if ($action === 'get_booking_details') {
     exit;
 }
 
+// Ensure any remaining requests get a JSON error instead of plain text
+if (!headers_sent()) {
+    header('Content-Type: application/json');
+}
+echo json_encode([ 'success' => false, 'error' => 'Invalid request.' ]);
 $conn->close();
-die("Invalid request.");
+exit;
 ?>
