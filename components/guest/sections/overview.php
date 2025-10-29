@@ -86,7 +86,11 @@
               </button>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
-              
+              <button class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4" onclick="showSection('availability')" aria-label="Check Availability">
+                <i class="fas fa-calendar-alt fa-3x mb-3"></i>
+                <span class="fw-bold">Check Availability</span>
+                <small class="text-muted mt-1">View availability calendar</small>
+              </button>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
               <button class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4" onclick="showSection('feedback')">

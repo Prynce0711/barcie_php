@@ -124,7 +124,7 @@
           </div>
         </div>
 
-        <!-- Quick Actions Panel -->
+        <!-- Quick Actions (card-style, wide clickable cards like marketplace tiles) -->
         <div class="row mb-4">
           <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -132,54 +132,6 @@
                 <h6 class="m-0 text-dark fw-bold">
                   <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
                 </h6>
-              </div>
-              <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-lg-3 col-md-6">
-                    <div class="quick-action-card" onclick="showSection('bookings')">
-                      <div class="action-icon bg-primary">
-                        <i class="fas fa-calendar-plus text-white"></i>
-                      </div>
-                      <div class="action-content">
-                        <h6 class="mb-1">Manage Bookings</h6>
-                        <small class="text-muted">View and update reservations</small>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-md-6">
-                    <div class="quick-action-card" onclick="showSection('rooms')">
-                      <div class="action-icon bg-success">
-                        <i class="fas fa-plus-circle text-white"></i>
-                      </div>
-                      <div class="action-content">
-                        <h6 class="mb-1">Add Room/Facility</h6>
-                        <small class="text-muted">Create new inventory items</small>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-md-6">
-                    <div class="quick-action-card" onclick="showSection('calendar-section')">
-                      <div class="action-icon bg-info">
-                        <i class="fas fa-calendar-alt text-white"></i>
-                      </div>
-                      <div class="action-content">
-                        <h6 class="mb-1">View Calendar</h6>
-                        <small class="text-muted">Check availability overview</small>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-md-6">
-                    <div class="quick-action-card" onclick="showSection('communication')">
-                      <div class="action-icon bg-warning">
-                        <i class="fas fa-comments text-white"></i>
-                      </div>
-                      <div class="action-content">
-                        <h6 class="mb-1">View Feedback</h6>
-                        <small class="text-muted">View feedback and support</small>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
