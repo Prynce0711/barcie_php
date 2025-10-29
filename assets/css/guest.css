@@ -120,7 +120,8 @@ body {
 /* ---------------- SIDEBAR ---------------- */
 .sidebar-guest {
   width: 260px;
-  background: rgba(30,60,114,0.95);
+  /* Darker blue gradient (keeps the blue theme but increases contrast) */
+  background: linear-gradient(180deg, #07263f 0%, #0b3a5f 100%);
   color: #fff;
   padding: 30px 0;
   display: flex;

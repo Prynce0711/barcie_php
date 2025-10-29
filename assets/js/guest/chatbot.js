@@ -23,31 +23,141 @@ function toggleChatbot() {
   }
 }
 
+// AI toggle state helpers (persist in sessionStorage)
+function useAiEnabled() {
+  try { const v = sessionStorage.getItem('chatbot_use_ai'); return v === null ? true : v === '1'; } catch (e) { return true; }
+}
+
+function setAiEnabled(enabled) {
+  try { sessionStorage.setItem('chatbot_use_ai', enabled ? '1' : '0'); } catch (e) {}
+  updateAiToggleUI(enabled);
+}
+
+function updateAiToggleUI(enabled) {
+  const cb = document.getElementById('chatbotAiToggle');
+  if (cb) cb.checked = !!enabled;
+  updateStatusLabel(enabled ? 'ai' : 'local');
+}
+
+function updateStatusLabel(source) {
+  const el = document.getElementById('chatbotAiStatus');
+  if (!el) return;
+  if (source === 'ai') { el.textContent = 'AI'; el.classList.remove('text-white-50'); el.style.opacity = 1; }
+  else if (source === 'local') { el.textContent = 'Local KB'; el.classList.add('text-white-50'); el.style.opacity = 0.9; }
+  else { el.textContent = 'Unknown'; el.classList.add('text-white-50'); }
+}
+
 function sendChatbotMessage() {
   const input = document.getElementById('chatbotInput');
   const message = input.value.trim();
   if (!message) return;
   addUserMessage(message);
   input.value = '';
-  setTimeout(() => {
+  // If AI is enabled, try backend (which may call LLM). Otherwise use local KB.
+  (async () => {
+    const inputEl = document.getElementById('chatbotInput');
+    if (inputEl) inputEl.disabled = true;
     showTypingIndicator();
-    setTimeout(() => {
+    try {
+      if (useAiEnabled()) {
+        const data = await queryChatbotAPI(message);
+        hideTypingIndicator();
+        if (data && data.answer) {
+          addBotMessage(data.answer, data.quickReplies || []);
+          updateStatusLabel('ai');
+        } else {
+          const response = generateResponse(message);
+          addBotMessage(response.text, response.quickReplies);
+          updateStatusLabel('local');
+        }
+      } else {
+        // AI disabled - local response only
+        hideTypingIndicator();
+        const response = generateResponse(message);
+        addBotMessage(response.text, response.quickReplies);
+        updateStatusLabel('local');
+      }
+    } catch (err) {
       hideTypingIndicator();
       const response = generateResponse(message);
       addBotMessage(response.text, response.quickReplies);
-    }, 1000);
-  }, 300);
+      updateStatusLabel('local');
+    } finally {
+      if (inputEl) inputEl.disabled = false;
+    }
+  })();
 }
 
 function handleChatbotEnter(event) { if (event.key === 'Enter') sendChatbotMessage(); }
 
 function sendQuickReply(query) {
   addUserMessage(query);
-  setTimeout(() => {
+  (async () => {
+    const inputEl = document.getElementById('chatbotInput');
+    if (inputEl) inputEl.disabled = true;
     showTypingIndicator();
-    setTimeout(() => { hideTypingIndicator(); const response = generateResponse(query); addBotMessage(response.text, response.quickReplies); }, 800);
-  }, 300);
+    try {
+      if (useAiEnabled()) {
+        const data = await queryChatbotAPI(query);
+        hideTypingIndicator();
+        if (data && data.answer) {
+          addBotMessage(data.answer, data.quickReplies || []);
+          updateStatusLabel('ai');
+        } else {
+          const response = generateResponse(query);
+          addBotMessage(response.text, response.quickReplies);
+          updateStatusLabel('local');
+        }
+      } else {
+        hideTypingIndicator();
+        const response = generateResponse(query);
+        addBotMessage(response.text, response.quickReplies);
+        updateStatusLabel('local');
+      }
+    } catch (err) {
+      hideTypingIndicator();
+      const response = generateResponse(query);
+      addBotMessage(response.text, response.quickReplies);
+      updateStatusLabel('local');
+    } finally {
+      if (inputEl) inputEl.disabled = false;
+    }
+  })();
 }
+
+// Sends the user's message to the backend API which can provide project-level answers
+async function queryChatbotAPI(message) {
+  try {
+    // Use a relative path and include message as query param as a fallback for servers that don't pass JSON body
+    const url = 'api/chatbot_answer.php?message=' + encodeURIComponent(message);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j;
+  } catch (e) {
+    console.error('chatbot API error', e);
+    return null;
+  }
+}
+
+// Initialize toggle UI on load
+document.addEventListener('DOMContentLoaded', () => {
+  const cb = document.getElementById('chatbotAiToggle');
+  if (cb) {
+    // default to enabled if not set
+    const enabled = useAiEnabled();
+    cb.checked = enabled;
+    cb.addEventListener('change', (e) => {
+      setAiEnabled(!!e.target.checked);
+    });
+  }
+  // reflect initial status
+  updateAiToggleUI(useAiEnabled());
+});
 
 function addUserMessage(message) {
   const messagesContainer = document.getElementById('chatbotMessages');

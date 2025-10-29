@@ -7,7 +7,18 @@
         <small class="text-white-50">Ask me anything!</small>
       </div>
     </div>
-    <button class="chatbot-close" onclick="toggleChatbot()"><i class="fas fa-times"></i></button>
+    <div class="d-flex align-items-center">
+      <div class="me-2">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:#fff;">
+          <input id="chatbotAiToggle" type="checkbox" style="width:16px;height:16px;" />
+          <span style="color:inherit">AI</span>
+        </label>
+      </div>
+      <div class="me-2">
+        <small id="chatbotAiStatus" class="text-white-50" style="font-size:.75rem">Local KB</small>
+      </div>
+      <button class="chatbot-close" onclick="toggleChatbot()"><i class="fas fa-times"></i></button>
+    </div>
   </div>
 
   <div class="chatbot-messages" id="chatbotMessages">
