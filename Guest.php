@@ -89,7 +89,7 @@ $user_id = 0; // Default guest user ID
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <?php include __DIR__ . '/includes/guest/head.php'; ?>
+  <?php include __DIR__ . '/components/guest/head.php'; ?>
   <script>
     // expose minimal globals used by guest-bootstrap.js if needed
     window.BARCIE_GUEST = { userId: <?php echo json_encode($user_id); ?> };
@@ -105,23 +105,23 @@ $user_id = 0; // Default guest user ID
   <div class="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <!-- Sidebar -->
-  <?php include __DIR__ . '/includes/guest/sidebar.php'; ?>
+  <?php include __DIR__ . '/components/guest/sidebar.php'; ?>
 
   <!-- Main Content -->
   <main class="main-content">
     <div class="container-fluid">
-      <?php include __DIR__ . '/includes/guest/sections/overview.php'; ?>
-      <?php include __DIR__ . '/includes/guest/sections/availability.php'; ?>
-      <?php include __DIR__ . '/includes/guest/sections/rooms.php'; ?>
-      <?php include __DIR__ . '/includes/guest/sections/booking.php'; ?>
-      <?php include __DIR__ . '/includes/guest/sections/feedback.php'; ?>
+  <?php include __DIR__ . '/components/guest/sections/overview.php'; ?>
+  <?php include __DIR__ . '/components/guest/sections/availability.php'; ?>
+  <?php include __DIR__ . '/components/guest/sections/rooms.php'; ?>
+  <?php include __DIR__ . '/components/guest/sections/booking.php'; ?>
+  <?php include __DIR__ . '/components/guest/sections/feedback.php'; ?>
     </div>
   </main>
 
   <!-- Chatbot -->
-  <?php include __DIR__ . '/includes/guest/sections/chatbot.php'; ?>
+  <?php include __DIR__ . '/components/guest/sections/chatbot.php'; ?>
 
   <!-- Footer -->
-  <?php include __DIR__ . '/includes/guest/footer.php'; ?>
+  <?php include __DIR__ . '/components/guest/footer.php'; ?>
 </body>
 </html>

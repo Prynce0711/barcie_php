@@ -1,0 +1,31 @@
+# Prevent execution of PHP files in uploads directory
+# This is a critical security measure
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Require all denied
+</FilesMatch>
+
+# Allow all image files
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|ico|bmp)$">
+    Require all granted
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Prevent access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Set proper MIME types for images
+<IfModule mod_mime.c>
+    AddType image/jpeg jpg jpeg
+    AddType image/png png
+    AddType image/gif gif
+    AddType image/webp webp
+</IfModule>
+
+# Enable CORS for images (if needed)
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+</IfModule>
