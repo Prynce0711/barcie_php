@@ -286,6 +286,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $capacity = intval($_POST['capacity'] ?? 0);
     $price = floatval($_POST['price'] ?? 0);
 
+
+
+    
     // Handle image upload
     $image_path = null;
     error_log("Checking for image upload...");
