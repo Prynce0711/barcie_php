@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // DELETE ITEM
     if ($action === "delete" && isset($_POST['id'])) {
       $id = intval($_POST['id']);
-      
+
       // Get the image path before deleting
       $stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
       $stmt->bind_param("i", $id);
@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       // Delete the database record
       $stmt = $conn->prepare("DELETE FROM items WHERE id=?");
       $stmt->bind_param("i", $id);
-      
+
       if ($stmt->execute()) {
         error_log("Item deleted successfully: ID=$id");
         $_SESSION['success_message'] = "Item deleted successfully!";
@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         error_log("Failed to delete item: " . $stmt->error);
         $_SESSION['error_message'] = "Failed to delete item: " . $stmt->error;
       }
-      
+
       $stmt->close();
       header("Location: dashboard.php#rooms");
       exit;
@@ -86,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $current_image_stmt->close();
 
       $image_path = $current_image; // Use current image as default
-      
+
       // Handle new image upload
       if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         // Security: Validate file size (max 5MB)
@@ -97,25 +97,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           header("Location: dashboard.php#rooms");
           exit;
         }
-        
-          // Security: Validate file size (max 20MB)
-          $max_file_size = 20 * 1024 * 1024; // 20MB in bytes
-          if ($_FILES['image']['size'] > $max_file_size) {
-            error_log("File too large: " . $_FILES['image']['size'] . " bytes");
-            $_SESSION['error_message'] = "Image file is too large. Maximum size is 20MB.";
-            header("Location: dashboard.php#rooms");
-            exit;
-          }
-        
+
+        // Security: Validate file size (max 20MB)
+        $max_file_size = 20 * 1024 * 1024; // 20MB in bytes
+        if ($_FILES['image']['size'] > $max_file_size) {
+          error_log("File too large: " . $_FILES['image']['size'] . " bytes");
+          $_SESSION['error_message'] = "Image file is too large. Maximum size is 20MB.";
+          header("Location: dashboard.php#rooms");
+          exit;
+        }
+
         $target_dir = __DIR__ . "/../../../uploads/";
         if (!file_exists($target_dir)) {
           mkdir($target_dir, 0755, true); // More secure permissions
         }
-        
+
         // Generate unique filename
         $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
         $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        
+
         if (in_array($file_extension, $allowed_extensions)) {
           // Security: Verify it's actually an image using getimagesize
           $image_info = @getimagesize($_FILES["image"]["tmp_name"]);
@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             header("Location: dashboard.php#rooms");
             exit;
           }
-          
+
           // Security: Verify MIME type
           $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
           if (!in_array($image_info['mime'], $allowed_mime_types)) {
@@ -134,17 +134,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             header("Location: dashboard.php#rooms");
             exit;
           }
-          
+
           $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
           $target_file = $target_dir . $unique_filename;
-          
+
           if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
             // Security: Set restrictive file permissions
             chmod($target_file, 0644);
-            
+
             // Store relative path from root
             $image_path = "uploads/" . $unique_filename;
-            
+
             // Delete old image if exists and is different
             if (!empty($current_image) && $current_image !== $image_path) {
               $old_image_full_path = __DIR__ . "/../../../" . $current_image;
@@ -153,7 +153,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 error_log("Deleted old image: $old_image_full_path");
               }
             }
-            
+
             error_log("New image uploaded: $image_path");
           } else {
             error_log("Failed to move uploaded file to: $target_file");
@@ -178,7 +178,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=? WHERE id=?");
         $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $id);
       }
-      
+
       if ($stmt->execute()) {
         error_log("Item updated successfully: ID=$id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
         $_SESSION['success_message'] = "Item updated successfully!";
@@ -186,7 +186,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         error_log("Failed to update item: " . $stmt->error);
         $_SESSION['error_message'] = "Failed to update item: " . $stmt->error;
       }
-      
+
       $stmt->close();
       header("Location: dashboard.php#rooms");
       exit;
@@ -196,7 +196,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($action === "update_booking_status" && isset($_POST['booking_id']) && isset($_POST['new_status'])) {
       $booking_id = intval($_POST['booking_id']);
       $new_status = $_POST['new_status'];
-      
+
       $stmt = $conn->prepare("UPDATE bookings SET status=? WHERE id=?");
       $stmt->bind_param("si", $new_status, $booking_id);
       $stmt->execute();
@@ -208,7 +208,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // DELETE BOOKING
     if ($action === "delete_booking" && isset($_POST['booking_id'])) {
       $booking_id = intval($_POST['booking_id']);
-      
+
       $stmt = $conn->prepare("DELETE FROM bookings WHERE id=?");
       $stmt->bind_param("i", $booking_id);
       $stmt->execute();
@@ -221,7 +221,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($action === "process_discount" && isset($_POST['discount_id']) && isset($_POST['discount_action'])) {
       $discount_id = intval($_POST['discount_id']);
       $discount_action = $_POST['discount_action'];
-      
+
       $stmt = $conn->prepare("UPDATE discount_applications SET status=? WHERE id=?");
       $stmt->bind_param("si", $discount_action, $discount_id);
       $stmt->execute();
@@ -239,8 +239,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
      * @param string|int $size
      * @return int bytes
      */
-    function php_size_to_bytes($size) {
-      if (is_numeric($size)) return (int)$size;
+    function php_size_to_bytes($size)
+    {
+      if (is_numeric($size))
+        return (int) $size;
       $unit = strtolower(substr($size, -1));
       $bytes = (float) rtrim($size, 'bBkKmMgG');
       switch ($unit) {
@@ -263,7 +265,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($upload_max_bytes < $required_bytes || $post_max_bytes < $required_bytes) {
       // Compose friendly message with tips for sysadmin
       $msg = "Server PHP limits prevent uploads of 20MB. " .
-             "Current settings: upload_max_filesize={$ini_upload_max}, post_max_size={$ini_post_max}. ";
+        "Current settings: upload_max_filesize={$ini_upload_max}, post_max_size={$ini_post_max}. ";
       $msg .= "Ask your host to increase both to at least 20M (php.ini: upload_max_filesize=20M; post_max_size=20M). ";
       $msg .= "If using PHP-FPM, restart the service after changing php.ini. For shared hosts you may be able to set this via .htaccess or a .user.ini file.\n";
 
@@ -278,8 +280,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     error_log("POST data: " . print_r($_POST, true));
     error_log("FILES data: " . print_r($_FILES, true));
     error_log("Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'not set'));
-    
-  $name = trim($_POST['name']);
+
+    $name = trim($_POST['name']);
     $type = trim($_POST['item_type']);
     $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
     $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
@@ -288,11 +290,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
 
-    
+
     // Handle image upload
     $image_path = null;
     error_log("Checking for image upload...");
-    
+
     if (empty($_FILES['image']['name'])) {
       error_log("No image file uploaded - FILES[image][name] is empty");
     } elseif ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
@@ -316,17 +318,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $ini_post_max = ini_get('post_max_size');
         $msg = "Upload failed: {$human}. Server settings: upload_max_filesize={$ini_upload_max}, post_max_size={$ini_post_max}. ";
         $msg .= "Increase both values to at least 20M (php.ini: upload_max_filesize=20M; post_max_size=20M). " .
-                "If using PHP-FPM, restart the service after changing php.ini. For shared hosts you can try a .user.ini or .htaccess with php_value settings if allowed.";
+          "If using PHP-FPM, restart the service after changing php.ini. For shared hosts you can try a .user.ini or .htaccess with php_value settings if allowed.";
         error_log("Upload limit error: " . $msg);
         $_SESSION['error_message'] = $msg;
         header("Location: dashboard.php#rooms");
         exit;
       }
     }
-    
+
     if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
       error_log("Image file received: " . $_FILES['image']['name'] . " (" . $_FILES['image']['size'] . " bytes)");
-      
+
       // Security: Validate file size (max 20MB)
       $max_file_size = 20 * 1024 * 1024; // 20MB in bytes
       if ($_FILES['image']['size'] > $max_file_size) {
@@ -335,8 +337,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         header("Location: dashboard.php#rooms");
         exit;
       }
-      
-      $target_dir = __DIR__ . "/uploads/";
+
+      $target_dir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/";
       if (!file_exists($target_dir)) {
         error_log("Creating uploads directory: $target_dir");
         if (!mkdir($target_dir, 0755, true)) {
@@ -347,7 +349,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
         error_log("Uploads directory created successfully");
       }
-      
+
       // Verify directory is writable
       if (!is_writable($target_dir)) {
         error_log("Uploads directory is NOT writable: $target_dir");
@@ -356,11 +358,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         header("Location: dashboard.php#rooms");
         exit;
       }
-      
+
       // Generate unique filename
       $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
       $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-      
+
       if (in_array($file_extension, $allowed_extensions)) {
         // Security: Verify it's actually an image using getimagesize
         $image_info = @getimagesize($_FILES["image"]["tmp_name"]);
@@ -370,7 +372,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           header("Location: dashboard.php#rooms");
           exit;
         }
-        
+
         // Security: Verify MIME type
         $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!in_array($image_info['mime'], $allowed_mime_types)) {
@@ -379,16 +381,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           header("Location: dashboard.php#rooms");
           exit;
         }
-        
+
         $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
         $target_file = $target_dir . $unique_filename;
-        
+
         error_log("Attempting to move uploaded file from: " . $_FILES["image"]["tmp_name"] . " to: " . $target_file);
-        
+
         if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
           // Security: Set restrictive file permissions
           chmod($target_file, 0644);
-          
+
           // Store relative path from root
           $image_path = "uploads/" . $unique_filename;
           error_log("Image uploaded successfully: $image_path (full path: $target_file)");
@@ -429,7 +431,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
       $stmt->bind_param("ssssids", $name, $type, $room_number, $description, $capacity, $price, $image_path);
     }
-    
+
     if ($stmt->execute()) {
       $new_item_id = $conn->insert_id;
       error_log("New item added successfully: ID=$new_item_id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
@@ -440,7 +442,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       error_log("=== ADD ITEM DEBUG END (FAILED) ===");
       $_SESSION['error_message'] = "Failed to add item: " . $stmt->error;
     }
-    
+
     $stmt->close();
     header("Location: dashboard.php#rooms");
     exit;
@@ -540,12 +542,15 @@ if ($bookings_result && $bookings_result->num_rows > 0) {
     $guest = 'Guest';
     $status = $booking['status'];
     $display_title = $item_name . $room_number . ' - ' . $guest;
-    
+
     // Color based on status
     $color = '#28a745'; // green for approved/confirmed
-    if ($status == 'checked_in') $color = '#0d6efd'; // blue (primary)
-    if ($status == 'checked_out') $color = '#6f42c1'; // purple
-    if ($status == 'pending') $color = '#fd7e14'; // orange (warning)
+    if ($status == 'checked_in')
+      $color = '#0d6efd'; // blue (primary)
+    if ($status == 'checked_out')
+      $color = '#6f42c1'; // purple
+    if ($status == 'pending')
+      $color = '#fd7e14'; // orange (warning)
 
     $room_events[] = [
       'id' => 'booking-' . $booking['id'],
