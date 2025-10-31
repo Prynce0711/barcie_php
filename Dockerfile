@@ -20,7 +20,6 @@ WORKDIR /var/www/html
 # Add PHP upload limits
 COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
-
 # Copy composer files first and install dependencies (including PHPMailer)
 COPY composer.json composer.lock* ./
 RUN set -eux; \
