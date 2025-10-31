@@ -336,7 +336,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
       }
       
-      $target_dir = __DIR__ . "/uploads/";
+      $target_dir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/";
       if (!file_exists($target_dir)) {
         error_log("Creating uploads directory: $target_dir");
         if (!mkdir($target_dir, 0755, true)) {
