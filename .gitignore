@@ -1,10 +1,5 @@
 # Environment files
-
-
-# Test files (don't commit)
-test_env.php
-test_email_send.php
-email_status.php
+.env
 
 # Logs
 *.log
