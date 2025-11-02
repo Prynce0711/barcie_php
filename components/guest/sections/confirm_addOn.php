@@ -431,13 +431,17 @@
 
     // Close modal and submit
     const modal = bootstrap.Modal.getInstance(modalEl);
+    
+    // IMPORTANT: Remove focus from any element inside the modal before hiding
+    // to prevent aria-hidden warning on focused elements
     try {
-      // If focus is currently inside the modal, move it to a safe element
-      // before hiding to avoid aria-hidden on a focused descendant.
-      const active = document.activeElement;  
+      const active = document.activeElement;
       if (active && modalEl.contains(active)) {
-        // prefer returning focus to the original form's primary button
-        const fallback = currentForm.querySelector('#reservationSubmitBtn') || currentForm.querySelector('#pencilSubmitBtn') || document.body;
+        active.blur(); // Remove focus first
+        // Then optionally move focus to a safe element outside the modal
+        const fallback = currentForm?.querySelector('#reservationSubmitBtn') 
+                      || currentForm?.querySelector('#pencilSubmitBtn') 
+                      || document.body;
         try { fallback.focus(); } catch (e) { /* ignore */ }
       }
     } catch (err) {
