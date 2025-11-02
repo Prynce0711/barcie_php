@@ -1,0 +1,22 @@
+# Protect .env file from being accessed via browser
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Also protect other sensitive files (config, logs, backups, etc.)
+<FilesMatch "\.(env|log|ini|conf|sql|bak|md)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect vendor and sensitive directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^vendor/.*$ - [F,L]
+    RewriteRule ^database/.*\.(php|sql)$ - [F,L]
+    RewriteRule ^logs/.*$ - [F,L]
+</IfModule>
+
+# Enable mod_rewrite if needed for clean URLs
+# RewriteEngine On
