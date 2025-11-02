@@ -1,5 +1,5 @@
 # Environment files
-.env
+# .env
 
 # Test files (don't commit)
 test_env.php
