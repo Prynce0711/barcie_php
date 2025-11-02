@@ -21,6 +21,9 @@ services:
       - SMTP_SECURE=${SMTP_SECURE:-tls}
       - FROM_EMAIL=${FROM_EMAIL:-barcieinternationalcenter@gmail.com}
       - FROM_NAME=${FROM_NAME:-Barcie International Center}
+      - TEST_PAGE_PASSWORD=${TEST_PAGE_PASSWORD:-}
+
+
     depends_on:
       - db
     networks:
