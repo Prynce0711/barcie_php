@@ -138,41 +138,101 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
         error_log("SMTP User: " . $config['username']);
         
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-        
-        // Enable verbose debug output
-        $mail->SMTPDebug = 2;
-        $mail->Debugoutput = function($str, $level) {
+
+        // Enable debug output to file for easier debugging on live servers
+        $debugLog = __DIR__ . '/../logs/email_debug.log';
+        if (!is_dir(dirname($debugLog))) {
+            @mkdir(dirname($debugLog), 0777, true);
+        }
+
+        $mail->SMTPDebug = 0; // keep 0 in normal case; we capture debug output manually on failures
+        $mail->Debugoutput = function($str, $level) use ($debugLog) {
             error_log("PHPMailer: " . $str);
+            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "PHPMailer: " . $str . PHP_EOL, FILE_APPEND);
         };
-        
-        $mail->isSMTP();
-        $mail->Host = $config['host'];
-        $mail->SMTPAuth = true;
-        $mail->Username = $config['username'];
-        $mail->Password = $config['password'];
-        $mail->SMTPSecure = $config['secure'];
-        $mail->Port = $config['port'];
-        
-        // SSL/TLS options for local development
-        $mail->SMTPOptions = array(
-            'ssl' => array(
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true
-            )
-        );
-        
-        $mail->setFrom($config['from_email'], $config['from_name']);
-        $mail->addAddress($to);
-        $mail->Subject = $subject;
-        $mail->Body = $body;
-        $mail->AltBody = $altBody ?: strip_tags($body);
-        $mail->isHTML(true);
-        
-        $result = $mail->send();
-        error_log("Email sent successfully to: " . $to);
-        error_log("=== EMAIL SUCCESS ===");
-        return $result;
+
+        // Helper to configure mailer from config array
+        $configureMailer = function($mail, $cfg) {
+            $mail->isSMTP();
+            $mail->Host = $cfg['host'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $cfg['username'];
+            $mail->Password = $cfg['password'];
+            $mail->SMTPSecure = $cfg['secure'];
+            $mail->Port = (int)$cfg['port'];
+            $mail->SMTPOptions = array(
+                'ssl' => array(
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                )
+            );
+            $mail->setFrom($cfg['from_email'], $cfg['from_name']);
+            $mail->isHTML(true);
+        };
+
+        // First attempt using provided config
+        $attemptConfig = $config;
+        $attempts = 0;
+        $maxAttempts = 2;
+        $lastException = null;
+
+        do {
+            $attempts++;
+            try {
+                // Reset recipients and body for each attempt
+                $mail->clearAllRecipients();
+                $mail->clearAttachments();
+
+                $configureMailer($mail, $attemptConfig);
+
+                $mail->addAddress($to);
+                $mail->Subject = $subject;
+                $mail->Body = $body;
+                $mail->AltBody = $altBody ?: strip_tags($body);
+
+                // Attempt to send
+                $result = $mail->send();
+                error_log("Email sent successfully to: " . $to . " (attempt $attempts)");
+                return $result;
+            } catch (\PHPMailer\PHPMailer\Exception $e) {
+                $lastException = $e;
+                error_log('PHPMailer attempt ' . $attempts . ' failed: ' . $e->getMessage());
+                @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer attempt ' . $attempts . ' failed: ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+
+                // If auth error and we still have a fallback attempt, toggle secure/port and try again
+                $msg = strtolower($e->getMessage());
+                if ($attempts < $maxAttempts && (strpos($msg, 'could not authenticate') !== false || strpos($msg, 'authentication') !== false || strpos($msg, '535') !== false)) {
+                    // Toggle between tls:587 and ssl:465
+                    if ($attemptConfig['secure'] === 'tls' || $attemptConfig['port'] === 587) {
+                        $attemptConfig['secure'] = 'ssl';
+                        $attemptConfig['port'] = 465;
+                        error_log('PHPMailer: switching to ssl/465 and retrying');
+                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: switching to ssl/465 and retrying' . PHP_EOL, FILE_APPEND);
+                    } else {
+                        $attemptConfig['secure'] = 'tls';
+                        $attemptConfig['port'] = 587;
+                        error_log('PHPMailer: switching to tls/587 and retrying');
+                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: switching to tls/587 and retrying' . PHP_EOL, FILE_APPEND);
+                    }
+                    // Continue loop to retry
+                    continue;
+                }
+
+                // No retry left or not an auth error — break
+                break;
+            }
+        } while ($attempts < $maxAttempts);
+
+        // If we get here, all attempts failed
+        if ($lastException) {
+            error_log('=== EMAIL FAILED ===');
+            error_log('PHPMailer error: ' . $lastException->getMessage());
+            error_log('Error trace: ' . $lastException->getTraceAsString());
+            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . '=== EMAIL FAILED ===' . PHP_EOL, FILE_APPEND);
+            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer error: ' . $lastException->getMessage() . PHP_EOL, FILE_APPEND);
+        }
+        return false;
     } catch (\PHPMailer\PHPMailer\Exception $e) {
         error_log('=== EMAIL FAILED ===');
         error_log('PHPMailer error: ' . $e->getMessage());
