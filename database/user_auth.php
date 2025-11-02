@@ -37,9 +37,9 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
 // Check if vendor autoload exists (optional - only needed for email features)
-$vendor_available = file_exists(__DIR__ . '/../../vendor/autoload.php');
+$vendor_available = file_exists(__DIR__ . '/../vendor/autoload.php');
 if ($vendor_available) {
-    require __DIR__ . '/../../vendor/autoload.php';
+    require __DIR__ . '/../vendor/autoload.php';
 }
 
 // Helper function to create professional email template
@@ -1282,6 +1282,7 @@ if ($action === 'create_booking') {
         $guest_name = $conn->real_escape_string($_POST['guest_name'] ?? '');
         $contact = $conn->real_escape_string($_POST['contact_number'] ?? '');
         $email = $conn->real_escape_string($_POST['email'] ?? '');
+        error_log("DEBUG: Email value from form: '" . $email . "'");
         $checkin = $_POST['checkin'] ?? null;
         $checkout = $_POST['checkout'] ?? null;
         $occupants = (int)($_POST['occupants'] ?? 1);
