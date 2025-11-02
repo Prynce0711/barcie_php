@@ -6,12 +6,15 @@
 
 $env_data = <<<TXT
 APP_ENV=production
-MAIL_USER=barcieinternationalcenter@gmail.com
-MAIL_PASS=bwjnpxglrmlsurwg
-DB_HOST=10.20.0.2
-DB_NAME=barcie_db
-DB_USER=root
-DB_PASS=root
+
+SMTP_HOST=smtp.gmail.com
+SMTP_USERNAME=barcieinternationalcenter@gmail.com
+SMTP_PASSWORD=bwjnpxglrmlsurwg
+SMTP_PORT=587
+SMTP_SECURE=tls
+FROM_EMAIL=barcieinternationalcenter@gmail.com
+FROM_NAME="BarCIE International Center"
+
 OPENAI_API_KEY=AIzaSyAAaTeSWW_5BSPldjOMzzQsDeJ5oh1HHII
 
 TXT;
