@@ -14,6 +14,8 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^vendor/.*$ - [F,L]
+    # Allow admin_login.php and user_auth.php but block other database files
+    RewriteCond %{REQUEST_URI} !^/database/(admin_login|user_auth)\.php$
     RewriteRule ^database/.*\.(php|sql)$ - [F,L]
     RewriteRule ^logs/.*$ - [F,L]
 </IfModule>
