@@ -495,6 +495,11 @@
         } catch (e) { /* ignore errors */ }
 
         const fd = new FormData(currentForm);
+        
+        // CRITICAL: Add the action field if not present (required by user_auth.php)
+        if (!fd.has('action')) {
+          fd.append('action', 'create_booking');
+        }
 
         // Get the form action URL properly - use relative path to avoid environment-specific issues
         const actionAttr = currentForm.getAttribute('action');
