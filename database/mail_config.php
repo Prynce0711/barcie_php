@@ -1,12 +1,12 @@
 <?php
 // Load environment variables from .env file
-$autoload = __DIR__ . '/../../vendor/autoload.php';
+$autoload = __DIR__ . '/../vendor/autoload.php';
 if (file_exists($autoload)) {
     require_once $autoload;
     
     // Load .env if Dotenv is available
     if (class_exists(\Dotenv\Dotenv::class)) {
-        $root = dirname(__DIR__, 2);
+        $root = dirname(__DIR__);
         try {
             $dotenv = \Dotenv\Dotenv::createImmutable($root);
             $dotenv->safeLoad();
