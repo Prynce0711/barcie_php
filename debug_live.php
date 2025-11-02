@@ -199,6 +199,141 @@ header('Content-Type: text/html; charset=utf-8');
         ?>
     </div>
 
+    <!-- Test 7: SMTP/Email Configuration -->
+    <div class="test <?php
+        $env_file = __DIR__ . '/.env';
+        $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
+        echo ($vendor_exists && file_exists($env_file)) ? 'success' : 'warning';
+    ?>">
+        <h2>📧 Email Configuration</h2>
+        <?php
+        $env_file = __DIR__ . '/.env';
+        $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
+        
+        echo '<p><strong>Vendor/Autoload:</strong> ';
+        echo '<span class="status ' . ($vendor_exists ? 'ok' : 'fail') . '">';
+        echo $vendor_exists ? 'FOUND' : 'MISSING';
+        echo '</span></p>';
+        
+        echo '<p><strong>.env File:</strong> ';
+        echo '<span class="status ' . (file_exists($env_file) ? 'ok' : 'fail') . '">';
+        echo file_exists($env_file) ? 'EXISTS' : 'MISSING';
+        echo '</span></p>';
+        
+        if ($vendor_exists && file_exists($env_file)) {
+            require __DIR__ . '/vendor/autoload.php';
+            
+            try {
+                $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__);
+                $dotenv->safeLoad();
+                
+                $smtp_host = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? 'NOT SET');
+                $smtp_user = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? 'NOT SET');
+                $smtp_port = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? 'NOT SET');
+                $from_email = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? 'NOT SET');
+                
+                echo '<p><strong>SMTP Host:</strong> ' . htmlspecialchars($smtp_host) . '</p>';
+                echo '<p><strong>SMTP Username:</strong> ' . htmlspecialchars($smtp_user) . '</p>';
+                echo '<p><strong>SMTP Port:</strong> ' . htmlspecialchars($smtp_port) . '</p>';
+                echo '<p><strong>From Email:</strong> ' . htmlspecialchars($from_email) . '</p>';
+                
+                $smtp_password = getenv('SMTP_PASSWORD') ?: ($_ENV['SMTP_PASSWORD'] ?? '');
+                echo '<p><strong>SMTP Password:</strong> ';
+                echo '<span class="status ' . (!empty($smtp_password) ? 'ok' : 'fail') . '">';
+                echo !empty($smtp_password) ? 'SET (' . str_repeat('*', 10) . ')' : 'NOT SET';
+                echo '</span></p>';
+                
+                // Check PHPMailer
+                $phpmailer_exists = class_exists('\PHPMailer\PHPMailer\PHPMailer');
+                echo '<p><strong>PHPMailer:</strong> ';
+                echo '<span class="status ' . ($phpmailer_exists ? 'ok' : 'fail') . '">';
+                echo $phpmailer_exists ? 'LOADED' : 'NOT FOUND';
+                echo '</span></p>';
+                
+            } catch (Exception $e) {
+                echo '<p><strong>Error:</strong> ' . htmlspecialchars($e->getMessage()) . '</p>';
+            }
+        }
+        ?>
+    </div>
+
+    <!-- Test 8: Send Test Email -->
+    <div class="test">
+        <h2>✉️ Send Test Email</h2>
+        <form id="emailTestForm" style="margin-top: 10px;">
+            <div style="margin-bottom: 10px;">
+                <label for="test_email" style="display: block; margin-bottom: 5px; font-weight: bold;">
+                    Recipient Email:
+                </label>
+                <input 
+                    type="email" 
+                    id="test_email" 
+                    name="email" 
+                    required 
+                    placeholder="your.email@example.com"
+                    style="width: 100%; max-width: 400px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                >
+            </div>
+            <button 
+                type="submit" 
+                style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;"
+            >
+                📧 Send Test Email
+            </button>
+        </form>
+        <div id="emailResult" style="margin-top: 15px;"></div>
+    </div>
+
+    <script>
+        document.getElementById('emailTestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('test_email').value;
+            const resultDiv = document.getElementById('emailResult');
+            const button = e.target.querySelector('button');
+            
+            button.disabled = true;
+            button.textContent = '⏳ Sending...';
+            resultDiv.innerHTML = '<p>Sending email...</p>';
+            
+            try {
+                const response = await fetch('api/test_email_api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; border-left: 4px solid #28a745;">
+                            <strong>✅ Success!</strong> ${data.message}
+                            <br><small>Check your inbox (and spam folder)</small>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; border-left: 4px solid #f44336;">
+                            <strong>❌ Failed!</strong> ${data.message || 'Unknown error'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; border-left: 4px solid #f44336;">
+                        <strong>❌ Error!</strong> ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.textContent = '📧 Send Test Email';
+            }
+        });
+    </script>
+
     <?php
     if (isset($conn) && !$conn->connect_error) {
         $conn->close();
