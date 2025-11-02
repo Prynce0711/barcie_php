@@ -21,6 +21,11 @@ services:
       - SMTP_SECURE=${SMTP_SECURE:-tls}
       - FROM_EMAIL=${FROM_EMAIL:-barcieinternationalcenter@gmail.com}
       - FROM_NAME=${FROM_NAME:-Barcie International Center}
+
+      # OpenAI API Key
+      - OPENAIAPI_KEY=${OPENAIAPI_KEY:-}
+
+      # Test Page Password
       - TEST_PAGE_PASSWORD=${TEST_PAGE_PASSWORD:-}
 
 
