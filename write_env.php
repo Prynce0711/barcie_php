@@ -14,7 +14,6 @@ SMTP_PORT=587
 SMTP_SECURE=tls
 FROM_EMAIL=barcieinternationalcenter@gmail.com
 FROM_NAME="BarCIE International Center"
-
 OPENAI_API_KEY=AIzaSyAAaTeSWW_5BSPldjOMzzQsDeJ5oh1HHII
 
 TXT;
