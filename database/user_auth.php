@@ -145,7 +145,7 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
             @mkdir(dirname($debugLog), 0777, true);
         }
 
-        $mail->SMTPDebug = 0; // keep 0 in normal case; we capture debug output manually on failures
+        $mail->SMTPDebug = 2; // verbose debug for comprehensive troubleshooting
         $mail->Debugoutput = function($str, $level) use ($debugLog) {
             error_log("PHPMailer: " . $str);
             @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "PHPMailer: " . $str . PHP_EOL, FILE_APPEND);
@@ -170,6 +170,13 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
             $mail->setFrom($cfg['from_email'], $cfg['from_name']);
             $mail->isHTML(true);
         };
+
+        // Write a masked snapshot of the mail config to the debug log
+        $masked = $config;
+        if (!empty($masked['password'])) {
+            $masked['password'] = str_repeat('*', 8) . ' (masked)';
+        }
+        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "MAIL CONFIG: " . json_encode($masked) . PHP_EOL, FILE_APPEND);
 
         // First attempt using provided config
         $attemptConfig = $config;
