@@ -8,7 +8,7 @@ $env_data = <<<TXT
 APP_ENV=production
 
 SMTP_HOST=smtp.gmail.com
-SMTP_USERNAME=barcieinternationalcenter@gmail.com
+SMTP_USERNAME=pc.clemente11@gmail.com
 SMTP_PASSWORD=bwjnpxglrmlsurwg
 SMTP_PORT=587
 SMTP_SECURE=tls
