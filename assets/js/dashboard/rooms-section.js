@@ -14,47 +14,69 @@ console.log('📄 rooms-section.js loaded');
 // Install delegated click handlers as a fallback for dynamically inserted elements
 if (!window.__editFormDelegationInstalled) {
   window.__editFormDelegationInstalled = true;
+  
   document.addEventListener('click', function(e) {
-    const toggle = e.target.closest && e.target.closest('.edit-toggle-btn');
+    // Handle edit toggle button clicks
+    const toggle = e.target.closest('.edit-toggle-btn');
     if (toggle) {
-      // emulate the behavior of the per-button handler
+      e.preventDefault();
+      e.stopPropagation();
+      
       const itemId = toggle.getAttribute('data-item-id');
       const editForm = document.getElementById(`editForm${itemId}`);
+      
+      console.log('Edit toggle clicked for item:', itemId);
+      
       if (editForm) {
-        // Hide other forms
+        const isHidden = editForm.style.display === 'none' || !editForm.style.display;
+        
+        // Hide all other edit forms first
         hideAllEditForms();
+        
         // Toggle this form
-        if (editForm.style.display === 'none' || !editForm.style.display) {
+        if (isHidden) {
           editForm.style.display = 'block';
           toggle.innerHTML = '<i class="fas fa-times me-1"></i>Cancel';
           toggle.classList.remove('btn-outline-primary');
           toggle.classList.add('btn-outline-secondary');
+          console.log('Edit form shown for item:', itemId);
         } else {
           editForm.style.display = 'none';
           toggle.innerHTML = '<i class="fas fa-edit me-1"></i>Edit';
           toggle.classList.remove('btn-outline-secondary');
           toggle.classList.add('btn-outline-primary');
+          console.log('Edit form hidden for item:', itemId);
         }
       }
-      e.preventDefault();
-      return;
+      return false;
     }
 
-    const cancel = e.target.closest && e.target.closest('.edit-cancel-btn');
+    // Handle cancel button clicks
+    const cancel = e.target.closest('.edit-cancel-btn');
     if (cancel) {
+      e.preventDefault();
+      e.stopPropagation();
+      
       const itemId = cancel.getAttribute('data-item-id');
       const editForm = document.getElementById(`editForm${itemId}`);
       const editButton = document.querySelector(`.edit-toggle-btn[data-item-id="${itemId}"]`);
-      if (editForm) editForm.style.display = 'none';
+      
+      console.log('Edit cancel clicked for item:', itemId);
+      
+      if (editForm) {
+        editForm.style.display = 'none';
+      }
+      
       if (editButton) {
         editButton.innerHTML = '<i class="fas fa-edit me-1"></i>Edit';
         editButton.classList.remove('btn-outline-secondary');
         editButton.classList.add('btn-outline-primary');
       }
-      e.preventDefault();
-      return;
+      return false;
     }
-  });
+  }, true); // Use capture phase to catch events early
+  
+  console.log('✅ Edit form delegated event handler installed');
 }
 
 function initializeRoomsFiltering() {
@@ -105,12 +127,25 @@ function initializeRoomsSearch() {
 }
 
 function initializeEditForms() {
+  // If delegated handler is installed, no need to attach individual listeners
+  if (window.__editFormDelegationInstalled) {
+    console.log('Edit forms using delegated event handler');
+    return;
+  }
+
   // Edit toggle buttons
   const editButtons = document.querySelectorAll('.edit-toggle-btn');
   const cancelButtons = document.querySelectorAll('.edit-cancel-btn');
   
+  console.log('initializeEditForms: Found', editButtons.length, 'edit buttons');
+  
   editButtons.forEach(button => {
-    button.addEventListener('click', function() {
+    // Clone and replace to remove all previous listeners
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    
+    newButton.addEventListener('click', function(e) {
+      e.preventDefault();
       const itemId = this.getAttribute('data-item-id');
       const editForm = document.getElementById(`editForm${itemId}`);
       
@@ -135,7 +170,12 @@ function initializeEditForms() {
   });
   
   cancelButtons.forEach(button => {
-    button.addEventListener('click', function() {
+    // Clone and replace to remove all previous listeners
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    
+    newButton.addEventListener('click', function(e) {
+      e.preventDefault();
       const itemId = this.getAttribute('data-item-id');
       const editForm = document.getElementById(`editForm${itemId}`);
       const editButton = document.querySelector(`.edit-toggle-btn[data-item-id="${itemId}"]`);

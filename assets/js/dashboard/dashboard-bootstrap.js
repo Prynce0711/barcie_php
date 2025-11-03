@@ -883,6 +883,12 @@ function initializeCounters() {
 
 // Setup Edit Form Toggles
 function setupEditFormToggles() {
+  // Check if delegated handler is already installed by rooms-section.js
+  if (window.__editFormDelegationInstalled) {
+    console.log("Edit form delegation already installed, skipping duplicate setup");
+    return;
+  }
+
   const editButtons = document.querySelectorAll(".edit-toggle-btn");
   const cancelButtons = document.querySelectorAll(".edit-cancel-btn");
 
