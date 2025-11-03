@@ -34,6 +34,9 @@ $smtp_port = (int) env('SMTP_PORT', env('MAIL_PORT', 587));
 $from_email = env('FROM_EMAIL', env('MAIL_USER', 'barcieinternationalcenter@gmail.com'));
 $from_name = env('FROM_NAME', env('MAIL_NAME', 'BarCIE International Center'));
 
+// Optional: allow falling back to PHP's mail() if SMTP repeatedly fails
+$use_php_mail = filter_var(env('USE_PHP_MAIL', 'false'), FILTER_VALIDATE_BOOLEAN);
+
 // Return mail configuration from environment variables
 return [
     'host' => $smtp_host,
@@ -42,5 +45,6 @@ return [
     'secure' => $smtp_secure,
     'port' => $smtp_port,
     'from_email' => $from_email,
-    'from_name' => $from_name
+    'from_name' => $from_name,
+    'use_php_mail' => $use_php_mail
 ];

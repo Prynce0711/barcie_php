@@ -234,6 +234,95 @@ header('Content-Type: text/html; charset=utf-8');
                 
                 echo '<p><strong>SMTP Host:</strong> ' . htmlspecialchars($smtp_host) . '</p>';
                 echo '<p><strong>SMTP Username:</strong> ' . htmlspecialchars($smtp_user) . '</p>';
+                // Display masked mail configuration and recent PHPMailer debug log (safe for admins)
+                echo '<div style="margin-top:12px;">';
+                $mail_config_path = __DIR__ . '/database/mail_config.php';
+                if (file_exists($mail_config_path)) {
+                    try {
+                        $mc = @include $mail_config_path;
+                        if (is_array($mc)) {
+                            $masked_mc = $mc;
+                            if (!empty($masked_mc['password'])) {
+                                $masked_mc['password'] = str_repeat('*', 8) . ' (masked)';
+                            }
+                            if (!empty($masked_mc['username'])) {
+                                // mask part of username for privacy
+                                $u = $masked_mc['username'];
+                                $masked_mc['username'] = strlen($u) > 4 ? substr($u,0,2) . '...' . substr($u,-2) : $u;
+                            }
+                            echo '<h3 style="margin:6px 0 4px 0;">🔒 Mail Config (masked)</h3>';
+                            echo '<pre style="background:#f5f5f5;padding:8px;border-radius:4px;max-width:100%;overflow:auto;">' . htmlspecialchars(json_encode($masked_mc, JSON_PRETTY_PRINT)) . '</pre>';
+                        }
+                    } catch (Exception $e) {
+                        // ignore
+                    }
+                } else {
+                    echo '<p><small>Mail config not found at <code>' . htmlspecialchars($mail_config_path) . '</code></small></p>';
+                }
+
+                // Show tail of email debug log (masked)
+                $debugLog = __DIR__ . '/logs/email_debug.log';
+                echo '<h3 style="margin:8px 0 4px 0;">📝 PHPMailer Debug Log (tail)</h3>';
+                if (file_exists($debugLog)) {
+                    $content = @file_get_contents($debugLog);
+                    if ($content === false) $content = '';
+                    // mask any literal password value from config if present
+                    if (!empty($mc['password'])) {
+                        $content = str_replace($mc['password'], str_repeat('*', 8), $content);
+                    }
+                    // show only last ~2000 chars to keep page small
+                    $len = strlen($content);
+                    $tail = $len > 2000 ? substr($content, -2000) : $content;
+                    echo '<pre style="background:#111;color:#0f0;padding:10px;border-radius:4px;max-height:360px;overflow:auto;white-space:pre-wrap;">' . htmlspecialchars($tail) . '</pre>';
+                } else {
+                    echo '<p><small>No debug log found at <code>' . htmlspecialchars($debugLog) . '</code></small></p>';
+                }
+
+                echo '</div>';
+
+                // Automated suggestions based on common SMTP reply patterns
+                try {
+                    $analysis = [];
+                    $lower = strtolower($tail ?? '');
+
+                    if (preg_match('/535|could not authenticate|authentication failed|username and password not accepted|5\.7\.8|5\.7\.1|535-5\.7\.8/', $lower)) {
+                        $analysis[] = "Authentication failed: verify SMTP username and password. For Gmail, enable 2-Step Verification and create an App Password or configure OAuth2. Update SMTP_PASSWORD in your .env with the App Password.";
+                    }
+
+                    if (preg_match('/connect\(\) failed|could not connect to smtp host|connection timed out|connection refused|failed to connect/i', $lower)) {
+                        $analysis[] = "Connection failed: check SMTP_HOST and SMTP_PORT, ensure the remote SMTP server is reachable from this server and no firewall blocks the port. For Gmail use host smtp.gmail.com with port 587 (TLS) or 465 (SSL).";
+                    }
+
+                    if (preg_match('/tls|ssl|handshake|certificate|unable to get local issuer certificate/i', $lower)) {
+                        $analysis[] = "TLS/SSL issue: try switching secure modes (tls on port 587, ssl on 465). For testing you can allow self-signed certs in SMTPOptions, but don't use that in production.";
+                    }
+
+                    if (preg_match('/5\.5\.1|5\.7\.0|authentication required|not authorized|permission denied/i', $lower)) {
+                        $analysis[] = "Server response indicates authorization/policy block: check account settings (security, app access) or use a transactional SMTP provider (SendGrid, Mailgun) for reliable delivery.";
+                    }
+
+                    if (preg_match('/quota|rate limit|too many requests/i', $lower)) {
+                        $analysis[] = "Rate limit or quota problem: check account sending limits or move to a provider with higher quotas for production traffic.";
+                    }
+
+                    if (preg_match('/5?21|lost connection|broken pipe/i', $lower)) {
+                        $analysis[] = "Network-level problem: ensure the server has stable network connectivity to the SMTP host and DNS resolves correctly.";
+                    }
+
+                    // If nothing matched, add a generic hint
+                    if (empty($analysis)) {
+                        $analysis[] = "No obvious pattern detected in the log tail. You can paste the displayed tail here for help or download the full log for deeper inspection.";
+                    }
+
+                    echo '<h3 style="margin:8px 0 4px 0;">💡 Suggested next steps</h3>';
+                    echo '<ul style="background:#fff;padding:10px;border-radius:4px;">';
+                    foreach ($analysis as $a) {
+                        echo '<li style="margin:6px 0;">' . htmlspecialchars($a) . '</li>';
+                    }
+                    echo '</ul>';
+                } catch (Exception $e) {
+                    // ignore analysis errors
+                }
                 echo '<p><strong>SMTP Port:</strong> ' . htmlspecialchars($smtp_port) . '</p>';
                 echo '<p><strong>From Email:</strong> ' . htmlspecialchars($from_email) . '</p>';
                 

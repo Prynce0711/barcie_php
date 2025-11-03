@@ -238,6 +238,41 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
             error_log('Error trace: ' . $lastException->getTraceAsString());
             @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . '=== EMAIL FAILED ===' . PHP_EOL, FILE_APPEND);
             @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer error: ' . $lastException->getMessage() . PHP_EOL, FILE_APPEND);
+            // Helpful hint for common Gmail authentication problems
+            try {
+                $hintMsg = '';
+                if (stripos($config['host'] ?? '', 'gmail') !== false) {
+                    $hintMsg = "PHPMailer hint: Gmail may block direct SMTP logins. If you're using a regular Gmail account enable an App Password (if 2FA enabled) or use an OAuth2 flow. See: https://support.google.com/accounts/answer/185833";
+                    error_log($hintMsg);
+                    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . $hintMsg . PHP_EOL, FILE_APPEND);
+                }
+            } catch (Exception $e) {
+                // ignore
+            }
+
+            // Optional fallback: if enabled in config, attempt PHP's mail() as a last resort
+            try {
+                if (!empty($config['use_php_mail'])) {
+                    error_log('PHPMailer: attempting fallback to PHP mail() as configured');
+                    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: attempting fallback to PHP mail() as configured' . PHP_EOL, FILE_APPEND);
+
+                    $headers = "MIME-Version: 1.0\r\n";
+                    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+                    $headers .= 'From: ' . ($config['from_name'] ?? '') . ' <' . ($config['from_email'] ?? '') . "\r\n";
+
+                    $phpMailResult = @mail($to, $subject, $body, $headers);
+                    if ($phpMailResult) {
+                        error_log('PHPMailer: PHP mail() fallback succeeded');
+                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: PHP mail() fallback succeeded' . PHP_EOL, FILE_APPEND);
+                        return true;
+                    } else {
+                        error_log('PHPMailer: PHP mail() fallback failed');
+                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: PHP mail() fallback failed' . PHP_EOL, FILE_APPEND);
+                    }
+                }
+            } catch (Exception $e) {
+                error_log('PHPMailer fallback error: ' . $e->getMessage());
+            }
         }
         return false;
     } catch (\PHPMailer\PHPMailer\Exception $e) {
