@@ -11,6 +11,52 @@ window.updateVisibleCounts = updateVisibleCounts;
 
 console.log('📄 rooms-section.js loaded');
 
+// Install delegated click handlers as a fallback for dynamically inserted elements
+if (!window.__editFormDelegationInstalled) {
+  window.__editFormDelegationInstalled = true;
+  document.addEventListener('click', function(e) {
+    const toggle = e.target.closest && e.target.closest('.edit-toggle-btn');
+    if (toggle) {
+      // emulate the behavior of the per-button handler
+      const itemId = toggle.getAttribute('data-item-id');
+      const editForm = document.getElementById(`editForm${itemId}`);
+      if (editForm) {
+        // Hide other forms
+        hideAllEditForms();
+        // Toggle this form
+        if (editForm.style.display === 'none' || !editForm.style.display) {
+          editForm.style.display = 'block';
+          toggle.innerHTML = '<i class="fas fa-times me-1"></i>Cancel';
+          toggle.classList.remove('btn-outline-primary');
+          toggle.classList.add('btn-outline-secondary');
+        } else {
+          editForm.style.display = 'none';
+          toggle.innerHTML = '<i class="fas fa-edit me-1"></i>Edit';
+          toggle.classList.remove('btn-outline-secondary');
+          toggle.classList.add('btn-outline-primary');
+        }
+      }
+      e.preventDefault();
+      return;
+    }
+
+    const cancel = e.target.closest && e.target.closest('.edit-cancel-btn');
+    if (cancel) {
+      const itemId = cancel.getAttribute('data-item-id');
+      const editForm = document.getElementById(`editForm${itemId}`);
+      const editButton = document.querySelector(`.edit-toggle-btn[data-item-id="${itemId}"]`);
+      if (editForm) editForm.style.display = 'none';
+      if (editButton) {
+        editButton.innerHTML = '<i class="fas fa-edit me-1"></i>Edit';
+        editButton.classList.remove('btn-outline-secondary');
+        editButton.classList.add('btn-outline-primary');
+      }
+      e.preventDefault();
+      return;
+    }
+  });
+}
+
 function initializeRoomsFiltering() {
   // Type filter buttons
   const typeFilters = document.querySelectorAll('.type-filter');
