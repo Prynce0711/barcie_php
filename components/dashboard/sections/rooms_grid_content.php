@@ -61,7 +61,7 @@ while ($item = $res->fetch_assoc()): ?>
             
             <!-- Image Counter -->
             <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2" style="z-index: 10;">
-              <span class="badge bg-dark" id="imageCounter<?= $item['id'] ?>">1 / <?= count($webImages) ?></span>
+              <span class="badge bg-white" id="imageCounter<?= $item['id'] ?>">1 / <?= count($webImages) ?></span>
             </div>
           <?php endif; ?>
         </div>
