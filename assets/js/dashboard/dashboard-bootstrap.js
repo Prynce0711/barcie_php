@@ -2143,11 +2143,48 @@ async function updateBookingStatus(bookingId, newStatus) {
         data.message || `Booking updated to ${newStatus} successfully!`,
         "success"
       );
+      // If the server returned refreshed data, update UI in-place. Otherwise fallback to reload.
+      try {
+        if (data.roomList && Array.isArray(data.roomList)) {
+          // Update global roomList and refresh DOM list
+          window.roomList = data.roomList;
+          if (typeof window.refreshRoomList === 'function') {
+            window.refreshRoomList();
+          } else {
+            console.log('refreshRoomList not available');
+          }
+        }
 
-      // Reload the page after a short delay to show updated status
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+        if (data.roomEvents && Array.isArray(data.roomEvents)) {
+          // Update global events and refresh main calendar instance
+          window.roomEvents = data.roomEvents;
+          if (window.calendarInstance && typeof window.calendarInstance.removeAllEvents === 'function') {
+            try {
+              // Remove existing events and add new ones
+              window.calendarInstance.removeAllEvents();
+              window.calendarInstance.addEventSource(window.roomEvents);
+              // some FullCalendar builds require rerender
+              if (typeof window.calendarInstance.render === 'function') window.calendarInstance.render();
+              console.log('Main calendar updated with new roomEvents');
+            } catch (e) {
+              console.warn('Error updating main calendar in-place:', e);
+            }
+          } else {
+            console.log('calendarInstance not available - will reload page');
+            setTimeout(() => { window.location.reload(); }, 800);
+          }
+        }
+
+        // Reinitialize modal calendar if it's open for a room
+        if (window.currentModalRoomId && typeof initializeRoomModalCalendar === 'function') {
+          initializeRoomModalCalendar(window.currentModalRoomId);
+        }
+
+      } catch (err) {
+        console.error('Error applying live update after booking change:', err);
+        // fallback: reload page to ensure consistent state
+        setTimeout(() => { window.location.reload(); }, 1200);
+      }
     } else {
       throw new Error(data.error || "Unknown error occurred");
     }
