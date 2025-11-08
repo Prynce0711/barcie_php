@@ -333,6 +333,25 @@ function initializeMobileEnhancements() {
   console.log('📱 Initializing mobile enhancements...');
   
   try {
+    // If the server rendered the sidebar as open on page load, force it closed
+    // for small viewports so the main content can occupy full width.
+    (function ensureSidebarClosedOnLoad() {
+      try {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay') || getOrCreateOverlay();
+        if (!sidebar) return;
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('show', 'open', 'active');
+          overlay.classList.remove('show', 'active');
+          document.body.classList.remove('sidebar-open');
+          // ensure transform is applied by toggling a tiny inline style fallback
+          sidebar.style.transform = sidebar.style.transform || 'translateX(-120%)';
+        }
+      } catch (e) {
+        console.warn('mobile-enhancements: ensureSidebarClosedOnLoad failed', e);
+      }
+    })();
+
     // Override global toggleSidebar with enhanced version
     window.toggleSidebar = enhancedToggleSidebar;
     
