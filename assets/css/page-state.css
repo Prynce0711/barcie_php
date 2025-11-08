@@ -34,3 +34,137 @@ body.page-loading .content-section {
 body.page-loaded .content-section.active {
     opacity: 1;
 }
+
+/* Final mobile-safe overrides: ensure content sections occupy full width
+   and are not constrained by earlier dashboard rules. This file is loaded
+   after other dashboard CSS, so these values win. */
+@media (max-width: 768px) {
+    .main-content,
+    .content-section {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        box-sizing: border-box !important;
+        max-height: none !important;
+        visibility: visible !important;
+    }
+
+    /* Ensure inner grid/containers don't restrict width */
+    .container-fluid,
+    .row,
+    .col-12 {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+/* Booking table mobile improvements */
+@media (max-width: 768px) {
+    /* Make the bookings "cards" full width and easier to read */
+    #bookingsTable {
+        width: 100% !important;
+        table-layout: auto !important;
+        font-size: 0.95rem !important;
+    }
+
+    #bookingsTable tbody {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    #bookingsTable tr {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 1rem !important;
+        background: #ffffff !important;
+        border: 1px solid #eef2f6 !important;
+        border-radius: 12px !important;
+        padding: 0.75rem !important;
+        box-shadow: 0 4px 12px rgba(16,24,40,0.04) !important;
+        overflow: hidden !important;
+    }
+
+    #bookingsTable td {
+        display: block !important;
+        text-align: left !important;
+        padding: 0.35rem 0.75rem !important;
+        border: none !important;
+        position: relative !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Labels on the left - reduce width so content has more room */
+    #bookingsTable td::before {
+        content: attr(data-label) !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0.45rem !important;
+        width: 36% !important;
+        padding-right: 8px !important;
+        font-weight: 600 !important;
+        color: #374151 !important;
+        text-align: left !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Make action buttons clearer and full-width when stacked */
+    #bookingsTable td .btn {
+        display: block !important;
+        width: 100% !important;
+        margin: 0.45rem 0 !important;
+    }
+
+    /* Reduce left offset for the data content so it fits better */
+    #bookingsTable td[data-label] {
+        padding-left: 38% !important;
+    }
+
+    /* Tweak for very small phones */
+    @media (max-width: 420px) {
+        #bookingsTable td::before {
+            width: 32% !important;
+            top: 0.35rem !important;
+            font-size: 0.8rem !important;
+        }
+
+        #bookingsTable td[data-label] {
+            padding-left: 34% !important;
+        }
+    }
+}
+
+    /* Compact schedule/date styling for bookings on mobile */
+    @media (max-width: 768px) {
+        /* Schedule (5th column) and Created (8th column) reduced size */
+        #bookingsTable tr td:nth-child(5),
+        #bookingsTable tr td:nth-child(8) {
+            font-size: 0.85rem !important;
+            line-height: 1.1 !important;
+            color: #4b5563 !important; /* slightly muted */
+            padding-top: 0.25rem !important;
+            padding-bottom: 0.25rem !important;
+        }
+
+        /* Make small meta lines (time) even smaller */
+        #bookingsTable tr td:nth-child(5) small,
+        #bookingsTable tr td:nth-child(8) small {
+            font-size: 0.78rem !important;
+            line-height: 1 !important;
+            display: block !important;
+            margin-top: 0.15rem !important;
+        }
+
+        /* Reduce badge padding and font-size inside cards */
+        #bookingsTable .badge {
+            font-size: 0.75rem !important;
+            padding: 0.35rem 0.5rem !important;
+        }
+    }
