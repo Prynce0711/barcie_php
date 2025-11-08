@@ -16,3 +16,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+ 
+# Persisted user uploads - keep out of git
+uploads/

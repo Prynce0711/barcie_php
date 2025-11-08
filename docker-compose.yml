@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     image: barcie:local
+    volumes:
+      - ./uploads:/var/www/html/uploads
     ports:
       - "7080:80"
     environment:
