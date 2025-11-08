@@ -4,11 +4,23 @@
 // Start session
 
 // Database connection details
-// Always connect to REMOTE server database (works from both localhost and remote server)
-$host = getenv('DB_HOST') ?: "10.20.0.2";  // Server database IP
-$user = getenv('DB_USER') ?: "root";
-$pass = getenv('DB_PASS') ?: "root";
-$dbname = getenv('DB_NAME') ?: "barcie_db";
+// Auto-detect environment: use localhost DB when on localhost, remote DB when on server
+$is_localhost = in_array($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost', 
+    ['localhost', '127.0.0.1', '::1', 'localhost:80', 'localhost:443']);
+
+if ($is_localhost) {
+    // LOCALHOST configuration (XAMPP)
+    $host = getenv('DB_HOST') ?: "localhost";  // or "127.0.0.1"
+    $user = getenv('DB_USER') ?: "root";
+    $pass = getenv('DB_PASS') ?: "";  // XAMPP default is empty password (change if you set a password)
+    $dbname = getenv('DB_NAME') ?: "barcie_db";
+} else {
+    // REMOTE SERVER configuration
+    $host = getenv('DB_HOST') ?: "10.20.0.2";  // Server database IP
+    $user = getenv('DB_USER') ?: "root";
+    $pass = getenv('DB_PASS') ?: "root";
+    $dbname = getenv('DB_NAME') ?: "barcie_db";
+}
 
 // Enable MySQLi error reporting
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
