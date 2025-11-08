@@ -282,8 +282,9 @@
 
           // If the included room list doesn't provide clickable items, build a simple list
           const existingItems = container ? container.querySelectorAll('.room-list-item, .room-item, .list-group-item') : [];
-          console.log('Existing room items:', existingItems.length);
-          
+          console.log('Existing room items found in DOM:', existingItems.length);
+
+          // If there are no items at all, build a fallback list from window.roomList
           if (container && existingItems.length === 0) {
             console.log('Building fallback room list from window.roomList:', window.roomList);
             const listGroup = document.createElement('div');
@@ -299,6 +300,40 @@
             });
             container.appendChild(listGroup);
             console.log('Added', window.roomList.length, 'room items to list');
+          } else if (container && existingItems.length > 0) {
+            // There are DOM items present but they might lack data-room-id attributes.
+            // Try to annotate them by matching their visible text to entries in window.roomList.
+            try {
+              const lookup = (window.roomList || []).reduce((acc, r) => {
+                const key = (r.name + (r.roomNumber ? ' #' + r.roomNumber : '')).trim().toLowerCase();
+                acc[key] = r;
+                return acc;
+              }, {});
+
+              existingItems.forEach(el => {
+                // if element already has a room id, skip
+                if (el.getAttribute('data-room-id')) {
+                  el.style.cursor = el.style.cursor || 'pointer';
+                  return;
+                }
+
+                const text = (el.textContent || el.innerText || '').trim();
+                const key = text.toLowerCase();
+                const match = lookup[key];
+                if (match) {
+                  el.setAttribute('data-room-id', match.id);
+                  el.setAttribute('data-room-name', match.name + (match.roomNumber ? ' #' + match.roomNumber : ''));
+                  el.classList.add('room-list-item');
+                  el.style.cursor = el.style.cursor || 'pointer';
+                  console.log('Annotated room list element with data-room-id:', match.id, 'text:', text);
+                } else {
+                  // no exact match; leave as-is but make clickable to attempt best-effort lookup when clicked
+                  el.style.cursor = el.style.cursor || 'pointer';
+                }
+              });
+            } catch (ex) {
+              console.warn('Error while annotating existing room list items:', ex);
+            }
           }
 
           // Search filter
