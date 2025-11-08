@@ -66,8 +66,8 @@ if ($items_result && $items_result->num_rows > 0) {
     $price_label = $item_type == 'room' ? '/night' : '/day';
     ?>
 
-    <div class="room-card p-3 border-bottom room-item" data-room-id="<?= htmlspecialchars($item_id) ?>" data-room-name="<?= strtolower($item_name) ?>"
-      data-room-number="<?= strtolower($room_number) ?>" data-item-type="<?= $item_type ?>">
+    <div class="room-card p-3 border-bottom room-item" data-room-id="<?= htmlspecialchars($item_id) ?>" data-room-name="<?= htmlspecialchars($item_name . ($room_number !== 'N/A' ? ' #' . $room_number : '')) ?>"
+      data-room-number="<?= strtolower($room_number) ?>" data-item-type="<?= $item_type ?>" style="cursor: pointer; transition: background-color 0.2s;" onmouseenter="this.style.backgroundColor='#f8f9fa'" onmouseleave="this.style.backgroundColor='transparent'">
       <div class="row align-items-center">
         <div class="col-md-2">
           <?php 
@@ -151,6 +151,14 @@ if ($items_result && $items_result->num_rows > 0) {
               <i class="fas fa-calendar-times me-1"></i>No upcoming reservations
             </div>
           <?php endif; ?>
+          
+          <!-- View Calendar Button -->
+          <div class="mt-2">
+            <button type="button" class="btn btn-sm btn-outline-primary view-calendar-btn" 
+                    onclick="event.stopPropagation(); showRoomCalendar(<?= $item_id ?>, '<?= htmlspecialchars(addslashes($item_name . ($room_number !== 'N/A' ? ' #' . $room_number : ''))) ?>')">
+              <i class="fas fa-calendar-alt me-1"></i>View Calendar
+            </button>
+          </div>
         </div>
       </div>
     </div>
