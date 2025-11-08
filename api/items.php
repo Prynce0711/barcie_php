@@ -6,7 +6,7 @@ try {
         json_error('Items table does not exist', 500);
     }
 
-    $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, room_status FROM items ORDER BY created_at DESC";
+    $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, images, room_status FROM items ORDER BY created_at DESC";
     $res = $conn->query($sql);
     if (!$res) {
         json_error('Query failed: ' . $conn->error, 500);

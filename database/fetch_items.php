@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 
 include __DIR__ . '/db_connect.php';
 
-$sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, addons FROM items ORDER BY created_at DESC";
+$sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, images, addons FROM items ORDER BY created_at DESC";
 $result = $conn->query($sql);
 
 $items = [];

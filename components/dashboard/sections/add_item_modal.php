@@ -151,9 +151,10 @@
             </div>
 
             <div class="col-12 mb-3">
-              <label class="form-label">Image</label>
-              <input type="file" class="form-control" name="image" accept="image/*">
-              <div class="form-text">Optional: Upload an image for this room or facility</div>
+              <label class="form-label">Images</label>
+              <input type="file" class="form-control" name="images[]" accept="image/*" multiple id="roomImages">
+              <div class="form-text">Optional: Upload multiple images for this room or facility (max 10 images)</div>
+              <div id="imagePreviewContainer" class="mt-2 d-flex flex-wrap gap-2"></div>
             </div>
           </div>
         </div>
@@ -235,6 +236,41 @@
                 });
                 observer.observe(document.documentElement, { childList: true, subtree: true });
               })();
+
+              // Image preview for multiple images
+              document.addEventListener('DOMContentLoaded', function() {
+                const imageInput = document.getElementById('roomImages');
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                
+                if (imageInput) {
+                  imageInput.addEventListener('change', function(e) {
+                    previewContainer.innerHTML = '';
+                    const files = e.target.files;
+                    
+                    if (files.length > 10) {
+                      alert('Maximum 10 images allowed');
+                      imageInput.value = '';
+                      return;
+                    }
+                    
+                    Array.from(files).forEach((file, index) => {
+                      const reader = new FileReader();
+                      reader.onload = function(event) {
+                        const previewDiv = document.createElement('div');
+                        previewDiv.className = 'position-relative';
+                        previewDiv.style.width = '80px';
+                        previewDiv.style.height = '80px';
+                        previewDiv.innerHTML = `
+                          <img src="${event.target.result}" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                          <span class="badge bg-primary position-absolute top-0 start-0 m-1">${index + 1}</span>
+                        `;
+                        previewContainer.appendChild(previewDiv);
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  }); 
+                }
+              });
             </script>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
