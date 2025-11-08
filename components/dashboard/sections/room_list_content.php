@@ -4,6 +4,10 @@
 $items_query = "SELECT * FROM items WHERE item_type IN ('room', 'facility') ORDER BY item_type DESC, room_number ASC, name ASC";
 $items_result = $conn->query($items_query);
 
+// Debug: Log what we're rendering
+error_log("Room List Content: Fetching rooms and facilities");
+error_log("Query result rows: " . ($items_result ? $items_result->num_rows : 'null'));
+
 if ($items_result && $items_result->num_rows > 0) {
   while ($item = $items_result->fetch_assoc()) {
     // Get current reservation for this item

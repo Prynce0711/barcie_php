@@ -572,26 +572,58 @@
             // update global list
             window.roomList = items.map(i => ({ id: i.id, name: i.name, roomNumber: i.room_number || '', itemType: i.item_type || 'room' }));
 
-            // rebuild simple list (fallback) to ensure proper data attributes
-            const listGroup = document.createElement('div');
-            listGroup.className = 'list-group list-group-flush';
+            console.log('Room list data fetched from API:', items.length, 'items');
+            
+            // Don't replace the container content - the PHP already rendered proper room cards
+            // Just ensure existing items have proper data attributes by annotating them
+            const existingItems = container.querySelectorAll('.room-item, .room-card');
+            
+            if (existingItems.length > 0) {
+              console.log('Found', existingItems.length, 'existing room cards, annotating with data attributes...');
+              
+              const lookup = items.reduce((acc, i) => {
+                const key = (i.name + (i.room_number ? ' #' + i.room_number : '')).trim().toLowerCase();
+                acc[key] = i;
+                return acc;
+              }, {});
+              
+              existingItems.forEach(el => {
+                if (el.getAttribute('data-room-id')) return; // Already has ID
+                
+                const text = (el.textContent || el.innerText || '').trim();
+                const key = text.toLowerCase();
+                const match = lookup[key];
+                
+                if (match) {
+                  el.setAttribute('data-room-id', match.id);
+                  el.setAttribute('data-room-name', match.name + (match.room_number ? ' #' + match.room_number : ''));
+                  el.style.cursor = 'pointer';
+                  console.log('Annotated room card:', match.name);
+                }
+              });
+              
+              console.log('Room cards annotated successfully');
+            } else {
+              console.log('No existing room cards found, building simple fallback list');
+              // Only build fallback if there are no existing cards at all
+              const listGroup = document.createElement('div');
+              listGroup.className = 'list-group list-group-flush';
 
-            items.forEach(i => {
-              const btn = document.createElement('button');
-              btn.type = 'button';
-              btn.className = 'list-group-item list-group-item-action room-list-item';
-              btn.setAttribute('data-room-id', i.id);
-              const rn = i.room_number ? (' #' + i.room_number) : '';
-              btn.setAttribute('data-room-name', i.name + rn);
-              btn.textContent = i.name + rn;
-              listGroup.appendChild(btn);
-            });
+              items.forEach(i => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action room-list-item';
+                btn.setAttribute('data-room-id', i.id);
+                const rn = i.room_number ? (' #' + i.room_number) : '';
+                btn.setAttribute('data-room-name', i.name + rn);
+                btn.textContent = i.name + rn;
+                listGroup.appendChild(btn);
+              });
 
-            // Remove existing content and append rebuilt list
-            container.innerHTML = '';
-            container.appendChild(listGroup);
-
-            console.log('Room list refreshed;', items.length, 'items loaded');
+              container.innerHTML = '';
+              container.appendChild(listGroup);
+              console.log('Fallback list built with', items.length, 'items');
+            }
           } catch (err) {
             console.warn('Could not refresh room list:', err);
           }
