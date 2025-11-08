@@ -77,6 +77,38 @@
     } catch (e) {}
     try { alert(message); } catch (e) { /* ignore */ }
   }
+
+  // Show booking confirmation without reloading the page: update URL, scroll to booking section and show a small banner
+  function showBookingConfirmation(msg) {
+    try {
+      // Update URL without reload
+      if (history && history.pushState) {
+        history.pushState(null, '', 'Guest.php#booking');
+      } else {
+        location.hash = 'booking';
+      }
+    } catch (e) { /* ignore */ }
+
+    // Scroll to booking anchor if present
+    try {
+      const anchor = document.getElementById('booking') || document.querySelector('[name="booking"]') || document.querySelector('#booking');
+      if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) { /* ignore */ }
+
+    // Show a temporary banner near top of page to indicate success
+    try {
+      const banner = document.createElement('div');
+      banner.className = 'alert alert-success text-center';
+      banner.style.position = 'fixed';
+      banner.style.top = '12px';
+      banner.style.left = '50%';
+      banner.style.transform = 'translateX(-50%)';
+      banner.style.zIndex = 2147483647;
+      banner.textContent = msg || 'Booking submitted successfully!';
+      document.body.appendChild(banner);
+      setTimeout(() => { try { banner.remove(); } catch (e) {} }, 5000);
+    } catch (e) { /* ignore */ }
+  }
   // Default add-on catalogue - admin can override per-item via DB
   const DEFAULT_ADDONS = [
     { id: 'addon_breakfast', label: 'Breakfast (per person / per night)', price: 150, pricing: 'per_person' },
@@ -616,7 +648,7 @@
 
               if (xhr.status >= 200 && xhr.status < 300 && jsonResponse && jsonResponse.success) {
                 notify(jsonResponse.message || 'Booking submitted successfully!', 'success');
-                setTimeout(() => { window.location.href = 'Guest.php#booking'; }, 300);
+                try { showBookingConfirmation(jsonResponse.message || 'Booking submitted successfully!'); } catch (e) {}
                 resolve();
                 return;
               }
@@ -682,9 +714,7 @@
           console.log('Booking successful:', jsonResponse.message);
           notify(jsonResponse.message || 'Booking submitted successfully!', 'success');
           
-          setTimeout(() => {
-            window.location.href = 'Guest.php#booking';
-          }, 300);
+          try { showBookingConfirmation(jsonResponse.message || 'Booking submitted successfully!'); } catch (e) {}
           return;
         }
 

@@ -202,6 +202,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <!-- Bookings Management -->
       <section id="bookings-section" class="content-section">
         <?php include 'components/dashboard/sections/bookings_section.php'; ?>
+        <?php include 'components/dashboard/sections/payment_verification.php'; ?>
       </section>
     
 
