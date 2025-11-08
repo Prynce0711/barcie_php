@@ -525,4 +525,52 @@
           }
         });
 
+        // Fetch latest room list from API and refresh DOM + window.roomList
+        async function fetchAndRefreshRoomList() {
+          const container = document.querySelector('.room-list-container');
+          if (!container) return;
+
+          try {
+            const res = await fetch('api/items.php', { method: 'GET', credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Failed to fetch items: ' + res.status);
+            const data = await res.json();
+            const items = (data && data.items) ? data.items : [];
+
+            // update global list
+            window.roomList = items.map(i => ({ id: i.id, name: i.name, roomNumber: i.room_number || '', itemType: i.item_type || 'room' }));
+
+            // rebuild simple list (fallback) to ensure proper data attributes
+            const listGroup = document.createElement('div');
+            listGroup.className = 'list-group list-group-flush';
+
+            items.forEach(i => {
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'list-group-item list-group-item-action room-list-item';
+              btn.setAttribute('data-room-id', i.id);
+              const rn = i.room_number ? (' #' + i.room_number) : '';
+              btn.setAttribute('data-room-name', i.name + rn);
+              btn.textContent = i.name + rn;
+              listGroup.appendChild(btn);
+            });
+
+            // Remove existing content and append rebuilt list
+            container.innerHTML = '';
+            container.appendChild(listGroup);
+
+            console.log('Room list refreshed;', items.length, 'items loaded');
+          } catch (err) {
+            console.warn('Could not refresh room list:', err);
+          }
+        }
+
+        // Expose a global helper to refresh room list after adding a room
+        window.refreshRoomList = fetchAndRefreshRoomList;
+
+        // Optionally auto-refresh on page load in case items were added while user was on the page
+        document.addEventListener('DOMContentLoaded', function () {
+          // small delay to allow server-side window.roomList initialization to finish
+          setTimeout(() => { fetchAndRefreshRoomList(); }, 500);
+        });
+
       </script>

@@ -66,7 +66,7 @@ if ($items_result && $items_result->num_rows > 0) {
     $price_label = $item_type == 'room' ? '/night' : '/day';
     ?>
 
-    <div class="room-card p-3 border-bottom room-item" data-room-name="<?= strtolower($item_name) ?>"
+    <div class="room-card p-3 border-bottom room-item" data-room-id="<?= htmlspecialchars($item_id) ?>" data-room-name="<?= strtolower($item_name) ?>"
       data-room-number="<?= strtolower($room_number) ?>" data-item-type="<?= $item_type ?>">
       <div class="row align-items-center">
         <div class="col-md-2">
