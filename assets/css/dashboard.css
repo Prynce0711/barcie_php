@@ -2991,6 +2991,43 @@ html {
   border-left: 3px solid var(--bs-primary, #0d6efd);
 }
 
+/* Room Calendar Modal Styles */
+#roomCalendarModal {
+  z-index: 1060 !important;
+}
+
+#roomCalendarModal .modal-dialog {
+  max-width: 95%;
+  margin: 1.75rem auto;
+}
+
+#roomModalCalendar {
+  min-height: 500px;
+  background: white;
+}
+
+#roomModalCalendar .fc {
+  font-size: 0.9rem;
+}
+
+#roomModalCalendar .fc-daygrid-day {
+  cursor: pointer;
+}
+
+#roomModalCalendar .fc-daygrid-day:hover {
+  background-color: #f8f9fa;
+}
+
+/* Free dates background - Light Blue */
+#roomModalCalendar .fc-daygrid-day.fc-day-free {
+  background-color: #d1ecf1 !important;
+}
+
+/* Reserved dates background - Light Red */
+#roomModalCalendar .fc-daygrid-day.fc-day-reserved {
+  background-color: #f8d7da !important;
+}
+
 /* Room status indicators */
 .status-indicator {
   width: 12px;

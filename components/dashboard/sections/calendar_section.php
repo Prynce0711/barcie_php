@@ -98,6 +98,15 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          <!-- Color Legend -->
+          <div class="alert alert-info py-2 mb-3">
+            <div class="d-flex align-items-center justify-content-center gap-4 small">
+              <span><span class="badge" style="background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;">■</span> Free/Available</span>
+              <span><span class="badge" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">■</span> Reserved/Booked</span>
+              <span class="text-muted"><i class="fas fa-info-circle me-1"></i>Click on a booking to see details</span>
+            </div>
+          </div>
+          
           <div class="row">
             <div class="col-lg-8">
               <div id="roomModalCalendar"></div>
@@ -496,30 +505,47 @@
 
           const events = [];
 
-          // base free-range background (blue-ish)
+          // base free-range background (LIGHT BLUE for available dates)
           events.push({
             id: `free-range-${roomId}`,
             start: toISODate(startDate),
             end: toISODate(endDate),
             display: 'background',
-            backgroundColor: '#cfe2ff' // light blue
+            backgroundColor: '#d1ecf1', // Light blue - FREE
+            borderColor: 'transparent'
           });
 
-          // reserved background overlays (red) for each booking
+          console.log('Found', bookings.length, 'bookings for room', roomId);
+
+          // reserved background overlays (LIGHT RED for booked dates)
           bookings.forEach(b => {
+            console.log('Adding booking event:', b.id, 'from', b.start, 'to', b.end);
+            
+            // Background color for reserved dates
             events.push({
-              id: `reserved-${b.id}`,
+              id: `reserved-bg-${b.id}`,
               start: b.start,
               end: b.end,
               display: 'background',
-              backgroundColor: '#dc3545'
+              backgroundColor: '#f8d7da', // Light red - RESERVED
+              borderColor: 'transparent'
             });
-            // also include the visible event (title)
-            events.push(Object.assign({}, b));
+            
+            // Visible booking event with details
+            events.push({
+              id: b.id,
+              title: b.title,
+              start: b.start,
+              end: b.end,
+              backgroundColor: '#dc3545', // Darker red for visibility
+              borderColor: '#dc3545',
+              textColor: '#ffffff',
+              extendedProps: b.extendedProps
+            });
           });
 
           // build calendar
-          console.log('Building calendar with', events.length, 'events');
+          console.log('Building modal calendar with', events.length, 'events (including backgrounds)');
           modalCalendarInstance = new FullCalendar.Calendar(el, {
             initialView: 'dayGridMonth',
             headerToolbar: {
@@ -529,16 +555,29 @@
             },
             events: events,
             height: 'auto',
+            contentHeight: 'auto',
+            aspectRatio: 1.5,
             eventDisplay: 'block',
             nowIndicator: true,
-            displayEventTime: false,
+            displayEventTime: true,
+            displayEventEnd: true,
+            fixedWeekCount: false,
+            showNonCurrentDates: true,
             dateClick: function (info) {
-              // No-op or optional: could open booking creation
+              console.log('Date clicked:', info.dateStr);
+              // Could allow booking creation here
             },
             eventClick: function (info) {
+              console.log('Event clicked:', info.event.id, info.event.title);
               // show details for booking events
               if (info.event && info.event.id && info.event.id.startsWith('booking-')) {
                 showBookingDetailsInPane(info.event);
+              }
+            },
+            eventDidMount: function(info) {
+              // Add tooltip on hover
+              if (info.event.extendedProps && info.event.extendedProps.guest) {
+                info.el.title = `${info.event.title}\nClick for details`;
               }
             }
           });
