@@ -28,7 +28,10 @@
 
 
   <!-- Landing Page JavaScript -->
-  <?php $v = time(); // Cache busting 
+  <?php
+  // Ensure server-side times use Philippine time
+  date_default_timezone_set('Asia/Manila');
+  $v = time(); // Cache busting
   ?>
   <script src="assets/js/page-state-manager.js?v=<?php echo $v; ?>"></script>
   <script src="assets/js/landing/main.js?v=<?php echo $v; ?>"></script>

@@ -1563,6 +1563,8 @@ function initializeGuestCalendar() {
   // Initialize FullCalendar for guest availability view
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
+    // Ensure calendar shows times in Philippine Time
+    timeZone: 'Asia/Manila',
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',

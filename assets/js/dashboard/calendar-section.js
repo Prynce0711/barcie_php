@@ -17,6 +17,8 @@ function initializeRoomCalendar() {
 
   window.calendarInstance = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
+    // Force client-side calendar to use Philippine time
+    timeZone: 'Asia/Manila',
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
