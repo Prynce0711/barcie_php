@@ -347,16 +347,49 @@
             });
           }
 
-          // Click handler (event delegation)
-          if (container) {
-            container.addEventListener('click', function (e) {
-              const el = e.target.closest('[data-room-id]');
+          // Click handler (event delegation) - prefer container delegation but also install a document
+          // level fallback so dynamically-inserted items are also handled reliably.
+          function handleRoomClickEvent(e) {
+            try {
+              const el = (e.target && e.target.closest) ? e.target.closest('[data-room-id], .room-item') : null;
               if (!el) return;
-              const roomId = el.getAttribute('data-room-id');
-              const roomName = el.getAttribute('data-room-name') || el.textContent.trim();
-              if (roomId) showRoomCalendar(roomId, roomName);
-            });
+
+              // Prefer explicit attribute, but allow dataset or fallback to text content
+              const roomId = el.getAttribute('data-room-id') || (el.dataset && el.dataset.roomId) || null;
+              const roomName = el.getAttribute('data-room-name') || (el.dataset && el.dataset.roomName) || el.textContent.trim();
+
+              console.log('Room click detected. id=', roomId, 'name=', roomName);
+
+              if (!roomId) {
+                // Try best-effort match from window.roomList using visible text
+                const text = (el.textContent || el.innerText || '').trim().toLowerCase();
+                const match = (window.roomList || []).find(r => (r.name + (r.roomNumber ? ' #' + r.roomNumber : '')).trim().toLowerCase() === text);
+                if (match) {
+                  console.log('Matched room by text to id', match.id);
+                  showRoomCalendar(match.id, match.name + (match.roomNumber ? ' #' + match.roomNumber : ''));
+                  return;
+                }
+                console.warn('Clicked room element has no data-room-id and no match was found:', text);
+                return;
+              }
+
+              showRoomCalendar(roomId, roomName);
+            } catch (err) {
+              console.error('Error handling room click:', err);
+            }
           }
+
+          if (container) {
+            container.addEventListener('click', handleRoomClickEvent);
+          }
+
+          // Document-level fallback in case the container is replaced later or items are injected.
+          document.addEventListener('click', function (e) {
+            // Avoid double-handling when already handled by container
+            const withinContainer = e.target && e.target.closest && e.target.closest('.room-list-container');
+            if (withinContainer) return;
+            handleRoomClickEvent(e);
+          });
         }
 
         // Populate booking details pane
