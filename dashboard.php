@@ -8,7 +8,10 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Admin Dashboard</title>
   <!-- Bootstrap CSS -->
@@ -347,6 +350,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <script src="assets/js/dashboard/calendar-section.js" onerror="console.error('❌ Failed to load calendar-section.js')"></script>
       <script src="assets/js/dashboard/rooms-section.js" onerror="console.error('❌ Failed to load rooms-section.js')"></script>
       <script src="assets/js/dashboard/bookings-section.js" onerror="console.error('❌ Failed to load bookings-section.js')"></script>
+      <script src="assets/js/dashboard/mobile-enhancements.js" onerror="console.error('❌ Failed to load mobile-enhancements.js')"></script>
       <script src="assets/js/verify-structure.js" onerror="console.error('❌ Failed to load verify-structure.js')"></script>
       
       <!-- Verify script loading -->

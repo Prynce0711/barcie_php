@@ -1,0 +1,493 @@
+/* ============================================================================ */
+/* ADDITIONAL MOBILE UX IMPROVEMENTS */
+/* Include this file for extra mobile polish */
+/* ============================================================================ */
+
+/* Smooth iOS-style momentum scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Restore tap highlight for buttons and links */
+button,
+a,
+.btn,
+.card,
+.list-group-item {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Improve text selection on mobile */
+::selection {
+  background: rgba(102, 126, 234, 0.3);
+  color: inherit;
+}
+
+/* Better button active states */
+.btn:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Card touch feedback */
+.card:active {
+  transform: scale(0.99);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================================================ */
+/* MOBILE LOADING STATES */
+/* ============================================================================ */
+
+/* Loading skeleton for better perceived performance */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Spinner for async operations */
+.mobile-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================ */
+/* MOBILE EMPTY STATES */
+/* ============================================================================ */
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: #6c757d;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  color: #dee2e6;
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-text {
+  font-size: 1rem;
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+}
+
+/* ============================================================================ */
+/* MOBILE TOOLTIPS */
+/* ============================================================================ */
+
+/* Simple mobile-friendly tooltips */
+[data-mobile-tooltip] {
+  position: relative;
+}
+
+[data-mobile-tooltip]:active::after {
+  content: attr(data-mobile-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 8px;
+}
+
+/* ============================================================================ */
+/* MOBILE BADGES & LABELS */
+/* ============================================================================ */
+
+@media (max-width: 768px) {
+  /* Larger badges for better readability */
+  .badge {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    font-weight: 600;
+  }
+
+  /* Status indicators with icons */
+  .badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: currentColor;
+  }
+
+  .badge-success::before {
+    background: white;
+  }
+}
+
+/* ============================================================================ */
+/* MOBILE ALERTS & NOTIFICATIONS */
+/* ============================================================================ */
+
+@media (max-width: 768px) {
+  /* Toast-style notifications */
+  .alert {
+    border-radius: 12px;
+    padding: 1rem;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Slide-in animation for alerts */
+  .alert {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+}
+
+/* ============================================================================ */
+/* MOBILE PROGRESS INDICATORS */
+/* ============================================================================ */
+
+/* Progress bar for mobile */
+.mobile-progress {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.mobile-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+}
+
+/* ============================================================================ */
+/* MOBILE SEARCH BAR */
+/* ============================================================================ */
+
+@media (max-width: 768px) {
+  .search-bar-mobile {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .search-input-mobile {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    font-size: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 12px center;
+    background-size: 20px;
+  }
+
+  .search-input-mobile:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  }
+}
+
+/* ============================================================================ */
+/* MOBILE BOTTOM NAVIGATION (Optional) */
+/* ============================================================================ */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    text-decoration: none;
+    color: #6c757d;
+    font-size: 0.75rem;
+    transition: color 0.2s ease;
+  }
+
+  .bottom-nav-item i {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+
+  .bottom-nav-item.active {
+    color: #667eea;
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.95);
+  }
+
+  /* Add bottom padding to content when bottom nav is visible */
+  .main-content {
+    padding-bottom: 80px !important;
+  }
+}
+
+/* ============================================================================ */
+/* MOBILE ACTION SHEETS */
+/* ============================================================================ */
+
+.action-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: 1100;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.action-sheet.show {
+  transform: translateY(0);
+}
+
+.action-sheet-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.action-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #dee2e6;
+  border-radius: 2px;
+  margin: 0 auto 1rem;
+}
+
+.action-sheet-body {
+  padding: 1rem;
+}
+
+.action-sheet-item {
+  padding: 1rem;
+  border-bottom: 1px solid #f8f9fa;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.action-sheet-item:active {
+  background: #f8f9fa;
+}
+
+/* ============================================================================ */
+/* MOBILE FAB (Floating Action Button) IMPROVEMENTS */
+/* ============================================================================ */
+
+@media (max-width: 768px) {
+  .fab-group {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 998;
+  }
+
+  .fab-main {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .fab-main:active {
+    transform: scale(0.95);
+  }
+
+  /* Mini FABs that appear above main FAB */
+  .fab-mini {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    color: #667eea;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease;
+  }
+
+  .fab-group.open .fab-mini {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .fab-group.open .fab-mini:nth-child(1) {
+    transition-delay: 0.05s;
+  }
+
+  .fab-group.open .fab-mini:nth-child(2) {
+    transition-delay: 0.1s;
+  }
+
+  .fab-group.open .fab-mini:nth-child(3) {
+    transition-delay: 0.15s;
+  }
+}
+
+/* ============================================================================ */
+/* MOBILE SAFE AREAS (For iPhone X and newer) */
+/* ============================================================================ */
+
+@supports (padding: max(0px)) {
+  .main-content {
+    padding-left: max(var(--space-md), env(safe-area-inset-left));
+    padding-right: max(var(--space-md), env(safe-area-inset-right));
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
+  }
+
+  .sidebar {
+    padding-left: max(var(--space-lg), env(safe-area-inset-left));
+    padding-right: max(var(--space-lg), env(safe-area-inset-right));
+  }
+
+  .mobile-menu-toggle {
+    left: max(15px, env(safe-area-inset-left));
+  }
+}
+
+/* ============================================================================ */
+/* MOBILE ACCESSIBILITY IMPROVEMENTS */
+/* ============================================================================ */
+
+/* Focus visible for keyboard navigation */
+@media (max-width: 768px) {
+  *:focus-visible {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+  }
+
+  /* Skip to content link */
+  .skip-to-content {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #667eea;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    z-index: 10000;
+  }
+
+  .skip-to-content:focus {
+    top: 0;
+  }
+}
+
+/* ============================================================================ */
+/* PRINT STYLES FOR MOBILE */
+/* ============================================================================ */
+
+@media print {
+  .mobile-menu-toggle,
+  .sidebar,
+  .floating-add-btn,
+  .scroll-to-top,
+  .bottom-nav,
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .card {
+    break-inside: avoid;
+  }
+}
