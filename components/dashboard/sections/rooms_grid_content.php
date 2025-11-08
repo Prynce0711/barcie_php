@@ -6,23 +6,75 @@ while ($item = $res->fetch_assoc()): ?>
     data-searchable="<?= strtolower(($item['name'] ?? '') . ' ' . ($item['room_number'] ?? '') . ' ' . ($item['description'] ?? '')) ?>">
     <div class="card border-0 shadow-sm h-100 hover-lift">
       <!-- Item Image -->
-      <div class="position-relative">
+      <div class="position-relative" id="imageCarousel<?= $item['id'] ?>">
         <?php 
-        // Always construct a web path for image preview; fall back to logo when empty
-        $imagePath = $item['image'] ?? '';
-        $webImage = '/assets/images/imageBg/barcie_logo.jpg';
-        if (!empty($imagePath)) {
-          if (str_starts_with($imagePath, 'http') || str_starts_with($imagePath, '/')) {
-            $webImage = $imagePath;
+        // Handle multiple images
+        $images = [];
+        if (!empty($item['images'])) {
+          $decoded = json_decode($item['images'], true);
+          if (is_array($decoded)) {
+            $images = $decoded;
+          }
+        }
+        // Fall back to single image if exists
+        if (empty($images) && !empty($item['image'])) {
+          $images = [$item['image']];
+        }
+        // Final fallback to logo
+        if (empty($images)) {
+          $images = ['/assets/images/imageBg/barcie_logo.jpg'];
+        }
+        
+        // Prepare web paths
+        $webImages = [];
+        foreach ($images as $img) {
+          if (str_starts_with($img, 'http') || str_starts_with($img, '/')) {
+            $webImages[] = $img;
           } else {
-            $webImage = '/' . ltrim($imagePath, '/');
+            $webImages[] = '/' . ltrim($img, '/');
           }
         }
         ?>
-        <img src="<?= htmlspecialchars($webImage) ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.parentElement.innerHTML='<div class=\'card-img-top d-flex align-items-center justify-content-center\' style=\'height: 200px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);\'><i class=\'fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> fa-3x text-muted\'></i></div>';">
+        
+        <div class="image-slider-container" style="position: relative; height: 200px; overflow: hidden;">
+          <?php foreach ($webImages as $idx => $webImg): ?>
+            <img src="<?= htmlspecialchars($webImg) ?>" 
+                 class="card-img-top carousel-image-<?= $item['id'] ?>" 
+                 style="height: 200px; object-fit: cover; position: absolute; top: 0; left: 0; width: 100%; transition: opacity 0.3s; <?= $idx === 0 ? 'opacity: 1;' : 'opacity: 0;' ?>" 
+                 alt="<?= htmlspecialchars($item['name']) ?> - Image <?= $idx + 1 ?>"
+                 data-index="<?= $idx ?>"
+                 onerror="this.style.display='none';">
+          <?php endforeach; ?>
+          
+          <?php if (count($webImages) > 1): ?>
+            <!-- Navigation Arrows -->
+            <button class="btn btn-light btn-sm position-absolute start-0 top-50 translate-middle-y ms-2" 
+                    style="opacity: 0.8; z-index: 10;"
+                    onclick="navigateImage(<?= $item['id'] ?>, -1)">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="btn btn-light btn-sm position-absolute end-0 top-50 translate-middle-y me-2" 
+                    style="opacity: 0.8; z-index: 10;"
+                    onclick="navigateImage(<?= $item['id'] ?>, 1)">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            
+            <!-- Image Counter -->
+            <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2" style="z-index: 10;">
+              <span class="badge bg-dark" id="imageCounter<?= $item['id'] ?>">1 / <?= count($webImages) ?></span>
+            </div>
+          <?php endif; ?>
+        </div>
+        
+        <!-- Zoom Button -->
+        <button class="btn btn-light btn-sm position-absolute top-0 start-0 m-2" 
+                style="opacity: 0.8; z-index: 10;"
+                onclick="openImageViewer(<?= $item['id'] ?>, <?= htmlspecialchars(json_encode($webImages)) ?>)">
+          <i class="fas fa-search-plus"></i>
+        </button>
 
         <!-- Type Badge -->
-        <div class="position-absolute top-0 end-0 m-2">
+        <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
           <span class="badge <?= $item['item_type'] === 'room' ? 'bg-primary' : ($item['item_type'] === 'facility' ? 'bg-success' : 'bg-info') ?> px-3 py-2">
             <i class="fas fa-<?= $item['item_type'] === 'room' ? 'bed' : ($item['item_type'] === 'facility' ? 'swimming-pool' : 'concierge-bell') ?> me-1"></i>
             <?= ucfirst($item['item_type']) ?>
@@ -109,26 +161,59 @@ while ($item = $res->fetch_assoc()): ?>
               </div>
 
               <div class="col-12 mb-3">
-                <label class="form-label">Change Image</label>
-                <?php if (!empty($item['image'])): 
-                  // Use the same logic as above for consistency
-                  $displayImagePath = $item['image'];
-                  $projectRoot = realpath(__DIR__ . '/../../..');
-                  $imageFullPath = $projectRoot . '/' . ltrim($displayImagePath, '/');
-                  
-                  if (file_exists($imageFullPath)) {
-                    // Ensure path starts with / for web access
-                    if (!str_starts_with($displayImagePath, '/') && !str_starts_with($displayImagePath, 'http')) {
-                      $displayImagePath = '/' . $displayImagePath;
+                <label class="form-label">Images</label>
+                <?php 
+                  // Handle both old single image and new multiple images format
+                  $images = [];
+                  if (!empty($item['images'])) {
+                    $decoded = json_decode($item['images'], true);
+                    if (is_array($decoded)) {
+                      $images = $decoded;
                     }
+                  } elseif (!empty($item['image'])) {
+                    // Legacy single image
+                    $images = [$item['image']];
+                  }
+                  
+                  if (!empty($images)):
                 ?>
-                  <div class="mb-2">
-                    <img src="<?= htmlspecialchars($displayImagePath) ?>" alt="Current Image" style="max-width: 150px; max-height: 100px; object-fit: cover;" class="rounded" onerror="this.style.display='none'; this.nextElementSibling.textContent='Image not found';">
-                    <p class="text-muted small mb-0">Current image</p>
+                  <div class="mb-2 d-flex flex-wrap gap-2" id="currentImages<?= $item['id'] ?>">
+                    <?php foreach ($images as $idx => $imgPath): 
+                      $displayImagePath = $imgPath;
+                      $projectRoot = realpath(__DIR__ . '/../../..');
+                      $imageFullPath = $projectRoot . '/' . ltrim($displayImagePath, '/');
+                      
+                      if (file_exists($imageFullPath)) {
+                        if (!str_starts_with($displayImagePath, '/') && !str_starts_with($displayImagePath, 'http')) {
+                          $displayImagePath = '/' . $displayImagePath;
+                        }
+                    ?>
+                      <div class="position-relative" data-image-path="<?= htmlspecialchars($imgPath) ?>">
+                        <img src="<?= htmlspecialchars($displayImagePath) ?>" alt="Image <?= $idx + 1 ?>" style="width: 80px; height: 80px; object-fit: cover;" class="rounded">
+                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-1" style="font-size: 10px;" onclick="removeImage<?= $item['id'] ?>('<?= htmlspecialchars($imgPath, ENT_QUOTES) ?>')">
+                          <i class="fas fa-times"></i>
+                        </button>
+                        <span class="badge bg-primary position-absolute bottom-0 start-0 m-1"><?= $idx + 1 ?></span>
+                      </div>
+                    <?php } endforeach; ?>
                   </div>
-                <?php } endif; ?>
-                <input type="file" class="form-control" name="image" accept="image/*">
-                <div class="form-text">Leave empty to keep current image</div>
+                  <input type="hidden" name="removed_images" id="removedImages<?= $item['id'] ?>" value="">
+                  <script>
+                    function removeImage<?= $item['id'] ?>(imagePath) {
+                      const container = document.getElementById('currentImages<?= $item['id'] ?>');
+                      const imageDiv = container.querySelector(`[data-image-path="${imagePath}"]`);
+                      if (imageDiv) {
+                        imageDiv.remove();
+                        const removedInput = document.getElementById('removedImages<?= $item['id'] ?>');
+                        const removed = removedInput.value ? removedInput.value.split(',') : [];
+                        removed.push(imagePath);
+                        removedInput.value = removed.join(',');
+                      }
+                    }
+                  </script>
+                <?php endif; ?>
+                <input type="file" class="form-control" name="images[]" accept="image/*" multiple>
+                <div class="form-text">Add new images or leave empty to keep current images (max 10 total)</div>
               </div>
             </div>
 
@@ -170,3 +255,158 @@ while ($item = $res->fetch_assoc()): ?>
     </div>
   </div>
 <?php endwhile; ?>
+
+<!-- Image Viewer Modal -->
+<div class="modal fade" id="imageViewerModal" tabindex="-1" style="z-index: 99999;">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-dark">
+      <div class="modal-header border-0 text-white">
+        <h5 class="modal-title">Image Viewer</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body position-relative p-0" style="min-height: 500px;">
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 500px; position: relative;">
+          <img id="viewerImage" src="" alt="Viewer Image" style="max-width: 100%; max-height: 80vh; object-fit: contain; transform-origin: center center; transition: transform 0.3s;">
+          
+          <!-- Navigation Arrows -->
+          <button class="btn btn-light position-absolute start-0 top-50 translate-middle-y ms-3" 
+                  id="viewerPrevBtn" onclick="viewerNavigate(-1)" style="z-index: 10;">
+            <i class="fas fa-chevron-left fa-2x"></i>
+          </button>
+          <button class="btn btn-light position-absolute end-0 top-50 translate-middle-y me-3" 
+                  id="viewerNextBtn" onclick="viewerNavigate(1)" style="z-index: 10;">
+            <i class="fas fa-chevron-right fa-2x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer border-0 text-white justify-content-between">
+        <div>
+          <span id="viewerCounter" class="badge bg-secondary">1 / 1</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline-light" onclick="zoomImage(-0.2)" title="Zoom Out">
+            <i class="fas fa-search-minus"></i>
+          </button>
+          <button class="btn btn-outline-light" onclick="resetZoom()" title="Reset Zoom">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button class="btn btn-outline-light" onclick="zoomImage(0.2)" title="Zoom In">
+            <i class="fas fa-search-plus"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Image carousel navigation
+const carouselState = {};
+
+function navigateImage(itemId, direction) {
+  if (!carouselState[itemId]) {
+    carouselState[itemId] = { currentIndex: 0 };
+  }
+  
+  const images = document.querySelectorAll(`.carousel-image-${itemId}`);
+  if (images.length <= 1) return;
+  
+  // Hide current image
+  images[carouselState[itemId].currentIndex].style.opacity = '0';
+  
+  // Calculate new index
+  carouselState[itemId].currentIndex += direction;
+  if (carouselState[itemId].currentIndex < 0) {
+    carouselState[itemId].currentIndex = images.length - 1;
+  } else if (carouselState[itemId].currentIndex >= images.length) {
+    carouselState[itemId].currentIndex = 0;
+  }
+  
+  // Show new image
+  images[carouselState[itemId].currentIndex].style.opacity = '1';
+  
+  // Update counter
+  const counter = document.getElementById(`imageCounter${itemId}`);
+  if (counter) {
+    counter.textContent = `${carouselState[itemId].currentIndex + 1} / ${images.length}`;
+  }
+}
+
+// Image viewer
+let viewerImages = [];
+let viewerCurrentIndex = 0;
+let viewerZoom = 1;
+
+function openImageViewer(itemId, images) {
+  viewerImages = images;
+  viewerCurrentIndex = carouselState[itemId]?.currentIndex || 0;
+  viewerZoom = 1;
+  
+  updateViewerImage();
+  
+  const modal = new bootstrap.Modal(document.getElementById('imageViewerModal'));
+  modal.show();
+}
+
+function updateViewerImage() {
+  const img = document.getElementById('viewerImage');
+  const counter = document.getElementById('viewerCounter');
+  const prevBtn = document.getElementById('viewerPrevBtn');
+  const nextBtn = document.getElementById('viewerNextBtn');
+  
+  if (viewerImages.length > 0) {
+    img.src = viewerImages[viewerCurrentIndex];
+    img.style.transform = `scale(${viewerZoom})`;
+    counter.textContent = `${viewerCurrentIndex + 1} / ${viewerImages.length}`;
+    
+    // Show/hide navigation buttons
+    if (viewerImages.length <= 1) {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+    } else {
+      prevBtn.style.display = 'block';
+      nextBtn.style.display = 'block';
+    }
+  }
+}
+
+function viewerNavigate(direction) {
+  viewerCurrentIndex += direction;
+  if (viewerCurrentIndex < 0) {
+    viewerCurrentIndex = viewerImages.length - 1;
+  } else if (viewerCurrentIndex >= viewerImages.length) {
+    viewerCurrentIndex = 0;
+  }
+  updateViewerImage();
+}
+
+function zoomImage(delta) {
+  viewerZoom += delta;
+  if (viewerZoom < 0.5) viewerZoom = 0.5;
+  if (viewerZoom > 3) viewerZoom = 3;
+  document.getElementById('viewerImage').style.transform = `scale(${viewerZoom})`;
+}
+
+function resetZoom() {
+  viewerZoom = 1;
+  document.getElementById('viewerImage').style.transform = `scale(1)`;
+}
+
+// Keyboard navigation for viewer
+document.addEventListener('keydown', function(e) {
+  const modal = document.getElementById('imageViewerModal');
+  if (modal.classList.contains('show')) {
+    if (e.key === 'ArrowLeft') {
+      viewerNavigate(-1);
+    } else if (e.key === 'ArrowRight') {
+      viewerNavigate(1);
+    } else if (e.key === '+' || e.key === '=') {
+      zoomImage(0.2);
+    } else if (e.key === '-') {
+      zoomImage(-0.2);
+    } else if (e.key === '0') {
+      resetZoom();
+    }
+  }
+});
+</script>

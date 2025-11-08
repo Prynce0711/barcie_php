@@ -77,17 +77,101 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
       }
 
-      // Get current image path from database first
-      $current_image_stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
+      // Get current images from database
+      $current_image_stmt = $conn->prepare("SELECT image, images FROM items WHERE id=?");
       $current_image_stmt->bind_param("i", $id);
       $current_image_stmt->execute();
-      $current_image_stmt->bind_result($current_image);
+      $current_image_stmt->bind_result($current_image, $current_images_json);
       $current_image_stmt->fetch();
       $current_image_stmt->close();
 
-      $image_path = $current_image; // Use current image as default
+      // Parse current images
+      $current_images = [];
+      if (!empty($current_images_json)) {
+        $decoded = json_decode($current_images_json, true);
+        if (is_array($decoded)) {
+          $current_images = $decoded;
+        }
+      } elseif (!empty($current_image)) {
+        $current_images = [$current_image];
+      }
       
-      // Handle new image upload
+      // Handle removed images
+      if (!empty($_POST['removed_images'])) {
+        $removed = explode(',', $_POST['removed_images']);
+        foreach ($removed as $removed_path) {
+          $removed_path = trim($removed_path);
+          if (empty($removed_path)) continue;
+          
+          // Remove from array
+          $current_images = array_filter($current_images, function($img) use ($removed_path) {
+            return $img !== $removed_path;
+          });
+          
+          // Delete file
+          $full_path = __DIR__ . "/../../../" . ltrim($removed_path, '/');
+          if (file_exists($full_path)) {
+            unlink($full_path);
+            error_log("Deleted removed image: $full_path");
+          }
+        }
+        $current_images = array_values($current_images); // Re-index array
+      }
+      
+      // Handle new image uploads
+      if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
+        $file_count = count($_FILES['images']['name']);
+        $total_images = count($current_images) + $file_count;
+        
+        if ($total_images > 10) {
+          $_SESSION['error_message'] = "Maximum 10 images allowed. You currently have " . count($current_images) . " images.";
+          header("Location: dashboard.php#rooms");
+          exit;
+        }
+        
+        for ($i = 0; $i < $file_count; $i++) {
+          if (empty($_FILES['images']['name'][$i]) || $_FILES['images']['error'][$i] === UPLOAD_ERR_NO_FILE) {
+            continue;
+          }
+          
+          if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
+            continue;
+          }
+          
+          $max_file_size = 20 * 1024 * 1024;
+          if ($_FILES['images']['size'][$i] > $max_file_size) {
+            continue;
+          }
+          
+          $target_dir = __DIR__ . "/../../../uploads/";
+          if (!file_exists($target_dir)) {
+            mkdir($target_dir, 0755, true);
+          }
+          
+          $file_extension = strtolower(pathinfo($_FILES["images"]["name"][$i], PATHINFO_EXTENSION));
+          $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+          
+          if (in_array($file_extension, $allowed_extensions)) {
+            $image_info = @getimagesize($_FILES["images"]["tmp_name"][$i]);
+            if ($image_info === false) continue;
+            
+            $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!in_array($image_info['mime'], $allowed_mime_types)) continue;
+            
+            $unique_filename = time() . "_" . uniqid() . "_$i." . $file_extension;
+            $target_file = $target_dir . $unique_filename;
+            
+            if (move_uploaded_file($_FILES["images"]["tmp_name"][$i], $target_file)) {
+              chmod($target_file, 0644);
+              $current_images[] = "uploads/" . $unique_filename;
+              error_log("New image uploaded: uploads/$unique_filename");
+            }
+          }
+        }
+      }
+      
+      // Legacy single image support
+      $image_path = $current_image;
       if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         // Security: Validate file size (max 5MB)
         $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
@@ -169,14 +253,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
       }
 
-      // Update the database
+      // Update the database with images JSON
+      $images_json = !empty($current_images) ? json_encode($current_images) : null;
+      
       // include addons column in update if present
       if ($addons_json !== null) {
-        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, addons=? WHERE id=?");
-        $stmt->bind_param("ssssidssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $addons_json, $id);
+        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, images=?, addons=? WHERE id=?");
+        $stmt->bind_param("ssssidssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $addons_json, $id);
       } else {
-        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=? WHERE id=?");
-        $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $id);
+        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, images=? WHERE id=?");
+        $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $id);
       }
       
       if ($stmt->execute()) {
@@ -289,13 +375,76 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
     
-    // Handle image upload
-    $image_path = null;
-    error_log("Checking for image upload...");
+    // Handle multiple image uploads
+    $uploaded_images = [];
+    error_log("Checking for image uploads...");
     
-    if (empty($_FILES['image']['name'])) {
-      error_log("No image file uploaded - FILES[image][name] is empty");
-    } elseif ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+    if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
+      $file_count = count($_FILES['images']['name']);
+      error_log("Multiple images detected: $file_count files");
+      
+      if ($file_count > 10) {
+        $_SESSION['error_message'] = "Maximum 10 images allowed.";
+        header("Location: dashboard.php#rooms");
+        exit;
+      }
+      
+      for ($i = 0; $i < $file_count; $i++) {
+        if (empty($_FILES['images']['name'][$i]) || $_FILES['images']['error'][$i] === UPLOAD_ERR_NO_FILE) {
+          continue;
+        }
+        
+        if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
+          $errCode = $_FILES['images']['error'][$i];
+          error_log("Image $i upload error code: " . $errCode);
+          continue;
+        }
+        
+        // Validate file size (max 20MB per image)
+        $max_file_size = 20 * 1024 * 1024;
+        if ($_FILES['images']['size'][$i] > $max_file_size) {
+          error_log("Image $i too large: " . $_FILES['images']['size'][$i] . " bytes");
+          continue;
+        }
+        
+        $target_dir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/";
+        if (!file_exists($target_dir)) {
+          mkdir($target_dir, 0755, true);
+        }
+        
+        $file_extension = strtolower(pathinfo($_FILES["images"]["name"][$i], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (in_array($file_extension, $allowed_extensions)) {
+          $image_info = @getimagesize($_FILES["images"]["tmp_name"][$i]);
+          if ($image_info === false) {
+            error_log("Image $i invalid - not a real image");
+            continue;
+          }
+          
+          $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+          if (!in_array($image_info['mime'], $allowed_mime_types)) {
+            error_log("Image $i invalid MIME type: " . $image_info['mime']);
+            continue;
+          }
+          
+          $unique_filename = time() . "_" . uniqid() . "_$i." . $file_extension;
+          $target_file = $target_dir . $unique_filename;
+          
+          if (move_uploaded_file($_FILES["images"]["tmp_name"][$i], $target_file)) {
+            chmod($target_file, 0644);
+            $uploaded_images[] = "uploads/" . $unique_filename;
+            error_log("Image $i uploaded successfully: uploads/$unique_filename");
+          }
+        }
+      }
+    }
+    
+    // Legacy single image upload support (if using old form)
+    $image_path = null;
+    if (empty($uploaded_images) && !empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+      error_log("Legacy single image upload detected");
+    } elseif (!empty($_FILES['image']['name']) && $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
       $errCode = $_FILES['image']['error'];
       error_log("Image upload error code: " . $errCode);
       $upload_errors = [
@@ -410,7 +559,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     // Insert with default room_status = 'available'
-    error_log("Preparing to insert item with image_path: " . ($image_path ?? 'NULL'));
+    // Prepare images JSON
+    $images_json = null;
+    if (!empty($uploaded_images)) {
+      $images_json = json_encode($uploaded_images);
+      error_log("Preparing to insert item with " . count($uploaded_images) . " images");
+    } elseif (!empty($image_path)) {
+      // Legacy single image
+      $images_json = json_encode([$image_path]);
+      error_log("Preparing to insert item with single legacy image: " . $image_path);
+    }
+    
     // Handle addons for new item (optional)
     $addons_json = null;
     if (!empty($_POST['addons_json'])) {
@@ -423,11 +582,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     if ($addons_json !== null) {
-      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, addons, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
-      $stmt->bind_param("ssssidss", $name, $type, $room_number, $description, $capacity, $price, $image_path, $addons_json);
+      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, images, addons, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
+      $stmt->bind_param("ssssidsss", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $addons_json);
     } else {
-      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
-      $stmt->bind_param("ssssids", $name, $type, $room_number, $description, $capacity, $price, $image_path);
+      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, images, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
+      $stmt->bind_param("ssssidss", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json);
     }
     
     if ($stmt->execute()) {

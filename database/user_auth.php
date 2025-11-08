@@ -624,7 +624,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                 throw new Exception("Items table does not exist in database");
             }
             
-            $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, room_status FROM items ORDER BY created_at DESC";
+            $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, images, room_status FROM items ORDER BY created_at DESC";
             $res = $conn->query($sql);
             
             if (!$res) {
