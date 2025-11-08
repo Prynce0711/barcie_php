@@ -407,6 +407,12 @@ function ensureDatabaseStructure($conn) {
             'discount_status' => 'VARCHAR(50) DEFAULT "none"',
             // Dedicated column to store path to uploaded discount proof (if any)
             'proof_of_id' => 'VARCHAR(255) NULL',
+            // Payment verification columns
+            'payment_status' => 'VARCHAR(50) DEFAULT "none"',
+            'proof_of_payment' => 'VARCHAR(255) NULL',
+            // Audit trail for payment verification
+            'payment_verified_by' => 'INT NULL',
+            'payment_verified_at' => 'DATETIME NULL',
             'checkin' => 'DATETIME NULL',
             'checkout' => 'DATETIME NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
@@ -1309,6 +1315,9 @@ if ($action === 'create_booking') {
     $discount_details = $_POST['discount_details'] ?? '';
     $discount_proof_path = '';
 
+    // Payment proof (e.g., bank transfer receipt) path
+    $payment_proof_path = '';
+
     // Handle file upload for discount proof
     // NOTE: Client-side validation (filename heuristics) is performed in the browser, but
     // server-side validation is still required for security and correctness. Recommended server-side checks:
@@ -1332,6 +1341,22 @@ if ($action === 'create_booking') {
         }
     }
 
+
+    // Handle file upload for payment proof (bank transfer receipts)
+    if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = __DIR__ . '/../uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        $file_tmp = $_FILES['payment_proof']['tmp_name'];
+        $file_ext = pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION);
+        $file_name = time() . '_pay_' . uniqid() . '.' . $file_ext;
+        $target_path = $upload_dir . $file_name;
+        if (move_uploaded_file($file_tmp, $target_path)) {
+            $payment_proof_path = 'uploads/' . $file_name;
+            error_log("Payment proof uploaded to: " . $payment_proof_path);
+        }
+    }
     // Validate room/facility selection
     if ($room_id <= 0) {
         handleResponse("Please select a room or facility.", false, '../Guest.php');
@@ -1436,12 +1461,12 @@ if ($action === 'create_booking') {
             error_log("Booking Debug - Details: " . substr($details, 0, 100));
             error_log("Booking Debug - Status: $status, Checkin: $checkin, Checkout: $checkout");
 
-            // Include proof_of_id column so uploaded proof path is stored separately
-            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, proof_of_id, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            // Include proof_of_id and proof_of_payment columns so uploaded proof paths are stored separately
+            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, proof_of_id, proof_of_payment, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $conn->error);
             }
-            $stmt->bind_param("sisssssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $proof_of_id, $checkin, $checkout);
+            $stmt->bind_param("sissssssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $proof_of_id, $payment_proof_path, $checkin, $checkout);
             $success = $stmt->execute();
 
             if (!$success) {
@@ -2349,6 +2374,129 @@ if ($action === 'admin_update_discount') {
         exit;
     } else {
         $_SESSION['msg'] = $success ? "Discount " . ($discountAction === 'approve' ? 'approved' : 'rejected') . " successfully." : "Error updating discount.";
+        redirect('../dashboard.php');
+    }
+}
+
+/* ---------------------------
+   ADMIN: update payment verification status
+   --------------------------- */
+if ($action === 'admin_update_payment') {
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
+    }
+
+    $bookingId = (int)($_POST['booking_id'] ?? 0);
+    $paymentAction = $_POST['payment_action'] ?? ''; // 'verify' or 'reject'
+
+    if (!in_array($paymentAction, ['verify', 'reject'])) {
+        $_SESSION['msg'] = "Unknown payment action.";
+        redirect('../dashboard.php');
+    }
+
+    $newPaymentStatus = $paymentAction === 'verify' ? 'verified' : 'rejected';
+
+    // Get booking details first
+    $booking_stmt = $conn->prepare("SELECT details, proof_of_payment, payment_status FROM bookings WHERE id = ?");
+    $booking_stmt->bind_param("i", $bookingId);
+    $booking_stmt->execute();
+    $booking_result = $booking_stmt->get_result();
+    $booking_data = $booking_result->fetch_assoc();
+    $booking_stmt->close();
+
+    // Update payment status and set audit trail (who verified and when)
+    $admin_id = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : 0;
+    $stmt = $conn->prepare("UPDATE bookings SET payment_status = ?, payment_verified_by = ?, payment_verified_at = NOW() WHERE id = ?");
+    $stmt->bind_param("sii", $newPaymentStatus, $admin_id, $bookingId);
+    $success = $stmt->execute();
+    $stmt->close();
+
+    if ($success && $booking_data) {
+        // Extract guest info from details
+        $details = $booking_data['details'];
+        $guest_email = '';
+        $guest_name = 'Guest';
+        $receipt_no = '';
+
+        if (preg_match('/Email:\s*([^|]+)/', $details, $matches)) {
+            $guest_email = trim($matches[1]);
+        }
+        if (preg_match('/Guest:\s*([^|]+)/', $details, $matches)) {
+            $guest_name = trim($matches[1]);
+        }
+        if (preg_match('/Receipt:\s*([^|]+)/', $details, $matches)) {
+            $receipt_no = trim($matches[1]);
+        }
+
+        // Send email notification about payment decision
+        if (!empty($guest_email)) {
+            error_log("========================================");
+            error_log("PAYMENT UPDATE EMAIL - Booking ID: $bookingId");
+            error_log("Action: $paymentAction");
+            error_log("Guest: $guest_name");
+            error_log("Email: $guest_email");
+            error_log("========================================");
+
+            $emailSubject = '';
+            $emailContent = '';
+
+            if ($paymentAction === 'verify') {
+                $emailSubject = 'Payment Verified - BarCIE International Center';
+                $emailContent = '
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                            ✓ PAYMENT VERIFIED
+                        </div>
+                    </div>
+                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Payment Received</h2>
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,</p>
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">We have verified your payment' . (!empty($receipt_no) ? ' for receipt <strong>' . htmlspecialchars($receipt_no) . '</strong>' : '') . '. Thank you! Your booking will be processed accordingly.</p>';
+            } else {
+                $emailSubject = 'Payment Verification Failed - BarCIE International Center';
+                $emailContent = '
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="display: inline-block; background-color: #dc3545; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
+                            ✗ PAYMENT NOT VERIFIED
+                        </div>
+                    </div>
+                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Payment Could Not Be Verified</h2>
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,</p>
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">We were unable to verify the payment you submitted' . (!empty($receipt_no) ? ' for receipt <strong>' . htmlspecialchars($receipt_no) . '</strong>' : '') . '. Please contact us or re-submit a clearer proof of payment.</p>';
+            }
+
+            if ($emailSubject && $emailContent) {
+                $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
+                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
+                error_log("PAYMENT UPDATE EMAIL - Result: " . ($email_sent ? "SUCCESS" : "FAILED"));
+            }
+        }
+    }
+
+    // AJAX response
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        if ($success) {
+            // Build verifier info
+            $verifier_id = $admin_id;
+            $verifier_username = isset($_SESSION['admin_username']) ? $_SESSION['admin_username'] : '';
+            // Use server time for verified_at
+            $verified_at = date('Y-m-d H:i:s');
+
+            echo json_encode([
+                'success' => true,
+                'message' => "Payment " . ($paymentAction === 'verify' ? 'verified' : 'rejected') . " successfully.",
+                'payment_status' => $newPaymentStatus,
+                'verifier_id' => $verifier_id,
+                'verifier_username' => $verifier_username,
+                'verified_at' => $verified_at
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Error updating payment status.']);
+        }
+        exit;
+    } else {
+        $_SESSION['msg'] = $success ? "Payment " . ($paymentAction === 'verify' ? 'verified' : 'rejected') . " successfully." : "Error updating payment.";
         redirect('../dashboard.php');
     }
 }

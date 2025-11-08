@@ -34,6 +34,12 @@
             <div><strong>Account Number:</strong> 575-7-575007089</div>
             <div><strong>Branch:</strong> Malolos Mc Arthur</div>
           </div>
+          
+          <div id="modal_payment_proof_wrap" style="display:none;" class="mb-2">
+            <label class="form-label">Upload Proof of Payment (Bank Transfer)</label>
+            <input type="file" id="modal_payment_proof" accept="image/*,application/pdf" class="form-control">
+            <small class="text-muted">Accepted: images or PDF. Max recommended size: 5MB.</small>
+          </div>
 
 
           <div class="d-flex justify-content-between align-items-center mt-3">
@@ -64,6 +70,13 @@
  * - On confirm, appends add-on fields to the original form and submits
  */
 (function () {
+  // Notification helper: prefer showToast if available, fallback to alert
+  function notify(message, type = 'info') {
+    try {
+      if (typeof showToast === 'function') return showToast(message, type);
+    } catch (e) {}
+    try { alert(message); } catch (e) { /* ignore */ }
+  }
   // Default add-on catalogue - admin can override per-item via DB
   const DEFAULT_ADDONS = [
     { id: 'addon_breakfast', label: 'Breakfast (per person / per night)', price: 150, pricing: 'per_person' },
@@ -284,7 +297,7 @@
               setTimeout(() => { try { discountInfo.style.display = 'none'; } catch (e) {} }, 8000);
             }
           } else {
-            try { alert(msg); } catch (e) { /* ignore */ }
+            try { notify(msg, 'error'); } catch (e) { /* ignore */ }
           }
           // Focus the proof input if available
           try { if (proofField) proofField.focus(); } catch (e) { /* ignore */ }
@@ -313,9 +326,13 @@
         if (orig) modalPay.value = orig.value || 'cash';
         modalPay.addEventListener('change', () => {
           if (modalBank) modalBank.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
+          const proofWrap = document.getElementById('modal_payment_proof_wrap');
+          if (proofWrap) proofWrap.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
         });
         // set initial visibility
         if (modalBank) modalBank.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
+        const proofWrapInit = document.getElementById('modal_payment_proof_wrap');
+        if (proofWrapInit) proofWrapInit.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
       }
     } catch (err) { /* ignore */ }
 
@@ -479,22 +496,29 @@
                 let discountInfo = proofAlert || document.getElementById('discount_info_text') || (currentForm && currentForm.querySelector('#discount_info_text'));
                 if (discountInfo) {
                   if (proofAlert === discountInfo) {
-                    discountInfo.innerHTML = '<small class="text-info" style="display:inline-block; margin-left:6px;">' + infoMsg + '</small>';
-                    setTimeout(() => { try { discountInfo.innerHTML = ''; } catch (e) {} }, 6000);
-                  } else {
-                    discountInfo.innerHTML = '<div class="alert alert-info mb-0">' + infoMsg + '</div>';
-                    discountInfo.style.display = 'block';
-                    setTimeout(() => { try { discountInfo.style.display = 'none'; } catch (e) {} }, 6000);
-                  }
-                } else {
-                  try { alert(infoMsg); } catch (e) { /* ignore */ }
-                }
+                        discountInfo.innerHTML = '<small class="text-info" style="display:inline-block; margin-left:6px;">' + infoMsg + '</small>';
+                        setTimeout(() => { try { discountInfo.innerHTML = ''; } catch (e) {} }, 6000);
+                      } else {
+                        discountInfo.innerHTML = '<div class="alert alert-info mb-0">' + infoMsg + '</div>';
+                        discountInfo.style.display = 'block';
+                        setTimeout(() => { try { discountInfo.style.display = 'none'; } catch (e) {} }, 6000);
+                      }
+                    } else {
+                      try { notify(infoMsg, 'info'); } catch (e) { /* ignore */ }
+                    }
               } catch (e) { /* ignore */ }
             }
           }
         } catch (e) { /* ignore errors */ }
 
         const fd = new FormData(currentForm);
+        // If user attached a payment proof in the modal, append it to the form data
+        try {
+          const modalPaymentProof = document.getElementById('modal_payment_proof');
+          if (modalPaymentProof && modalPaymentProof.files && modalPaymentProof.files.length > 0) {
+            fd.append('payment_proof', modalPaymentProof.files[0]);
+          }
+        } catch (e) { /* ignore */ }
         
         // CRITICAL: Add the action field if not present (required by user_auth.php)
         if (!fd.has('action')) {
@@ -510,15 +534,19 @@
 
         // If the form includes an uploaded discount proof file, prefer XHR so we can show upload progress
         const proofInput = currentForm.querySelector('#discount_proof');
-        const hasProof = fd.has('discount_proof') && fd.get('discount_proof') && fd.get('discount_proof').size > 0;
+        const discountProof = fd.get('discount_proof');
+        const paymentProof = fd.get('payment_proof');
+        const hasProof = (discountProof && typeof discountProof.size !== 'undefined' && discountProof.size > 0) || (paymentProof && typeof paymentProof.size !== 'undefined' && paymentProof.size > 0);
 
         if (hasProof) {
-          // enforce client-side validation flag (set by discount_application.js)
-          if (proofInput && proofInput.dataset && proofInput.dataset.validProof !== '1') {
-            alert('Uploaded proof did not pass preliminary validation: ' + (proofInput.dataset.validReason || 'Please upload a valid ID/proof for the selected discount.'));
+          // If discount proof exists, validate it using existing dataset flags
+          if (discountProof && discountProof.size > 0) {
+            if (proofInput && proofInput.dataset && proofInput.dataset.validProof !== '1') {
+            notify('Uploaded proof did not pass preliminary validation: ' + (proofInput.dataset.validReason || 'Please upload a valid ID/proof for the selected discount.'), 'error');
             confirmBtn.disabled = false;
             confirmBtn.innerHTML = 'Confirm & Proceed';
             return;
+          }
           }
 
           // Use XMLHttpRequest to get upload progress events
@@ -556,18 +584,18 @@
             window.currentBookingUploadXhr = xhr;
 
             // Wire cancel button if available
-            if (cancelBtn) {
-              cancelBtn.onclick = function() {
-                if (window.currentBookingUploadXhr) {
-                  window.currentBookingUploadXhr.abort();
-                  window.currentBookingUploadXhr = null;
-                  if (progressBar) { progressBar.style.width = '0%'; progressBar.textContent = 'Cancelled'; }
-                  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = 'Confirm & Proceed'; }
-                  if (uploadControls) uploadControls.style.display = 'none';
-                  alert('Upload cancelled. You can choose a different file or try again.');
+                if (cancelBtn) {
+                  cancelBtn.onclick = function() {
+                    if (window.currentBookingUploadXhr) {
+                      window.currentBookingUploadXhr.abort();
+                      window.currentBookingUploadXhr = null;
+                      if (progressBar) { progressBar.style.width = '0%'; progressBar.textContent = 'Cancelled'; }
+                      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = 'Confirm & Proceed'; }
+                      if (uploadControls) uploadControls.style.display = 'none';
+                      notify('Upload cancelled. You can choose a different file or try again.', 'info');
+                    }
+                  };
                 }
-              };
-            }
 
             xhr.onreadystatechange = function() {
               if (xhr.readyState !== 4) return;
@@ -587,14 +615,14 @@
               }
 
               if (xhr.status >= 200 && xhr.status < 300 && jsonResponse && jsonResponse.success) {
-                alert(jsonResponse.message || 'Booking submitted successfully!');
+                notify(jsonResponse.message || 'Booking submitted successfully!', 'success');
                 setTimeout(() => { window.location.href = 'Guest.php#booking'; }, 300);
                 resolve();
                 return;
               }
 
               const errorMsg = (jsonResponse && (jsonResponse.message || jsonResponse.error)) || 'Booking submission failed. Please try again.';
-              alert(errorMsg);
+              notify(errorMsg, 'error');
               confirmBtn.disabled = false;
               confirmBtn.innerHTML = 'Confirm & Proceed';
               resolve();
@@ -602,7 +630,7 @@
 
             xhr.onerror = function() {
               if (progressBar) { progressBar.style.width = '0%'; progressBar.textContent = 'Error'; }
-              alert('An error occurred uploading the file. Please check your connection and try again.');
+              notify('An error occurred uploading the file. Please check your connection and try again.', 'error');
               confirmBtn.disabled = false;
               confirmBtn.innerHTML = 'Confirm & Proceed';
               window.currentBookingUploadXhr = null;
@@ -652,7 +680,7 @@
         if (res.ok && jsonResponse && jsonResponse.success) {
           // Success - show message and redirect
           console.log('Booking successful:', jsonResponse.message);
-          alert(jsonResponse.message || 'Booking submitted successfully!');
+          notify(jsonResponse.message || 'Booking submitted successfully!', 'success');
           
           setTimeout(() => {
             window.location.href = 'Guest.php#booking';
@@ -663,14 +691,14 @@
         // Handle error response
         const errorMsg = jsonResponse?.message || jsonResponse?.error || 'Booking submission failed. Please try again.';
         console.error('Booking failed:', errorMsg);
-        alert(errorMsg);
+        notify(errorMsg, 'error');
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = 'Confirm & Proceed';
         return;
 
       } catch (err) {
         console.error('Submit error', err);
-        alert('An error occurred while submitting your booking. Please open the browser console for details.');
+        notify('An error occurred while submitting your booking. Please open the browser console for details.', 'error');
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = 'Confirm & Proceed';
       }
