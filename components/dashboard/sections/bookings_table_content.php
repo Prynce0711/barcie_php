@@ -38,7 +38,7 @@ while ($booking = $bookings->fetch_assoc()):
     $room_facility .= ' #' . $booking['room_number'];
   }
   ?>
-  <tr>
+  <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
     <!-- Receipt # -->
     <td>
       <strong style="font-size: 0.7rem;">BARCIE-<?= date('Ymd', strtotime($booking['created_at'])) ?>-<?= str_pad($booking['id'], 4, '0', STR_PAD_LEFT) ?></strong>

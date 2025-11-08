@@ -31,7 +31,13 @@
             </div>
             <div class="col-md-3">
               <label class="form-label">Filter by Type:</label>
-              <select class="form-select" id="typeFilter" onchange="filterBookings()">
+              <!-- Button group for quick type filtering (keeps select for compatibility but hidden) -->
+              <div class="btn-group w-100 mb-2" role="group" aria-label="Type filter">
+                <button type="button" class="btn btn-secondary type-filter-btn active" data-type=""><i class="fas fa-list me-1"></i>All</button>
+                <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="room"><i class="fas fa-bed me-1"></i>Room</button>
+                <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="facility"><i class="fas fa-building me-1"></i>Facility</button>
+              </div>
+              <select class="form-select d-none" id="typeFilter" onchange="filterBookings()">
                 <option value="">All Types</option>
                 <option value="room">Room</option>
                 <option value="facility">Facility</option>
@@ -119,6 +125,98 @@
           });
         });
       });
+    })();
+  </script>
+  <script>
+    (function(){
+      // Sync type filter buttons with hidden select and call filterBookings()
+      function setTypeFilter(type, trigger){
+        const sel = document.getElementById('typeFilter');
+        if (!sel) return;
+        sel.value = type;
+        // update button visuals: active becomes filled, others outline
+        document.querySelectorAll('.type-filter-btn').forEach(b=>{
+          b.classList.remove('active');
+          b.classList.remove('btn-secondary');
+          b.classList.add('btn-outline-secondary');
+        });
+        const btn = document.querySelector('.type-filter-btn[data-type="' + type + '"]');
+        if (btn) {
+          btn.classList.add('active');
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-secondary');
+        }
+        if (trigger !== false) {
+          try { window.filterBookings && window.filterBookings(); } catch(e){ console.error('filterBookings() error', e); }
+        }
+      }
+
+      document.addEventListener('click', function(e){
+        const btn = e.target.closest('.type-filter-btn');
+        if (!btn) return;
+        const type = btn.getAttribute('data-type') || '';
+        setTypeFilter(type);
+      });
+
+      document.addEventListener('DOMContentLoaded', function(){
+        const sel = document.getElementById('typeFilter');
+        if (sel) {
+          const cur = sel.value || '';
+          const initial = document.querySelector('.type-filter-btn[data-type="' + cur + '"]');
+          if (initial) {
+            document.querySelectorAll('.type-filter-btn').forEach(b=>b.classList.remove('active'));
+            initial.classList.add('active');
+          }
+        }
+      });
+    
+      // Client-side filtering implementation
+      try {
+        if (typeof window.filterBookings === 'function') {
+          // preserve previous implementation if any
+          window._serverFilterBookings = window.filterBookings;
+        }
+      } catch(e) { console.warn(e); }
+
+      window.filterBookings = function(){
+        const status = (document.getElementById('statusFilter')?.value || '').toLowerCase();
+        const type = (document.getElementById('typeFilter')?.value || '').toLowerCase();
+        const query = (document.getElementById('guestSearch')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#bookingsTable tbody tr');
+        let visibleCount = 0;
+        rows.forEach(row => {
+          // skip template/comment rows
+          if (row.closest('tbody') === null) return;
+          const rstatus = (row.dataset.status || '').toLowerCase();
+          const rtype = (row.dataset.type || '').toLowerCase();
+          const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
+
+          let show = true;
+          if (status && rstatus.indexOf(status) === -1) show = false;
+          if (type && rtype.indexOf(type) === -1) show = false;
+          if (query && rguest.indexOf(query) === -1) show = false;
+
+          row.style.display = show ? '' : 'none';
+          if (show) visibleCount++;
+        });
+
+        // show a no-results row when filtered out completely
+        const noId = 'bookings-no-results';
+        let noRow = document.getElementById(noId);
+        if (visibleCount === 0) {
+          if (!noRow) {
+            const cols = document.querySelectorAll('#bookingsTable thead th').length || 9;
+            noRow = document.createElement('tr');
+            noRow.id = noId;
+            noRow.innerHTML = '<td colspan="' + cols + '" class="text-center text-muted">No bookings match your filters.</td>';
+            const tbody = document.querySelector('#bookingsTable tbody');
+            if (tbody) tbody.appendChild(noRow);
+          }
+        } else {
+          if (noRow && noRow.parentNode) noRow.parentNode.removeChild(noRow);
+        }
+      };
+
     })();
   </script>
   <script>
