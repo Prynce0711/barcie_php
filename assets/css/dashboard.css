@@ -2961,12 +2961,34 @@ html {
 
 .room-card {
   transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
 }
 
 .room-card:hover {
   background-color: var(--gray-50);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.room-card:hover .view-calendar-btn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.room-card .view-calendar-btn {
+  opacity: 0.8;
+  transition: all 0.2s ease;
+  transform: translateX(-5px);
+}
+
+.room-item[data-room-id] {
+  cursor: pointer;
+}
+
+.room-list-item:hover {
+  background-color: #f8f9fa !important;
+  border-left: 3px solid var(--bs-primary, #0d6efd);
 }
 
 /* Room status indicators */
