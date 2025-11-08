@@ -1,4 +1,6 @@
 <?php
+// Ensure server-side times use Philippine time
+date_default_timezone_set('Asia/Manila');
 // Data Processing File
 // This file contains all the PHP logic for dashboard data processing
 // Include this file in the main dashboard.php

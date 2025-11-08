@@ -1,4 +1,6 @@
 <?php
+// Set default timezone to Philippine Time
+date_default_timezone_set('Asia/Manila');
 // Common bootstrap for BarCIE API endpoints
 
 // Start output buffering to prevent stray output

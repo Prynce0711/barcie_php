@@ -334,6 +334,8 @@ function initializeCalendar() {
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: "dayGridMonth",
+      // Ensure dashboard calendar uses Philippine time
+      timeZone: "Asia/Manila",
       headerToolbar: {
         left: "prev,next today",
         center: "title",
@@ -1936,6 +1938,8 @@ function initializeRoomCalendar() {
 
   window.roomCalendarInstance = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
+    // Ensure room calendar uses Philippine time
+    timeZone: "Asia/Manila",
     headerToolbar: {
       left: "prev,next today",
       center: "title",
