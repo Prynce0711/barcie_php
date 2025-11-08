@@ -54,40 +54,6 @@
               <div id="roomCalendar"></div>
             </div>
           </div>
-        <div class="modal fade" id="roomCalendarModal" tabindex="-1" aria-labelledby="roomCalendarModalLabel" aria-hidden="true">
-          <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header d-flex align-items-center">
-                <h5 class="modal-title me-3" id="roomCalendarModalLabel">Room Calendar</h5>
-                <div class="me-auto">
-                  <label class="small text-muted me-2">Range:</label>
-                  <select id="roomCalendarRange" class="form-select form-select-sm d-inline-block" style="width: auto;">
-                    <option value="30">30 days</option>
-                    <option value="90">90 days</option>
-                    <option value="365">365 days</option>
-                  </select>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="row">
-                  <div class="col-lg-8">
-                    <div id="roomModalCalendar"></div>
-                  </div>
-                  <div class="col-lg-4">
-                    <div id="roomBookingDetails" class="border rounded p-3" style="min-height:320px;">
-                      <h6 class="mb-2">Booking Details</h6>
-                      <div id="roomBookingDetailsContent" class="small text-muted">Select a booking event to see details here.</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
 
           <!-- Room List View -->
           <div id="room-list-content" class="calendar-content" style="display: none;">
@@ -110,6 +76,42 @@
             </div>
           </div>
 
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Calendar Modal - outside the card for proper z-index -->
+  <div class="modal fade" id="roomCalendarModal" tabindex="-1" aria-labelledby="roomCalendarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header d-flex align-items-center">
+          <h5 class="modal-title me-3" id="roomCalendarModalLabel">Room Calendar</h5>
+          <div class="me-auto">
+            <label class="small text-muted me-2">Range:</label>
+            <select id="roomCalendarRange" class="form-select form-select-sm d-inline-block" style="width: auto;">
+              <option value="30">30 days</option>
+              <option value="90" selected>90 days</option>
+              <option value="365">365 days</option>
+            </select>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-lg-8">
+              <div id="roomModalCalendar"></div>
+            </div>
+            <div class="col-lg-4">
+              <div id="roomBookingDetails" class="border rounded p-3" style="min-height:320px;">
+                <h6 class="mb-2">Booking Details</h6>
+                <div id="roomBookingDetailsContent" class="small text-muted">Select a booking event to see details here.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -273,11 +275,17 @@
 
         // Room search and click wiring
         function initializeRoomSearch() {
+          console.log('Initializing room search...');
           const searchInput = document.getElementById('room-search');
           const container = document.querySelector('.room-list-container');
+          console.log('Container found:', !!container);
 
           // If the included room list doesn't provide clickable items, build a simple list
-          if (container && container.querySelectorAll('.room-list-item, .room-item, .list-group-item').length === 0) {
+          const existingItems = container ? container.querySelectorAll('.room-list-item, .room-item, .list-group-item') : [];
+          console.log('Existing room items:', existingItems.length);
+          
+          if (container && existingItems.length === 0) {
+            console.log('Building fallback room list from window.roomList:', window.roomList);
             const listGroup = document.createElement('div');
             listGroup.className = 'list-group list-group-flush';
             (window.roomList || []).forEach(r => {
@@ -290,6 +298,7 @@
               listGroup.appendChild(btn);
             });
             container.appendChild(listGroup);
+            console.log('Added', window.roomList.length, 'room items to list');
           }
 
           // Search filter
@@ -333,26 +342,69 @@
 
         // Show modal with per-room calendar
         function showRoomCalendar(roomId, roomName) {
+          console.log('showRoomCalendar called:', roomId, roomName);
           window.currentModalRoomId = roomId;
           const titleEl = document.getElementById('roomCalendarModalLabel');
           if (titleEl) titleEl.textContent = `Room Calendar — ${roomName}`;
-          initializeRoomModalCalendar(roomId);
+
           const modalEl = document.getElementById('roomCalendarModal');
+          if (!modalEl) {
+            console.error('Modal element not found!');
+            return;
+          }
+
+          // Ensure modal is appended to document.body to avoid z-index/overflow issues from parent containers
+          try {
+            if (modalEl.parentNode !== document.body) {
+              document.body.appendChild(modalEl);
+              console.log('Appended modal element to document.body to avoid clipping/overflow.');
+            }
+          } catch (ex) {
+            console.warn('Could not move modal to body:', ex);
+          }
+
+          if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap JS is not loaded. Modal will not open.');
+            const details = document.getElementById('roomBookingDetailsContent');
+            if (details) details.innerHTML = '<div class="text-danger">Bootstrap JS not loaded. Modal cannot open.</div>';
+            return;
+          }
+
           const modal = new bootstrap.Modal(modalEl);
+
+          // Initialize calendar after modal is shown (FullCalendar needs visible container)
+          modalEl.addEventListener('shown.bs.modal', function onShown() {
+            // Check FullCalendar availability
+            if (typeof FullCalendar === 'undefined' && typeof FullCalendar !== 'object' && typeof window.FullCalendar === 'undefined') {
+              console.error('FullCalendar is not loaded. Calendar cannot render.');
+              const details = document.getElementById('roomBookingDetailsContent');
+              if (details) details.innerHTML = '<div class="text-danger">FullCalendar JS not loaded. Calendar cannot render.</div>';
+            } else {
+              initializeRoomModalCalendar(roomId);
+            }
+            modalEl.removeEventListener('shown.bs.modal', onShown);
+          });
+
           modal.show();
         }
 
         // Initialize or reinitialize the modal calendar for a specific room
         function initializeRoomModalCalendar(roomId) {
+          console.log('initializeRoomModalCalendar called for room:', roomId);
           const el = document.getElementById('roomModalCalendar');
-          if (!el) return;
+          if (!el) {
+            console.error('roomModalCalendar element not found!');
+            return;
+          }
 
           // read selected range (days)
           const rangeSelect = document.getElementById('roomCalendarRange');
-          const rangeDays = parseInt(rangeSelect ? rangeSelect.value : 60, 10) || 60;
+          const rangeDays = parseInt(rangeSelect ? rangeSelect.value : 90, 10) || 90;
+          console.log('Using range:', rangeDays, 'days');
 
           // destroy previous instance if exists
           if (modalCalendarInstance) {
+            console.log('Destroying previous calendar instance');
             modalCalendarInstance.destroy();
             modalCalendarInstance = null;
             el.innerHTML = '';
@@ -399,6 +451,7 @@
           });
 
           // build calendar
+          console.log('Building calendar with', events.length, 'events');
           modalCalendarInstance = new FullCalendar.Calendar(el, {
             initialView: 'dayGridMonth',
             headerToolbar: {
@@ -422,7 +475,9 @@
             }
           });
 
+          console.log('Rendering calendar...');
           modalCalendarInstance.render();
+          console.log('Calendar rendered successfully');
         }
 
         // re-render modal calendar when range selector changes (if modal open)
