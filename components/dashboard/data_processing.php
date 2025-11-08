@@ -258,11 +258,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       
       // include addons column in update if present
       if ($addons_json !== null) {
+        // Types: name(s), item_type(s), room_number(s), description(s), capacity(i), price(d), image(s), images(s), addons(s), id(i)
         $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, images=?, addons=? WHERE id=?");
-        $stmt->bind_param("ssssidssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $addons_json, $id);
+        $stmt->bind_param("ssssidsssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $addons_json, $id);
       } else {
+        // Types: name(s), item_type(s), room_number(s), description(s), capacity(i), price(d), image(s), images(s), id(i)
         $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, images=? WHERE id=?");
-        $stmt->bind_param("ssssidsi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $id);
+        $stmt->bind_param("ssssidssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $id);
       }
       
       if ($stmt->execute()) {
