@@ -2167,10 +2167,66 @@ if ($action === 'admin_update_booking') {
         // Return JSON response for AJAX requests
         header('Content-Type: application/json');
         if ($success) {
+            // Prepare refreshed room list and room events to allow frontend to update without full reload
+            $roomList = [];
+            $items_q = "SELECT id, name, room_number, item_type FROM items ORDER BY name ASC";
+            $items_r = $conn->query($items_q);
+            if ($items_r && $items_r->num_rows > 0) {
+                while ($it = $items_r->fetch_assoc()) {
+                    $roomList[] = [
+                        'id' => (int)$it['id'],
+                        'name' => $it['name'],
+                        'room_number' => $it['room_number'],
+                        'item_type' => $it['item_type']
+                    ];
+                }
+            }
+
+            // Build room events (limited range to past 1 year -> next 1 year)
+            $roomEvents = [];
+            $bookings_q = "SELECT b.*, i.name as item_name, i.item_type, i.room_number FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out', 'pending') AND b.checkin >= DATE_SUB(CURDATE(), INTERVAL 365 DAY) AND b.checkin <= DATE_ADD(CURDATE(), INTERVAL 365 DAY) ORDER BY b.checkin ASC";
+            $bookings_r = $conn->query($bookings_q);
+            if ($bookings_r && $bookings_r->num_rows > 0) {
+                while ($bk = $bookings_r->fetch_assoc()) {
+                    $item_name = $bk['item_name'] ? $bk['item_name'] : 'Unassigned Room/Facility';
+                    $room_number = $bk['room_number'] ? '#' . $bk['room_number'] : '';
+                    $item_type = $bk['item_type'] ?: 'room';
+                    $guest = 'Guest';
+                    $status = $bk['status'];
+                    $display_title = $item_name . ' ' . $room_number . ' - ' . $guest;
+                    $color = '#28a745';
+                    if ($status == 'checked_in') $color = '#0d6efd';
+                    if ($status == 'checked_out') $color = '#6f42c1';
+                    if ($status == 'pending') $color = '#fd7e14';
+
+                    $roomEvents[] = [
+                        'id' => 'booking-' . $bk['id'],
+                        'title' => $display_title,
+                        'start' => $bk['checkin'],
+                        'end' => date('Y-m-d', strtotime($bk['checkout'] . ' +1 day')),
+                        'backgroundColor' => $color,
+                        'borderColor' => $color,
+                        'textColor' => '#ffffff',
+                        'extendedProps' => [
+                            'itemName' => $item_name,
+                            'roomNumber' => $bk['room_number'] ?: '',
+                            'itemType' => $item_type,
+                            'guest' => $guest,
+                            'status' => $status,
+                            'checkin' => $bk['checkin'],
+                            'checkout' => $bk['checkout'],
+                            'roomId' => $bk['room_id'] ? (int)$bk['room_id'] : null
+                        ]
+                    ];
+                }
+            }
+
             echo json_encode([
-                'success' => true, 
+                'success' => true,
                 'message' => "Booking #$bookingId updated to $newStatus successfully.",
-                'status' => $newStatus
+                'status' => $newStatus,
+                'roomList' => $roomList,
+                'roomEvents' => $roomEvents
             ]);
         } else {
             echo json_encode([
