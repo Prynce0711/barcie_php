@@ -78,6 +78,8 @@
               </tbody>
             </table>
           </div>
+          <!-- Pagination controls for bookings table -->
+          <div id="bookingsPagination" class="mt-2"></div>
         </div>
       </div>
     </div>
@@ -396,6 +398,133 @@
           window.open(proof, '_blank');
         }
       });
+    })();
+  </script>
+  
+  <script>
+    (function(){
+      // Simple client-side pagination for #bookingsTable
+      const PER_PAGE = 10;
+      let state = { perPage: PER_PAGE, currentPage: 1, totalPages: 1 };
+
+      function getAllRows(){
+        return Array.from(document.querySelectorAll('#bookingsTable tbody tr')).filter(r => r.id !== 'bookings-no-results');
+      }
+
+      function recalcPagination(){
+        const rows = getAllRows();
+        // rows that are currently visible according to filters (style.display !== 'none')
+        const visibleRows = rows.filter(r => r.style.display !== 'none');
+        const totalVisible = visibleRows.length;
+        state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
+        if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
+
+        // Hide all rows first, then show only those within current page slice
+        rows.forEach(r => { r.style.display = 'none'; });
+        const start = (state.currentPage - 1) * state.perPage;
+        const end = start + state.perPage;
+        visibleRows.slice(start, end).forEach(r => { r.style.display = ''; });
+
+        renderPaginationControls();
+      }
+
+      function renderPaginationControls(){
+        const container = document.getElementById('bookingsPagination');
+        if (!container) return;
+        container.innerHTML = '';
+        if (state.totalPages <= 1) return; // no controls needed
+
+        const nav = document.createElement('nav');
+        const ul = document.createElement('ul');
+        ul.className = 'pagination justify-content-center mb-0';
+
+        const createPageItem = (label, page, disabled, active) => {
+          const li = document.createElement('li');
+          li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+          const btn = document.createElement('button');
+          btn.className = 'page-link';
+          btn.type = 'button';
+          btn.textContent = label;
+          btn.addEventListener('click', function(e){
+            e.preventDefault();
+            if (disabled) return;
+            state.currentPage = page;
+            recalcPagination();
+          });
+          li.appendChild(btn);
+          return li;
+        };
+
+        // Prev
+        ul.appendChild(createPageItem('«', Math.max(1, state.currentPage - 1), state.currentPage === 1, false));
+
+        // page window
+        const maxButtons = 7;
+        let start = Math.max(1, state.currentPage - 3);
+        let end = Math.min(state.totalPages, start + maxButtons - 1);
+        if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
+
+        if (start > 1) {
+          ul.appendChild(createPageItem('1', 1, false, state.currentPage === 1));
+          if (start > 2) {
+            const gap = document.createElement('li'); gap.className = 'page-item disabled'; gap.innerHTML = '<span class="page-link">…</span>'; ul.appendChild(gap);
+          }
+        }
+
+        for (let p = start; p <= end; p++) {
+          ul.appendChild(createPageItem(String(p), p, false, p === state.currentPage));
+        }
+
+        if (end < state.totalPages) {
+          if (end < state.totalPages - 1) {
+            const gap = document.createElement('li'); gap.className = 'page-item disabled'; gap.innerHTML = '<span class="page-link">…</span>'; ul.appendChild(gap);
+          }
+          ul.appendChild(createPageItem(String(state.totalPages), state.totalPages, false, state.currentPage === state.totalPages));
+        }
+
+        // Next
+        ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
+
+        nav.appendChild(ul);
+        container.appendChild(nav);
+      }
+
+      // Wrap existing filterBookings so pagination recalculates after filters run
+      document.addEventListener('DOMContentLoaded', function(){
+        // Insert pagination container if not present (fallback)
+        const tableResp = document.querySelector('#bookingsTable')?.closest('.table-responsive');
+        if (tableResp) {
+          let container = document.getElementById('bookingsPagination');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'bookingsPagination';
+            container.className = 'mt-2';
+            tableResp.parentNode.insertBefore(container, tableResp.nextSibling);
+          }
+        }
+
+        const orig = window.filterBookings;
+        if (typeof orig === 'function') {
+          window.filterBookings = function(){
+            // run original filter (which sets display on rows)
+            try { orig(); } catch(e) { console.error('filterBookings error', e); }
+            // reset to first page and recalc pagination
+            state.currentPage = 1;
+            recalcPagination();
+          };
+        }
+
+        // initial pagination run
+        recalcPagination();
+      });
+
+      // Expose API in case other scripts want to change page size or navigate
+      window._bookingsPagination = {
+        setPerPage: function(n){ state.perPage = Math.max(1, Number(n) || PER_PAGE); state.currentPage = 1; recalcPagination(); },
+        goToPage: function(p){ state.currentPage = Math.min(Math.max(1, Number(p)||1), state.totalPages); recalcPagination(); },
+        next: function(){ if (state.currentPage < state.totalPages) { state.currentPage++; recalcPagination(); } },
+        prev: function(){ if (state.currentPage > 1) { state.currentPage--; recalcPagination(); } }
+      };
     })();
   </script>
 
