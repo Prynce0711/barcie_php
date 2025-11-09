@@ -1,7 +1,6 @@
 <?php
 // filepath: c:\xampp\htdocs\barcie_php\src\database\db_connect.php
 
-// Start session
 
 // Database connection details
 // Auto-detect environment: use localhost DB when on localhost, remote DB when on server
@@ -10,9 +9,9 @@ $is_localhost = in_array($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? 'lo
 
 if ($is_localhost) {
     // LOCALHOST configuration (XAMPP)
-    $host = getenv('DB_HOST') ?: "localhost";  // or "127.0.0.1"
+    $host = getenv('DB_HOST') ?: "10.20.0.2";  // or "127.0.0.1"
     $user = getenv('DB_USER') ?: "root";
-    $pass = getenv('DB_PASS') ?: "";  // XAMPP default is empty password (change if you set a password)
+    $pass = getenv('DB_PASS') ?: "root";  // XAMPP default is empty password (change if you set a password)
     $dbname = getenv('DB_NAME') ?: "barcie_db";
 } else {
     // REMOTE SERVER configuration
