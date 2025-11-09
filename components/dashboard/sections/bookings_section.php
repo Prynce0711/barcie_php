@@ -86,6 +86,23 @@
   </div>
   <script>
     (function(){
+      // Small animations for pagination and row transitions
+      const styleId = 'bookings-pagination-animations';
+      if (!document.getElementById(styleId)) {
+        const css = `
+          /* fade rows when shown */
+          #bookingsTable tbody tr { transition: opacity 220ms ease-in-out; }
+          /* initial hidden state used by JS */
+          #bookingsTable tbody tr[data-hidden-by-pagination="true"] { display: none !important; opacity: 0 !important; }
+          /* pagination nav slide/fade */
+          #bookingsPagination .pagination { opacity: 0; transform: translateY(6px); transition: opacity 180ms ease-out, transform 180ms ease-out; }
+          #bookingsPagination .pagination.show { opacity: 1; transform: translateY(0); }
+          /* small hover transition for page links */
+          #bookingsPagination .page-link { transition: background-color 120ms ease, color 120ms ease; }
+        `;
+        const s = document.createElement('style'); s.id = styleId; s.appendChild(document.createTextNode(css));
+        document.head.appendChild(s);
+      }
       // Delegated handler for approve/reject buttons
       document.addEventListener('click', function(e){
         const btn = e.target.closest('.discount-action');
@@ -411,19 +428,42 @@
         return Array.from(document.querySelectorAll('#bookingsTable tbody tr')).filter(r => r.id !== 'bookings-no-results');
       }
 
+      // Determine whether a row matches the current filter controls (independent of its current style)
+      function doesRowMatchFilter(row){
+        const status = (document.getElementById('statusFilter')?.value || '').toLowerCase();
+        const type = (document.getElementById('typeFilter')?.value || '').toLowerCase();
+        const query = (document.getElementById('guestSearch')?.value || '').toLowerCase().trim();
+        const rstatus = (row.dataset.status || '').toLowerCase();
+        const rtype = (row.dataset.type || '').toLowerCase();
+        const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
+
+        if (status && rstatus.indexOf(status) === -1) return false;
+        if (type && rtype.indexOf(type) === -1) return false;
+        if (query && rguest.indexOf(query) === -1) return false;
+        return true;
+      }
+
       function recalcPagination(){
         const rows = getAllRows();
-        // rows that are currently visible according to filters (style.display !== 'none')
-        const visibleRows = rows.filter(r => r.style.display !== 'none');
+        // Compute visibleRows based on filter criteria (not current style.display which pagination modifies)
+        const visibleRows = rows.filter(r => doesRowMatchFilter(r));
         const totalVisible = visibleRows.length;
         state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
         if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
 
-        // Hide all rows first, then show only those within current page slice
-        rows.forEach(r => { r.style.display = 'none'; });
+        // Hide all rows first (mark them hidden for CSS) then show only those within current page slice
+        rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
         const start = (state.currentPage - 1) * state.perPage;
         const end = start + state.perPage;
-        visibleRows.slice(start, end).forEach(r => { r.style.display = ''; });
+        visibleRows.slice(start, end).forEach(r => {
+          // mark as visible and fade-in
+          r.removeAttribute('data-hidden-by-pagination');
+          r.style.display = '';
+          // ensure initial opacity 0 so transition runs
+          r.style.opacity = 0;
+          // trigger fade-in on next frame
+          requestAnimationFrame(() => { r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
+        });
 
         renderPaginationControls();
       }
@@ -487,6 +527,8 @@
 
         nav.appendChild(ul);
         container.appendChild(nav);
+        // animate pagination controls into view
+        requestAnimationFrame(() => { const p = container.querySelector('.pagination'); if (p) p.classList.add('show'); });
       }
 
       // Wrap existing filterBookings so pagination recalculates after filters run
@@ -539,7 +581,7 @@
       </div>
       <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <table id="discountsTable" class="table table-hover align-middle">
             <thead class="table-light">
               <tr>
                 <th>Receipt #</th>
@@ -615,7 +657,71 @@
             </tbody>
           </table>
         </div>
+        <!-- Pagination for Discount Applications -->
+        <div id="discountsPagination" class="mt-2"></div>
       </div>
     </div>
     </div>
   </div>
+  <script>
+    (function(){
+      // Client-side pagination for Discount Applications table (#discountsTable)
+      const PER_PAGE_D = 8;
+      let dstate = { perPage: PER_PAGE_D, currentPage: 1, totalPages: 1 };
+
+      function dGetAllRows(){
+        return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => r.id !== 'discounts-no-results');
+      }
+
+      function dRecalc(){
+        const rows = dGetAllRows();
+        const total = rows.length;
+        dstate.totalPages = Math.max(1, Math.ceil(total / dstate.perPage));
+        if (dstate.currentPage > dstate.totalPages) dstate.currentPage = dstate.totalPages;
+
+        // hide all then show slice
+        rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+        const start = (dstate.currentPage - 1) * dstate.perPage;
+        const end = start + dstate.perPage;
+        rows.slice(start, end).forEach(r => {
+          r.removeAttribute('data-hidden-by-pagination');
+          r.style.display = '';
+          r.style.opacity = 0;
+          requestAnimationFrame(()=>{ r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
+        });
+
+        dRenderControls();
+      }
+
+      function dRenderControls(){
+        const container = document.getElementById('discountsPagination');
+        if (!container) return;
+        container.innerHTML = '';
+        if (dstate.totalPages <= 1) return;
+
+        const nav = document.createElement('nav');
+        const ul = document.createElement('ul'); ul.className = 'pagination justify-content-center mb-0';
+
+        const makeItem = (label, page, disabled, active) => {
+          const li = document.createElement('li'); li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+          const btn = document.createElement('button'); btn.className = 'page-link'; btn.type='button'; btn.textContent = label;
+          btn.addEventListener('click', function(e){ e.preventDefault(); if (disabled) return; dstate.currentPage = page; dRecalc(); });
+          li.appendChild(btn); return li;
+        };
+
+        ul.appendChild(makeItem('«', Math.max(1, dstate.currentPage - 1), dstate.currentPage === 1, false));
+        const maxButtons = 7; let s = Math.max(1, dstate.currentPage - 3); let e = Math.min(dstate.totalPages, s + maxButtons - 1); if (e - s < maxButtons - 1) s = Math.max(1, e - maxButtons + 1);
+        if (s > 1) { ul.appendChild(makeItem('1',1,false,dstate.currentPage===1)); if (s>2){ const gap=document.createElement('li'); gap.className='page-item disabled'; gap.innerHTML='<span class="page-link">…</span>'; ul.appendChild(gap);} }
+        for (let p=s;p<=e;p++){ ul.appendChild(makeItem(String(p), p, false, p===dstate.currentPage)); }
+        if (e < dstate.totalPages) { if (e < dstate.totalPages -1){ const gap=document.createElement('li'); gap.className='page-item disabled'; gap.innerHTML='<span class="page-link">…</span>'; ul.appendChild(gap);} ul.appendChild(makeItem(String(dstate.totalPages), dstate.totalPages, false, dstate.currentPage===dstate.totalPages)); }
+        ul.appendChild(makeItem('»', Math.min(dstate.totalPages, dstate.currentPage + 1), dstate.currentPage === dstate.totalPages, false));
+
+        nav.appendChild(ul); container.appendChild(nav);
+        requestAnimationFrame(()=>{ const p = container.querySelector('.pagination'); if (p) p.classList.add('show'); });
+      }
+
+      document.addEventListener('DOMContentLoaded', function(){ dRecalc(); });
+
+      window._discountsPagination = { setPerPage: function(n){ dstate.perPage = Math.max(1, Number(n)||PER_PAGE_D); dstate.currentPage = 1; dRecalc(); }, goToPage: function(p){ dstate.currentPage = Math.min(Math.max(1, Number(p)||1), dstate.totalPages); dRecalc(); } };
+    })();
+  </script>

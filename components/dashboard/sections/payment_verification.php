@@ -76,6 +76,8 @@ if ($stmt) {
 						</tbody>
 					</table>
 				</div>
+					<!-- Pagination for Payments -->
+					<div id="paymentsPagination" class="mt-2"></div>
 			</div>
 		</div>
 	</div>
@@ -186,5 +188,50 @@ if ($stmt) {
 			window.open(proof, '_blank');
 		}
 	});
+
+	// Client-side pagination for #paymentsTable
+	(function(){
+		const PER_PAGE_P = 8;
+		let pstate = { perPage: PER_PAGE_P, currentPage: 1, totalPages: 1 };
+
+		function pGetAllRows(){
+			return Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => r.id !== 'payments-no-results');
+		}
+
+		function pRecalc(){
+			const rows = pGetAllRows();
+			const total = rows.length;
+			pstate.totalPages = Math.max(1, Math.ceil(total / pstate.perPage));
+			if (pstate.currentPage > pstate.totalPages) pstate.currentPage = pstate.totalPages;
+
+			rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+			const start = (pstate.currentPage - 1) * pstate.perPage;
+			const end = start + pstate.perPage;
+			rows.slice(start, end).forEach(r => {
+				r.removeAttribute('data-hidden-by-pagination'); r.style.display = ''; r.style.opacity = 0;
+				requestAnimationFrame(()=>{ r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
+			});
+
+			pRender();
+		}
+
+		function pRender(){
+			const container = document.getElementById('paymentsPagination'); if (!container) return; container.innerHTML = '';
+			if (pstate.totalPages <= 1) return;
+			const nav = document.createElement('nav'); const ul = document.createElement('ul'); ul.className = 'pagination justify-content-center mb-0';
+			const make = (label,page,disabled,active)=>{ const li=document.createElement('li'); li.className='page-item'+(disabled?' disabled':'')+(active?' active':''); const btn=document.createElement('button'); btn.className='page-link'; btn.type='button'; btn.textContent=label; btn.addEventListener('click', e=>{ e.preventDefault(); if (disabled) return; pstate.currentPage = page; pRecalc(); }); li.appendChild(btn); return li; };
+			ul.appendChild(make('«', Math.max(1,pstate.currentPage-1), pstate.currentPage===1, false));
+			const maxButtons=7; let s=Math.max(1,pstate.currentPage-3); let e=Math.min(pstate.totalPages, s+maxButtons-1); if (e-s < maxButtons-1) s = Math.max(1, e-maxButtons+1);
+			if (s>1){ ul.appendChild(make('1',1,false,pstate.currentPage===1)); if (s>2){ const gap=document.createElement('li'); gap.className='page-item disabled'; gap.innerHTML='<span class="page-link">…</span>'; ul.appendChild(gap); } }
+			for (let p=s;p<=e;p++){ ul.appendChild(make(String(p), p, false, p===pstate.currentPage)); }
+			if (e < pstate.totalPages){ if (e < pstate.totalPages-1){ const gap=document.createElement('li'); gap.className='page-item disabled'; gap.innerHTML='<span class="page-link">…</span>'; ul.appendChild(gap); } ul.appendChild(make(String(pstate.totalPages), pstate.totalPages, false, pstate.currentPage===pstate.totalPages)); }
+			ul.appendChild(make('»', Math.min(pstate.totalPages, pstate.currentPage+1), pstate.currentPage===pstate.totalPages, false));
+			nav.appendChild(ul); container.appendChild(nav); requestAnimationFrame(()=>{ const p = container.querySelector('.pagination'); if (p) p.classList.add('show'); });
+		}
+
+		document.addEventListener('DOMContentLoaded', function(){ pRecalc(); });
+
+		window._paymentsPagination = { setPerPage: function(n){ pstate.perPage = Math.max(1, Number(n)||PER_PAGE_P); pstate.currentPage = 1; pRecalc(); }, goToPage: function(p){ pstate.currentPage = Math.min(Math.max(1, Number(p)||1), pstate.totalPages); pRecalc(); } };
+	})();
 })();
 </script>
