@@ -14,6 +14,35 @@ if (!isset($_SESSION['admin_id'])) {
   exit;
 }
 
+/**
+ * Normalize item_type values coming from forms to canonical values used by the app.
+ * Returns 'room' or 'facility' (defaults to 'room' when unknown).
+ */
+function normalize_item_type($raw) {
+  $v = strtolower(trim((string)$raw));
+  $v = preg_replace('/\s+/', ' ', $v);
+  // simple singularize common trailing 's'
+  $v_singular = rtrim($v, "s \t\n\r\0\x0B");
+
+  $map = [
+    'room' => ['room','rooms','rm','r'],
+    'facility' => ['facility','facilities','facilitys','fac','facil']
+  ];
+
+  foreach ($map as $canonical => $variants) {
+    if (in_array($v, $variants, true) || in_array($v_singular, $variants, true)) {
+      return $canonical;
+    }
+  }
+
+  // Heuristics
+  if (strpos($v, 'room') !== false) return 'room';
+  if (strpos($v, 'facil') !== false) return 'facility';
+
+  // Default fallback
+  return 'room';
+}
+
 // ------------------ HANDLE ITEM ADD/UPDATE/DELETE ------------------
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   if (isset($_POST['action'])) {
@@ -61,7 +90,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($action === "update" && isset($_POST['id'])) {
       $id = intval($_POST['id']);
       $name = trim($_POST['name']);
-      $type = trim($_POST['item_type']);
+  // Normalize item type server-side to canonical values
+  $type = normalize_item_type($_POST['item_type'] ?? 'room');
       $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
       $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
       $capacity = intval($_POST['capacity'] ?? 0);
@@ -370,7 +400,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     error_log("Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'not set'));
     
   $name = trim($_POST['name']);
-    $type = trim($_POST['item_type']);
+  // Normalize item type server-side to canonical values
+  $type = normalize_item_type($_POST['item_type'] ?? 'room');
     $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
     $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
     $capacity = intval($_POST['capacity'] ?? 0);

@@ -1,7 +1,11 @@
 <?php
 // Room List Content for Calendar Section
-// Fetch all rooms AND facilities with their current booking status
-$items_query = "SELECT * FROM items WHERE item_type IN ('room', 'facility') ORDER BY item_type DESC, room_number ASC, name ASC";
+$items_query = "SELECT * FROM items 
+                WHERE LOWER(TRIM(item_type)) IN ('room', 'facility') 
+                ORDER BY 
+                  CASE WHEN LOWER(TRIM(item_type))='room' THEN 0 WHEN LOWER(TRIM(item_type))='facility' THEN 1 ELSE 2 END,
+                  room_number ASC,
+                  name ASC";
 $items_result = $conn->query($items_query);
 
 // Debug: Log what we're rendering
@@ -74,37 +78,68 @@ if ($items_result && $items_result->num_rows > 0) {
       data-room-number="<?= strtolower($room_number) ?>" data-item-type="<?= $item_type ?>" style="cursor: pointer; transition: background-color 0.2s;" onmouseenter="this.style.backgroundColor='#f8f9fa'" onmouseleave="this.style.backgroundColor='transparent'">
       <div class="row align-items-center">
         <div class="col-md-2">
-          <?php 
-          $imagePath = $item['image'] ?? '';
-          $imageExists = false;
-          
-          if (!empty($imagePath)) {
-            // Get project root from current file location (3 levels up from components/dashboard/sections)
-            $projectRoot = realpath(__DIR__ . '/../../..');
-            $imageFullPath = $projectRoot . '/' . ltrim($imagePath, '/');
-            $imageExists = file_exists($imageFullPath);
-            
-            // Construct web path for src attribute
-            if ($imageExists) {
-              // Ensure path starts with / for web access
-              if (!str_starts_with($imagePath, '/') && !str_starts_with($imagePath, 'http')) {
-                $imagePath = '/' . $imagePath;
+          <?php
+          // Build images array and pick first image (support 'images' JSON column, legacy 'image', comma lists)
+          $images_list = [];
+          if (!empty($item['images'])) {
+            $decoded = json_decode($item['images'], true);
+            if (is_array($decoded) && !empty($decoded)) {
+              $images_list = $decoded;
+            }
+          }
+
+          // Fallback to 'image' column which may be JSON, comma list or single path
+          if (empty($images_list) && !empty($item['image'])) {
+            $raw = trim($item['image']);
+            if (str_starts_with($raw, '[')) {
+              $decoded = json_decode($raw, true);
+              if (is_array($decoded) && !empty($decoded)) $images_list = $decoded;
+            }
+            if (empty($images_list) && strpos($raw, ',') !== false) {
+              $parts = array_map('trim', explode(',', $raw));
+              foreach ($parts as $p) if ($p !== '') $images_list[] = $p;
+            }
+            if (empty($images_list) && $raw !== '') $images_list[] = $raw;
+          }
+
+          $images_count = count($images_list);
+          $firstImage = $images_count > 0 ? $images_list[0] : '';
+
+          // Normalize web path and check file existence
+          $projectRoot = realpath(__DIR__ . '/../../..');
+          $webImage = '/assets/images/imageBg/barcie_logo.jpg';
+          if (!empty($firstImage)) {
+            if (str_starts_with($firstImage, 'http')) {
+              $webImage = $firstImage;
+            } else {
+              $candidateFs = $projectRoot . '/' . ltrim($firstImage, '/');
+              if (file_exists($candidateFs)) {
+                $webImage = '/' . ltrim($firstImage, '/');
+              } else {
+                $altPaths = [
+                  $projectRoot . '/uploads/' . ltrim($firstImage, '/'),
+                  $projectRoot . '/assets/images/' . ltrim($firstImage, '/'),
+                  $projectRoot . '/' . ltrim($firstImage, '/'),
+                ];
+                foreach ($altPaths as $ap) {
+                  if (file_exists($ap)) {
+                    $webImage = '/' . trim(str_replace($projectRoot, '', $ap), '/');
+                    break;
+                  }
+                }
+                if ($webImage === '/assets/images/imageBg/barcie_logo.jpg' && !str_contains($firstImage, ' ')) {
+                  $webImage = '/' . ltrim($firstImage, '/');
+                }
               }
             }
           }
           ?>
-          <?php
-          // Build a web-safe image path (prefer DB value, fall back to logo)
-          $webImage = '/assets/images/imageBg/barcie_logo.jpg';
-          if (!empty($imagePath)) {
-            if (str_starts_with($imagePath, 'http') || str_starts_with($imagePath, '/')) {
-              $webImage = $imagePath;
-            } else {
-              $webImage = '/' . ltrim($imagePath, '/');
-            }
-          }
-          ?>
-          <img src="<?= htmlspecialchars($webImage) ?>" class="img-fluid rounded" style="width: 80px; height: 60px; object-fit: cover;" alt="<?= htmlspecialchars($item['name']) ?>" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'bg-light rounded d-flex align-items-center justify-content-center\' style=\'width: 80px; height: 60px;\'><i class=\'fas fa-<?= $type_icon ?> text-muted fa-2x\'></i></div>';">
+          <div class="position-relative thumb">
+            <img src="<?= htmlspecialchars($webImage) ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($item['name'] . (isset($room_number) && $room_number !== 'N/A' ? ' #' . $room_number : '')) ?>" title="<?= htmlspecialchars($item['name']) ?>" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'bg-light rounded d-flex align-items-center justify-content-center\' style=\'width: 100px; height: 75px;\'><i class=\'fas fa-<?= $type_icon ?> text-muted fa-2x\'></i></div>';"></img>
+            <?php if ($images_count > 1): ?>
+              <span class="img-count-badge position-absolute top-0 start-0 m-1"><?= 1 ?>/<?= $images_count ?></span>
+            <?php endif; ?>
+          </div>
         </div>
         <div class="col-md-3">
           <h6 class="mb-1">
@@ -123,11 +158,14 @@ if ($items_result && $items_result->num_rows > 0) {
           </div>
         </div>
         <div class="col-md-2">
-          <span class="badge bg-<?= $status_class ?> px-3 py-2">
-            <i class="fas fa-<?= $status_icon ?> me-1"></i><?= $status_text ?>
-          </span>
+          <?php if ($status !== 'no-reservation'): ?>
+            <span class="badge bg-<?= $status_class ?> px-3 py-2">
+              <i class="fas fa-<?= $status_icon ?> me-1"></i><?= $status_text ?>
+            </span>
+          <?php endif; ?>
         </div>
-        <div class="col-md-5">
+        <div class="col-md-5 d-flex flex-column align-items-end">
+          <div class="booking-info w-100">
           <?php if ($current_booking): ?>
             <div class="current-booking mb-2">
               <strong class="text-<?= $status_class ?>">Current <?= $item_type == 'room' ? 'Guest' : 'User' ?>:</strong>
@@ -150,14 +188,12 @@ if ($items_result && $items_result->num_rows > 0) {
                 </span>
               </div>
             </div>
-          <?php elseif (!$current_booking): ?>
-            <div class="text-muted small">
-              <i class="fas fa-calendar-times me-1"></i>No upcoming reservations
-            </div>
           <?php endif; ?>
           
-          <!-- View Calendar Button -->
-          <div class="mt-2">
+          </div>
+
+          <!-- View Calendar Button (aligned right) -->
+          <div class="view-actions mt-2">
             <button type="button" class="btn btn-sm btn-outline-primary view-calendar-btn" 
                     onclick="event.stopPropagation(); showRoomCalendar(<?= $item_id ?>, '<?= htmlspecialchars(addslashes($item_name . ($room_number !== 'N/A' ? ' #' . $room_number : ''))) ?>')">
               <i class="fas fa-calendar-alt me-1"></i>View Calendar

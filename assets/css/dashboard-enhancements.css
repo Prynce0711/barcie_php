@@ -1001,6 +1001,31 @@ img {
   transform: scale(1.05);
 }
 
+/* ========== ROOM LIST CARD TWEAKS (moved from inline) ========== */
+.room-card{background:transparent}
+.room-item{display:block}
+.room-card .thumb{flex:0 0 100px}
+.room-card .thumb img{width:100px;height:75px;object-fit:cover;border-radius:8px}
+.room-card .details{min-width:0;overflow:hidden}
+.room-card .booking-info{width:100%;text-align:left}
+.room-card .view-actions{align-self:flex-end}
+.status-badge{white-space:nowrap}
+
+@media(max-width:767.98px){
+  .room-card{flex-direction:column;align-items:flex-start}
+  .room-card .view-actions{width:100%;margin-top:.5rem}
+}
+
+/* image count badge */
+.img-count-badge{
+  font-size:0.7rem;
+  padding:0.25rem 0.45rem;
+  border-radius:12px;
+  background:rgba(0,0,0,0.6);
+  color:#fff;
+  font-weight:700;
+}
+
 /* ========== FOCUS STATES ========== */
 *:focus {
   outline: none;

@@ -34,11 +34,7 @@
                   <small class="text-muted">View room and facility availability and reservations status</small>
                 </div>
                 <div class="col-md-4 text-end">
-                  <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="calendarInstance.changeView('dayGridMonth')">Month</button>
-                    <button class="btn btn-outline-primary" onclick="calendarInstance.changeView('timeGridWeek')">Week</button>
-                    <button class="btn btn-outline-primary" onclick="calendarInstance.changeView('timeGridDay')">Day</button>
-                  </div>
+                  <!-- FullCalendar will render its own view buttons in the calendar header; removed duplicate custom view buttons -->
                 </div>
               </div>
               <div class="mt-2">
@@ -50,8 +46,12 @@
                 <small class="text-muted">Empty days = No reservations</small>
               </div>
             </div>
-            <div class="p-3">
-              <div id="roomCalendar"></div>
+            <div class="p-3 position-relative">
+              <!-- Spinner overlay shown while the calendar initializes -->
+              <div id="roomCalendarSpinner" class="spinner-overlay d-flex justify-content-center align-items-center" style="position:absolute; inset:0; background: rgba(255,255,255,0.75); z-index:50;">
+                <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"><span class="visually-hidden">Loading calendar...</span></div>
+              </div>
+              <div id="roomCalendar" style="min-height:200px;"></div>
             </div>
           </div>
 
@@ -71,7 +71,11 @@
                 </div>
               </div>
             </div>
-            <div class="room-list-container" style="max-height: 600px; overflow-y: auto;">
+            <div class="room-list-container position-relative" style="max-height: 600px; overflow-y: auto;">
+              <!-- Spinner overlay shown while room list is being annotated/refreshed -->
+              <div id="roomListSpinner" class="spinner-overlay d-flex justify-content-center align-items-center" style="position:absolute; inset:0; background: rgba(255,255,255,0.6); z-index:40;">
+                <div class="spinner-border text-secondary" role="status"><span class="visually-hidden">Loading rooms...</span></div>
+              </div>
               <?php include 'room_list_content.php'; ?>
             </div>
           </div>
@@ -108,7 +112,11 @@
           </div>
           
           <div class="row">
-            <div class="col-lg-8">
+            <div class="col-lg-8 position-relative">
+              <!-- Spinner overlay for modal calendar while it renders -->
+              <div id="roomModalSpinner" class="spinner-overlay d-flex justify-content-center align-items-center" style="position:absolute; inset:0; background: rgba(255,255,255,0.8); z-index:60;">
+                <div class="spinner-border text-primary" role="status" style="width:2.5rem; height:2.5rem;"><span class="visually-hidden">Loading room calendar...</span></div>
+              </div>
               <div id="roomModalCalendar"></div>
             </div>
             <div class="col-lg-4">
@@ -127,6 +135,73 @@
   </div>
 
       <!-- JS: initialize room calendar and generate window.roomEvents -->
+      <style>
+        /* Spinner overlay styles with fade transition */
+        .spinner-overlay {
+          transition: opacity 250ms ease-in-out;
+          opacity: 0;
+          pointer-events: none;
+          display: none; /* hidden by default */
+        }
+        .spinner-overlay.spinner-visible {
+          opacity: 1;
+          pointer-events: auto;
+          display: flex; /* ensure flex layout while visible */
+        }
+        /* UI polish for calendar and modal */
+        /* Design tokens */
+        :root{
+          --brand-primary: #0d6efd;
+          --brand-accent: #6f42c1;
+          --status-approved: #28a745;
+          --status-checkedin: #0d6efd;
+          --status-checkedout: #6f42c1;
+          --status-pending: #fd7e14;
+          --status-cancelled: #dc3545;
+          --muted: #6c757d;
+          --card-bg: #ffffff;
+        }
+        /* Rounded toolbar and modern buttons */
+        #roomCalendar .fc-toolbar, #roomModalCalendar .fc-toolbar {
+          background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,249,250,0.9));
+          border-radius: 8px;
+          padding: 0.5rem;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .fc-button {
+          border-radius: 6px;
+          border: 1px solid rgba(0,0,0,0.06);
+          background: #ffffff;
+          color: #0d6efd;
+          box-shadow: none;
+        }
+        .fc-button-primary {
+          background: linear-gradient(180deg,#0d6efd,#0b5ed7);
+          color: #fff;
+          border: none;
+        }
+        /* Make day cells cleaner and more spacious */
+        .fc-daygrid-day-frame { padding: 0.6rem 0.5rem; }
+        .fc-daygrid-day-top { padding: 0.2rem 0.5rem; }
+        .fc-daygrid-day-number { font-weight:600; color:#0b5ed7; }
+  /* Booking details pane */
+  #roomBookingDetails { background:var(--card-bg); }
+  #roomBookingDetailsContent .detail-row { margin-bottom:0.5rem; }
+  #roomBookingDetailsContent .detail-key { color:var(--muted); min-width:100px; display:inline-block; }
+  /* Status badges */
+  .booking-badge { display:inline-block; padding:0.25rem .5rem; border-radius:0.375rem; color:#fff; font-size:.85rem; }
+  .badge-approved { background: var(--status-approved); }
+  .badge-checkedin { background: var(--status-checkedin); }
+  .badge-checkedout { background: var(--status-checkedout); }
+  .badge-pending { background: var(--status-pending); }
+  .badge-cancelled { background: var(--status-cancelled); }
+  .booking-actions { margin-top:0.75rem; }
+  .booking-actions .btn { margin-right:0.4rem; }
+        /* Mobile responsive tweak for modal */
+        @media (max-width: 991px) {
+          #roomBookingDetails { min-height: 200px; }
+        }
+      </style>
       <script>
         // Initialize room calendar when the document is ready
         document.addEventListener('DOMContentLoaded', function () {
@@ -143,6 +218,9 @@
           const calendarEl = document.getElementById('roomCalendar');
           if (!calendarEl) return;
 
+          // Show spinner while the calendar is being initialized
+          try { showSpinnerById('roomCalendarSpinner'); } catch (e) {}
+
           // Generate room events based on current booking data
           const roomEvents = window.roomEvents || [];
 
@@ -151,7 +229,8 @@
             headerToolbar: {
               left: 'prev,next today',
               center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+              // omit built-in view buttons on the right to avoid duplication with top-level controls
+              right: ''
             },
             events: roomEvents,
             eventDisplay: 'block',
@@ -179,7 +258,14 @@
               const details = info.event.extendedProps.details || 'No details';
 
               const roomInfo = roomNumber ? `\nRoom Number: #${roomNumber}` : '';
-              alert(`${itemType}: ${itemName}${roomInfo}\nGuest: ${guest}\nStatus: ${status}\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nBooking Details: ${details}`);
+                // Populate the booking details pane instead of using alerts
+                try {
+                  showBookingDetailsInPane(info.event);
+                  // If modal is open (modal calendar), also highlight the selected event
+                  if (modalCalendarInstance && modalCalendarInstance.getEventById(info.event.id)) {
+                    // scroll or visually indicate selection if needed
+                  }
+                } catch (e) { console.warn('eventClick error', e); }
             },
             dateClick: function (info) {
               console.log('Date clicked:', info.dateStr);
@@ -192,6 +278,9 @@
           });
 
           calendarInstance.render();
+
+          // hide the calendar spinner after render (render is synchronous)
+          try { hideSpinnerById('roomCalendarSpinner'); } catch (e) {}
         }
 
         // Generate PHP room events and make them globally available
@@ -260,6 +349,89 @@
         if (!window.roomList) window.roomList = [];
         // keep track of current modal room id
         window.currentModalRoomId = null;
+
+        // Spinner helpers that use CSS transitions with a small debounce so quick
+        // operations don't flash the spinner. Toggles a 'spinner-visible' class
+        // and ensures display is set while fading in/out. `fadeMs` should match CSS transition.
+        var _spinnerFadeMs = 250; // milliseconds - keep in sync with CSS transition
+        var _spinnerDebounceMs = 150; // only show spinner if operation > 150ms
+        // store per-spinner timers: { '<id>_show': timeoutId, '<id>_hide': timeoutId }
+        window._spinnerTimers = window._spinnerTimers || {};
+
+        function showSpinnerById(id) {
+          try {
+            var el = document.getElementById(id);
+            if (!el) return;
+
+            // If a hide timer is pending, cancel it (we want to show now)
+            var hideKey = id + '_hide';
+            if (window._spinnerTimers[hideKey]) {
+              clearTimeout(window._spinnerTimers[hideKey]);
+              delete window._spinnerTimers[hideKey];
+            }
+
+            // If already visible, nothing to do
+            if (el.classList.contains('spinner-visible')) return;
+
+            // If a show timer is already scheduled, do nothing
+            var showKey = id + '_show';
+            if (window._spinnerTimers[showKey]) return;
+
+            // Schedule showing after debounce interval
+            window._spinnerTimers[showKey] = setTimeout(function () {
+              try {
+                // make sure element is in flow and ready to animate
+                el.style.display = 'flex';
+                // trigger the fade-in via class toggle
+                el.classList.add('spinner-visible');
+                el.setAttribute('aria-hidden', 'false');
+              } catch (e) {
+                console.warn('showSpinnerById inner error for', id, e);
+              }
+              // clear timer handle
+              delete window._spinnerTimers[showKey];
+            }, _spinnerDebounceMs);
+          } catch (e) {
+            console.warn('showSpinnerById error for', id, e);
+          }
+        }
+
+        function hideSpinnerById(id) {
+          try {
+            var el = document.getElementById(id);
+            if (!el) return;
+
+            var showKey = id + '_show';
+            var hideKey = id + '_hide';
+
+            // If a show timer is pending (debounce not yet triggered), cancel it and never show
+            if (window._spinnerTimers[showKey]) {
+              clearTimeout(window._spinnerTimers[showKey]);
+              delete window._spinnerTimers[showKey];
+              return; // nothing to hide because spinner never showed
+            }
+
+            // If spinner is not visible, nothing to do
+            if (!el.classList.contains('spinner-visible')) return;
+
+            // Remove visible class to start fade-out
+            el.classList.remove('spinner-visible');
+            el.setAttribute('aria-hidden', 'true');
+
+            // Clear any previous hide timer
+            if (window._spinnerTimers[hideKey]) {
+              clearTimeout(window._spinnerTimers[hideKey]);
+            }
+
+            // After fade transition, set display none
+            window._spinnerTimers[hideKey] = setTimeout(function () {
+              try { el.style.display = 'none'; } catch (e) {}
+              delete window._spinnerTimers[hideKey];
+            }, _spinnerFadeMs + 20);
+          } catch (e) {
+            console.warn('hideSpinnerById error for', id, e);
+          }
+        }
 
         // Navigation between calendar view and room list
         function initializeCalendarNavigation() {
@@ -406,15 +578,80 @@
           const container = document.getElementById('roomBookingDetailsContent');
           if (!container) return;
           const p = event.extendedProps || {};
+          const bookingId = (event.id || '').toString();
+          // map status to badge class
+          const status = (p.status || '').toLowerCase();
+          let badgeClass = 'badge-pending';
+          if (status === 'approved' || status === 'confirmed') badgeClass = 'badge-approved';
+          if (status === 'checked_in') badgeClass = 'badge-checkedin';
+          if (status === 'checked_out') badgeClass = 'badge-checkedout';
+          if (status === 'pending') badgeClass = 'badge-pending';
+          if (status === 'cancelled') badgeClass = 'badge-cancelled';
+
           const html = [];
-          html.push(`<div class="fw-bold mb-2">${(p.itemName || event.title || 'Booking')}</div>`);
-          if (p.roomNumber) html.push(`<div><strong>Room:</strong> ${p.roomNumber}</div>`);
-          if (p.guest) html.push(`<div><strong>Guest:</strong> ${p.guest}</div>`);
-          if (p.status) html.push(`<div><strong>Status:</strong> ${p.status}</div>`);
-          if (p.checkin) html.push(`<div><strong>Check-in:</strong> ${p.checkin}</div>`);
-          if (p.checkout) html.push(`<div><strong>Check-out:</strong> ${p.checkout}</div>`);
+          html.push(`<div class="fw-bold mb-2">${(p.itemName || event.title || 'Booking')} <span class="booking-badge ${badgeClass} ms-2">${(p.status || 'Unknown')}</span></div>`);
+          if (p.roomNumber) html.push(`<div class="detail-row"><span class="detail-key">Room:</span> ${p.roomNumber}</div>`);
+          if (p.guest) html.push(`<div class="detail-row"><span class="detail-key">Guest:</span> ${p.guest}</div>`);
+          if (p.checkin) html.push(`<div class="detail-row"><span class="detail-key">Check-in:</span> ${p.checkin}</div>`);
+          if (p.checkout) html.push(`<div class="detail-row"><span class="detail-key">Check-out:</span> ${p.checkout}</div>`);
           if (p.details) html.push(`<div class="mt-2 small text-muted">${p.details}</div>`);
+
+          // action buttons
+          html.push(`<div class="booking-actions"><button class="btn btn-sm btn-outline-primary booking-action-btn" data-action="view" data-booking-id="${bookingId}">View</button><button class="btn btn-sm btn-outline-secondary booking-action-btn" data-action="edit" data-booking-id="${bookingId}">Edit</button><button class="btn btn-sm btn-outline-danger booking-action-btn" data-action="cancel" data-booking-id="${bookingId}">Cancel</button></div>`);
+
           container.innerHTML = html.join('\n');
+        }
+
+        // Handle action buttons in booking details pane
+        document.addEventListener('click', function (e) {
+          const btn = e.target && e.target.closest && e.target.closest('.booking-action-btn');
+          if (!btn) return;
+          const action = btn.getAttribute('data-action');
+          const bookingId = btn.getAttribute('data-booking-id');
+          if (!action || !bookingId) return;
+          handleBookingAction(action, bookingId);
+        });
+
+        function handleBookingAction(action, bookingId) {
+          // simple action routing. Adjust URLs to actual app routes if available.
+          console.log('Booking action', action, 'for', bookingId);
+          const details = document.getElementById('roomBookingDetailsContent');
+          if (action === 'view') {
+            // open booking details API page in new tab (existing api/get_booking_details.php)
+            const url = 'api/get_booking_details.php?id=' + encodeURIComponent(bookingId.replace('booking-', ''));
+            window.open(url, '_blank');
+            return;
+          }
+          if (action === 'edit') {
+            // try to open a dashboard edit route if exists
+            const editUrl = 'dashboard.php?booking_id=' + encodeURIComponent(bookingId.replace('booking-', '')) + '&action=edit';
+            window.location.href = editUrl;
+            return;
+          }
+          if (action === 'cancel') {
+            // optimistic UI: show confirmation inline and then POST to cancel endpoint if exists
+            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            // call API to cancel (endpoint not defined here) - attempt to hit a sensible endpoint
+            fetch('api/cancel_booking.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: bookingId.replace('booking-', '') })
+            }).then(r => r.json()).then(j => {
+              if (j && j.success) {
+                if (details) details.innerHTML = '<div class="text-success">Booking cancelled successfully.</div>';
+                // refresh modal calendar and main calendar
+                if (window.currentModalRoomId) initializeRoomModalCalendar(window.currentModalRoomId);
+                try { if (calendarInstance) calendarInstance.refetchEvents(); } catch (e) {}
+              } else {
+                if (details) details.innerHTML = '<div class="text-danger">Could not cancel booking.</div>';
+                console.warn('Cancel response', j);
+              }
+            }).catch(err => {
+              console.error('Cancel request failed', err);
+              if (details) details.innerHTML = '<div class="text-danger">Cancel failed (network).</div>';
+            });
+            return;
+          }
         }
 
         // Show modal with per-room calendar
@@ -465,6 +702,8 @@
           modal.show();
         }
 
+        
+
         // Initialize or reinitialize the modal calendar for a specific room
         function initializeRoomModalCalendar(roomId) {
           console.log('initializeRoomModalCalendar called for room:', roomId);
@@ -473,6 +712,9 @@
             console.error('roomModalCalendar element not found!');
             return;
           }
+
+          // show modal spinner while building calendar
+          try { showSpinnerById('roomModalSpinner'); } catch (e) {}
 
           // read selected range (days)
           const rangeSelect = document.getElementById('roomCalendarRange');
@@ -531,15 +773,15 @@
               borderColor: 'transparent'
             });
             
-            // Visible booking event with details
+            // Visible booking event with details - preserve original colors where possible
             events.push({
               id: b.id,
               title: b.title,
               start: b.start,
               end: b.end,
-              backgroundColor: '#dc3545', // Darker red for visibility
-              borderColor: '#dc3545',
-              textColor: '#ffffff',
+              backgroundColor: b.backgroundColor || b.background || '#dc3545',
+              borderColor: b.borderColor || b.backgroundColor || b.borderColor || (b.backgroundColor || '#dc3545'),
+              textColor: b.textColor || '#ffffff',
               extendedProps: b.extendedProps
             });
           });
@@ -551,7 +793,8 @@
             headerToolbar: {
               left: 'prev,next today',
               center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+              // modal calendar: don't render view buttons (we control views elsewhere)
+              right: ''
             },
             events: events,
             height: 'auto',
@@ -585,6 +828,9 @@
           console.log('Rendering calendar...');
           modalCalendarInstance.render();
           console.log('Calendar rendered successfully');
+
+          // hide modal spinner now that render is done
+          try { hideSpinnerById('roomModalSpinner'); } catch (e) {}
         }
 
         // re-render modal calendar when range selector changes (if modal open)
@@ -603,6 +849,8 @@
           if (!container) return;
 
           try {
+            // show spinner while fetching/annotating
+            try { showSpinnerById('roomListSpinner'); } catch (e) {}
             const res = await fetch('api/items.php', { method: 'GET', credentials: 'same-origin' });
             if (!res.ok) throw new Error('Failed to fetch items: ' + res.status);
             const data = await res.json();
@@ -663,8 +911,11 @@
               container.appendChild(listGroup);
               console.log('Fallback list built with', items.length, 'items');
             }
+            // hide spinner after DOM annotation or fallback done
+            try { hideSpinnerById('roomListSpinner'); } catch (e) {}
           } catch (err) {
             console.warn('Could not refresh room list:', err);
+            try { hideSpinnerById('roomListSpinner'); } catch (e) {}
           }
         }
 
@@ -676,5 +927,93 @@
           // small delay to allow server-side window.roomList initialization to finish
           setTimeout(() => { fetchAndRefreshRoomList(); }, 500);
         });
+
+        // Ensure calendar initializes even if this section is injected after DOMContentLoaded
+        (function ensureCalendarInitialization() {
+          var _initialized = false;
+
+          function isVisible(el) {
+            if (!el) return false;
+            // offsetParent is null when display:none; use getClientRects for more robust check
+            try {
+              return el.getClientRects().length > 0;
+            } catch (e) { return false; }
+          }
+
+          function tryInit() {
+            if (_initialized) return;
+            var calendarEl = document.getElementById('roomCalendar');
+            if (calendarEl && isVisible(calendarEl)) {
+              // Wait for FullCalendar library to be available before initializing
+              waitForFullCalendar(function (ready) {
+                if (!ready) {
+                  console.error('FullCalendar library not available after retries.');
+                  // hide spinner so UI isn't blocked
+                  try { hideSpinnerById('roomCalendarSpinner'); } catch (e) {}
+                  return;
+                }
+                try {
+                  initializeRoomCalendar();
+                  _initialized = true;
+                } catch (e) {
+                  console.warn('initializeRoomCalendar threw, will retry later', e);
+                }
+              });
+              return true;
+            }
+            return false;
+          }
+
+          // Wait for FullCalendar to be defined (with retries up to ~5s)
+          function waitForFullCalendar(callback) {
+            try {
+              // immediate check
+              if ((window.FullCalendar && window.FullCalendar.Calendar) || (typeof FullCalendar !== 'undefined' && FullCalendar && FullCalendar.Calendar)) {
+                callback(true);
+                return;
+              }
+            } catch (e) {}
+
+            var waited = 0;
+            var interval = 150; // ms
+            var maxWait = 5000; // ms
+            var t = setInterval(function () {
+              waited += interval;
+              try {
+                if ((window.FullCalendar && window.FullCalendar.Calendar) || (typeof FullCalendar !== 'undefined' && FullCalendar && FullCalendar.Calendar)) {
+                  clearInterval(t);
+                  callback(true);
+                  return;
+                }
+              } catch (e) {}
+              if (waited >= maxWait) {
+                clearInterval(t);
+                callback(false);
+              }
+            }, interval);
+          }
+
+          // Try immediately in case DOMContentLoaded already fired and element exists
+          tryInit();
+
+          // Try on load and hashchange (useful if SPA changes location/hash)
+          window.addEventListener('load', tryInit);
+          window.addEventListener('hashchange', tryInit);
+
+          // Observe DOM additions to detect when the calendar section is injected
+          var observer = new MutationObserver(function (mutations, obs) {
+            if (tryInit()) {
+              obs.disconnect();
+            }
+          });
+          observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+
+          // As a safeguard, if the calendar doesn't initialize within 5s, hide any lingering spinner
+          setTimeout(function () {
+            if (!_initialized) {
+              try { hideSpinnerById('roomCalendarSpinner'); } catch (e) {}
+            }
+          }, 5000);
+        })();
 
       </script>

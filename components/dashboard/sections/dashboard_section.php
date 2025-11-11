@@ -124,18 +124,7 @@
           </div>
         </div>
 
-        <!-- Quick Actions (card-style, wide clickable cards like marketplace tiles) -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-white border-bottom">
-                <h6 class="m-0 text-dark fw-bold">
-                  <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
-                </h6>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Quick Actions removed -->
 
         <!-- Analytics Dashboard -->
         <div class="row g-4 mb-4">
@@ -316,43 +305,35 @@
                     </h6>
                   </div>
                   <div class="col-auto">
-                    <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshRecentActivities(this)">
                       <i class="fas fa-sync-alt me-1"></i>Refresh
                     </button>
                   </div>
                 </div>
               </div>
               <div class="card-body p-0">
-                <div class="activity-timeline" style="max-height: 400px; overflow-y: auto;">
-                  <?php if (empty($recent_activities)): ?>
-                    <div class="text-center text-muted py-5">
-                      <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
-                      <h6 class="text-muted">No Recent Activity</h6>
-                      <p class="small mb-0">New activities will appear here</p>
-                    </div>
-                  <?php else: ?>
-                    <?php foreach ($recent_activities as $index => $activity): ?>
-                      <div class="activity-item d-flex p-3 <?php echo $index < count($recent_activities) - 1 ? 'border-bottom' : ''; ?>">
-                        <div class="activity-icon me-3">
-                          <div class="icon-circle bg-primary bg-opacity-10 text-primary">
-                            <i class="fas fa-circle fa-xs"></i>
-                          </div>
-                        </div>
-                        <div class="flex-grow-1">
-                          <div class="activity-content">
-                            <h6 class="mb-1 text-dark"><?php echo htmlspecialchars($activity['type']); ?></h6>
-                            <p class="text-muted small mb-1"><?php echo htmlspecialchars($activity['details']); ?></p>
-                            <div class="text-muted small">
-                              <i class="fas fa-user me-1"></i>Guest •
-                              <i class="fas fa-clock me-1"></i><?php echo date('M d, H:i', strtotime($activity['created_at'])); ?>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    <?php endforeach; ?>
-                  <?php endif; ?>
+                <div id="recent-activities-container" class="activity-timeline" style="max-height: 400px; overflow-y: auto;">
+                  <?php
+                  // Embed the recent activities fragment for initial render while keeping
+                  // it fetchable via AJAX. The fragment file will detect EMBED_RECENT_ACTIVITY
+                  // and avoid sending headers/exiting when embedded.
+                  define('EMBED_RECENT_ACTIVITY', true);
+                  include __DIR__ . '/recent_activities_fragment.php';
+                  ?>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <?php
+        // Compute base path so asset and fragment URLs work when app is hosted in a subdirectory.
+        $barcie_base_path = dirname($_SERVER['SCRIPT_NAME']);
+        if ($barcie_base_path === '/' || $barcie_base_path === '\\') $barcie_base_path = '';
+        $barcie_base_path = rtrim($barcie_base_path, '/\\');
+        ?>
+        <script>
+          // Expose base path for the external recent-activities script.
+          window.BARCIE_BASE_PATH = '<?php echo $barcie_base_path; ?>';
+        </script>
+        <script src="<?php echo ($barcie_base_path ? $barcie_base_path : ''); ?>/js/dashboard/recent-activities.js"></script>

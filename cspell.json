@@ -130,7 +130,22 @@
     "carlxd",
     "BSIT",
     "Prynce",
-    "Clemente"
+    "Clemente",
+    "addons",
+    "replace_images",
+    "removed_images",
+    "removedImages",
+    "replaceInput",
+    "replace-input",
+    "item_actions",
+    "uploads",
+    "viewerImages",
+    "viewerZoom",
+    "carouselState",
+    "imageViewerModal",
+    "addAddonBtn",
+    "addon-row",
+    "addon-price-input"
   ],
   "ignoreWords": [],
   "import": []
