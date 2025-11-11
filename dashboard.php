@@ -287,11 +287,6 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         ?>
 
 
-
-
-
-
-
       </script>
 
       <!-- All styles moved to dashboard.css for better organization -->

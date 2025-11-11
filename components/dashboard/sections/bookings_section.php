@@ -99,6 +99,9 @@
           #bookingsPagination .pagination.show { opacity: 1; transform: translateY(0); }
           /* small hover transition for page links */
           #bookingsPagination .page-link { transition: background-color 120ms ease, color 120ms ease; }
+          /* table spinner overlay used between page transitions */
+          .table-spinner-overlay { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.7); z-index: 60; }
+          .table-spinner-overlay .spinner-border { width: 2.4rem; height: 2.4rem; }
         `;
         const s = document.createElement('style'); s.id = styleId; s.appendChild(document.createTextNode(css));
         document.head.appendChild(s);
@@ -420,9 +423,11 @@
   
   <script>
     (function(){
-      // Simple client-side pagination for #bookingsTable
-      const PER_PAGE = 10;
-      let state = { perPage: PER_PAGE, currentPage: 1, totalPages: 1 };
+  // Simple client-side pagination for #bookingsTable
+  const PER_PAGE = 10;
+  let state = { perPage: PER_PAGE, currentPage: 1, totalPages: 1 };
+  // token to avoid overlapping fade animations
+  let bookingsFadeToken = 0;
 
       function getAllRows(){
         return Array.from(document.querySelectorAll('#bookingsTable tbody tr')).filter(r => r.id !== 'bookings-no-results');
@@ -443,7 +448,59 @@
         return true;
       }
 
-      function recalcPagination(){
+      // helper: returns a promise that resolves when the provided rows finish fading out (or after timeout)
+      function fadeOutRows(rows, timeout = 300){
+        return new Promise(resolve => {
+          if (!rows || rows.length === 0) return resolve();
+          let remaining = rows.length;
+          const finishOne = (r) => {
+            try { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); } catch(e){}
+            if (--remaining <= 0) resolve();
+          };
+
+          const onEnd = (e) => {
+            const r = e.currentTarget;
+            r.removeEventListener('transitionend', onEnd);
+            finishOne(r);
+          };
+
+          rows.forEach(r => {
+            // ensure transition is set
+            r.style.transition = r.style.transition || 'opacity 220ms ease-in-out';
+            // listen for transition end
+            r.addEventListener('transitionend', onEnd);
+            // start fade
+            requestAnimationFrame(() => { r.style.opacity = 0; });
+            // safety timeout in case transitionend doesn't fire
+            setTimeout(() => { try { r.removeEventListener('transitionend', onEnd); } catch(e){}; finishOne(r); }, timeout);
+          });
+        });
+      }
+
+      // show a small overlay spinner over a table container; returns a remover function
+      function showTableSpinner(container){
+        try {
+          if (!container) return function(){};
+          // find table-responsive ancestor if a table element was passed
+          let parent = container.closest && container.closest('.table-responsive') ? container.closest('.table-responsive') : container;
+          // ensure positioned parent so absolute overlay is positioned correctly
+          const prevPos = parent.style.position || '';
+          const computed = window.getComputedStyle(parent).position;
+          if (computed === 'static') parent.style.position = 'relative';
+
+          const overlay = document.createElement('div');
+          overlay.className = 'table-spinner-overlay';
+          overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+          parent.appendChild(overlay);
+
+          return function removeSpinner(){
+            try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}
+            try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){}
+          };
+        } catch (err) { return function(){}; }
+      }
+
+      async function recalcPagination(){
         const rows = getAllRows();
         // Compute visibleRows based on filter criteria (not current style.display which pagination modifies)
         const visibleRows = rows.filter(r => doesRowMatchFilter(r));
@@ -451,20 +508,33 @@
         state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
         if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
 
-        // Hide all rows first (mark them hidden for CSS) then show only those within current page slice
-        rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+        // Determine currently visible rows (those not hidden by pagination)
+        const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
+
+        // bump token to cancel overlapping ops
+        const myToken = ++bookingsFadeToken;
+
+  // show spinner while transitioning
+  const removeSpinner = showTableSpinner(document.querySelector('#bookingsTable'));
+
+  // fade out current page rows first
+  await fadeOutRows(currentlyVisible);
+
+  // if another pagination action started, abort showing this page and remove spinner
+  if (myToken !== bookingsFadeToken) { removeSpinner(); return; }
+
+  // Now hide all and show the new slice
+  rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
         const start = (state.currentPage - 1) * state.perPage;
         const end = start + state.perPage;
         visibleRows.slice(start, end).forEach(r => {
-          // mark as visible and fade-in
           r.removeAttribute('data-hidden-by-pagination');
           r.style.display = '';
-          // ensure initial opacity 0 so transition runs
           r.style.opacity = 0;
-          // trigger fade-in on next frame
           requestAnimationFrame(() => { r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
         });
-
+        // remove spinner after new rows are visible
+        setTimeout(() => { try { removeSpinner(); } catch(e){} }, 220);
         renderPaginationControls();
       }
 
@@ -665,30 +735,42 @@
   </div>
   <script>
     (function(){
-      // Client-side pagination for Discount Applications table (#discountsTable)
+  // Client-side pagination for Discount Applications table (#discountsTable)
       const PER_PAGE_D = 8;
       let dstate = { perPage: PER_PAGE_D, currentPage: 1, totalPages: 1 };
+      let discountsFadeToken = 0;
 
       function dGetAllRows(){
         return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => r.id !== 'discounts-no-results');
       }
 
-      function dRecalc(){
+      // reuse fadeOutRows helper from bookings (declared earlier)
+      function dFadeOutRows(rows, timeout = 300){
+        return fadeOutRows(rows, timeout);
+      }
+
+      async function dRecalc(){
         const rows = dGetAllRows();
         const total = rows.length;
         dstate.totalPages = Math.max(1, Math.ceil(total / dstate.perPage));
         if (dstate.currentPage > dstate.totalPages) dstate.currentPage = dstate.totalPages;
 
-        // hide all then show slice
-        rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+  const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
+  const myToken = ++discountsFadeToken;
+
+  const removeSpinner = showTableSpinner(document.querySelector('#discountsTable'));
+
+  await dFadeOutRows(currentlyVisible);
+  if (myToken !== discountsFadeToken) { removeSpinner(); return; }
+
+  rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
         const start = (dstate.currentPage - 1) * dstate.perPage;
         const end = start + dstate.perPage;
         rows.slice(start, end).forEach(r => {
-          r.removeAttribute('data-hidden-by-pagination');
-          r.style.display = '';
-          r.style.opacity = 0;
+          r.removeAttribute('data-hidden-by-pagination'); r.style.display = ''; r.style.opacity = 0;
           requestAnimationFrame(()=>{ r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
         });
+        setTimeout(()=>{ try { removeSpinner(); } catch(e){} }, 220);
 
         dRenderControls();
       }

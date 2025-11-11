@@ -198,21 +198,74 @@ if ($stmt) {
 			return Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => r.id !== 'payments-no-results');
 		}
 
+		let paymentsFadeToken = 0;
+
+		// helper: fade out rows (local copy) to keep this module self-contained
+		function fadeOutRows(rows, timeout = 300){
+			return new Promise(resolve => {
+				if (!rows || rows.length === 0) return resolve();
+				let remaining = rows.length;
+				const finishOne = (r) => {
+					try { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); } catch(e){}
+					if (--remaining <= 0) resolve();
+				};
+
+				const onEnd = (e) => {
+					const r = e.currentTarget;
+					r.removeEventListener('transitionend', onEnd);
+					finishOne(r);
+				};
+
+				rows.forEach(r => {
+					// ensure transition is set
+					r.style.transition = r.style.transition || 'opacity 220ms ease-in-out';
+					// listen for transition end
+					r.addEventListener('transitionend', onEnd);
+					// start fade
+					requestAnimationFrame(() => { r.style.opacity = 0; });
+					// safety timeout in case transitionend doesn't fire
+					setTimeout(() => { try { r.removeEventListener('transitionend', onEnd); } catch(e){}; finishOne(r); }, timeout);
+				});
+			});
+		}
+
 		function pRecalc(){
 			const rows = pGetAllRows();
 			const total = rows.length;
 			pstate.totalPages = Math.max(1, Math.ceil(total / pstate.perPage));
 			if (pstate.currentPage > pstate.totalPages) pstate.currentPage = pstate.totalPages;
 
-			rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
-			const start = (pstate.currentPage - 1) * pstate.perPage;
-			const end = start + pstate.perPage;
-			rows.slice(start, end).forEach(r => {
-				r.removeAttribute('data-hidden-by-pagination'); r.style.display = ''; r.style.opacity = 0;
-				requestAnimationFrame(()=>{ r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
-			});
+			const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
+			const myToken = ++paymentsFadeToken;
 
-			pRender();
+			// show spinner while transitioning
+			const removeSpinner = (function(){
+				try {
+					const tbl = document.querySelector('#paymentsTable');
+					if (!tbl) return function(){};
+					let parent = tbl.closest && tbl.closest('.table-responsive') ? tbl.closest('.table-responsive') : tbl;
+					const prevPos = parent.style.position || '';
+					const computed = window.getComputedStyle(parent).position;
+					if (computed === 'static') parent.style.position = 'relative';
+					const overlay = document.createElement('div'); overlay.className = 'table-spinner-overlay'; overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+					parent.appendChild(overlay);
+					return function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){} };
+				} catch (err) { return function(){}; }
+			})();
+
+			// fade out current rows then show new slice
+			fadeOutRows(currentlyVisible).then(()=>{
+				if (myToken !== paymentsFadeToken) { removeSpinner(); return; }
+				rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+				const start = (pstate.currentPage - 1) * pstate.perPage;
+				const end = start + pstate.perPage;
+				rows.slice(start, end).forEach(r => {
+					r.removeAttribute('data-hidden-by-pagination'); r.style.display = ''; r.style.opacity = 0;
+					requestAnimationFrame(()=>{ r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
+				});
+				setTimeout(()=>{ try { removeSpinner(); } catch(e){} }, 220);
+				pRender();
+			});
 		}
 
 		function pRender(){
