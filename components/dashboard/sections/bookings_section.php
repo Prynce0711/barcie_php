@@ -58,8 +58,10 @@
 
           <!-- Bookings Table -->
     <div id="admin_discount_alert" class="mb-2"></div>
+    <!-- Top pagination controls for bookings table -->
+    <div id="bookingsPaginationTop" class="mb-2"></div>
     <div class="table-responsive">
-            <table class="table table-hover align-middle" id="bookingsTable">
+      <table class="table table-hover align-middle" id="bookingsTable">
               <thead class="table-dark">
                 <tr>
                   <th style="width: 7%;">Receipt #</th>
@@ -169,7 +171,15 @@
           btn.classList.add('btn-secondary');
         }
         if (trigger !== false) {
-          try { window.filterBookings && window.filterBookings(); } catch(e){ console.error('filterBookings() error', e); }
+          try {
+            window.filterBookings && window.filterBookings();
+            // Also trigger discounts and payment verification updates when changing type
+            try { if (typeof window.filterDiscounts === 'function') window.filterDiscounts(); } catch(e){ console.error('filterDiscounts error', e); }
+            try { if (typeof window.loadPaymentVerification === 'function') window.loadPaymentVerification(); } catch(e){ /* optional function */ }
+            // Scroll bookings table into view for clarity
+            const bookingsTable = document.getElementById('bookingsTable');
+            if (bookingsTable && bookingsTable.scrollIntoView) bookingsTable.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } catch(e){ console.error('filterBookings() error', e); }
         }
       }
 
@@ -541,8 +551,10 @@
       function renderPaginationControls(){
         const container = document.getElementById('bookingsPagination');
         if (!container) return;
-        container.innerHTML = '';
-        if (state.totalPages <= 1) return; // no controls needed
+        // render into both top and bottom containers
+        const topContainer = document.getElementById('bookingsPaginationTop');
+        [container, topContainer].forEach(c => { if (c) c.innerHTML = ''; });
+        if (state.totalPages <= 1) return; // no controls needed  
 
         const nav = document.createElement('nav');
         const ul = document.createElement('ul');
@@ -596,9 +608,14 @@
         ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
 
         nav.appendChild(ul);
-        container.appendChild(nav);
+        // append to bottom and top (if present)
+        if (container) container.appendChild(nav.cloneNode(true));
+        if (topContainer) topContainer.appendChild(nav.cloneNode(true));
         // animate pagination controls into view
-        requestAnimationFrame(() => { const p = container.querySelector('.pagination'); if (p) p.classList.add('show'); });
+        requestAnimationFrame(() => {
+          const p1 = container && container.querySelector('.pagination'); if (p1) p1.classList.add('show');
+          const p2 = topContainer && topContainer.querySelector('.pagination'); if (p2) p2.classList.add('show');
+        });
       }
 
       // Wrap existing filterBookings so pagination recalculates after filters run
@@ -612,6 +629,14 @@
             container.id = 'bookingsPagination';
             container.className = 'mt-2';
             tableResp.parentNode.insertBefore(container, tableResp.nextSibling);
+          }
+          // ensure a top pagination container is present above the table
+          let topContainer = document.getElementById('bookingsPaginationTop');
+          if (!topContainer) {
+            topContainer = document.createElement('div');
+            topContainer.id = 'bookingsPaginationTop';
+            topContainer.className = 'mb-2';
+            tableResp.parentNode.insertBefore(topContainer, tableResp);
           }
         }
 
@@ -682,6 +707,9 @@
                     $room = $row['room_name'] ?: 'Unassigned';
                     if ($row['room_number']) $room .= ' #' . $row['room_number'];
 
+                    // Determine type for client-side filtering: treat presence of room_name as 'room', otherwise 'facility'
+                    $row_type = !empty($row['room_name']) ? 'room' : 'facility';
+
                     // Try to extract guest name and discount type from details if available
                     $guest = 'Guest';
                     $discountType = '';
@@ -691,7 +719,7 @@
                     // Use dedicated proof_of_id column when available
                     $proofPath = $row['proof_of_id'] ?: '';
 
-                    echo '<tr id="discount-row-' . $bookingId . '">';
+                    echo '<tr id="discount-row-' . $bookingId . '" data-type="' . htmlspecialchars($row_type) . '">';
                     echo '<td><strong>' . htmlspecialchars($receipt) . '</strong></td>';
                     echo '<td>' . htmlspecialchars($guest) . '</td>';
                     echo '<td>' . htmlspecialchars($room) . '</td>';
@@ -741,7 +769,14 @@
       let discountsFadeToken = 0;
 
       function dGetAllRows(){
-        return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => r.id !== 'discounts-no-results');
+        // Respect the current type filter so discounts reflect the chosen type (room/facility/all)
+        const typeFilter = (document.getElementById('typeFilter')?.value || '').toLowerCase();
+        return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => {
+          if (r.id === 'discounts-no-results') return false;
+          if (!typeFilter) return true;
+          const rtype = (r.dataset.type || '').toLowerCase();
+          return rtype === typeFilter;
+        });
       }
 
       // reuse fadeOutRows helper from bookings (declared earlier)
@@ -805,5 +840,17 @@
       document.addEventListener('DOMContentLoaded', function(){ dRecalc(); });
 
       window._discountsPagination = { setPerPage: function(n){ dstate.perPage = Math.max(1, Number(n)||PER_PAGE_D); dstate.currentPage = 1; dRecalc(); }, goToPage: function(p){ dstate.currentPage = Math.min(Math.max(1, Number(p)||1), dstate.totalPages); dRecalc(); } };
+
+      // expose discount recalculation so other scripts (e.g. type filter) can call it
+      window._discountsRecalc = function(){ try { dRecalc(); } catch(e){ console.error('dRecalc error', e); } };
+
+      // Public helper to filter discounts from outside (type buttons will call this)
+      window.filterDiscounts = function(){
+        try {
+          // the dGetAllRows already respects the selected type, so just reset to first page and recalc
+          dstate.currentPage = 1;
+          dRecalc();
+        } catch (err) { console.error('filterDiscounts error', err); }
+      };
     })();
   </script>

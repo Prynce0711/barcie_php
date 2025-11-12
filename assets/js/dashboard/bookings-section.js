@@ -43,10 +43,49 @@ function filterBookings() {
 }
 
 function resetFilters() {
-  document.getElementById('statusFilter').value = '';
-  document.getElementById('typeFilter').value = '';
-  document.getElementById('guestSearch').value = '';
-  filterBookings();
+  // Show table overlay spinners for bookings/discounts/payments (if available)
+  const tableIds = ['bookingsTable', 'discountsTable', 'paymentsTable'];
+  const removers = [];
+
+  tableIds.forEach(id => {
+    try {
+      const tbl = document.getElementById(id);
+      if (!tbl) return;
+      if (typeof window.showTableSpinner === 'function') {
+        const rm = window.showTableSpinner(tbl);
+        if (typeof rm === 'function') removers.push(rm);
+      } else {
+        // fallback overlay
+        const parent = tbl.closest && tbl.closest('.table-responsive') ? tbl.closest('.table-responsive') : tbl;
+        const prevPos = parent.style.position || '';
+        const computed = window.getComputedStyle(parent).position;
+        if (computed === 'static') parent.style.position = 'relative';
+        const overlay = document.createElement('div'); overlay.className = 'table-spinner-overlay'; overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+        parent.appendChild(overlay);
+        removers.push(function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){} });
+      }
+    } catch (e) { console.error('spinner error', e); }
+  });
+
+  // reset UI controls
+  try { document.getElementById('statusFilter').value = ''; } catch(e){}
+  try { document.getElementById('typeFilter').value = ''; } catch(e){}
+  try { document.getElementById('guestSearch').value = ''; } catch(e){}
+
+  // update type filter button visuals (make the 'All' button active)
+  try {
+    document.querySelectorAll('.type-filter-btn').forEach(b=>{ b.classList.remove('active'); b.classList.remove('btn-secondary'); b.classList.add('btn-outline-secondary'); });
+    const allBtn = document.querySelector('.type-filter-btn[data-type=""]'); if (allBtn) { allBtn.classList.add('active'); allBtn.classList.remove('btn-outline-secondary'); allBtn.classList.add('btn-secondary'); }
+  } catch(e){}
+
+  // run filters and also reset discounts and payments
+  try { if (typeof filterBookings === 'function') filterBookings(); } catch(e){ console.error(e); }
+  try { if (typeof window.filterDiscounts === 'function') window.filterDiscounts(); } catch(e){ console.error(e); }
+  try { if (window._discountsPagination && typeof window._discountsPagination.goToPage === 'function') window._discountsPagination.goToPage(1); } catch(e){}
+  try { if (window._paymentsPagination && typeof window._paymentsPagination.goToPage === 'function') window._paymentsPagination.goToPage(1); } catch(e){}
+
+  // remove overlays after a short delay to allow DOM updates
+  setTimeout(function(){ try { removers.forEach(r=>{ try{ r(); }catch(e){} }); } catch(e){} }, 300);
 }
 
 function initializeBookingsFiltering() {
