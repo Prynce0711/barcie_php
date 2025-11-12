@@ -122,6 +122,25 @@
         confirmFn('Are you sure you want to ' + action + ' this discount application?').then(function(confirmed){
           if (!confirmed) return;
           btn.disabled = true;
+          // show spinner overlay over discounts table while request runs
+          let removeSpinner = function(){};
+          try {
+            const parentEl = btn.closest('.table-responsive') || document.querySelector('#discountsTable');
+            if (typeof showTableSpinner === 'function') {
+              removeSpinner = showTableSpinner(parentEl);
+            } else {
+              // fallback: create a simple overlay
+              try {
+                const parent = parentEl && parentEl.closest && parentEl.closest('.table-responsive') ? parentEl.closest('.table-responsive') : (parentEl || document.body);
+                const prevPos = parent.style.position || '';
+                const computed = window.getComputedStyle(parent).position;
+                if (computed === 'static') parent.style.position = 'relative';
+                const overlay = document.createElement('div'); overlay.className = 'table-spinner-overlay'; overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+                parent.appendChild(overlay);
+                removeSpinner = function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){} };
+              } catch (e) { /* ignore fallback errors */ }
+            }
+          } catch(e) { /* ignore */ }
 
           const body = 'action=admin_update_discount&booking_id=' + encodeURIComponent(bookingId) + '&discount_action=' + encodeURIComponent(action);
           fetch('database/user_auth.php', {
@@ -133,6 +152,7 @@
             },
             body: body
           }).then(r => r.json()).then(json => {
+            try { removeSpinner(); } catch(e){}
             if (json && json.success) {
               const statusCell = document.getElementById('discount-row-' + bookingId)?.querySelector('td:nth-child(6)');
               if (statusCell) statusCell.innerHTML = action === 'approve' ? '<span class="badge bg-success">Approved</span>' : '<span class="badge bg-danger">Rejected</span>';
@@ -143,6 +163,7 @@
               btn.disabled = false;
             }
           }).catch(err => {
+            try { removeSpinner(); } catch(e){}
             console.error(err);
             alertFn('Request failed — check console', 'danger');
             btn.disabled = false;
@@ -774,7 +795,17 @@
         return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => {
           if (r.id === 'discounts-no-results') return false;
           if (!typeFilter) return true;
-          const rtype = (r.dataset.type || '').toLowerCase();
+          // Prefer explicit data-type attribute; fall back to the 3rd column (Room/Facility) text
+          let rtype = (r.dataset.type || '').toLowerCase().trim();
+          if (!rtype) {
+            try {
+              const cell = r.querySelector('td:nth-child(3)');
+              if (cell) rtype = (cell.textContent || '').toLowerCase().trim();
+            } catch (e) { rtype = ''; }
+          }
+          // Normalize common words to 'room'/'facility'
+          if (rtype.indexOf('room') !== -1) rtype = 'room';
+          else if (rtype.indexOf('facility') !== -1) rtype = 'facility';
           return rtype === typeFilter;
         });
       }
@@ -851,6 +882,50 @@
           dstate.currentPage = 1;
           dRecalc();
         } catch (err) { console.error('filterDiscounts error', err); }
+      };
+
+      // Lightweight payment verification filter (used when type buttons change)
+      // If the payments table exists on the page, this will hide/show rows based on data-type or text.
+      window.loadPaymentVerification = function(){
+        try {
+          const typeFilter = (document.getElementById('typeFilter')?.value || '').toLowerCase();
+          const table = document.getElementById('paymentsTable');
+          if (!table) return; // nothing to do
+          const tbody = table.querySelector('tbody');
+          if (!tbody) return;
+          const rows = Array.from(tbody.querySelectorAll('tr'));
+          let visible = 0;
+          rows.forEach(r => {
+            if (!r) return;
+            if (r.id && r.id.indexOf('payments-no-results') !== -1) return;
+            let rtype = (r.dataset.type || '').toLowerCase();
+            if (!rtype) {
+              // fallback: inspect the row text for the words 'room' or 'facility'
+              rtype = (r.textContent || '').toLowerCase();
+            }
+            const show = !typeFilter || (rtype && rtype.indexOf(typeFilter) !== -1);
+            r.style.display = show ? '' : 'none';
+            if (show) visible++;
+          });
+
+          // show a no-results row when filtered out completely
+          const noId = 'payments-no-results';
+          let noRow = document.getElementById(noId);
+          if (visible === 0) {
+            if (!noRow) {
+              const cols = table.querySelectorAll('thead th').length || 6;
+              noRow = document.createElement('tr');
+              noRow.id = noId;
+              noRow.innerHTML = '<td colspan="' + cols + '" class="text-center text-muted">No payments match your filters.</td>';
+              tbody.appendChild(noRow);
+            }
+          } else {
+            if (noRow && noRow.parentNode) noRow.parentNode.removeChild(noRow);
+          }
+
+          // reset payments pagination if available
+          try { if (window._paymentsPagination && typeof window._paymentsPagination.goToPage === 'function') window._paymentsPagination.goToPage(1); } catch(e){}
+        } catch (err) { console.error('loadPaymentVerification error', err); }
       };
     })();
   </script>
