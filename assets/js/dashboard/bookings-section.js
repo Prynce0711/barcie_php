@@ -47,6 +47,32 @@ function resetFilters() {
   const tableIds = ['bookingsTable', 'discountsTable', 'paymentsTable'];
   const removers = [];
 
+  // Show a full-section loading overlay for the entire bookings section
+  let removeSectionSpinner = function(){};
+  try {
+    const section = document.getElementById('bookingsSection');
+    if (section) {
+      if (typeof window.showTableSpinner === 'function') {
+        // prefer existing helper which returns a remover
+        try { removeSectionSpinner = window.showTableSpinner(section); } catch(e){ removeSectionSpinner = function(){}; }
+      } else {
+        // fallback: create overlay element that covers the section
+        const prevPos = section.style.position || '';
+        const computed = window.getComputedStyle(section).position;
+        if (computed === 'static') section.style.position = 'relative';
+        const overlay = document.createElement('div');
+        overlay.className = 'table-spinner-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'rgba(255,255,255,0.8)';
+        overlay.style.zIndex = 1050;
+        overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+        section.appendChild(overlay);
+        removeSectionSpinner = function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') section.style.position = prevPos || ''; } catch(e){} };
+      }
+    }
+  } catch(e){ console.error('section spinner error', e); }
+
   tableIds.forEach(id => {
     try {
       const tbl = document.getElementById(id);
@@ -86,6 +112,9 @@ function resetFilters() {
 
   // remove overlays after a short delay to allow DOM updates
   setTimeout(function(){ try { removers.forEach(r=>{ try{ r(); }catch(e){} }); } catch(e){} }, 300);
+
+  // also remove the full-section overlay when done
+  setTimeout(function(){ try { try { removeSectionSpinner(); } catch(e){} } catch(e){} }, 350);
 }
 
 function initializeBookingsFiltering() {
@@ -105,6 +134,9 @@ function initializeBookingsFiltering() {
   if (guestSearch) {
     guestSearch.addEventListener('input', filterBookings);
   }
+
+  // Type filter button wiring moved to central dashboard bootstrap to ensure
+  // other dashboard modules (discounts, payments) are notified when type changes.
 }
 
 function initializeBookingsActions() {

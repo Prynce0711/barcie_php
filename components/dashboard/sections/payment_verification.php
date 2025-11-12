@@ -103,9 +103,29 @@ if ($stmt) {
 		const confirmMsg = action === 'verify' ? 'Verify this payment?' : 'Reject this payment?';
 		if (!confirm(confirmMsg)) return;
 
-		btn.disabled = true;
-		const body = 'action=admin_update_payment&booking_id=' + encodeURIComponent(bookingId) + '&payment_action=' + encodeURIComponent(action);
-		fetch('database/user_auth.php', {
+			btn.disabled = true;
+
+			// show spinner overlay while request runs
+			let removeSpinner = function(){};
+			try {
+				const parentEl = btn.closest('.table-responsive') || document.querySelector('#paymentsTable');
+				if (typeof showTableSpinner === 'function') {
+					removeSpinner = showTableSpinner(parentEl);
+				} else {
+					// fallback overlay
+					try {
+						const parent = parentEl && parentEl.closest && parentEl.closest('.table-responsive') ? parentEl.closest('.table-responsive') : (parentEl || document.body);
+						const prevPos = parent.style.position || '';
+						const computed = window.getComputedStyle(parent).position;
+						if (computed === 'static') parent.style.position = 'relative';
+						const overlay = document.createElement('div'); overlay.className = 'table-spinner-overlay'; overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+						parent.appendChild(overlay);
+						removeSpinner = function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){} };
+					} catch (e) { /* ignore */ }
+				}
+			} catch(e) { /* ignore */ }
+			const body = 'action=admin_update_payment&booking_id=' + encodeURIComponent(bookingId) + '&payment_action=' + encodeURIComponent(action);
+			fetch('database/user_auth.php', {
 			method: 'POST',
 			credentials: 'same-origin',
 			headers: {
@@ -113,36 +133,38 @@ if ($stmt) {
 				'X-Requested-With': 'XMLHttpRequest'
 			},
 			body: body
-		}).then(r => r.json()).then(json => {
-			if (json && json.success) {
-				const row = document.getElementById('payment-row-' + bookingId);
-				if (row) {
-					const actionsCell = row.querySelector('td:last-child');
-					if (actionsCell) {
-						actionsCell.innerHTML = action === 'verify' ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-danger">Rejected</span>';
-						// append verifier info if available
-						if (json.verifier_username || json.verified_at) {
-							const info = document.createElement('div');
-							info.className = 'mt-2 small text-muted';
-							let txt = '';
-							if (json.verifier_username) txt += 'By: ' + json.verifier_username;
-							if (json.verified_at) txt += (txt ? ' • ' : '') + json.verified_at;
-							info.textContent = txt;
-							actionsCell.appendChild(info);
+			}).then(r => r.json()).then(json => {
+				try { removeSpinner(); } catch(e){}
+				if (json && json.success) {
+					const row = document.getElementById('payment-row-' + bookingId);
+					if (row) {
+						const actionsCell = row.querySelector('td:last-child');
+						if (actionsCell) {
+							actionsCell.innerHTML = action === 'verify' ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-danger">Rejected</span>';
+							// append verifier info if available
+							if (json.verifier_username || json.verified_at) {
+								const info = document.createElement('div');
+								info.className = 'mt-2 small text-muted';
+								let txt = '';
+								if (json.verifier_username) txt += 'By: ' + json.verifier_username;
+								if (json.verified_at) txt += (txt ? ' • ' : '') + json.verified_at;
+								info.textContent = txt;
+								actionsCell.appendChild(info);
+							}
 						}
+						row.classList.add('table-success');
 					}
-					row.classList.add('table-success');
+					notify(json.message || 'Payment updated', 'success');
+				} else {
+					notify((json && (json.error || json.message)) || 'Failed to update payment', 'error');
+					btn.disabled = false;
 				}
-				notify(json.message || 'Payment updated', 'success');
-			} else {
-				notify((json && (json.error || json.message)) || 'Failed to update payment', 'error');
+			}).catch(err => {
+				try { removeSpinner(); } catch(e){}
+				console.error(err);
+					notify('Request failed — check console', 'error');
 				btn.disabled = false;
-			}
-		}).catch(err => {
-			console.error(err);
-				notify('Request failed — check console', 'error');
-			btn.disabled = false;
-		});
+			});
 	});
 
 	// reuse proof modal logic from bookings_section (basic)
