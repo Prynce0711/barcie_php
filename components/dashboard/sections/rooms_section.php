@@ -63,11 +63,68 @@
 </div>
 
 <!-- Items Grid -->
-<div class="row" id="items-container">
-  <?php include 'rooms_grid_content.php'; ?>
+<!-- Items Grid (wrapped to allow overlay spinner) -->
+<div class="position-relative">
+  <!-- Loading overlay (hidden by default) -->
+  <div id="itemsLoadingOverlay" class="loading-overlay d-none" aria-hidden="true" role="status" aria-label="Loading items">
+    <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="row" id="items-container">
+    <?php include 'rooms_grid_content.php'; ?>
+  </div>
 </div>
 
 
-
 <!-- Add New Item Modal is now included in the main layout (dashboard.php) to avoid stacking/overflow issues -->
+
+<!-- Inline styles for the items loading overlay (kept small and local to this component) -->
+<style>
+  /* Ensure the wrapper is the positioning context */
+  .position-relative { position: relative; }
+
+  /* Full-area overlay that sits above the items grid */
+  .loading-overlay {
+    position: absolute;
+    inset: 0; /* top:0; right:0; bottom:0; left:0 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.72);
+    z-index: 1080; /* above most UI but below modals */
+    backdrop-filter: blur(2px);
+  }
+
+  /* Utility to hide/show using bootstrap d-none class */
+</style>
+
+<!-- Small script to show the overlay briefly when switching type filters (All/Rooms/Facilities) -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('itemsLoadingOverlay');
+    if (!overlay) return;
+
+    // Show overlay early using capture so it appears before other handlers run
+    document.querySelectorAll('.type-filter').forEach(radio => {
+      radio.addEventListener('change', function() {
+        // Show overlay
+        overlay.classList.remove('d-none');
+        overlay.setAttribute('aria-hidden', 'false');
+
+        // Hide overlay shortly after other handlers complete.
+        // Filtering in this section is synchronous, so a short timeout is sufficient.
+        // If you later change to async loading, replace this with logic that hides
+        // the overlay when the async request completes.
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            overlay.classList.add('d-none');
+            overlay.setAttribute('aria-hidden', 'true');
+          }, 120);
+        });
+      }, true); // use capture to show immediately
+    });
+  });
+</script>
 

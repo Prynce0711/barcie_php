@@ -12,7 +12,64 @@ $items_result = $conn->query($items_query);
 error_log("Room List Content: Fetching rooms and facilities");
 error_log("Query result rows: " . ($items_result ? $items_result->num_rows : 'null'));
 
+?>
+<!-- Filter controls for rooms/facilities -->
+<div class="mb-3 d-flex align-items-center">
+  <div class="btn-group" role="group" aria-label="Room filters" id="room-filter-group">
+    <button type="button" class="btn btn-sm btn-outline-secondary room-filter-btn active" data-filter="all">All</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary room-filter-btn" data-filter="room">Rooms</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary room-filter-btn" data-filter="facility">Facilities</button>
+  </div>
+</div>
+<script>
+  (function(){
+    // Defensive: ensure DOMContentLoaded if this file is included before DOM ready
+    function init() {
+      const btns = document.querySelectorAll('.room-filter-btn');
+      const spinner = document.getElementById('room-list-overlay');
+      if (!btns) return;
+      const roomItems = () => Array.from(document.querySelectorAll('.room-item'));
+      function setActive(button){
+        btns.forEach(b=>b.classList.remove('active'));
+        button.classList.add('active');
+      }
+      btns.forEach(btn=>{
+        btn.addEventListener('click', function(e){
+          e.preventDefault();
+          const filter = this.dataset.filter;
+          setActive(this);
+          if (spinner) spinner.style.display = '';
+          // Short delay so spinner is visible while the UI updates
+          setTimeout(()=>{
+            const items = roomItems();
+            items.forEach(item=>{
+              if(filter === 'all'){
+                item.style.display = '';
+              } else {
+                const type = item.getAttribute('data-item-type') || '';
+                item.style.display = (type === filter) ? '' : 'none';
+              }
+            });
+            if (spinner) spinner.style.display = 'none';
+          }, 220);
+        });
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  })();
+</script>
+<?php
+
 if ($items_result && $items_result->num_rows > 0) {
+  ?>
+  <div id="room-list-container" class="position-relative">
+    <div id="room-list-overlay" style="display:none; position:absolute; inset:0; z-index:15; background: rgba(255,255,255,0.6);">
+      <div class="d-flex h-100 w-100 align-items-center justify-content-center">
+        <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+      </div>
+    </div>
+    <div id="room-list-items">
+  <?php
   while ($item = $items_result->fetch_assoc()) {
     // Get current reservation for this item
     $today = date('Y-m-d');
@@ -205,6 +262,10 @@ if ($items_result && $items_result->num_rows > 0) {
 
     <?php
   }
+  ?>
+    </div>
+  </div>
+  <?php
 } else {
   echo '<div class="text-center text-muted p-4">
             <i class="fas fa-building fa-3x mb-3 opacity-50"></i>
