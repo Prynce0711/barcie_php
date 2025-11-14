@@ -27,6 +27,12 @@
       <i class="fas fa-comments"></i>
       <span>Feedback</span>
     </a>
+
+    <a href="#news-section" class="nav-link nav-link-custom" data-section="news-section">
+      <i class="fas fa-newspaper"></i>
+      <span>News & Updates</span>
+    </a>
+    
   </div>
 
   <div class="mt-auto pt-4">

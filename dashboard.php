@@ -25,6 +25,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <link rel="stylesheet" href="assets/css/dashboard.css">
   <link rel="stylesheet" href="assets/css/dashboard-enhancements.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
+  <link rel="stylesheet" href="assets/css/news.css">
 </head>
 
 
@@ -214,6 +215,11 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         <?php include 'components/dashboard/sections/feedback_section.php'; ?>
       </section>
 
+      <!-- News & Updates Section -->
+      <section id="news-section" class="content-section">
+        <?php include 'components/dashboard/sections/news_section.php'; ?>
+      </section>
+
 
 
       
@@ -345,6 +351,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <script src="assets/js/dashboard/calendar-section.js" onerror="console.error('❌ Failed to load calendar-section.js')"></script>
       <script src="assets/js/dashboard/rooms-section.js" onerror="console.error('❌ Failed to load rooms-section.js')"></script>
       <script src="assets/js/dashboard/bookings-section.js" onerror="console.error('❌ Failed to load bookings-section.js')"></script>
+      <script src="assets/js/dashboard/news-section.js" onerror="console.error('❌ Failed to load news-section.js')"></script>
       <script src="assets/js/dashboard/mobile-enhancements.js" onerror="console.error('❌ Failed to load mobile-enhancements.js')"></script>
       <script src="assets/js/verify-structure.js" onerror="console.error('❌ Failed to load verify-structure.js')"></script>
       

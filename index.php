@@ -11,6 +11,8 @@
 
   <?php include 'components/landing/sections/about.php'; ?>
 
+  <?php include 'components/landing/sections/news.php'; ?>
+
   <?php include 'components/landing/sections/services.php'; ?>
 
   <?php include 'components/landing/modals/admin_login_modal.php'; ?>
@@ -20,6 +22,7 @@
   <?php include 'components/landing/sections/caterings.php'; ?>
   
   <?php include 'components/landing/sections/features.php'; ?>
+
 
   <?php include 'components/landing/sections/contact.php'; ?>
 
