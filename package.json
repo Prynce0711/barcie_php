@@ -11,7 +11,13 @@
     "type": "git",
     "url": "git+https://github.com/Prynce0711/barcie_php.git"
   },
-  "keywords": ["hotel", "management", "php", "bootstrap", "hospitality"],
+  "keywords": [
+    "hotel",
+    "management",
+    "php",
+    "bootstrap",
+    "hospitality"
+  ],
   "author": "Prynce Carlo Clemente",
   "license": "ISC",
   "bugs": {
@@ -20,5 +26,9 @@
   "homepage": "https://github.com/Prynce0711/barcie_php#readme",
   "devDependencies": {
     "browser-sync": "^3.0.4"
+  },
+  "dependencies": {
+    "jsdom": "^27.2.0",
+    "node-fetch": "^2.7.0"
   }
 }
