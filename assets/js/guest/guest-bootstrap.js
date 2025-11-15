@@ -83,12 +83,9 @@ function initializeGuestPortal() {
     console.error("Guest: Star rating failed:", error);
   }
   
-  try {
-    initializeGuestCalendar();
-    console.log("Guest: Guest calendar initialized");
-  } catch (error) {
-    console.error("Guest: Guest calendar failed:", error);
-  }
+  // Calendar initialization moved to the availability section script.
+  // It will initialize itself when the section becomes visible.
+  console.log('Guest: Calendar initialization delegated to availability section.');
   
   console.log("Guest: Portal initialization complete");
 }
@@ -370,51 +367,48 @@ function setupCardFiltering() {
 }
 
 function filterItems() {
-  const selectedType =
-    document.querySelector('input[name="type"]:checked')?.value || "room";
-  
+  const selectedType = document.querySelector('input[name="type"]:checked')?.value || "all";
+
   console.log("Guest: Filtering items by type:", selectedType);
-  
+
   const cards = document.querySelectorAll("#cards-grid .card");
   let visibleCount = 0;
-  
+
   cards.forEach((card) => {
-    if (card.dataset.type === selectedType) {
-      card.style.display = "block";
+    // Show all when 'all' is selected, otherwise match by data-type
+    if (selectedType === 'all' || card.dataset.type === selectedType) {
+      // Clear inline display to let layout (columns/row) handle sizing
+      card.style.display = "";
       visibleCount++;
     } else {
       card.style.display = "none";
     }
   });
-  
-  console.log("Guest: Showing", visibleCount, "items of type", selectedType);
+
+  console.log("Guest: Showing", visibleCount, "items for filter", selectedType);
   
   // Show message if no items of selected type
   const container = document.getElementById("cards-grid");
   if (visibleCount === 0 && container) {
     const noItemsMessage = document.createElement("div");
     noItemsMessage.className = "no-items-message col-12";
+    const typeLabel = selectedType === 'all' ? 'Rooms or Facilities' : (selectedType.charAt(0).toUpperCase() + selectedType.slice(1) + (selectedType === 'room' ? 's' : 's'));
     noItemsMessage.innerHTML = `
       <div class="alert alert-info text-center">
         <i class="fas fa-search fa-2x mb-2"></i>
-        <h5>No ${selectedType}s Available</h5>
+        <h5>No ${typeLabel} Available</h5>
         <p>Try selecting a different type or check back later.</p>
       </div>
     `;
-    
+
     // Remove existing no-items message
     const existingMessage = container.querySelector(".no-items-message");
-    if (existingMessage) {
-      existingMessage.remove();
-    }
-    
+    if (existingMessage) existingMessage.remove();
+
     container.appendChild(noItemsMessage);
   } else {
-    // Remove no-items message if items are visible
     const existingMessage = container?.querySelector(".no-items-message");
-    if (existingMessage) {
-      existingMessage.remove();
-    }
+    if (existingMessage) existingMessage.remove();
   }
 }
 
@@ -505,22 +499,57 @@ async function loadItems() {
       card.dataset.price = item.price || 0;
       card.dataset.itemId = item.id;
       
+      // Parse images array
+      let images = [];
+      if (item.images && item.images !== '') {
+        try {
+          images = JSON.parse(item.images);
+          if (!Array.isArray(images)) images = [];
+        } catch (e) {
+          console.warn('Failed to parse images for item:', item.id);
+          images = [];
+        }
+      }
+      
+      // Fallback to single image if images array is empty
+      if (images.length === 0 && item.image && item.image.trim() !== '') {
+        images = [item.image];
+      }
+      
+      // Default image if no images available
+      if (images.length === 0) {
+        images = ['/assets/images/imageBg/barcie_logo.jpg'];
+      }
+      
+      // Normalize image paths
+      images = images.map(img => {
+        if (!img.startsWith('http') && !img.startsWith('/')) {
+          return '/' + img;
+        }
+        return img;
+      });
+      
+      // Store images in dataset for gallery
+      card.dataset.images = JSON.stringify(images);
+      
       // Use actual room status if available, fallback to available
       const roomStatus = item.room_status || 'available';
       card.dataset.availability = ['available', 'clean'].includes(roomStatus) ? "available" : "occupied";
       
-      // Ensure proper image path - add leading slash if missing for absolute path
-      let imageUrl = item.image && item.image.trim() !== '' ? item.image : '/assets/images/imageBg/barcie_logo.jpg';
-      if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-        imageUrl = '/' + imageUrl;
-      }
+      // Use first image as preview
+      const previewImage = images[0];
       
       card.innerHTML = `
-        <div class="card-image">
-          <img src="${imageUrl}" 
-               style="width:100%;height:200px;object-fit:cover;border-radius:15px 15px 0 0;" 
-               onerror="this.onerror=null; this.src='/assets/images/imageBg/barcie_logo.jpg';"
-               alt="${item.name}">
+        <div class="card-image position-relative" style="cursor: pointer;" data-item-id="${item.id}">
+          <img src="${previewImage}" class="room-card-img" 
+            style="width:100%;height:200px;object-fit:cover;border-radius:15px 15px 0 0;" 
+            onerror="this.onerror=null; this.src='/assets/images/imageBg/barcie_logo.jpg';"
+            alt="${item.name}">
+          ${images.length > 1 ? `
+          <div class="image-count-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px;">
+            <i class="fas fa-images me-1"></i>${images.length}
+          </div>
+          ` : ''}
           <div class="availability-badge ${card.dataset.availability}">
             <i class="fas ${card.dataset.availability === 'available' ? 'fa-check-circle' : 'fa-times-circle'}"></i>
             ${card.dataset.availability === 'available' ? 'Available' : 'Occupied'}
@@ -605,6 +634,25 @@ function setupItemButtons() {
     });
   });
   
+  // Image click handlers for gallery
+  const cardImages = document.querySelectorAll('.card-image');
+  console.log('Found card images:', cardImages.length);
+  
+  cardImages.forEach(cardImage => {
+    cardImage.addEventListener('click', function(e) {
+      e.preventDefault();
+      const { itemId } = this.dataset;
+      const card = this.closest('.card');
+      if (card) {
+        const images = JSON.parse(card.dataset.images || '[]');
+        const item = window.allItems.find(item => item.id == itemId);
+        if (item && images.length > 0) {
+          openImageGallery(images, 0, item.name);
+        }
+      }
+    });
+  });
+  
   console.log('Item buttons setup complete');
 }
 
@@ -665,16 +713,49 @@ function populateItemModal(modal, item) {
   
   modalTitle.textContent = `${item.name} - Details`;
   
+  // Parse images array
+  let images = [];
+  if (item.images && item.images !== '') {
+    try {
+      images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
+      if (!Array.isArray(images)) images = [];
+    } catch (e) {
+      images = [];
+    }
+  }
+  
+  // Fallback to single image
+  if (images.length === 0 && item.image && item.image.trim() !== '') {
+    images = [item.image];
+  }
+  
+  // Default image
+  if (images.length === 0) {
+    images = ['/assets/images/imageBg/barcie_logo.jpg'];
+  }
+  
+  // Normalize paths
+  images = images.map(img => {
+    if (!img.startsWith('http') && !img.startsWith('/')) {
+      return '/' + img;
+    }
+    return img;
+  });
+  
   const detailsHtml = `
     <div class="row">
       <div class="col-md-6">
-        ${item.image ? `
-          <img src="${item.image.startsWith('http') || item.image.startsWith('/') ? item.image : '/' + item.image}" class="img-fluid rounded mb-3" alt="${item.name}" style="max-height: 300px; width: 100%; object-fit: cover;">
-        ` : `
-          <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 200px;">
-            <i class="fas ${item.item_type === 'room' ? 'fa-bed' : 'fa-building'} fa-3x text-muted"></i>
-          </div>
-        `}
+        <div class="position-relative" style="cursor: pointer;" onclick="openGalleryFromModal(${JSON.stringify(images).replace(/"/g, '&quot;')}, 0, '${item.name.replace(/'/g, "\\'")}', ${item.id})">
+          <img src="${images[0]}" class="img-fluid rounded mb-3" alt="${item.name}" style="max-height: 300px; width: 100%; object-fit: cover;" onerror="this.src='/assets/images/imageBg/barcie_logo.jpg';">
+          ${images.length > 1 ? `
+            <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 20px; font-size: 14px;">
+              <i class="fas fa-images me-2"></i>${images.length} Photos
+            </div>
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 20px; font-size: 12px;">
+              <i class="fas fa-search-plus me-1"></i>Click to view gallery
+            </div>
+          ` : ''}
+        </div>
       </div>
       <div class="col-md-6">
         <h4 class="mb-3">${item.name}</h4>
@@ -1539,239 +1620,315 @@ function initializeStarRating() {
   });
 }
 
-// Guest Availability Calendar - Privacy-Focused
+// Guest Availability Calendar implementation moved to availability section
 function initializeGuestCalendar() {
-  console.log('=== CALENDAR INITIALIZATION START ===');
-  const calendarEl = document.getElementById('guestCalendar');
-  
-  if (!calendarEl) {
-    console.error('Guest calendar element not found');
-    return;
-  }
-  
-  console.log('Guest calendar element found:', calendarEl);
-  
-  // Check if FullCalendar is loaded
-  if (typeof FullCalendar === 'undefined') {
-    console.error('FullCalendar library not loaded!');
-    showToast('Calendar library not loaded. Please refresh the page.', 'error');
-    return;
-  }
-  
-  console.log('FullCalendar library loaded successfully');
-  
-  // Initialize FullCalendar for guest availability view
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    // Ensure calendar shows times in Philippine Time
-    timeZone: 'Asia/Manila',
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,listWeek'
-    },
-    height: 'auto',
-    events: function(fetchInfo, successCallback, failureCallback) {
-      console.log('=== FETCHING CALENDAR DATA ===');
-      console.log('Fetching guest availability data...');
-  fetch('api/availability.php')
-        .then(response => {
-          console.log('Response received:', response);
-          if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.status);
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log('=== CALENDAR DATA RECEIVED ===');
-          console.log('Guest availability data:', data);
-          // user_auth.php returns an array of events. Older API returned { success: true, events: [...] }
-          if (Array.isArray(data)) {
-            console.log('Number of events:', data.length);
-            successCallback(data);
-          } else if (data && data.success && Array.isArray(data.events)) {
-            console.log('Number of events (wrapped):', data.events.length);
-            successCallback(data.events);
-          } else {
-            console.log('No events found or invalid data structure');
-            // If server returned an error object, show a toast for visibility
-            if (data && data.error) {
-              showToast('Calendar API error: ' + data.error, 'warning');
-            }
-            successCallback([]);
-          }
-        })
-        .catch(error => {
-          console.error('=== CALENDAR ERROR ===');
-          console.error('Error fetching availability data:', error);
-          failureCallback(error);
-          showToast('Unable to load availability data. Please refresh the page.', 'warning');
-        });
-    },
-    eventDisplay: 'block',
-    dayMaxEvents: 3,
-    moreLinkClick: 'popover',
-    eventMouseEnter: function(info) {
-      // Show enhanced tooltip with specific room information
-      const { extendedProps } = info.event;
-      const startDate = new Date(extendedProps.checkin_date || info.event.start);
-      const endDate = new Date(extendedProps.checkout_date || info.event.end);
-      const duration = extendedProps.duration_days || 1;
-      const roomName = extendedProps.facility || 'Room/Facility';
-      
-      const tooltip = document.createElement('div');
-      tooltip.className = 'custom-tooltip';
-      tooltip.innerHTML = `
-        <strong><i class="fas fa-bed me-1"></i>${roomName}</strong><br>
-        <small><i class="fas fa-calendar me-1"></i>Check-in: ${startDate.toLocaleDateString()}</small><br>
-        <small><i class="fas fa-calendar-check me-1"></i>Check-out: ${endDate.toLocaleDateString()}</small><br>
-        <small><i class="fas fa-clock me-1"></i>Duration: ${duration} day${duration > 1 ? 's' : ''}</small><br>
-        <small><i class="fas fa-info-circle me-1"></i>Status: ${extendedProps.booking_status || 'Occupied'}</small>
-      `;
-      tooltip.style.cssText = `
-        position: absolute;
-        background: #333;
-        color: white;
-        padding: 10px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        z-index: 1000;
-        pointer-events: none;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        max-width: 250px;
-        line-height: 1.4;
-      `;
-      
-      document.body.appendChild(tooltip);
-      
-      const rect = info.el.getBoundingClientRect();
-      tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-      tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
-      
-      // Adjust position if tooltip goes off screen
-      if (tooltip.offsetLeft < 5) {
-        tooltip.style.left = '5px';
-      }
-      if (tooltip.offsetLeft + tooltip.offsetWidth > window.innerWidth - 5) {
-        tooltip.style.left = (window.innerWidth - tooltip.offsetWidth - 5) + 'px';
-      }
-      
-      info.el.tooltip = tooltip;
-    },
-    eventMouseLeave: function(info) {
-      if (info.el.tooltip) {
-        document.body.removeChild(info.el.tooltip);
-        info.el.tooltip = null;
-      }
-    },
-    eventClick: function(info) {
-      // Show detailed availability info with duration
-      const { extendedProps } = info.event;
-      const facility = extendedProps.facility || 'Room/Facility';
-      const duration = extendedProps.duration_days || 1;
-      const status = extendedProps.booking_status || 'occupied';
-      const checkin = new Date(extendedProps.checkin_date || info.event.start).toLocaleDateString();
-      const checkout = new Date(extendedProps.checkout_date || info.event.end).toLocaleDateString();
-      
-      const statusText = status === 'pending' ? 'has a pending booking' : 'is currently occupied';
-      const message = `
-        <strong>${facility}</strong> ${statusText} from <strong>${checkin}</strong> to <strong>${checkout}</strong> 
-        (${duration} day${duration > 1 ? 's' : ''}). 
-        <br><br>Please select alternative dates for your booking.
-      `;
-      
-      // Create a custom modal-like toast for more detailed info
-      showDetailedToast(message, 'info', facility);
-    },
-    loading: function(isLoading) {
-      const loadingIndicator = document.getElementById('calendar-loading');
-      if (loadingIndicator) {
-        loadingIndicator.style.display = isLoading ? 'block' : 'none';
-      }
-    },
-    // Responsive settings
-    aspectRatio: window.innerWidth < 768 ? 1.0 : 1.35,
-    locale: 'en',
-    firstDay: 1, // Monday first
-    businessHours: {
-      daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // All days
-      startTime: '06:00',
-      endTime: '22:00'
-    },
-    selectMirror: true,
-    weekends: true,
-    nowIndicator: true,
-    eventTextColor: '#ffffff',
-    eventBorderColor: 'transparent',
-    // Add some demo events if no real data
-    eventDidMount: function(info) {
-      console.log('=== EVENT MOUNTED ===');
-      console.log('Event mounted:', info.event.title);
-      console.log('Event details:', info.event.extendedProps);
-    }
-  });
-  
-  // Render the calendar
-  try {
-    console.log('=== RENDERING CALENDAR ===');
-    calendar.render();
-    console.log('Guest calendar rendered successfully');
-    console.log('Calendar object:', calendar);
-    
-    // Add a message for empty calendar
-    setTimeout(() => {
-      const events = calendar.getEvents();
-      console.log('=== CALENDAR EVENTS CHECK ===');
-      console.log('Number of events after render:', events.length);
-      
-      if (events.length === 0) {
-        console.log('No events found, showing empty message');
-        const emptyMessage = document.createElement('div');
-        emptyMessage.className = 'text-center text-muted mt-3';
-        emptyMessage.innerHTML = `
-          <i class="fas fa-calendar-check fa-2x mb-2"></i>
-          <p>All rooms and facilities are currently available!</p>
-          <small>Book now to secure your preferred dates.</small>
-        `;
-        calendarEl.parentNode.appendChild(emptyMessage);
-      } else {
-        console.log('Events found:', events.map(e => e.title));
-      }
-    }, 3000); // Increased timeout
-    
-  } catch (error) {
-    console.error('=== CALENDAR RENDER ERROR ===');
-    console.error('Error rendering guest calendar:', error);
-    showToast('Failed to initialize calendar. Please refresh the page.', 'error');
-  }
-  
-  // Store calendar globally for potential updates
-  window.guestCalendar = calendar;
-  
-  // Responsive handling
-  window.addEventListener('resize', function() {
-    if (calendar) {
-      calendar.updateSize();
-    }
-  });
-  
-  // Add loading indicator if it doesn't exist
-  if (!document.getElementById('calendar-loading')) {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'calendar-loading';
-    loadingDiv.style.cssText = `
-      display: none;
-      text-align: center;
-      padding: 20px;
-      color: #6c757d;
-    `;
-    loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading availability...';
-    calendarEl.parentNode.insertBefore(loadingDiv, calendarEl);
-  }
+  console.warn('initializeGuestCalendar moved to components/guest/sections/availability.php');
 }
 
-// Export guest calendar functions
+// Keep a small export so other modules can call the stub safely
 window.initializeGuestCalendar = initializeGuestCalendar;
+
+// Image Gallery Functions
+let galleryImages = [];
+let currentGalleryIndex = 0;
+let currentZoomLevel = 1;
+let galleryReturnItemId = null; // when set, reopen this item details after gallery closes
+
+function openImageGallery(images, startIndex = 0, title = 'Image Gallery', returnToItemId = null) {
+  galleryImages = images;
+  currentGalleryIndex = startIndex;
+  currentZoomLevel = 1;
+  galleryReturnItemId = returnToItemId || null;
+  
+  // Update modal title
+  const titleEl = document.getElementById('imageGalleryLabel');
+  if (titleEl) titleEl.textContent = title;
+  
+  // Update image counter
+  const totalEl = document.getElementById('totalImages');
+  if (totalEl) totalEl.textContent = images.length;
+  
+  // Show the image
+  showGalleryImage(currentGalleryIndex);
+  
+  // Generate thumbnails
+  generateThumbnails();
+  
+  // Show/hide navigation arrows based on image count
+  const prevBtn = document.getElementById('galleryPrevBtn');
+  const nextBtn = document.getElementById('galleryNextBtn');
+  
+  if (prevBtn && nextBtn) {
+    if (images.length <= 1) {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+    } else {
+      prevBtn.style.display = 'block';
+      nextBtn.style.display = 'block';
+    }
+  }
+  
+  // Ensure modal is attached to body so it overlaps everything
+  const modalEl = document.getElementById('imageGalleryModal');
+  if (modalEl && modalEl.parentNode !== document.body) {
+    document.body.appendChild(modalEl);
+  }
+
+  // Open modal
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+  
+  // Setup keyboard navigation
+  setupGalleryKeyboardNavigation();
+}
+
+// Helper used from the item details modal: hide details first, then open gallery and
+// remember which item to return to when the gallery closes.
+function openGalleryFromModal(images, startIndex = 0, title = 'Image Gallery', returnItemId = null) {
+  const detailsModalEl = document.getElementById('itemDetailsModal');
+  try {
+    if (detailsModalEl) {
+      const bs = bootstrap.Modal.getInstance(detailsModalEl) || new bootstrap.Modal(detailsModalEl);
+      bs.hide();
+    }
+  } catch (e) {
+    // ignore
+  }
+  openImageGallery(images, startIndex, title, returnItemId);
+}
+
+function showGalleryImage(index) {
+  if (index < 0 || index >= galleryImages.length) return;
+  
+  currentGalleryIndex = index;
+  currentZoomLevel = 1;
+  
+  const mainImage = document.getElementById('galleryMainImage');
+  mainImage.src = galleryImages[index];
+  mainImage.style.transform = 'scale(1)';
+  mainImage.alt = `Image ${index + 1}`;
+  
+  // Update counter
+  document.getElementById('currentImageIndex').textContent = index + 1;
+  
+  // Update thumbnail selection
+  updateThumbnailSelection();
+}
+
+function generateThumbnails() {
+  const thumbnailContainer = document.getElementById('galleryThumbnails');
+  thumbnailContainer.innerHTML = '';
+  
+  galleryImages.forEach((img, index) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'gallery-thumbnail';
+    thumb.style.cssText = `
+      display: inline-block;
+      width: 80px;
+      height: 60px;
+      cursor: pointer;
+      border: 3px solid transparent;
+      border-radius: 5px;
+      overflow: hidden;
+      transition: border-color 0.3s ease;
+    `;
+    
+    const thumbImg = document.createElement('img');
+    thumbImg.src = img;
+    thumbImg.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+    thumbImg.onerror = function() {
+      this.src = '/assets/images/imageBg/barcie_logo.jpg';
+    };
+    
+    thumb.appendChild(thumbImg);
+    
+    thumb.addEventListener('click', () => {
+      showGalleryImage(index);
+    });
+    
+    thumbnailContainer.appendChild(thumb);
+  });
+  
+  updateThumbnailSelection();
+}
+
+function updateThumbnailSelection() {
+  const thumbnails = document.querySelectorAll('.gallery-thumbnail');
+  thumbnails.forEach((thumb, index) => {
+    if (index === currentGalleryIndex) {
+      thumb.style.borderColor = '#007bff';
+    } else {
+      thumb.style.borderColor = 'transparent';
+    }
+  });
+}
+
+function navigateGallery(direction) {
+  let newIndex = currentGalleryIndex + direction;
+  
+  // Loop around
+  if (newIndex < 0) {
+    newIndex = galleryImages.length - 1;
+  } else if (newIndex >= galleryImages.length) {
+    newIndex = 0;
+  }
+  
+  showGalleryImage(newIndex);
+}
+
+function zoomImage(zoomIn) {
+  const mainImage = document.getElementById('galleryMainImage');
+  
+  if (zoomIn) {
+    currentZoomLevel = Math.min(currentZoomLevel + 0.25, 3);
+  } else {
+    currentZoomLevel = Math.max(currentZoomLevel - 0.25, 0.5);
+  }
+  
+  mainImage.style.transform = `scale(${currentZoomLevel})`;
+  mainImage.style.cursor = currentZoomLevel > 1 ? 'move' : 'default';
+}
+
+function resetZoom() {
+  currentZoomLevel = 1;
+  const mainImage = document.getElementById('galleryMainImage');
+  mainImage.style.transform = 'scale(1)';
+  mainImage.style.cursor = 'default';
+}
+
+function setupGalleryKeyboardNavigation() {
+  const modal = document.getElementById('imageGalleryModal');
+  
+  const keyHandler = function(e) {
+    if (!modal.classList.contains('show')) return;
+    
+    switch(e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        navigateGallery(-1);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        navigateGallery(1);
+        break;
+      case '+':
+      case '=':
+        e.preventDefault();
+        zoomImage(true);
+        break;
+      case '-':
+      case '_':
+        e.preventDefault();
+        zoomImage(false);
+        break;
+      case '0':
+        e.preventDefault();
+        resetZoom();
+        break;
+      case 'Escape':
+        // Let Bootstrap handle modal closing
+        break;
+    }
+  };
+  
+  // Remove existing listener if any
+  document.removeEventListener('keydown', keyHandler);
+  document.addEventListener('keydown', keyHandler);
+}
+
+// Setup gallery button event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  // Navigation buttons
+  const prevBtn = document.getElementById('galleryPrevBtn');
+  const nextBtn = document.getElementById('galleryNextBtn');
+  
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => navigateGallery(-1));
+  }
+  
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => navigateGallery(1));
+  }
+  
+  // Zoom buttons
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const zoomResetBtn = document.getElementById('zoomResetBtn');
+  
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', () => zoomImage(true));
+  }
+  
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', () => zoomImage(false));
+  }
+  
+  if (zoomResetBtn) {
+    zoomResetBtn.addEventListener('click', resetZoom);
+  }
+  
+  // Image dragging when zoomed
+  const mainImage = document.getElementById('galleryMainImage');
+  if (mainImage) {
+    let isDragging = false;
+    let startX, startY, scrollLeft, scrollTop;
+    
+    mainImage.addEventListener('mousedown', function(e) {
+      if (currentZoomLevel > 1) {
+        isDragging = true;
+        startX = e.pageX;
+        startY = e.pageY;
+        mainImage.style.cursor = 'grabbing';
+      }
+    });
+    
+    mainImage.addEventListener('mousemove', function(e) {
+      if (!isDragging || currentZoomLevel <= 1) return;
+      e.preventDefault();
+      
+      const x = e.pageX - startX;
+      const y = e.pageY - startY;
+      
+      // Update transform origin for panning effect
+      mainImage.style.transformOrigin = `${50 - x/10}% ${50 - y/10}%`;
+    });
+    
+    mainImage.addEventListener('mouseup', function() {
+      isDragging = false;
+      if (currentZoomLevel > 1) {
+        mainImage.style.cursor = 'move';
+      }
+    });
+    
+    mainImage.addEventListener('mouseleave', function() {
+      isDragging = false;
+    });
+  }
+  
+  // Reset zoom when modal closes
+  const modal = document.getElementById('imageGalleryModal');
+  if (modal) {
+    modal.addEventListener('hidden.bs.modal', function() {
+      resetZoom();
+      // If gallery was opened from an item details modal, reopen that details view
+      if (galleryReturnItemId) {
+        const returnId = galleryReturnItemId;
+        galleryReturnItemId = null;
+        // small defer to ensure modal stack is stable
+        setTimeout(() => {
+          try { showItemDetails(returnId); } catch (e) { console.warn('Failed to reopen item details', e); }
+        }, 120);
+      }
+    });
+  }
+});
+
+// Export gallery functions
+window.openImageGallery = openImageGallery;
+window.navigateGallery = navigateGallery;
+window.zoomImage = zoomImage;
+window.resetZoom = resetZoom;
+window.openGalleryFromModal = openGalleryFromModal;
 
 // Debug function to test section switching
 window.testSectionSwitching = function() {
