@@ -128,6 +128,179 @@
   let currentBooking = null; // object with booking data
   let currentItem = null; // room/facility data from server
 
+  // Inline validation helpers
+  function getFieldLabel(field) {
+    try {
+      // Match surrounding label text if present
+      const lab = field.closest('label') || document.querySelector('label[for="' + (field.id || '') + '"]');
+      if (lab) {
+        const span = lab.querySelector('.label-text');
+        if (span && span.textContent) return span.textContent.replace('*','').trim();
+        // fallback to label text
+        return lab.textContent.trim();
+      }
+    } catch (e) {}
+    // fallback from name
+    return (field.name || 'This field').replace(/_/g,' ');
+  }
+
+  function clearInlineAlerts(form) {
+    if (!form) return;
+    form.querySelectorAll('.inline-validation-msg').forEach(n => n.remove());
+    form.querySelectorAll('.is-invalid').forEach(n => n.classList.remove('is-invalid'));
+    // NOTE: keep top-level form alert visible until the user fixes inputs
+    // This function only clears per-field inline messages and invalid classes.
+  }
+
+  // Small persistent banner at top of page for validation errors
+  function showValidationBanner(message) {
+    try {
+      let banner = document.getElementById('booking_validation_banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'booking_validation_banner';
+        banner.style.position = 'fixed';
+        banner.style.top = '12px';
+        banner.style.left = '50%';
+        banner.style.transform = 'translateX(-50%)';
+        banner.style.zIndex = 2147483647;
+        banner.style.maxWidth = '900px';
+        banner.style.width = 'calc(100% - 48px)';
+        banner.style.pointerEvents = 'auto';
+        banner.innerHTML = '';
+        document.body.appendChild(banner);
+      }
+      banner.innerHTML = '<div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">' +
+        '<div style="flex:1; padding-right:12px;">' + escapeHtml(message) + '</div>' +
+        '<button type="button" aria-label="Dismiss" class="btn-close" style="margin-left:12px;" onclick="(function(){var b=document.getElementById(\'booking_validation_banner\'); if(b) b.style.display=\'none\';})()"></button>' +
+        '</div>';
+      banner.style.display = 'block';
+      try { banner.setAttribute('role', 'alert'); banner.setAttribute('aria-live', 'assertive'); } catch (e) {}
+    } catch (e) { console.warn('showValidationBanner error', e); }
+  }
+
+  function hideValidationBanner() {
+    try {
+      const banner = document.getElementById('booking_validation_banner');
+      if (banner) banner.style.display = 'none';
+    } catch (e) {}
+  }
+
+  // Attach listeners to form fields so errors clear as soon as user types/corrects
+  function attachFieldListeners(form) {
+    if (!form) return;
+    const inputs = Array.from(form.querySelectorAll('input, textarea, select'));
+    inputs.forEach(field => {
+      // skip hidden fields
+      if (field.type === 'hidden') return;
+      const handler = function () {
+        try {
+          // Remove per-field inline message(s) adjacent to this field
+          try {
+            const parent = field.parentNode;
+            if (parent) {
+              parent.querySelectorAll('.inline-validation-msg').forEach(n => n.remove());
+            }
+          } catch (e) {}
+
+          // Remove invalid class if field is now valid
+          if (field.checkValidity && field.checkValidity()) {
+            field.classList.remove('is-invalid');
+          }
+
+          // If no remaining invalid fields in this form, hide top-level alert and banner
+          const stillInvalid = form.querySelectorAll('.is-invalid, .inline-validation-msg');
+          if (!stillInvalid || stillInvalid.length === 0) {
+            try {
+              const top = form.querySelector('.form-alert');
+              if (top) { top.innerHTML = ''; top.style.display = 'none'; }
+            } catch (e) {}
+            hideValidationBanner();
+          }
+        } catch (e) { /* ignore */ }
+      };
+
+      // Use input and change to catch typing and selection changes
+      field.addEventListener('input', handler);
+      field.addEventListener('change', handler);
+    });
+  }
+
+  function showInlineAlert(field, message) {
+    try {
+      const form = field.form || document;
+      // Do not remove existing form-level alerts (we want the user to see them until they fix inputs)
+      clearInlineAlerts(form);
+      field.classList.add('is-invalid');
+      const err = document.createElement('div');
+      err.className = 'invalid-feedback d-block inline-validation-msg';
+      err.style.marginTop = '6px';
+      err.textContent = message;
+      // Insert after field (prefer placing inside the field's label/container)
+      try {
+        if (field.parentNode) field.parentNode.appendChild(err);
+        else field.insertAdjacentElement('afterend', err);
+      } catch (e) {
+        // fallback: append to form alert area
+        try {
+          const top = form.querySelector('.form-alert');
+          if (top) { top.innerHTML = '<div class="alert alert-danger mb-0">' + message + '</div>'; top.style.display = 'block'; }
+        } catch (ee) {}
+      }
+
+      // Also show a persistent form-level summary at the top of the form
+      try {
+        const top = form.querySelector('.form-alert');
+        if (top) {
+          top.innerHTML = '<div class="alert alert-danger mb-0">Please fill: <strong>' + escapeHtml(getFieldLabel(field)) + '</strong>. ' + escapeHtml(message) + '</div>';
+          top.style.display = 'block';
+          // Accessibility: mark the alert for screen readers and ensure it's visible
+          try { top.setAttribute('role', 'alert'); top.setAttribute('aria-live', 'assertive'); } catch (e) {}
+          try { top.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        }
+      } catch (e) {}
+
+      try { field.focus(); } catch (e) {}
+      try { field.scrollIntoView({behavior:'smooth', block:'center'}); } catch (e) {}
+      // Keep the per-field inline message until the user interacts and clears it via validate flow
+    } catch (e) { console.warn('showInlineAlert error', e); }
+  }
+
+  // Validate form and return first invalid field info or null when OK
+  function validateFormInline(form) {
+    if (!form) return null;
+    clearInlineAlerts(form);
+    // HTML5 validation first: find required fields missing or pattern mismatch
+    const requiredFields = Array.from(form.querySelectorAll('[required]'));
+    for (const f of requiredFields) {
+      // skip hidden inputs
+      if (f.type === 'hidden' || f.offsetParent === null && f.type !== 'datetime-local') continue;
+      if (!f.checkValidity()) {
+        // Build friendly message
+        let msg = '';
+        if (f.validity.valueMissing) msg = getFieldLabel(f) + ' is required.';
+        else if (f.validity.typeMismatch) msg = 'Please enter a valid ' + getFieldLabel(f) + '.';
+        else if (f.validity.patternMismatch) msg = 'Please enter a valid ' + getFieldLabel(f) + '.';
+        else msg = 'Please correct the ' + getFieldLabel(f) + ' field.';
+        return { field: f, message: msg };
+      }
+    }
+
+    // Additional custom checks
+    const email = form.querySelector('[name="email"]');
+    if (email) {
+      const val = (email.value || '').trim();
+      if (val && !/[@].+/.test(val)) {
+        return { field: email, message: 'Please enter a valid email address.' };
+      }
+      // enforce gmail domain if user intends (title suggests gmail)
+      if (val && !val.toLowerCase().endsWith('@gmail.com')) {
+        return { field: email, message: 'Please use a Gmail address (example@gmail.com).' };
+      }
+    }
+
+    return null;
+  }
   // Build add-ons UI
   function renderAddons() {
     addonsList.innerHTML = '';
@@ -382,6 +555,11 @@
       resForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const form = e.target;
+        const invalid = validateFormInline(form);
+        if (invalid) {
+          showInlineAlert(invalid.field, invalid.message);
+          return;
+        }
         const bookingData = {
           type: 'reservation',
           room_id: form.querySelector('[name="room_id"]').value,
@@ -396,6 +574,9 @@
       });
     }
 
+    // Attach field listeners so inline errors clear as user types
+    try { attachFieldListeners(resForm); } catch (e) {}
+
     // Also attach to the reservation button (in case button is type=button)
     const reservationBtn = document.getElementById('reservationSubmitBtn');
     if (reservationBtn) {
@@ -403,6 +584,8 @@
         e.preventDefault();
         const form = document.getElementById('reservationForm');
         if (!form) return;
+        const invalid = validateFormInline(form);
+        if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
         const bookingData = {
           type: 'reservation',
           room_id: form.querySelector('[name="room_id"]').value,
@@ -421,13 +604,45 @@
       pencilForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const form = e.target;
+        const invalid = validateFormInline(form);
+        if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
+        // Pencil form now has same fields as reservation, just mark it as draft
         const bookingData = {
-          type: 'pencil',
+          type: 'reservation',
+          _originalType: 'pencil',
           room_id: form.querySelector('[name="room_id"]').value,
-          pencil_date: form.querySelector('[name="pencil_date"]').value,
-          time_from: form.querySelector('[name="time_from"]').value,
-          time_to: form.querySelector('[name="time_to"]').value,
-          pax: form.querySelector('[name="pax"]').value
+          guest_name: form.querySelector('[name="guest_name"]').value,
+          contact: form.querySelector('[name="contact_number"]').value,
+          email: form.querySelector('[name="email"]').value,
+          checkin: form.querySelector('[name="checkin"]').value,
+          checkout: form.querySelector('[name="checkout"]').value,
+          occupants: form.querySelector('[name="occupants"]').value
+        };
+        showPreviewModal(form, bookingData);
+      });
+    }
+
+    try { attachFieldListeners(pencilForm); } catch (e) {}
+
+    // Also attach to the pencil button (in case button is type=button)
+    const pencilBtn = document.getElementById('pencilSubmitBtn');
+    if (pencilBtn) {
+      pencilBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const form = document.getElementById('pencilForm');
+        if (!form) return;
+        const invalid = validateFormInline(form);
+        if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
+        const bookingData = {
+          type: 'reservation',
+          _originalType: 'pencil',
+          room_id: form.querySelector('[name="room_id"]').value,
+          guest_name: form.querySelector('[name="guest_name"]').value,
+          contact: form.querySelector('[name="contact_number"]').value,
+          email: form.querySelector('[name="email"]').value,
+          checkin: form.querySelector('[name="checkin"]').value,
+          checkout: form.querySelector('[name="checkout"]').value,
+          occupants: form.querySelector('[name="occupants"]').value
         };
         showPreviewModal(form, bookingData);
       });
