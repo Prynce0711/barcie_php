@@ -1211,6 +1211,8 @@ function updateOverviewStats() {
     setTimeout(updateOverviewStats, 1000);
     return;
   }
+  
+  updateOverviewStats.isLoading = true;
 
   const rooms = window.allItems.filter((item) => item.item_type === "room");
   const facilities = window.allItems.filter(

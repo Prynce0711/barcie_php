@@ -68,13 +68,13 @@ The BarCIE system features a comprehensive email notification system that sends 
 **SMTP Settings** (in `database/mail_config.php`):
 ```php
 return [
-    'host' => 'smtp.gmail.com',
-    'username' => 'your-email@gmail.com',
-    'password' => 'your-app-password',  // Gmail App Password
-    'secure' => 'tls',
-    'port' => 587,
-    'from_email' => 'barcie@gmail.com',
-    'from_name' => 'Barcie International Center'
+   'host' => 'smtp.example.com',
+   'username' => 'smtp_user@example.com',
+   'password' => 'SMTP_PASSWORD_PLACEHOLDER',
+   'secure' => 'tls',
+   'port' => 587,
+   'from_email' => 'no-reply@example.com',
+   'from_name' => 'BarCIE'
 ];
 ```
 
@@ -87,12 +87,12 @@ return [
 
 **Test SMTP Configuration**:
 ```
-http://localhost/barcie_php/test_email.php?email=YOUR_EMAIL@gmail.com
+http://localhost/barcie_php/test_email.php?email=YOUR_EMAIL@example.com
 ```
 
 **Test Booking Emails**:
 ```
-http://localhost/barcie_php/test_booking_email.php?email=YOUR_EMAIL@gmail.com
+http://localhost/barcie_php/test_booking_email.php?email=YOUR_EMAIL@example.com
 ```
 
 ### Email Design Specifications
@@ -192,15 +192,6 @@ GET /database/user_auth.php?action=get_unread_count&user_id=1&user_type=guest
   "unread_count": 3
 }
 ```
-
-### Testing Chat System
-Use the provided test script to verify chat functionality:
-```bash
-# Access via browser
-http://localhost/barcie_php/test_chat_endpoints.php
-
-# Or run via command line
-php test_chat_endpoints.php
 ```
 
 ## 🔧 Configurationine hotel operations including room management, booking reservations, guest services, and administrative tasks. Built specifically for educational purposes and real-world hotel management scenarios.
@@ -373,107 +364,7 @@ barcie_php/
     └── 📸 *.jpg              # Uploaded room/facility images
 ```
 
-## 💾 Database Schema
 
-The system uses the following main database tables:
-
-### Users Table
-```sql
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Admins Table
-```sql
-CREATE TABLE admins (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Items Table (Rooms & Facilities)
-```sql
-CREATE TABLE items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    item_type ENUM('room', 'facility') NOT NULL,
-    room_number VARCHAR(20),
-    description TEXT,
-    capacity INT DEFAULT 1,
-    price DECIMAL(10,2) DEFAULT 0,
-    image VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Bookings Table
-```sql
-CREATE TABLE bookings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    room_id INT,
-    type ENUM('reservation', 'pencil') NOT NULL,
-    details TEXT,
-    status ENUM('pending', 'confirmed', 'rejected', 'checked_in', 'checked_out', 'cancelled') DEFAULT 'pending',
-    discount_status VARCHAR(20) DEFAULT 'none',  -- Separate discount approval status
-    checkin DATETIME,
-    checkout DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (room_id) REFERENCES items(id)
-);
-```
-
-### Feedback Table
-```sql
-CREATE TABLE feedback (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    message TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
-
-### Chat Messages Table
-```sql
-CREATE TABLE chat_messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    sender_id INT NOT NULL,
-    sender_type ENUM('guest', 'admin') NOT NULL,
-    receiver_id INT NOT NULL,
-    receiver_type ENUM('guest', 'admin') NOT NULL,
-    message TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_sender (sender_id, sender_type),
-    INDEX idx_receiver (receiver_id, receiver_type),
-    INDEX idx_created (created_at)
-);
-```
-
-### Chat Conversations Table
-```sql
-CREATE TABLE chat_conversations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user1_id INT NOT NULL,
-    user1_type ENUM('guest', 'admin') NOT NULL,
-    user2_id INT NOT NULL,
-    user2_type ENUM('guest', 'admin') NOT NULL,
-    last_message_id INT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_conversation (user1_id, user1_type, user2_id, user2_type),
-    INDEX idx_user1 (user1_id, user1_type),
-    INDEX idx_user2 (user2_id, user2_type)
-);
-```
 
 ## 🚀 Installation & Setup
 
@@ -573,20 +464,11 @@ CREATE TABLE chat_conversations (
    php database/init_chat.php
    ```
 
-6. **Configure Database Connection**
-   ```php
-   // Create .env file from .env.example
-   // Update database/db_connect.php settings if needed
-   $host = "localhost";
-   $user = "root";
-   $pass = "";
-   $dbname = "barcie_db";
-   ```
 
 7. **Create Admin Account**
    ```sql
-   # Insert admin user in the database
-   INSERT INTO admins (username, password) VALUES ('admin', 'admin123');
+   -- Insert admin user in the database (use a secure password and hash)
+   INSERT INTO admins (username, password) VALUES ('ADMIN_USERNAME', 'ADMIN_PASSWORD_HASH');
    ```
 
 8. **Verify Dependencies**
@@ -625,13 +507,6 @@ CREATE TABLE chat_conversations (
 
 ## 🔧 Configuration
 
-### Environment Variables
-```bash
-# Database Configuration (.env file)
-DB_HOST=localhost          # Database host (use 'db' for Docker)
-DB_USER=root              # Database username
-DB_PASS=                  # Database password (empty for XAMPP)
-DB_NAME=barcie_db         # Database name
 
 # Tailscale Configuration (optional)
 TS_AUTHKEY=your_authkey   # For VPN networking
@@ -830,13 +705,7 @@ docker-compose exec web chown -R www-data:www-data /var/www/html
 
 ## 📞 Contact Information
 
-**BarCIE International Center**
-- 📱 **Viber**: [0939 905 7425](viber://chat?number=+639399057425)
-- ☎️ **Telephone**: 044 791 7424 / 044 919 8410
-- 📧 **Email**: 
-  - barcieinternationalcenter@gmail.com
-  - barcie@lcup.edu.ph
-- 📍 **Address**: Valenzuela St. Capitol View Park Subd. Brgy. Bulihan, City of Malolos, Bulacan 3000
+For support or inquiries, please open an issue on the repository or contact the project owner via the repository contact methods. Personal phone numbers, private email addresses, and exact street addresses have been removed from this public README to protect privacy.
 
 ## 📊 Development Status
 
@@ -875,7 +744,7 @@ docker-compose exec web chown -R www-data:www-data /var/www/html
 ## 🚀 Deployment & DevOps
 
 ### Docker Hub Registry
-- **Image**: `carlxd0711/barcie:latest`
+- **Image**: `your-dockerhub-username/barcie:latest`
 - **Auto-build**: Triggered on main branch commits
 - **Registry**: Docker Hub public repository
 
@@ -889,8 +758,8 @@ docker-compose exec web chown -R www-data:www-data /var/www/html
 
 1. **Docker Hub Pull**
    ```bash
-   docker pull carlxd0711/barcie:latest
-   docker run -d -p 8080:80 carlxd0711/barcie:latest
+   docker pull your-dockerhub-username/barcie:latest
+   docker run -d -p 8080:80 your-dockerhub-username/barcie:latest
    ```
 
 2. **Docker Compose Production**
@@ -908,14 +777,13 @@ docker-compose exec web chown -R www-data:www-data /var/www/html
 ## 🎓 Academic Information
 
 **Capstone Project Details**
-- **Course**: BSIT 4B (Bachelor of Science in Information Technology)
-- **Institution**: La Consolacion University Philippines
+- **Course**: BSIT 4B
+- **Institution**: [Redacted / Educational Institution]
 - **Project Type**: Capstone Project
 - **Start Date**: September 1, 2025
 
 ### Team Members
-- **Project Leader**: Prynce Carlo Clemente (Full Stack Developer)
-- **Research Specialist**: Roxanne Gonzales
+- See repository contributors for team details. Personal names were removed from this public README to protect privacy.
 
 ### Technical Specifications
 - **Frontend**: HTML5, CSS3, Tailwind CSS, JavaScript
@@ -929,10 +797,7 @@ This project is developed as part of a capstone project for educational purposes
 
 ## 👥 Contributors
 
-- **Developer**: Prynce0711
-- **Institution**: La Consolacion University Philippines
-- **Program**: BS Information Technology
-- **Purpose**: Capstone Project
+See the repository contributors list and commit history for contributor names. Do not publish private personal contact details here.
 
 ## 🔄 Version History
 
@@ -1006,4 +871,15 @@ This project is developed as part of a capstone project for educational purposes
 **Built with ❤️ for BarCIE International Center**
 
 *Barasoain Center for Innovative Education - Your gateway to hospitality excellence*
+
+## 🔔 Recent Updates (2025-11-16)
+
+- **Sensitive data redacted**: Removed or replaced direct personal contact details (phone numbers, personal emails, street addresses) from this public `README.md` to protect privacy.
+- **Configuration placeholders**: Replaced embedded SMTP and test-email examples with neutral placeholders (e.g. `smtp_user@example.com`, `SMTP_PASSWORD_PLACEHOLDER`, `YOUR_EMAIL@example.com`) and recommended using environment variables for credentials.
+- **Admin credentials sanitized**: Replaced the sample admin insertion (`admin/admin123`) with a placeholder and guidance to store hashed passwords (example: `INSERT INTO admins (username, password) VALUES ('ADMIN_USERNAME', 'ADMIN_PASSWORD_HASH');`).
+- **Docker Hub username anonymized**: Replaced the personal Docker Hub image references with `your-dockerhub-username/barcie:latest` in examples.
+- **Contributors & team names**: Removed personal contributor names from the public README and pointed readers to the repository contributors list instead.
+- **Security recommendation**: Encourage scanning the repository for further secrets (env files, SQL dumps) and using `.env` + `.gitignore`, secret management, or tools like `git-secrets`.
+
+If you'd like, I can run a repo-wide scan for remaining secrets (API keys, emails, phone numbers) and either automatically redact them or produce a report.
 
