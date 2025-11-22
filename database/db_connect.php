@@ -9,9 +9,9 @@ $is_localhost = in_array($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? 'lo
 
 if ($is_localhost) {
     // LOCALHOST configuration (XAMPP)
-    $host = getenv('DB_HOST') ?: "10.20.0.2";  // or "127.0.0.1"
+    $host = getenv('DB_HOST') ?: "127.0.0.1";  // or "127.0.0.1"
     $user = getenv('DB_USER') ?: "root";
-    $pass = getenv('DB_PASS') ?: "root";  // XAMPP default is empty password (change if you set a password)
+    $pass = getenv('DB_PASS') ?: "";  // XAMPP default is empty password (change if you set a password)
     $dbname = getenv('DB_NAME') ?: "barcie_db";
 } else {
     // REMOTE SERVER configuration

@@ -4,6 +4,7 @@ $bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number,
                           IFNULL(b.discount_status, 'none') as discount_status
                           FROM bookings b 
                           LEFT JOIN items i ON b.room_id = i.id 
+                          WHERE b.type = 'reservation' OR b.type IS NULL
                           ORDER BY b.created_at DESC");
 while ($booking = $bookings->fetch_assoc()):
   // Determine status badge color
