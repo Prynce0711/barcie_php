@@ -3,7 +3,28 @@
 // This section displays bookings management and discount applications
 ?>
 
-<!-- Bookings Management -->
+<!-- Section Navigation Buttons -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="btn-group" role="group" aria-label="Booking sections">
+      <button type="button" class="btn btn-primary section-nav-btn active" data-section="bookings-tab">
+        <i class="fas fa-calendar-check me-1"></i> Booking Management
+      </button>
+      <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="pencil-tab">
+        <i class="fas fa-pencil-alt me-1"></i> Pencil Book Management
+      </button>
+      <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="discounts-tab">
+        <i class="fas fa-id-card-alt me-1"></i> Discount Applications
+      </button>
+      <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="payments-tab">
+        <i class="fas fa-credit-card me-1"></i> Payment Verification
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bookings Management Section -->
+<div id="bookings-tab" class="booking-tab-content" style="display:block;">
   <div class="row mb-4">
     <div class="col-12">
       <div class="card">
@@ -685,247 +706,53 @@
       };
     })();
   </script>
-
-  <!-- Discount Applications Section -->
-  <div class="row mb-4">
-    <div class="col-12">
-    <!-- Discount Applications Table -->
-    <div class="card">
-      <div class="card-header bg-secondary text-white">
-        <h6 class="mb-0"><i class="fas fa-id-card-alt me-2"></i>Discount Applications (Pending)</h6>
-        <small class="opacity-75">Review uploaded ID proofs and approve or reject discounts.</small>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table id="discountsTable" class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Receipt #</th>
-                <th>Guest</th>
-                <th>Room/Facility</th>
-                <th>Discount</th>
-                <th>Schedule</th>
-                <th>Proof</th>
-                <th>Submitted</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              // Query pending discount applications
-              $stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.checkin, b.checkout, b.created_at, b.proof_of_id, i.name as room_name, i.room_number FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.discount_status = 'pending' ORDER BY b.created_at DESC");
-              if ($stmt) {
-                $stmt->execute();
-                $res = $stmt->get_result();
-                if ($res && $res->num_rows > 0) {
-                  while ($row = $res->fetch_assoc()) {
-                    $bookingId = $row['id'];
-                    $receipt = $row['receipt_no'] ?: '—';
-                    $details = $row['details'] ?: '';
-                    $checkin = $row['checkin'];
-                    $checkout = $row['checkout'];
-                    $created = $row['created_at'];
-                    $room = $row['room_name'] ?: 'Unassigned';
-                    if ($row['room_number']) $room .= ' #' . $row['room_number'];
-
-                    // Determine type for client-side filtering: treat presence of room_name as 'room', otherwise 'facility'
-                    $row_type = !empty($row['room_name']) ? 'room' : 'facility';
-
-                    // Try to extract guest name and discount type from details if available
-                    $guest = 'Guest';
-                    $discountType = '';
-                    if (preg_match('/Guest:\s*([^|]+)/', $details, $m)) $guest = trim($m[1]);
-                    if (preg_match('/Discount:\s*([^|]+)/', $details, $m)) $discountType = trim($m[1]);
-
-                    // Use dedicated proof_of_id column when available
-                    $proofPath = $row['proof_of_id'] ?: '';
-
-                    echo '<tr id="discount-row-' . $bookingId . '" data-type="' . htmlspecialchars($row_type) . '">';
-                    echo '<td><strong>' . htmlspecialchars($receipt) . '</strong></td>';
-                    echo '<td>' . htmlspecialchars($guest) . '</td>';
-                    echo '<td>' . htmlspecialchars($room) . '</td>';
-                    echo '<td>' . htmlspecialchars($discountType ?: '—') . '</td>';
-                    echo '<td>' . htmlspecialchars(($checkin ? date('M j, Y', strtotime($checkin)) : '—') . ' - ' . ($checkout ? date('M j, Y', strtotime($checkout)) : '—')) . '</td>';
-                    echo '<td>';
-                    if (!empty($proofPath) && file_exists(__DIR__ . '/../../' . $proofPath)) {
-                      $url = '../' . ltrim($proofPath, '/');
-                      // Use a view-proof anchor with data-proof so JS can open a modal instead of a new tab
-                      echo '<a href="#" class="view-proof" data-proof="' . htmlspecialchars($url) . '" data-booking-id="' . $bookingId . '"><img src="' . htmlspecialchars($url) . '" alt="Proof Image" style="max-width: 120px; max-height: 80px; object-fit:cover; border-radius:4px; border:1px solid #e9ecef;"></a>';
-                    } elseif (!empty($proofPath)) {
-                      // If file doesn't exist at expected relative path, still provide view-proof link (external/full path)
-                      echo '<a href="#" class="view-proof" data-proof="' . htmlspecialchars($proofPath) . '" data-booking-id="' . $bookingId . '">View Proof</a>';
-                    } else {
-                      echo 'No ID uploaded';
-                    }
-                    echo '</td>';
-                    echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($created))) . '</td>';
-                    echo '<td>';
-                    echo '<button class="btn btn-success btn-sm discount-action" data-booking-id="' . $bookingId . '" data-action="approve">Approve</button> ';
-                    echo '<button class="btn btn-danger btn-sm discount-action" data-booking-id="' . $bookingId . '" data-action="reject">Reject</button>';
-                    echo '</td>';
-                    echo '</tr>';
-                  }
-                } else {
-                  echo '<tr><td colspan="8">No pending discount applications.</td></tr>';
-                }
-                $stmt->close();
-              } else {
-                echo '<tr><td colspan="8">Failed to load discount applications.</td></tr>';
-              }
-              ?>
-            </tbody>
-          </table>
-        </div>
-        <!-- Pagination for Discount Applications -->
-        <div id="discountsPagination" class="mt-2"></div>
-      </div>
-    </div>
-    </div>
   </div>
-  <script>
-    (function(){
-  // Client-side pagination for Discount Applications table (#discountsTable)
-      const PER_PAGE_D = 8;
-      let dstate = { perPage: PER_PAGE_D, currentPage: 1, totalPages: 1 };
-      let discountsFadeToken = 0;
+</div>
+<!-- End Bookings Management Section -->
 
-      function dGetAllRows(){
-        // Respect the current type filter so discounts reflect the chosen type (room/facility/all)
-        const typeFilter = (document.getElementById('typeFilter')?.value || '').toLowerCase();
-        return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => {
-          if (r.id === 'discounts-no-results') return false;
-          if (!typeFilter) return true;
-          // Prefer explicit data-type attribute; fall back to the 3rd column (Room/Facility) text
-          let rtype = (r.dataset.type || '').toLowerCase().trim();
-          if (!rtype) {
-            try {
-              const cell = r.querySelector('td:nth-child(3)');
-              if (cell) rtype = (cell.textContent || '').toLowerCase().trim();
-            } catch (e) { rtype = ''; }
-          }
-          // Normalize common words to 'room'/'facility'
-          if (rtype.indexOf('room') !== -1) rtype = 'room';
-          else if (rtype.indexOf('facility') !== -1) rtype = 'facility';
-          return rtype === typeFilter;
-        });
-      }
+<!-- Pencil Book Management Section -->
+<div id="pencil-tab" class="booking-tab-content" style="display:none;">
+  <?php include __DIR__ . '/pencil_book_management.php'; ?>
+</div>
 
-      // reuse fadeOutRows helper from bookings (declared earlier)
-      function dFadeOutRows(rows, timeout = 300){
-        return fadeOutRows(rows, timeout);
-      }
+<!-- Discount Applications Section -->
+<div id="discounts-tab" class="booking-tab-content" style="display:none;">
+  <?php include __DIR__ . '/discount_applications.php'; ?>
+</div>
 
-      async function dRecalc(){
-        const rows = dGetAllRows();
-        const total = rows.length;
-        dstate.totalPages = Math.max(1, Math.ceil(total / dstate.perPage));
-        if (dstate.currentPage > dstate.totalPages) dstate.currentPage = dstate.totalPages;
+<!-- Payment Verification Section -->
+<div id="payments-tab" class="booking-tab-content" style="display:none;">
+  <?php include __DIR__ . '/payment_verification.php'; ?>
+</div>
 
-  const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
-  const myToken = ++discountsFadeToken;
-
-  const removeSpinner = showTableSpinner(document.querySelector('#discountsTable'));
-
-  await dFadeOutRows(currentlyVisible);
-  if (myToken !== discountsFadeToken) { removeSpinner(); return; }
-
-  rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
-        const start = (dstate.currentPage - 1) * dstate.perPage;
-        const end = start + dstate.perPage;
-        rows.slice(start, end).forEach(r => {
-          r.removeAttribute('data-hidden-by-pagination'); r.style.display = ''; r.style.opacity = 0;
-          requestAnimationFrame(()=>{ r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
-        });
-        setTimeout(()=>{ try { removeSpinner(); } catch(e){} }, 220);
-
-        dRenderControls();
-      }
-
-      function dRenderControls(){
-        const container = document.getElementById('discountsPagination');
-        if (!container) return;
-        container.innerHTML = '';
-        if (dstate.totalPages <= 1) return;
-
-        const nav = document.createElement('nav');
-        const ul = document.createElement('ul'); ul.className = 'pagination justify-content-center mb-0';
-
-        const makeItem = (label, page, disabled, active) => {
-          const li = document.createElement('li'); li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-          const btn = document.createElement('button'); btn.className = 'page-link'; btn.type='button'; btn.textContent = label;
-          btn.addEventListener('click', function(e){ e.preventDefault(); if (disabled) return; dstate.currentPage = page; dRecalc(); });
-          li.appendChild(btn); return li;
-        };
-
-        ul.appendChild(makeItem('«', Math.max(1, dstate.currentPage - 1), dstate.currentPage === 1, false));
-        const maxButtons = 7; let s = Math.max(1, dstate.currentPage - 3); let e = Math.min(dstate.totalPages, s + maxButtons - 1); if (e - s < maxButtons - 1) s = Math.max(1, e - maxButtons + 1);
-        if (s > 1) { ul.appendChild(makeItem('1',1,false,dstate.currentPage===1)); if (s>2){ const gap=document.createElement('li'); gap.className='page-item disabled'; gap.innerHTML='<span class="page-link">…</span>'; ul.appendChild(gap);} }
-        for (let p=s;p<=e;p++){ ul.appendChild(makeItem(String(p), p, false, p===dstate.currentPage)); }
-        if (e < dstate.totalPages) { if (e < dstate.totalPages -1){ const gap=document.createElement('li'); gap.className='page-item disabled'; gap.innerHTML='<span class="page-link">…</span>'; ul.appendChild(gap);} ul.appendChild(makeItem(String(dstate.totalPages), dstate.totalPages, false, dstate.currentPage===dstate.totalPages)); }
-        ul.appendChild(makeItem('»', Math.min(dstate.totalPages, dstate.currentPage + 1), dstate.currentPage === dstate.totalPages, false));
-
-        nav.appendChild(ul); container.appendChild(nav);
-        requestAnimationFrame(()=>{ const p = container.querySelector('.pagination'); if (p) p.classList.add('show'); });
-      }
-
-      document.addEventListener('DOMContentLoaded', function(){ dRecalc(); });
-
-      window._discountsPagination = { setPerPage: function(n){ dstate.perPage = Math.max(1, Number(n)||PER_PAGE_D); dstate.currentPage = 1; dRecalc(); }, goToPage: function(p){ dstate.currentPage = Math.min(Math.max(1, Number(p)||1), dstate.totalPages); dRecalc(); } };
-
-      // expose discount recalculation so other scripts (e.g. type filter) can call it
-      window._discountsRecalc = function(){ try { dRecalc(); } catch(e){ console.error('dRecalc error', e); } };
-
-      // Public helper to filter discounts from outside (type buttons will call this)
-      window.filterDiscounts = function(){
-        try {
-          // the dGetAllRows already respects the selected type, so just reset to first page and recalc
-          dstate.currentPage = 1;
-          dRecalc();
-        } catch (err) { console.error('filterDiscounts error', err); }
-      };
-
-      // Lightweight payment verification filter (used when type buttons change)
-      // If the payments table exists on the page, this will hide/show rows based on data-type or text.
-      window.loadPaymentVerification = function(){
-        try {
-          const typeFilter = (document.getElementById('typeFilter')?.value || '').toLowerCase();
-          const table = document.getElementById('paymentsTable');
-          if (!table) return; // nothing to do
-          const tbody = table.querySelector('tbody');
-          if (!tbody) return;
-          const rows = Array.from(tbody.querySelectorAll('tr'));
-          let visible = 0;
-          rows.forEach(r => {
-            if (!r) return;
-            if (r.id && r.id.indexOf('payments-no-results') !== -1) return;
-            let rtype = (r.dataset.type || '').toLowerCase();
-            if (!rtype) {
-              // fallback: inspect the row text for the words 'room' or 'facility'
-              rtype = (r.textContent || '').toLowerCase();
-            }
-            const show = !typeFilter || (rtype && rtype.indexOf(typeFilter) !== -1);
-            r.style.display = show ? '' : 'none';
-            if (show) visible++;
-          });
-
-          // show a no-results row when filtered out completely
-          const noId = 'payments-no-results';
-          let noRow = document.getElementById(noId);
-          if (visible === 0) {
-            if (!noRow) {
-              const cols = table.querySelectorAll('thead th').length || 6;
-              noRow = document.createElement('tr');
-              noRow.id = noId;
-              noRow.innerHTML = '<td colspan="' + cols + '" class="text-center text-muted">No payments match your filters.</td>';
-              tbody.appendChild(noRow);
-            }
-          } else {
-            if (noRow && noRow.parentNode) noRow.parentNode.removeChild(noRow);
-          }
-
-          // reset payments pagination if available
-          try { if (window._paymentsPagination && typeof window._paymentsPagination.goToPage === 'function') window._paymentsPagination.goToPage(1); } catch(e){}
-        } catch (err) { console.error('loadPaymentVerification error', err); }
-      };
-    })();
-  </script>
+<script>
+// Section navigation handler
+(function(){
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.section-nav-btn');
+    if (!btn) return;
+    
+    const targetSection = btn.getAttribute('data-section');
+    if (!targetSection) return;
+    
+    // Update button states
+    document.querySelectorAll('.section-nav-btn').forEach(b => {
+      b.classList.remove('active', 'btn-primary');
+      b.classList.add('btn-outline-primary');
+    });
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-primary', 'active');
+    
+    // Hide all booking tabs only (not other sections in dashboard)
+    document.querySelectorAll('.booking-tab-content').forEach(s => {
+      s.style.display = 'none';
+    });
+    
+    // Show target section
+    const target = document.getElementById(targetSection);
+    if (target) {
+      target.style.display = 'block';
+    }
+  });
+})();
+</script>
