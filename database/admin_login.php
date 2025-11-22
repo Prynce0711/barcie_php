@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
     }
     
-    $stmt->bind_param("s", $username);
+      $stmt->bind_param("s", $username);
     $stmt->execute();
     $stmt->store_result();
 
@@ -44,27 +44,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->bind_result($id, $storedPassword);
         $stmt->fetch();
 
-        // Support both hashed (bcrypt) and plain text passwords
-        $passwordValid = false;
-        
-        // Check if password is hashed (bcrypt starts with $2y$ and is 60 chars)
-        if (strlen($storedPassword) == 60 && substr($storedPassword, 0, 4) === '$2y$') {
-            // Hashed password - use password_verify
-            $passwordValid = password_verify($password, $storedPassword);
+        // Ensure $storedPassword is a string before operating on it
+        if (!is_string($storedPassword) && !is_numeric($storedPassword)) {
+            $response['message'] = 'Failed to retrieve stored password for user.';
         } else {
-            // Plain text password - use direct comparison
-            $passwordValid = ($password === $storedPassword);
-        }
+            $storedPassword = (string)$storedPassword;
 
-        if ($passwordValid) {
-            $_SESSION['admin_logged_in'] = true;
-            $_SESSION['admin_id'] = $id;
-            $_SESSION['admin_username'] = $username;
+            // Support both hashed (bcrypt) and plain text passwords
+            $passwordValid = false;
 
-            $response['success'] = true;
-            $response['message'] = 'Login successful.';
-        } else {
-            $response['message'] = 'Invalid password.';
+            // Check if password is hashed (bcrypt starts with $2y$ and is 60 chars)
+            if (strlen($storedPassword) === 60 && substr($storedPassword, 0, 4) === '$2y$') {
+                // Hashed password - use password_verify
+                $passwordValid = password_verify($password, $storedPassword);
+            } else {
+                // Plain text password - use direct comparison
+                $passwordValid = ($password === $storedPassword);
+            }
+
+            if ($passwordValid) {
+                $_SESSION['admin_logged_in'] = true;
+                $_SESSION['admin_id'] = $id;
+                $_SESSION['admin_username'] = $username;
+
+                $response['success'] = true;
+                $response['message'] = 'Login successful.';
+            } else {
+                $response['message'] = 'Invalid password.';
+            }
         }
     } else {
         $response['message'] = 'Username not found.';
