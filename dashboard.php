@@ -337,6 +337,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <!-- Load JavaScript files at the end of body for better performance -->
   <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
   <?php include 'components/dashboard/sections/add_item_modal.php'; ?>
+  <?php include 'components/dashboard/sections/edit_item_modal.php'; ?>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

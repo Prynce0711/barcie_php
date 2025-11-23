@@ -2,8 +2,23 @@
 require_once __DIR__ . '/../item_actions.php';
 
 $res = $conn->query("SELECT * FROM items ORDER BY item_type, created_at DESC");
-while ($item = $res->fetch_assoc()): ?>
-  <div class="col-lg-4 col-md-6 mb-4 item-card" data-type="<?= $item['item_type'] ?>"
+while ($item = $res->fetch_assoc()): 
+  // Prepare images array for data attribute
+  $imagesForData = [];
+  if (!empty($item['images'])) {
+    $decoded = json_decode($item['images'], true);
+    if (is_array($decoded)) {
+      $imagesForData = $decoded;
+    }
+  }
+  if (empty($imagesForData) && !empty($item['image'])) {
+    $imagesForData = [$item['image']];
+  }
+?>
+  <div class="col-lg-4 col-md-6 mb-4 item-card" 
+    data-type="<?= $item['item_type'] ?>"
+    data-item-id="<?= $item['id'] ?>"
+    data-images='<?= htmlspecialchars(json_encode($imagesForData), ENT_QUOTES) ?>'
     data-searchable="<?= strtolower(($item['name'] ?? '') . ' ' . ($item['room_number'] ?? '') . ' ' . ($item['description'] ?? '')) ?>">
     <div class="card border-0 shadow-sm h-100 hover-lift">
       <!-- Item Image -->
@@ -109,7 +124,8 @@ while ($item = $res->fetch_assoc()): ?>
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-primary flex-fill edit-toggle-btn"
+          <button type="button" class="btn btn-outline-primary flex-fill" 
+            onclick="openEditModal(<?= $item['id'] ?>)" 
             data-item-id="<?= $item['id'] ?>">
             <i class="fas fa-edit me-1"></i>Edit
           </button>
@@ -119,7 +135,7 @@ while ($item = $res->fetch_assoc()): ?>
           </button>
         </div>
 
-        <!-- Hidden Edit Form -->
+        <!-- Hidden Edit Form (kept for data extraction by modal) -->
         <div class="edit-form-container mt-3" id="editForm<?= $item['id'] ?>" style="display: none;">
           <form method="POST" action="" enctype="multipart/form-data" class="border-top pt-3">
             <input type="hidden" name="action" value="update">
