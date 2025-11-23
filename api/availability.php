@@ -6,11 +6,20 @@ try {
         json_error('Required tables missing', 500);
     }
 
+    // Support filtering by item_id for room-specific calendars
+    $item_id_filter = '';
+    $item_id = null;
+    if (isset($_GET['item_id']) && is_numeric($_GET['item_id'])) {
+        $item_id = intval($_GET['item_id']);
+        $item_id_filter = " AND b.room_id = $item_id";
+    }
+
     $query = "SELECT b.details, b.checkin, b.checkout, b.status, b.room_id, i.name as room_name, i.room_number
               FROM bookings b
               LEFT JOIN items i ON b.room_id = i.id
               WHERE b.status IN ('confirmed', 'approved', 'pending', 'checked_in')
               AND (b.checkin >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) OR b.checkin IS NULL)
+              $item_id_filter
               ORDER BY b.checkin ASC";
     $result = $conn->query($query);
     if (!$result) { json_error('Query failed: ' . $conn->error, 500); }
@@ -57,6 +66,8 @@ try {
                 'checkin_date' => $start,
                 'checkout_date' => $end,
                 'duration_days' => $duration_days,
+                'item_id' => $row['room_id'],
+                'room_id' => $row['room_id'],
             ],
         ];
     }

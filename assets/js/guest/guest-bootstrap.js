@@ -550,10 +550,6 @@ async function loadItems() {
             <i class="fas fa-images me-1"></i>${images.length}
           </div>
           ` : ''}
-          <div class="availability-badge ${card.dataset.availability}">
-            <i class="fas ${card.dataset.availability === 'available' ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-            ${card.dataset.availability === 'available' ? 'Available' : 'Occupied'}
-          </div>
         </div>
         <div class="card-content" style="padding: 20px;">
           <h3 style="margin-bottom: 10px; color: #2c3e50;">${item.name}</h3>

@@ -22,13 +22,14 @@ function handleFatalError() {
 }
 register_shutdown_function('handleFatalError');
 
+// Load application configuration
+require_once __DIR__ . '/config.php';
+
 // Start output buffering to catch any stray output
 ob_start();
 
-// Enable error display temporarily for debugging on live server
-ini_set('display_errors', 0); // Changed to 0 to prevent HTML errors
-ini_set('log_errors', 1);
-error_reporting(E_ALL);
+// Error handling is now controlled by config.php
+// Debug mode: DEBUG_MODE constant
 
 // Add CORS headers FIRST before any output
 header('Access-Control-Allow-Origin: *');
@@ -139,17 +140,21 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
         
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
 
-        // Enable debug output to file for easier debugging on live servers
-        $debugLog = __DIR__ . '/../logs/email_debug.log';
-        if (!is_dir(dirname($debugLog))) {
-            @mkdir(dirname($debugLog), 0777, true);
-        }
+        // Enable debug output only in debug mode
+        if (DEBUG_MODE) {
+            $debugLog = LOG_PATH . '/email_debug.log';
+            if (!is_dir(dirname($debugLog))) {
+                @mkdir(dirname($debugLog), 0777, true);
+            }
 
-        $mail->SMTPDebug = 2; // verbose debug for comprehensive troubleshooting
-        $mail->Debugoutput = function($str, $level) use ($debugLog) {
-            error_log("PHPMailer: " . $str);
-            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "PHPMailer: " . $str . PHP_EOL, FILE_APPEND);
-        };
+            $mail->SMTPDebug = 2; // verbose debug
+            $mail->Debugoutput = function($str, $level) use ($debugLog) {
+                error_log("PHPMailer: " . $str);
+                @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "PHPMailer: " . $str . PHP_EOL, FILE_APPEND);
+            };
+        } else {
+            $mail->SMTPDebug = 0; // No debug output in production
+        }
 
         // Helper to configure mailer from config array
         $configureMailer = function($mail, $cfg) {

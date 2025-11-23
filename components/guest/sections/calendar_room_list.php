@@ -1,5 +1,5 @@
 <!-- Room & Facility List Section -->
-<div id="roomFacilityList" class="room-facility-list" style="display:none;">
+<div id="roomFacilityList" class="room-facility-list">
   <div class="row" id="roomListContainer">
     <!-- Rooms will be populated here by JavaScript -->
     <div class="col-12 text-center py-5">
@@ -115,7 +115,7 @@
                     </div>
                   </div>
                   <div class="mt-3">
-                    <button class="btn btn-outline-primary btn-sm me-2 view-calendar-btn" data-item-id="${item.id}">
+                    <button class="btn btn-outline-primary btn-sm me-2 view-calendar-btn" data-item-id="${item.id}" data-item-name="${item.name}">
                       <i class="fas fa-calendar-alt me-1"></i>View Calendar
                     </button>
                   </div>
@@ -132,25 +132,11 @@
       container.querySelectorAll('.view-calendar-btn').forEach(btn => {
         btn.addEventListener('click', function() {
           const itemId = this.dataset.itemId;
-          const itemName = this.dataset.itemName || '';
+          const itemName = this.dataset.itemName || 'Room/Facility';
           if (typeof window.openRoomCalendarModal === 'function') {
             try { window.openRoomCalendarModal(itemId, itemName); } catch (e) { console.error(e); }
-            return;
-          }
-
-          // Fallback: switch to main calendar view and navigate
-          if (typeof switchToCalendarView === 'function') switchToCalendarView();
-          if (window.guestCalendar) {
-            try {
-              const events = window.guestCalendar.getEvents ? window.guestCalendar.getEvents() : [];
-              const match = events.find(ev => {
-                const p = ev.extendedProps || {};
-                return p.item_id == itemId || p.room_id == itemId || ev.id == itemId;
-              });
-              if (match) {
-                try { window.guestCalendar.gotoDate(match.start || match.startStr); } catch(e){}
-              }
-            } catch(e){}
+          } else {
+            console.error('Room calendar modal function not available');
           }
         });
       });

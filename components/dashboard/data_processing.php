@@ -681,22 +681,30 @@ $total_revenue = $total_revenue_result->fetch_assoc()['revenue'] ?? 0;
 
 // Monthly bookings for chart (last 12 months)
 $monthly_bookings = [];
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM bookings WHERE DATE_FORMAT(created_at, '%Y-%m') = ?");
 for ($i = 11; $i >= 0; $i--) {
   $month = date('Y-m', strtotime("-$i months"));
   $month_name = date('M Y', strtotime("-$i months"));
-  $result = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE DATE_FORMAT(created_at, '%Y-%m') = '$month'");
+  $stmt->bind_param('s', $month);
+  $stmt->execute();
+  $result = $stmt->get_result();
   $count = $result ? $result->fetch_assoc()['count'] : 0;
   $monthly_bookings[] = ['month' => $month_name, 'count' => (int) $count];
 }
+$stmt->close();
 
 // Booking status distribution
 $status_distribution = [];
 $statuses = ['pending', 'approved', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'rejected'];
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM bookings WHERE status = ?");
 foreach ($statuses as $status) {
-  $result = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status='$status'");
+  $stmt->bind_param('s', $status);
+  $stmt->execute();
+  $result = $stmt->get_result();
   $count = $result ? $result->fetch_assoc()['count'] : 0;
   $status_distribution[$status] = (int) $count;
 }
+$stmt->close();
 
 // Additional booking statistics
 $total_bookings = array_sum($status_distribution);

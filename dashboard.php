@@ -76,6 +76,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       // Load booking events for calendar
       $events = [];
 
+      // Safe query - no user input (status is hardcoded)
       $calendar_query = "SELECT b.* FROM bookings b WHERE b.status != 'rejected' ORDER BY b.id DESC";
       $result = $conn->query($calendar_query);
 
