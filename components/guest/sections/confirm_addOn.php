@@ -71,9 +71,192 @@
           </div>
         </div>
       </div>
+      <div class="modal-footer flex-column align-items-stretch">
+        <div class="border rounded p-3 mb-3" style="background-color: #fff3cd;" id="policyAgreementSection">
+          <div class="form-check text-start">
+            <input class="form-check-input" type="checkbox" id="policyAgreementCheckbox" required style="width: 20px; height: 20px; margin-top: 0.15rem;">
+            <label class="form-check-label" for="policyAgreementCheckbox" style="margin-left: 8px;">
+              <strong><i class="fas fa-exclamation-triangle text-warning me-2"></i>Non-Refundable Payment Policy (v1.0)</strong><br>
+              <small>
+                I acknowledge and agree that BarCIE's payment policy is <strong class="text-danger">strictly non-refundable</strong>. 
+                I understand that all payments made are considered <strong>final</strong> and are <strong>not eligible for 
+                cancellation, reimbursement, or credit</strong>, in accordance with BarCIE's established 
+                financial and reservation policies.
+                <a href="#" id="readMorePolicyLink" class="ms-2" style="text-decoration: underline;">Read Full Terms & Conditions</a>
+              </small>
+            </label>
+          </div>
+          <div class="form-check mt-2 text-start">
+            <input class="form-check-input" type="checkbox" id="doubleConfirmCheckbox" required style="width: 20px; height: 20px; margin-top: 0.15rem;">
+            <label class="form-check-label" for="doubleConfirmCheckbox" style="margin-left: 8px;">
+              <small><strong>I understand and confirm</strong> that I have read and fully comprehend the non-refundable policy.</small>
+            </label>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
+          <button type="button" id="confirmBookingBtn" class="btn btn-primary" disabled>Confirm & Proceed</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full Terms & Conditions Modal -->
+<div class="modal fade" id="fullPolicyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-warning bg-opacity-10">
+        <h5 class="modal-title">
+          <i class="fas fa-file-contract me-2"></i>
+          Full Payment & Refund Policy
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closePolicyModal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <div class="policy-header-image mb-3">
+            <img src="assets/images/imageBg/barcie-logo.png" alt="BarCIE Logo" class="img-fluid" style="max-width: 200px; height: auto;" onerror="this.style.display='none'">
+          </div>
+          <h4 class="text-warning fw-bold">
+            <i class="fas fa-building me-2"></i>
+            BarCIE International Center
+          </h4>
+          <p class="text-muted mb-1">Full Payment & Refund Policy</p>
+          <span class="badge bg-warning text-dark">Version 1.0</span>
+          <hr class="my-3">
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-danger">
+            <i class="fas fa-ban me-2"></i>
+            1. NON-REFUNDABLE POLICY
+          </h5>
+          <p class="ms-4">
+            All payments made to BarCIE International Center are <strong>strictly non-refundable</strong> under any circumstances.
+          </p>
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-danger">
+            <i class="fas fa-calendar-times me-2"></i>
+            2. CANCELLATION POLICY
+          </h5>
+          <p class="ms-4">
+            Booking cancellations will <strong>not result in refunds, credits, or transfers</strong> to future bookings.
+          </p>
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-danger">
+            <i class="fas fa-user-slash me-2"></i>
+            3. NO-SHOW POLICY
+          </h5>
+          <p class="ms-4">
+            Failure to arrive for a confirmed booking will result in <strong>forfeiture of all payments made</strong>.
+          </p>
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-primary">
+            <i class="fas fa-lock me-2"></i>
+            4. PAYMENT FINALITY
+          </h5>
+          <p class="ms-4">
+            Once payment is received and processed, it is considered <strong>final and cannot be reversed</strong>.
+          </p>
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-primary">
+            <i class="fas fa-edit me-2"></i>
+            5. MODIFICATIONS
+          </h5>
+          <p class="ms-4">
+            Booking modifications may be possible subject to availability and additional fees, but <strong>original payments remain non-refundable</strong>.
+          </p>
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            6. FORCE MAJEURE
+          </h5>
+          <p class="ms-4">
+            BarCIE is <strong>not liable for refunds</strong> due to circumstances beyond our control (natural disasters, government restrictions, etc.).
+          </p>
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-info">
+            <i class="fas fa-user-check me-2"></i>
+            7. GUEST RESPONSIBILITY
+          </h5>
+          <p class="ms-4">
+            Guests are responsible for ensuring their booking details are correct before confirming payment.
+          </p>
+        </div>
+
+        <div class="policy-section mb-4">
+          <h5 class="text-success">
+            <i class="fas fa-phone me-2"></i>
+            8. CONTACT
+          </h5>
+          <p class="ms-4">
+            For questions about this policy, please contact us at <strong>info@barcie.edu.ph</strong> or call our front desk.
+          </p>
+        </div>
+
+        <div class="alert alert-warning mt-4">
+          <i class="fas fa-info-circle me-2"></i>
+          <strong>Important:</strong> By checking the agreement boxes in the booking confirmation, you acknowledge that you have read, understood, and agree to these terms.
+        </div>
+      </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
-        <button type="button" id="confirmBookingBtn" class="btn btn-primary">Confirm & Proceed</button>
+        <button type="button" class="btn btn-primary" id="backToPolicyBtn">
+          <i class="fas fa-arrow-left me-2"></i>Back to Booking Confirmation
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Success Modal -->
+<div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-check-circle me-2"></i>
+          Booking Successful!
+        </h5>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div class="success-icon mb-3">
+          <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+        </div>
+        <h4 class="text-success mb-3">Your booking has been successfully confirmed!</h4>
+        <p class="text-muted mb-4" id="successMessage">Thank you for choosing BarCIE International Center.</p>
+        
+        <!-- Booking Details for Print -->
+        <div id="bookingDetailsForPrint" class="text-start border rounded p-3 mb-3" style="display: none;">
+          <h6 class="fw-bold mb-3">Booking Details</h6>
+          <div id="printBookingDetails"></div>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          <small>Please check your email for the booking confirmation.</small>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-outline-primary" id="printBookingBtn" onclick="printBookingDetails()">
+          <i class="fas fa-print me-2"></i>Print Booking
+        </button>
+        <button type="button" class="btn btn-success" id="doneBookingBtn" disabled>
+          <i class="fas fa-spinner fa-spin me-2" id="doneSpinner"></i>
+          <span id="doneButtonText">Done (<span id="doneTimer">15</span>s)</span>
+        </button>
       </div>
     </div>
   </div>
@@ -95,6 +278,149 @@
     try { alert(message); } catch (e) { /* ignore */ }
   }
 
+  // Clear all form data
+  function clearFormData() {
+    try {
+      if (currentForm) {
+        // Reset the form
+        currentForm.reset();
+        
+        // Clear all input fields
+        currentForm.querySelectorAll('input, textarea, select').forEach(field => {
+          if (field.type === 'checkbox' || field.type === 'radio') {
+            field.checked = false;
+          } else if (field.type === 'file') {
+            field.value = '';
+          } else if (field.tagName === 'SELECT') {
+            field.selectedIndex = 0;
+          } else {
+            field.value = '';
+          }
+        });
+        
+        // Clear any validation states
+        currentForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        currentForm.querySelectorAll('.inline-validation-msg').forEach(el => el.remove());
+        
+        // Hide any alert messages
+        const formAlert = currentForm.querySelector('.form-alert');
+        if (formAlert) {
+          formAlert.innerHTML = '';
+          formAlert.style.display = 'none';
+        }
+      }
+      
+      // Reset current booking variables
+      currentBooking = null;
+      currentItem = null;
+      
+      // Scroll to top of booking section
+      try {
+        const bookingSection = document.getElementById('booking') || document.querySelector('[name="booking"]');
+        if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e) {}
+      
+    } catch (e) {
+      console.warn('Error clearing form:', e);
+    }
+  }
+  
+  // Print booking details
+  window.printBookingDetails = function() {
+    try {
+      const printContent = document.getElementById('bookingDetailsForPrint').innerHTML;
+      const originalContent = document.body.innerHTML;
+      
+      // Create print window content
+      const printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write('<html><head><title>Booking Confirmation</title>');
+      printWindow.document.write('<style>');
+      printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; }');
+      printWindow.document.write('h6 { color: #333; margin-bottom: 15px; }');
+      printWindow.document.write('p { margin: 8px 0; line-height: 1.6; }');
+      printWindow.document.write('.text-muted { color: #666; }');
+      printWindow.document.write('strong { color: #000; }');
+      printWindow.document.write('@media print { body { padding: 10px; } }');
+      printWindow.document.write('</style></head><body>');
+      printWindow.document.write('<div style="text-align: center; margin-bottom: 20px;">');
+      printWindow.document.write('<h2>BarCIE International Center</h2>');
+      printWindow.document.write('<p>Booking Confirmation</p>');
+      printWindow.document.write('</div>');
+      printWindow.document.write(printContent);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
+      
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    } catch (e) {
+      console.error('Print error:', e);
+      alert('Unable to print. Please try again.');
+    }
+  };
+  
+  // Show success modal with timer
+  function showSuccessModal(message, bookingDetails) {
+    try {
+      // Set success message
+      const successMsg = document.getElementById('successMessage');
+      if (successMsg) successMsg.textContent = message || 'Thank you for choosing BarCIE International Center.';
+      
+      // Populate booking details for print
+      const printDetails = document.getElementById('printBookingDetails');
+      if (printDetails && bookingDetails) {
+        printDetails.innerHTML = bookingDetails;
+        document.getElementById('bookingDetailsForPrint').style.display = 'block';
+      }
+      
+      // Show the modal
+      const successModal = new bootstrap.Modal(document.getElementById('bookingSuccessModal'));
+      successModal.show();
+      
+      // Start 15 second countdown
+      let countdown = 15;
+      const doneBtn = document.getElementById('doneBookingBtn');
+      const timerSpan = document.getElementById('doneTimer');
+      const doneSpinner = document.getElementById('doneSpinner');
+      
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        if (timerSpan) timerSpan.textContent = countdown;
+        
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          if (doneBtn) {
+            doneBtn.disabled = false;
+            doneBtn.innerHTML = '<i class="fas fa-check me-2"></i>Done';
+          }
+        }
+      }, 1000);
+      
+      // Handle done button click
+      if (doneBtn) {
+        doneBtn.onclick = function() {
+          clearInterval(countdownInterval);
+          successModal.hide();
+          clearFormData();
+          
+          // Scroll to booking section
+          try {
+            const bookingSection = document.getElementById('booking') || document.querySelector('[name="booking"]');
+            if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } catch (e) {}
+        };
+      }
+      
+    } catch (e) {
+      console.error('Error showing success modal:', e);
+      // Fallback to alert
+      alert('Booking successful! ' + (message || ''));
+      clearFormData();
+    }
+  }
+  
   // Show booking confirmation without reloading the page: update URL, scroll to booking section and show a small banner
   function showBookingConfirmation(msg) {
     try {
@@ -110,20 +436,6 @@
     try {
       const anchor = document.getElementById('booking') || document.querySelector('[name="booking"]') || document.querySelector('#booking');
       if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch (e) { /* ignore */ }
-
-    // Show a temporary banner near top of page to indicate success
-    try {
-      const banner = document.createElement('div');
-      banner.className = 'alert alert-success text-center';
-      banner.style.position = 'fixed';
-      banner.style.top = '12px';
-      banner.style.left = '50%';
-      banner.style.transform = 'translateX(-50%)';
-      banner.style.zIndex = 2147483647;
-      banner.textContent = msg || 'Booking submitted successfully!';
-      document.body.appendChild(banner);
-      setTimeout(() => { try { banner.remove(); } catch (e) {} }, 5000);
     } catch (e) { /* ignore */ }
   }
   // Default add-on catalogue - admin can override per-item via DB
@@ -487,6 +799,48 @@
     if (!s && s !== 0) return '';
     return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]; });
   }
+  
+  // Build printable booking details HTML
+  function buildPrintableBookingDetails() {
+    if (!currentBooking || !currentItem) return '';
+    
+    let html = '';
+    html += `<p><strong>Room/Facility:</strong> ${escapeHtml(currentItem.name)}`;
+    if (currentItem.room_number) html += ` (Room #${escapeHtml(currentItem.room_number)})`;
+    html += '</p>';
+    
+    if (currentBooking.type === 'reservation') {
+      html += `<p><strong>Check-in:</strong> ${escapeHtml(currentBooking.checkin)}</p>`;
+      html += `<p><strong>Check-out:</strong> ${escapeHtml(currentBooking.checkout)}</p>`;
+      html += `<p><strong>Occupants:</strong> ${escapeHtml(currentBooking.occupants)}</p>`;
+      const nights = calcNights(currentBooking.checkin, currentBooking.checkout) || 1;
+      html += `<p><strong>Nights:</strong> ${nights}</p>`;
+    }
+    
+    html += `<p><strong>Guest Name:</strong> ${escapeHtml(currentBooking.guest_name)}</p>`;
+    html += `<p><strong>Contact:</strong> ${escapeHtml(currentBooking.contact)}</p>`;
+    html += `<p><strong>Email:</strong> ${escapeHtml(currentBooking.email)}</p>`;
+    
+    // Add selected add-ons
+    const selectedAddons = [];
+    document.querySelectorAll('.addon-checkbox:checked').forEach(cb => {
+      const label = document.querySelector(`label[for="${cb.id}"]`);
+      if (label) selectedAddons.push(label.textContent.trim());
+    });
+    
+    if (selectedAddons.length > 0) {
+      html += '<p><strong>Add-ons:</strong></p><ul style="margin-left: 20px;">';
+      selectedAddons.forEach(addon => {
+        html += `<li>${escapeHtml(addon)}</li>`;
+      });
+      html += '</ul>';
+    }
+    
+    html += `<p><strong>Total Amount:</strong> ₱${recalcTotal().toLocaleString()}</p>`;
+    html += `<p class="text-muted" style="margin-top: 15px;"><small>Booking Date: ${new Date().toLocaleString()}</small></p>`;
+    
+    return html;
+  }
 
   // Generate QR Code for bank transfer details
   function generateBankQRCode() {
@@ -722,9 +1076,77 @@
     }
   }
 
+  // Enable/disable confirm button based on both policy checkboxes
+  const policyCheckbox = document.getElementById('policyAgreementCheckbox');
+  const doubleConfirmCheckbox = document.getElementById('doubleConfirmCheckbox');
+  const policySection = document.getElementById('policyAgreementSection');
+  
+  function updateConfirmButtonState() {
+    if (confirmBtn && policyCheckbox && doubleConfirmCheckbox) {
+      confirmBtn.disabled = !(policyCheckbox.checked && doubleConfirmCheckbox.checked);
+    }
+  }
+  
+  if (policyCheckbox && confirmBtn) {
+    policyCheckbox.addEventListener('change', updateConfirmButtonState);
+  }
+  if (doubleConfirmCheckbox && confirmBtn) {
+    doubleConfirmCheckbox.addEventListener('change', updateConfirmButtonState);
+  }
+  
+  // Handle "Read More" policy link - show full terms in a modal
+  const readMoreLink = document.getElementById('readMorePolicyLink');
+  if (readMoreLink) {
+    readMoreLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      // Hide the main confirmation modal
+      const mainModal = bootstrap.Modal.getInstance(modalEl);
+      if (mainModal) mainModal.hide();
+      
+      // Show the policy terms modal
+      const policyModal = new bootstrap.Modal(document.getElementById('fullPolicyModal'));
+      policyModal.show();
+    });
+  }
+  
+  // Handle return from policy modal
+  const backToPolicyBtn = document.getElementById('backToPolicyBtn');
+  if (backToPolicyBtn) {
+    backToPolicyBtn.addEventListener('click', function() {
+      // Hide policy modal
+      const policyModal = bootstrap.Modal.getInstance(document.getElementById('fullPolicyModal'));
+      if (policyModal) policyModal.hide();
+      
+      // Show main confirmation modal again
+      const mainModal = new bootstrap.Modal(modalEl);
+      mainModal.show();
+    });
+  }
+
+  // Shake animation for validation failure
+  function shakeElement(element) {
+    if (!element) return;
+    element.style.animation = 'shake 0.5s';
+    setTimeout(() => { element.style.animation = ''; }, 500);
+  }
+
   // On confirm, append addon fields to currentForm then submit
   if (confirmBtn) {
     confirmBtn.addEventListener('click', function () {
+      // Double-check both policy checkboxes before proceeding
+      if (policyCheckbox && !policyCheckbox.checked) {
+        notify('Please agree to the non-refundable payment policy to proceed.', 'warning');
+        shakeElement(policySection);
+        try { policyCheckbox.focus(); policySection.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        return;
+      }
+      if (doubleConfirmCheckbox && !doubleConfirmCheckbox.checked) {
+        notify('Please confirm that you understand the non-refundable policy.', 'warning');
+        shakeElement(policySection);
+        try { doubleConfirmCheckbox.focus(); policySection.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        return;
+      }
     if (!currentForm) return;
     // remove previous addon inputs
     currentForm.querySelectorAll('[data-addon-input]').forEach(n => n.remove());
@@ -750,6 +1172,21 @@
     totalInput.value = recalcTotal();
     totalInput.setAttribute('data-addon-input', '1');
     currentForm.appendChild(totalInput);
+
+    // Add policy agreement timestamp and version for legal records
+    const policyTimestamp = document.createElement('input');
+    policyTimestamp.type = 'hidden';
+    policyTimestamp.name = 'policy_agreed_at';
+    policyTimestamp.value = new Date().toISOString();
+    policyTimestamp.setAttribute('data-addon-input', '1');
+    currentForm.appendChild(policyTimestamp);
+
+    const policyVersion = document.createElement('input');
+    policyVersion.type = 'hidden';
+    policyVersion.name = 'policy_version';
+    policyVersion.value = 'v1.0';
+    policyVersion.setAttribute('data-addon-input', '1');
+    currentForm.appendChild(policyVersion);
 
     // Copy payment selection from modal into form as a hidden input
     try {
@@ -935,8 +1372,12 @@
               }
 
               if (xhr.status >= 200 && xhr.status < 300 && jsonResponse && jsonResponse.success) {
-                notify(jsonResponse.message || 'Booking submitted successfully!', 'success');
-                try { showBookingConfirmation(jsonResponse.message || 'Booking submitted successfully!'); } catch (e) {}
+                // Build booking details HTML for print
+                let bookingDetailsHtml = buildPrintableBookingDetails();
+                
+                // Show success modal instead of toast
+                showSuccessModal(jsonResponse.message || 'Booking submitted successfully!', bookingDetailsHtml);
+                showBookingConfirmation(jsonResponse.message || 'Booking submitted successfully!');
                 resolve();
                 return;
               }
@@ -1000,9 +1441,13 @@
         if (res.ok && jsonResponse && jsonResponse.success) {
           // Success - show message and redirect
           console.log('Booking successful:', jsonResponse.message);
-          notify(jsonResponse.message || 'Booking submitted successfully!', 'success');
           
-          try { showBookingConfirmation(jsonResponse.message || 'Booking submitted successfully!'); } catch (e) {}
+          // Build booking details HTML for print
+          let bookingDetailsHtml = buildPrintableBookingDetails();
+          
+          // Show success modal instead of toast
+          showSuccessModal(jsonResponse.message || 'Booking submitted successfully!', bookingDetailsHtml);
+          showBookingConfirmation(jsonResponse.message || 'Booking submitted successfully!');
           return;
         }
 
@@ -1038,4 +1483,242 @@
 <!-- Minimal styles for modal elements -->
 <style>
   #previewDetails p { margin: 4px 0; }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+  
+  #policyAgreementSection {
+    transition: all 0.3s ease;
+  }
+  
+  #policyAgreementSection:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  #readMorePolicyLink {
+    color: #0066cc;
+    font-weight: 600;
+    text-decoration: underline;
+    transition: all 0.2s ease;
+  }
+  
+  #readMorePolicyLink:hover {
+    color: #0052a3;
+    text-decoration: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+  
+  #readMorePolicyLink:active {
+    transform: scale(0.98);
+  }
+  
+  /* Full Policy Modal Styles */
+  #fullPolicyModal .modal-dialog {
+    max-width: 800px;
+  }
+  
+  #fullPolicyModal .modal-body {
+    max-height: 75vh;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  }
+  
+  #fullPolicyModal .modal-header {
+    border-bottom: 3px solid #ffc107;
+    padding: 1.5rem;
+  }
+  
+  #fullPolicyModal .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  #fullPolicyModal .policy-header-image {
+    animation: fadeInDown 0.5s ease-in-out;
+  }
+  
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  #fullPolicyModal .policy-section {
+    padding: 20px 25px;
+    border-left: 5px solid #e0e0e0;
+    background: white;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    animation: fadeInUp 0.4s ease-in-out;
+    animation-fill-mode: both;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Stagger animation for each section */
+  #fullPolicyModal .policy-section:nth-child(2) { animation-delay: 0.05s; }
+  #fullPolicyModal .policy-section:nth-child(3) { animation-delay: 0.1s; }
+  #fullPolicyModal .policy-section:nth-child(4) { animation-delay: 0.15s; }
+  #fullPolicyModal .policy-section:nth-child(5) { animation-delay: 0.2s; }
+  #fullPolicyModal .policy-section:nth-child(6) { animation-delay: 0.25s; }
+  #fullPolicyModal .policy-section:nth-child(7) { animation-delay: 0.3s; }
+  #fullPolicyModal .policy-section:nth-child(8) { animation-delay: 0.35s; }
+  #fullPolicyModal .policy-section:nth-child(9) { animation-delay: 0.4s; }
+  
+  #fullPolicyModal .policy-section:hover {
+    border-left-color: #0066cc;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateX(5px);
+  }
+  
+  #fullPolicyModal .policy-section h5 {
+    margin-bottom: 12px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+  }
+  
+  #fullPolicyModal .policy-section h5 i {
+    font-size: 1.3rem;
+    width: 30px;
+  }
+  
+  #fullPolicyModal .policy-section p {
+    margin-bottom: 0;
+    line-height: 1.7;
+    font-size: 0.95rem;
+    color: #555;
+  }
+  
+  #fullPolicyModal .alert-warning {
+    border-left: 5px solid #ffc107;
+    background-color: #fff3cd;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    animation: fadeInUp 0.5s ease-in-out 0.45s both;
+  }
+  
+  #fullPolicyModal .modal-footer {
+    border-top: 2px solid #e9ecef;
+    padding: 1.25rem 1.5rem;
+  }
+  
+  #fullPolicyModal #backToPolicyBtn {
+    padding: 0.625rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+  
+  #fullPolicyModal #backToPolicyBtn:hover {
+    transform: translateX(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  /* Mobile responsive adjustments */
+  @media (max-width: 768px) {
+    #fullPolicyModal .modal-body {
+      padding: 1.25rem;
+    }
+    
+    #fullPolicyModal .policy-section {
+      padding: 15px 18px;
+    }
+    
+    #fullPolicyModal .policy-section h5 {
+      font-size: 1rem;
+    }
+  }
+  
+  /* Success Modal Styles */
+  #bookingSuccessModal .success-icon {
+    animation: successPulse 1s ease-in-out;
+  }
+  
+  @keyframes successPulse {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  #bookingSuccessModal .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  #bookingSuccessModal .modal-header {
+    border-bottom: none;
+  }
+  
+  #bookingSuccessModal h4 {
+    font-weight: 600;
+    animation: fadeInUp 0.5s ease-in-out 0.3s both;
+  }
+  
+  #bookingSuccessModal .alert-info {
+    animation: fadeInUp 0.5s ease-in-out 0.5s both;
+  }
+  
+  #bookingDetailsForPrint {
+    background-color: #f8f9fa;
+    animation: fadeInUp 0.5s ease-in-out 0.4s both;
+  }
+  
+  #bookingDetailsForPrint p {
+    margin: 8px 0;
+    line-height: 1.6;
+  }
+  
+  #doneBookingBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  #printBookingBtn {
+    transition: all 0.3s ease;
+  }
+  
+  #printBookingBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  #doneBookingBtn {
+    min-width: 120px;
+    transition: all 0.3s ease;
+  }
+  
+  #doneBookingBtn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
 </style>
