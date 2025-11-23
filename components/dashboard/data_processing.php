@@ -62,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
       // Delete the image file if it exists
       if ($img) {
-        $image_full_path = __DIR__ . "/../../../" . $img;
+        $image_full_path = $_SERVER['DOCUMENT_ROOT'] . "/" . ltrim($img, '/');
         if (file_exists($image_full_path)) {
           unlink($image_full_path);
           error_log("Deleted image file: $image_full_path");
@@ -140,8 +140,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             return $img !== $removed_path;
           });
           
-          // Delete file
-          $full_path = __DIR__ . "/../../../" . ltrim($removed_path, '/');
+          // Delete file using absolute path
+          $full_path = $_SERVER['DOCUMENT_ROOT'] . "/" . ltrim($removed_path, '/');
           if (file_exists($full_path)) {
             unlink($full_path);
             error_log("Deleted removed image: $full_path");
@@ -167,17 +167,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           }
           
           if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
+            error_log("Image $i upload error code: " . $_FILES['images']['error'][$i]);
             continue;
           }
           
           $max_file_size = 20 * 1024 * 1024;
           if ($_FILES['images']['size'][$i] > $max_file_size) {
+            error_log("Image $i too large: " . $_FILES['images']['size'][$i] . " bytes");
             continue;
           }
           
-          $target_dir = __DIR__ . "/../../../uploads/";
+          $target_dir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/";
           if (!file_exists($target_dir)) {
-            mkdir($target_dir, 0755, true);
+            if (!mkdir($target_dir, 0755, true)) {
+              error_log("Failed to create uploads directory: $target_dir");
+              continue;
+            }
+            error_log("Created uploads directory: $target_dir");
           }
           
           $file_extension = strtolower(pathinfo($_FILES["images"]["name"][$i], PATHINFO_EXTENSION));
@@ -185,10 +191,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           
           if (in_array($file_extension, $allowed_extensions)) {
             $image_info = @getimagesize($_FILES["images"]["tmp_name"][$i]);
-            if ($image_info === false) continue;
+            if ($image_info === false) {
+              error_log("Image $i invalid - not a real image");
+              continue;
+            }
             
             $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!in_array($image_info['mime'], $allowed_mime_types)) continue;
+            if (!in_array($image_info['mime'], $allowed_mime_types)) {
+              error_log("Image $i invalid MIME type: " . $image_info['mime']);
+              continue;
+            }
             
             $unique_filename = time() . "_" . uniqid() . "_$i." . $file_extension;
             $target_file = $target_dir . $unique_filename;
@@ -197,6 +209,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
               chmod($target_file, 0644);
               $current_images[] = "uploads/" . $unique_filename;
               error_log("New image uploaded: uploads/$unique_filename");
+            } else {
+              error_log("Failed to move uploaded file to: $target_file");
             }
           }
         }
@@ -223,9 +237,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit;
           }
         
-        $target_dir = __DIR__ . "/../../../uploads/";
+        $target_dir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/";
         if (!file_exists($target_dir)) {
-          mkdir($target_dir, 0755, true); // More secure permissions
+          if (!mkdir($target_dir, 0755, true)) {
+            error_log("Failed to create uploads directory: $target_dir");
+            $_SESSION['error_message'] = "Upload directory does not exist and could not be created. Contact administrator.";
+            header("Location: dashboard.php#rooms");
+            exit;
+          }
         }
         
         // Generate unique filename
@@ -263,7 +282,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             
             // Delete old image if exists and is different
             if (!empty($current_image) && $current_image !== $image_path) {
-              $old_image_full_path = __DIR__ . "/../../../" . $current_image;
+              $old_image_full_path = $_SERVER['DOCUMENT_ROOT'] . "/" . ltrim($current_image, '/');
               if (file_exists($old_image_full_path)) {
                 unlink($old_image_full_path);
                 error_log("Deleted old image: $old_image_full_path");

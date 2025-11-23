@@ -38,7 +38,7 @@
         <select name="room_id" id="room_select" required>
           <option value="">Choose a room or facility...</option>
           <?php
-          $room_stmt = $conn->prepare("SELECT id, name, item_type, room_number, capacity, price, room_status FROM items WHERE item_type IN ('room', 'facility') AND room_status IN ('available', 'clean') ORDER BY item_type, name");
+          $room_stmt = $conn->prepare("SELECT id, name, item_type, room_number, capacity, price, room_status FROM items WHERE item_type IN ('room', 'facility') ORDER BY item_type, name");
           $room_stmt->execute();
           $room_result = $room_stmt->get_result();
 
@@ -123,7 +123,127 @@
 include __DIR__ . '/confirm_addOn.php';
 ?>
 
+<style>
+/* Date availability styling */
+input[type="datetime-local"].date-occupied {
+  border: 2px solid #dc3545 !important;
+  background-color: #ffe5e5 !important;
+}
+input[type="datetime-local"].date-available {
+  border: 2px solid #28a745 !important;
+  background-color: #e8f5e9 !important;
+}
+.availability-info {
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  display: none;
+}
+.availability-info.occupied {
+  background-color: #ffe5e5;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  display: block;
+}
+.availability-info.available {
+  background-color: #e8f5e9;
+  color: #28a745;
+  border: 1px solid #28a745;
+  display: block;
+}
+</style>
+
 <script>
+// Room availability checker
+let occupiedDatesCache = {};
+
+async function checkRoomAvailability(roomId, dateInput, infoElement) {
+  if (!roomId || !dateInput) return;
+  
+  // Fetch occupied dates if not cached
+  if (!occupiedDatesCache[roomId]) {
+    try {
+      const response = await fetch(`api/room_availability.php?room_id=${roomId}`);
+      const data = await response.json();
+      if (data.success) {
+        occupiedDatesCache[roomId] = data.occupied_dates || [];
+      } else {
+        occupiedDatesCache[roomId] = [];
+      }
+    } catch (error) {
+      console.error('Error fetching room availability:', error);
+      occupiedDatesCache[roomId] = [];
+    }
+  }
+  
+  const selectedDate = dateInput.value;
+  if (!selectedDate) {
+    dateInput.classList.remove('date-occupied', 'date-available');
+    if (infoElement) infoElement.className = 'availability-info';
+    return;
+  }
+  
+  const dateOnly = selectedDate.split('T')[0];
+  const isOccupied = occupiedDatesCache[roomId].includes(dateOnly);
+  
+  if (isOccupied) {
+    dateInput.classList.remove('date-available');
+    dateInput.classList.add('date-occupied');
+    if (infoElement) {
+      infoElement.className = 'availability-info occupied';
+      infoElement.innerHTML = '<i class="fas fa-exclamation-circle"></i> This date is already occupied for this room';
+    }
+  } else {
+    dateInput.classList.remove('date-occupied');
+    dateInput.classList.add('date-available');
+    if (infoElement) {
+      infoElement.className = 'availability-info available';
+      infoElement.innerHTML = '<i class="fas fa-check-circle"></i> This date is available';
+    }
+  }
+}
+
+function validateDateRange(checkinInput, checkoutInput, roomId, infoElement) {
+  const checkin = checkinInput.value;
+  const checkout = checkoutInput.value;
+  
+  if (!checkin || !checkout || !roomId) return true;
+  
+  const checkinDate = new Date(checkin);
+  const checkoutDate = new Date(checkout);
+  
+  if (checkoutDate <= checkinDate) {
+    if (infoElement) {
+      infoElement.className = 'availability-info occupied';
+      infoElement.innerHTML = '<i class="fas fa-exclamation-circle"></i> Check-out must be after check-in';
+    }
+    return false;
+  }
+  
+  // Check if any date in range is occupied (excluding checkout date - guests can check out and new guests check in same day)
+  const occupiedDates = occupiedDatesCache[roomId] || [];
+  let currentDate = new Date(checkinDate);
+  
+  while (currentDate < checkoutDate) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+    if (occupiedDates.includes(dateStr)) {
+      if (infoElement) {
+        infoElement.className = 'availability-info occupied';
+        infoElement.innerHTML = '<i class="fas fa-exclamation-circle"></i> Your selected date range includes occupied dates';
+      }
+      return false;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  if (infoElement) {
+    infoElement.className = 'availability-info available';
+    infoElement.innerHTML = '<i class="fas fa-check-circle"></i> Date range is available';
+  }
+  return true;
+}
+
 // Toggle bank details when payment method changes
 document.addEventListener('DOMContentLoaded', function () {
   function toggleDetails(selectId, detailsId) {
@@ -139,5 +259,58 @@ document.addEventListener('DOMContentLoaded', function () {
 
   toggleDetails('reservation_payment_method', 'reservation_bank_details');
   toggleDetails('pencil_payment_method', 'pencil_bank_details');
+  
+  // Setup availability checking for reservation form
+  const roomSelect = document.getElementById('room_select');
+  const checkinInput = document.querySelector('#reservationForm input[name="checkin"]');
+  const checkoutInput = document.querySelector('#reservationForm input[name="checkout"]');
+  
+  // Add info elements after date inputs
+  if (checkinInput && !document.getElementById('reservation_checkin_info')) {
+    const infoDiv = document.createElement('div');
+    infoDiv.id = 'reservation_checkin_info';
+    infoDiv.className = 'availability-info';
+    checkinInput.parentNode.appendChild(infoDiv);
+  }
+  
+  if (checkoutInput && !document.getElementById('reservation_checkout_info')) {
+    const infoDiv = document.createElement('div');
+    infoDiv.id = 'reservation_checkout_info';
+    infoDiv.className = 'availability-info';
+    checkoutInput.parentNode.appendChild(infoDiv);
+  }
+  
+  if (roomSelect) {
+    roomSelect.addEventListener('change', function() {
+      const roomId = this.value;
+      occupiedDatesCache = {}; // Clear cache when room changes
+      if (roomId && checkinInput) {
+        checkRoomAvailability(roomId, checkinInput, document.getElementById('reservation_checkin_info'));
+      }
+      if (roomId && checkoutInput) {
+        checkRoomAvailability(roomId, checkoutInput, document.getElementById('reservation_checkout_info'));
+      }
+    });
+  }
+  
+  if (checkinInput) {
+    checkinInput.addEventListener('change', function() {
+      const roomId = roomSelect ? roomSelect.value : null;
+      if (roomId) {
+        checkRoomAvailability(roomId, this, document.getElementById('reservation_checkin_info'));
+        validateDateRange(checkinInput, checkoutInput, roomId, document.getElementById('reservation_checkout_info'));
+      }
+    });
+  }
+  
+  if (checkoutInput) {
+    checkoutInput.addEventListener('change', function() {
+      const roomId = roomSelect ? roomSelect.value : null;
+      if (roomId) {
+        checkRoomAvailability(roomId, this, document.getElementById('reservation_checkout_info'));
+        validateDateRange(checkinInput, checkoutInput, roomId, document.getElementById('reservation_checkout_info'));
+      }
+    });
+  }
 });
 </script>

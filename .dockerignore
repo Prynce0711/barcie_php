@@ -7,3 +7,6 @@ README.md
 README_DOCKER.md
 docker-compose.yml
 Dockerfile
+
+create_pencil_bookings_table.sql
+enhance_bookings_tracking.sql

@@ -1374,10 +1374,8 @@ if ($action === 'create_booking') {
         handleResponse("Selected room/facility not found.", false, '../Guest.php');
     }
 
-    // Check if room/facility is available
-    if (!in_array($room_data['room_status'], ['available', 'clean'])) {
-        handleResponse("Selected " . $room_data['item_type'] . " is not available. Current status: " . $room_data['room_status'], false, '../Guest.php');
-    }
+    // Note: Room status check removed - availability is determined by date conflicts only
+    // This allows the same room to be booked for different dates/times
 
     if ($type === 'reservation') {
         // Get the receipt number from the form
@@ -1424,9 +1422,10 @@ if ($action === 'create_booking') {
             handleResponse("Check-out date must be after check-in date.", false, '../Guest.php');
         }
 
-        // Check for double booking
-        $conflict_stmt = $conn->prepare("SELECT id FROM bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending', 'checked_in') AND ((checkin BETWEEN ? AND ?) OR (checkout BETWEEN ? AND ?) OR (checkin <= ? AND checkout >= ?))");
-        $conflict_stmt->bind_param("issssss", $room_id, $checkin, $checkout, $checkin, $checkout, $checkin, $checkout);
+        // Check for double booking - only conflicts if date ranges actually overlap (not just touching)
+        // A booking conflicts if: new_checkin < existing_checkout AND new_checkout > existing_checkin
+        $conflict_stmt = $conn->prepare("SELECT id FROM bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending', 'checked_in') AND checkin < ? AND checkout > ?");
+        $conflict_stmt->bind_param("iss", $room_id, $checkout, $checkin);
         $conflict_stmt->execute();
         $conflict_result = $conflict_stmt->get_result();
         
@@ -1436,9 +1435,10 @@ if ($action === 'create_booking') {
         }
         $conflict_stmt->close();
 
-        // Validate occupancy
+        // Validate occupancy with detailed error message
         if ($occupants > $room_data['capacity']) {
-            handleResponse("Number of occupants (" . $occupants . ") exceeds " . $room_data['item_type'] . " capacity (" . $room_data['capacity'] . ").", false, '../Guest.php');
+            $error_msg = "⚠️ CAPACITY EXCEEDED: The number of guests (" . $occupants . ") exceeds the maximum allowed capacity for " . $room_data['name'] . ". Maximum capacity: " . $room_data['capacity'] . " persons. Please select a larger room or reduce the number of occupants.";
+            handleResponse($error_msg, false, '../Guest.php');
         }
 
         // Add discount info to details and set discount_status
@@ -1567,6 +1567,27 @@ if ($action === 'create_booking') {
                             <p style="margin: 0; color: #1976D2; font-size: 14px; line-height: 1.6;">
                                 <strong>📋 What happens next?</strong><br>
                                 Our team will review your booking request and notify you via email once it has been approved. Please keep this receipt number for your records.
+                            </p>
+                        </div>
+                        
+                        <!-- Payment Information with QR Code -->
+                        <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
+                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 15px; font-weight: 600;">
+                                💳 Bank Transfer Payment Information
+                            </p>
+                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 14px; line-height: 1.6;">
+                                <strong>Bank Account Details:</strong><br>
+                                <strong>Bank Name:</strong> BDO / BPI / GCash<br>
+                                <strong>Account Name:</strong> BarCIE International Center<br>
+                                <strong>Account Number:</strong> XXXX-XXXX-XXXX
+                            </p>
+                            <p style="margin: 10px 0; text-align: center;">
+                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/bank_qr.php" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">
+                                    📱 View QR Code for Bank Transfer
+                                </a>
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #155724; font-size: 13px; line-height: 1.6;">
+                                <em>Scan the QR code with your banking app for quick and easy payment. Please upload your payment proof after completing the transaction.</em>
                             </p>
                         </div>
                         
@@ -1707,6 +1728,257 @@ if ($action === 'create_booking') {
         } catch (mysqli_sql_exception $e) {
             handleResponse("Database error: " . $e->getMessage(), false, '../Guest.php');
         }
+    } elseif ($type === 'pencil_booking') {
+        // PENCIL BOOKING - Draft Reservation with 2-week confirmation period
+        
+        // Get form data
+        $guest_name = $conn->real_escape_string($_POST['guest_name'] ?? '');
+        $contact = $conn->real_escape_string($_POST['contact_number'] ?? '');
+        $email = $conn->real_escape_string($_POST['email'] ?? '');
+        $checkin = $_POST['checkin'] ?? null;
+        $checkout = $_POST['checkout'] ?? null;
+        $occupants = (int)($_POST['occupants'] ?? 1);
+        $company = $conn->real_escape_string($_POST['company'] ?? '');
+        $company_contact = $conn->real_escape_string($_POST['company_contact'] ?? '');
+        $terms_acknowledged = isset($_POST['terms_acknowledged']) && $_POST['terms_acknowledged'] === 'on' ? 1 : 0;
+        
+        // Validate terms acknowledgment
+        if (!$terms_acknowledged) {
+            handleResponse("You must acknowledge the two-week policy to proceed with pencil booking.", false, '../Guest.php');
+        }
+        
+        // Validate dates
+        if (empty($checkin) || empty($checkout)) {
+            handleResponse("Please provide check-in and check-out dates.", false, '../Guest.php');
+        }
+        
+        if (strtotime($checkin) >= strtotime($checkout)) {
+            handleResponse("Check-out date must be after check-in date.", false, '../Guest.php');
+        }
+        
+        // Check for double booking - only conflicts if date ranges actually overlap (not just touching)
+        // A booking conflicts if: new_checkin < existing_checkout AND new_checkout > existing_checkin
+        $conflict_stmt = $conn->prepare("SELECT id FROM pencil_bookings WHERE room_id = ? AND status IN ('confirmed', 'approved', 'pending') AND checkin < ? AND checkout > ?");
+        $conflict_stmt->bind_param("iss", $room_id, $checkout, $checkin);
+        $conflict_stmt->execute();
+        $conflict_result = $conflict_stmt->get_result();
+        
+        if ($conflict_result->num_rows > 0) {
+            $conflict_stmt->close();
+            handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already pencil booked for the requested dates.", false, '../Guest.php');
+        }
+        $conflict_stmt->close();
+        
+        // Validate occupancy with detailed error message
+        if ($occupants > $room_data['capacity']) {
+            $error_msg = "⚠️ CAPACITY EXCEEDED: The number of guests (" . $occupants . ") exceeds the maximum allowed capacity for " . $room_data['name'] . ". Maximum capacity: " . $room_data['capacity'] . " persons. Please select a larger room or reduce the number of occupants.";
+            handleResponse($error_msg, false, '../Guest.php');
+        }
+        
+        // Generate receipt number
+        $currentDate = date('Ymd');
+        $stmt = $conn->prepare("SELECT receipt_no FROM pencil_bookings WHERE receipt_no LIKE ? ORDER BY receipt_no DESC LIMIT 1");
+        $datePattern = "PENCIL-{$currentDate}-%";
+        $stmt->bind_param("s", $datePattern);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            $lastReceipt = $row['receipt_no'];
+            $parts = explode('-', $lastReceipt);
+            $lastNumber = isset($parts[2]) ? intval($parts[2]) : 0;
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        $formattedNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $receipt_no = "PENCIL-{$currentDate}-{$formattedNumber}";
+        $stmt->close();
+        
+        // Calculate pricing
+        $base_price = $room_data['price'];
+        $total_price = $base_price;
+        
+        // Handle discount application
+        $discount_code = $_POST['discount_type'] ?? '';
+        $discount_amount = 0;
+        $discount_proof_path = null;
+        
+        if (!empty($discount_code) && isset($_FILES['discount_proof']) && $_FILES['discount_proof']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = __DIR__ . '/../uploads/discount_proofs/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            $file_tmp = $_FILES['discount_proof']['tmp_name'];
+            $file_ext = pathinfo($_FILES['discount_proof']['name'], PATHINFO_EXTENSION);
+            $file_name = 'pencil_' . time() . '_' . uniqid() . '.' . $file_ext;
+            $target_path = $upload_dir . $file_name;
+            if (move_uploaded_file($file_tmp, $target_path)) {
+                $discount_proof_path = 'uploads/discount_proofs/' . $file_name;
+                error_log("Pencil booking discount proof uploaded to: " . $discount_proof_path);
+            }
+        }
+        
+        // Create details text
+        $details = "Guest: $guest_name | Email: $email | Contact: $contact | Company: $company | Company Contact: $company_contact";
+        
+        // Insert into pencil_bookings table
+        try {
+            $insert_stmt = $conn->prepare("INSERT INTO pencil_bookings (receipt_no, room_id, guest_name, contact_number, email, checkin, checkout, occupants, company, company_contact, discount_code, discount_proof_path, discount_amount, base_price, total_price, status, terms_acknowledged, acknowledgment_timestamp, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NOW(), ?)");
+            
+            if (!$insert_stmt) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+            
+            $insert_stmt->bind_param("sisssssississdds", $receipt_no, $room_id, $guest_name, $contact, $email, $checkin, $checkout, $occupants, $company, $company_contact, $discount_code, $discount_proof_path, $discount_amount, $base_price, $total_price, $terms_acknowledged, $details);
+            
+            $success = $insert_stmt->execute();
+            
+            if (!$success) {
+                throw new Exception("Execute failed: " . $insert_stmt->error);
+            }
+            
+            if ($success) {
+                // Send email reminder about draft status
+                if (!empty($email)) {
+                    error_log("========================================");
+                    error_log("PENCIL BOOKING EMAIL - Starting email send process");
+                    error_log("Recipient: " . $email);
+                    error_log("Guest: " . $guest_name);
+                    error_log("Receipt: " . $receipt_no);
+                    error_log("========================================");
+                    
+                    $subject = "Draft Reservation Confirmation - BarCIE International Center";
+                    
+                    // Calculate expiration date (2 weeks from now)
+                    $expiresAt = date('F j, Y', strtotime('+14 days'));
+                    
+                    $emailContent = '
+                        <h2 style="margin: 0 0 20px 0; color: #856404; font-size: 24px; font-weight: 600;">📝 Draft Reservation (Pencil Booking)</h2>
+                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Thank you for your draft reservation (pencil booking) request! This is a <strong>temporary hold</strong> on your selected room/facility.
+                        </p>
+                        
+                        <!-- Important Notice -->
+                        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
+                            <p style="margin: 0 0 10px 0; color: #856404; font-size: 15px; font-weight: 600;">
+                                ⚠️ Important: This is a DRAFT reservation only
+                            </p>
+                            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                To fully secure your reservation, you must confirm and complete payment within <strong>14 days (by ' . $expiresAt . ')</strong>. 
+                                If we do not receive confirmation and payment within this timeframe, your reservation slot may be released.
+                            </p>
+                        </div>
+                        
+                        <!-- Booking Details Card -->
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f8f9fa; border-radius: 6px; margin-bottom: 25px;" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding: 25px;">
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Pencil Booking Number:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($receipt_no) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Room/Facility:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($room_data['name']) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-in Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y g:i A', strtotime($checkin)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-out Date:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y g:i A', strtotime($checkout)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Number of Occupants:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($occupants) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Estimated Price:</td>
+                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">₱' . number_format($total_price, 2) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Status:</td>
+                                            <td style="padding: 8px 0;">
+                                                <span style="display: inline-block; padding: 4px 12px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 600; border-radius: 4px;">Draft - Pending Confirmation</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Expires On:</td>
+                                            <td style="padding: 8px 0; color: #dc3545; font-size: 14px; font-weight: 600;">' . $expiresAt . '</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <!-- Next Steps -->
+                        <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
+                            <p style="margin: 0 0 10px 0; color: #1976D2; font-size: 15px; font-weight: 600;">
+                                📋 Next Steps to Confirm Your Reservation:
+                            </p>
+                            <ol style="margin: 0; padding-left: 20px; color: #1976D2; font-size: 14px; line-height: 1.8;">
+                                <li>Contact us to confirm your booking intent</li>
+                                <li>Complete the payment process via bank transfer</li>
+                                <li>Receive your final booking confirmation</li>
+                            </ol>
+                        </div>
+                        
+                        <!-- Payment Information with QR Code -->
+                        <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
+                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 15px; font-weight: 600;">
+                                💳 Bank Transfer Payment Information
+                            </p>
+                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 14px; line-height: 1.6;">
+                                <strong>Bank Account Details:</strong><br>
+                                <strong>Bank Name:</strong> BDO / BPI / GCash<br>
+                                <strong>Account Name:</strong> BarCIE International Center<br>
+                                <strong>Account Number:</strong> XXXX-XXXX-XXXX
+                            </p>
+                            <p style="margin: 10px 0; text-align: center;">
+                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/bank_qr.php" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">
+                                    📱 View QR Code for Bank Transfer
+                                </a>
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #155724; font-size: 13px; line-height: 1.6;">
+                                <em>Scan the QR code with your banking app for quick and easy payment. Please upload your payment proof after completing the transaction.</em>
+                            </p>
+                        </div>
+                        
+                        <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Please keep this pencil booking number for your records. If you have any questions or need to make changes, contact us with your booking number.
+                        </p>
+                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                            Thank you for choosing BarCIE International Center!
+                        </p>';
+                    
+                    $emailBody = create_email_template('Draft Reservation Confirmation', $emailContent, 'This is an automated reminder. Please respond within 14 days to confirm your reservation.');
+                    
+                    error_log("PENCIL BOOKING EMAIL - Calling send_smtp_mail()");
+                    $mail_sent = send_smtp_mail($email, $subject, $emailBody);
+                    error_log("PENCIL BOOKING EMAIL - Send result: " . ($mail_sent ? "SUCCESS" : "FAILED"));
+                    error_log("========================================");
+                }
+                
+                handleResponse("Draft reservation (pencil booking) saved successfully! Receipt number: $receipt_no. Please confirm within 14 days to fully secure your reservation.", true, '../Guest.php');
+            } else {
+                handleResponse("Error saving pencil booking: " . $insert_stmt->error, false, '../Guest.php');
+                error_log("Pencil booking insert error: " . $insert_stmt->error);
+            }
+            $insert_stmt->close();
+        } catch (mysqli_sql_exception $e) {
+            handleResponse("Database error: " . $e->getMessage(), false, '../Guest.php');
+            error_log("Pencil booking creation exception: " . $e->getMessage());
+        } catch (Exception $e) {
+            handleResponse("Unexpected error: " . $e->getMessage(), false, '../Guest.php');
+            error_log("Pencil booking creation general exception: " . $e->getMessage());
+        }
     } else {
         handleResponse("Unknown booking type.", false, '../Guest.php');
     }
@@ -1716,24 +1988,34 @@ if ($action === 'create_booking') {
    SUBMIT FEEDBACK
    --------------------------- */
 if ($action === 'submit_feedback' || $action === 'feedback') {
-    // No user_id needed for guest feedback
+    // Get feedback data including name and email
     $message = trim($_POST['message'] ?? '');
     $rating = (int)($_POST['rating'] ?? 0);
+    $feedback_name = trim($_POST['feedback_name'] ?? '');
+    $feedback_email = trim($_POST['feedback_email'] ?? '');
     
     if ($rating < 1 || $rating > 5) {
         handleResponse("Please select a star rating.", false, '../Guest.php#feedback');
     }
     
-    // Create feedback table if it doesn't exist (no user_id needed)
+    // Create feedback table if it doesn't exist
     try {
         $conn->query("CREATE TABLE IF NOT EXISTS feedback (
             id INT AUTO_INCREMENT PRIMARY KEY,
             rating INT NOT NULL DEFAULT 5,
             message TEXT,
+            feedback_name VARCHAR(255) NULL,
+            feedback_email VARCHAR(255) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_rating (rating),
             INDEX idx_created_at (created_at)
         )");
+        
+        // Add name and email columns if they don't exist
+        $conn->query("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS feedback_name VARCHAR(255) NULL");
+        $conn->query("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS feedback_email VARCHAR(255) NULL");
+        $conn->query("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
         
         // Check if rating column exists, add if missing
         $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
@@ -1757,11 +2039,11 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
         error_log("Error creating/updating feedback table: " . $e->getMessage());
     }
     
-    $stmt = $conn->prepare("INSERT INTO feedback (rating, message) VALUES (?, ?)");
-    $stmt->bind_param("is", $rating, $message);
+    $stmt = $conn->prepare("INSERT INTO feedback (rating, message, feedback_name, feedback_email) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("isss", $rating, $message, $feedback_name, $feedback_email);
     
     if ($stmt->execute()) {
-        handleResponse("Thank you for your " . $rating . "-star feedback!", true, '../Guest.php#feedback');
+        handleResponse("Thank you for your " . $rating . "-star feedback" . ($feedback_name ? ", " . htmlspecialchars($feedback_name) : "") . "!", true, '../Guest.php#feedback');
     } else {
         handleResponse("Error submitting feedback. Please try again.", false, '../Guest.php#feedback');
         error_log("Feedback submission error: " . $stmt->error);
@@ -2687,6 +2969,262 @@ if ($action === 'get_booking_details') {
         $stmt->close();
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    }
+    
+    exit;
+}
+
+/* ---------------------------
+   GET PENCIL BOOKING DETAILS
+   --------------------------- */
+if ($action === 'get_pencil_booking_details') {
+    header('Content-Type: application/json');
+    
+    $booking_id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+    
+    if ($booking_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid booking ID']);
+        exit;
+    }
+    
+    try {
+        $stmt = $conn->prepare("
+            SELECT pb.*, i.name as room_name, i.item_type, i.room_number, i.capacity, i.price,
+                   DATEDIFF(pb.expires_at, NOW()) as days_remaining
+            FROM pencil_bookings pb
+            LEFT JOIN items i ON pb.room_id = i.id 
+            WHERE pb.id = ?
+        ");
+        $stmt->bind_param("i", $booking_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($booking = $result->fetch_assoc()) {
+            echo json_encode([
+                'success' => true,
+                'booking' => $booking
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Pencil booking not found']);
+        }
+        
+        $stmt->close();
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+    
+    exit;
+}
+
+/* ---------------------------
+   UPDATE PENCIL BOOKING STATUS
+   --------------------------- */
+if ($action === 'update_pencil_booking_status') {
+    header('Content-Type: application/json');
+    
+    $booking_id = (int)($_POST['booking_id'] ?? 0);
+    $new_status = $_POST['status'] ?? '';
+    
+    if ($booking_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid booking ID']);
+        exit;
+    }
+    
+    $allowed_statuses = ['pending', 'approved', 'confirmed', 'cancelled', 'rejected', 'expired'];
+    if (!in_array($new_status, $allowed_statuses)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid status']);
+        exit;
+    }
+    
+    try {
+        // Get booking details first
+        $stmt = $conn->prepare("SELECT * FROM pencil_bookings WHERE id = ?");
+        $stmt->bind_param("i", $booking_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $booking = $result->fetch_assoc();
+        $stmt->close();
+        
+        if (!$booking) {
+            echo json_encode(['success' => false, 'message' => 'Pencil booking not found']);
+            exit;
+        }
+        
+        // Update the status
+        if ($new_status === 'confirmed') {
+            // When confirmed, set confirmed_at timestamp
+            $update_stmt = $conn->prepare("UPDATE pencil_bookings SET status = ?, confirmed_at = NOW() WHERE id = ?");
+            $update_stmt->bind_param("si", $new_status, $booking_id);
+        } else {
+            $update_stmt = $conn->prepare("UPDATE pencil_bookings SET status = ? WHERE id = ?");
+            $update_stmt->bind_param("si", $new_status, $booking_id);
+        }
+        
+        if ($update_stmt->execute()) {
+            // Send confirmation email if status is confirmed
+            if ($new_status === 'confirmed' && !empty($booking['email'])) {
+                $subject = "Pencil Booking Confirmed - BarCIE International Center";
+                $emailContent = '
+                    <h2 style="margin: 0 0 20px 0; color: #28a745; font-size: 24px; font-weight: 600;">✅ Your Pencil Booking is Confirmed!</h2>
+                    <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                        Dear <strong>' . htmlspecialchars($booking['guest_name']) . '</strong>,
+                    </p>
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                        Great news! Your pencil booking has been <strong>CONFIRMED</strong>. Your reservation is now secured.
+                    </p>
+                    <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
+                        <p style="margin: 0; color: #155724; font-size: 15px; font-weight: 600;">
+                            ✓ Reservation Confirmed
+                        </p>
+                        <p style="margin: 5px 0 0 0; color: #155724; font-size: 14px;">
+                            Your booking number: <strong>' . htmlspecialchars($booking['receipt_no']) . '</strong>
+                        </p>
+                    </div>
+                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                        We look forward to welcoming you at BarCIE International Center!
+                    </p>';
+                
+                $emailBody = create_email_template('Booking Confirmed', $emailContent);
+                send_smtp_mail($booking['email'], $subject, $emailBody);
+            }
+            
+            // Send rejection email if status is rejected
+            if ($new_status === 'rejected' && !empty($booking['email'])) {
+                $subject = "Pencil Booking Update - BarCIE International Center";
+                $emailContent = '
+                    <h2 style="margin: 0 0 20px 0; color: #dc3545; font-size: 24px; font-weight: 600;">Pencil Booking Update</h2>
+                    <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                        Dear <strong>' . htmlspecialchars($booking['guest_name']) . '</strong>,
+                    </p>
+                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                        We regret to inform you that your pencil booking (Receipt: <strong>' . htmlspecialchars($booking['receipt_no']) . '</strong>) could not be confirmed at this time.
+                    </p>
+                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                        Please contact us for alternative dates or rooms. We apologize for any inconvenience.
+                    </p>';
+                
+                $emailBody = create_email_template('Booking Update', $emailContent);
+                send_smtp_mail($booking['email'], $subject, $emailBody);
+            }
+            
+            echo json_encode(['success' => true, 'message' => 'Pencil booking status updated to ' . $new_status]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update status: ' . $update_stmt->error]);
+        }
+        
+        $update_stmt->close();
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+    
+    exit;
+}
+
+/* ---------------------------
+   CANCEL BOOKING REQUEST
+   --------------------------- */
+if ($action === 'request_cancellation') {
+    header('Content-Type: application/json');
+    
+    $booking_id = (int)($_POST['booking_id'] ?? 0);
+    $booking_type = $_POST['booking_type'] ?? 'booking';
+    $reason = $conn->real_escape_string($_POST['reason'] ?? '');
+    $cancelled_by = $conn->real_escape_string($_POST['cancelled_by'] ?? '');
+    
+    if ($booking_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid booking ID']);
+        exit;
+    }
+    
+    try {
+        if ($booking_type === 'pencil') {
+            $stmt = $conn->prepare("UPDATE pencil_bookings SET status = 'cancelled', admin_notes = CONCAT(COALESCE(admin_notes, ''), '\nCancellation requested: ', ?, ' by ', ?, ' at ', NOW()) WHERE id = ?");
+            $stmt->bind_param("ssi", $reason, $cancelled_by, $booking_id);
+        } else {
+            // Add cancellation columns if they don't exist
+            $conn->query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancellation_requested_at TIMESTAMP NULL");
+            $conn->query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancellation_reason TEXT NULL");
+            $conn->query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_by VARCHAR(100) NULL");
+            
+            $stmt = $conn->prepare("UPDATE bookings SET status = 'cancelled', cancellation_requested_at = NOW(), cancellation_reason = ?, cancelled_by = ? WHERE id = ?");
+            $stmt->bind_param("ssi", $reason, $cancelled_by, $booking_id);
+        }
+        
+        if ($stmt->execute()) {
+            // Update room status back to available
+            if ($booking_type === 'pencil') {
+                $room_stmt = $conn->prepare("SELECT room_id FROM pencil_bookings WHERE id = ?");
+            } else {
+                $room_stmt = $conn->prepare("SELECT room_id FROM bookings WHERE id = ?");
+            }
+            $room_stmt->bind_param("i", $booking_id);
+            $room_stmt->execute();
+            $room_result = $room_stmt->get_result();
+            if ($room_data = $room_result->fetch_assoc()) {
+                $update_room = $conn->prepare("UPDATE items SET room_status = 'available' WHERE id = ?");
+                $update_room->bind_param("i", $room_data['room_id']);
+                $update_room->execute();
+                $update_room->close();
+            }
+            $room_stmt->close();
+            
+            echo json_encode(['success' => true, 'message' => 'Cancellation request submitted successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to submit cancellation request']);
+        }
+        
+        $stmt->close();
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+    
+    exit;
+}
+
+/* ---------------------------
+   CHECKOUT AND MARK ROOM AVAILABLE
+   --------------------------- */
+if ($action === 'checkout_booking') {
+    header('Content-Type: application/json');
+    
+    $booking_id = (int)($_POST['booking_id'] ?? 0);
+    
+    if ($booking_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid booking ID']);
+        exit;
+    }
+    
+    try {
+        // Add checked_out_at column if it doesn't exist
+        $conn->query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS checked_out_at TIMESTAMP NULL");
+        
+        // Update booking status
+        $stmt = $conn->prepare("UPDATE bookings SET status = 'checked_out', checked_out_at = NOW() WHERE id = ?");
+        $stmt->bind_param("i", $booking_id);
+        
+        if ($stmt->execute()) {
+            // Get room_id and mark as available
+            $room_stmt = $conn->prepare("SELECT room_id FROM bookings WHERE id = ?");
+            $room_stmt->bind_param("i", $booking_id);
+            $room_stmt->execute();
+            $room_result = $room_stmt->get_result();
+            
+            if ($room_data = $room_result->fetch_assoc()) {
+                $update_room = $conn->prepare("UPDATE items SET room_status = 'available' WHERE id = ?");
+                $update_room->bind_param("i", $room_data['room_id']);
+                $update_room->execute();
+                $update_room->close();
+            }
+            $room_stmt->close();
+            
+            echo json_encode(['success' => true, 'message' => 'Room checked out and marked as available']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to checkout']);
+        }
+        
+        $stmt->close();
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
     
     exit;
