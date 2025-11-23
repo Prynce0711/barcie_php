@@ -114,7 +114,8 @@
 				const res = await fetch(apiUrl, { cache: 'no-store' });
 				const json = await res.json();
 				if (!json.success) {
-					tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load feedback</td></tr>';
+					console.error('API returned error:', json);
+					tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Failed to load feedback: ' + (json.error || 'Unknown error') + '</td></tr>';
 					if (countEl) countEl.innerText = '';
 					return;
 				}
@@ -123,13 +124,14 @@
 				allData = allData.map(r => Object.assign({ created_at: r.created_at || r.created || r.date || '' }, r));
 				applyFilters();
 			} catch (err) {
-				tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading feedback</td></tr>';
+				console.error('Fetch error:', err);
+				tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading feedback: ' + err.message + '</td></tr>';
 				if (countEl) countEl.innerText = '';
 			}
 		}
 
 		function setLoading(){
-			tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+			tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
 			if (countEl) countEl.innerText = 'Loading...';
 		}
 
