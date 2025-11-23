@@ -17,14 +17,19 @@
       </div>
       <div class="modal-body">
         <div id="roomCalendarInner" style="min-height: 220px; position:relative;">
-          <div id="roomCalendarLegend" style="margin-bottom:8px;display:flex;gap:12px;align-items:center;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="width:14px;height:14px;background:#d4edda;border:1px solid #c3e6cb;border-radius:3px;"></div>
+          <div id="roomCalendarLegend" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;padding:8px;background:#f8f9fa;border-radius:6px;">
+            <small class="text-muted fw-bold me-2">Legend:</small>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:16px;height:16px;background:#ffffff;border:2px solid #dee2e6;border-radius:3px;"></div>
               <small class="text-muted">Available</small>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="width:14px;height:14px;background:#f8d7da;border:1px solid #f5c6cb;border-radius:3px;"></div>
-              <small class="text-muted">Booked / Reserved</small>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:16px;height:16px;background:#ffc107;border:1px solid #ffc107;border-radius:3px;"></div>
+              <small class="text-muted">Pending</small>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:16px;height:16px;background:#dc3545;border:1px solid #dc3545;border-radius:3px;"></div>
+              <small class="text-muted">Booked</small>
             </div>
           </div>
           <div id="roomCalendarMount"></div>
@@ -149,32 +154,21 @@
               const props = e.extendedProps || {};
               let status = (props.booking_status || props.status || e.status || e.booking_status || '').toString().toLowerCase();
 
-              const greenStatuses = ['available','free','vacant','open'];
-              const redStatuses = ['booked','occupied','reserved','pending','unavailable'];
-
-              // Only override colors if not already provided
-              if (!e.backgroundColor && !e.color) {
-                  if (greenStatuses.indexOf(status) !== -1) {
-                  e.backgroundColor = '#d4edda';
-                  e.borderColor = '#c3e6cb';
-                  e.textColor = '#ffffff';
-                } else if (redStatuses.indexOf(status) !== -1) {
-                  e.backgroundColor = '#f8d7da';
-                  e.borderColor = '#f5c6cb';
-                  e.textColor = '#ffffff';
-                } else {
-                  // fallback: if booking_status absent, use booking/occupancy prop hints
-                  const hint = (props.booking_status || props.booking || props.occupied || '').toString().toLowerCase();
-                  if (greenStatuses.indexOf(hint) !== -1) {
-                    e.backgroundColor = '#d4edda';
-                    e.borderColor = '#c3e6cb';
-                    e.textColor = '#ffffff';
-                  } else if (redStatuses.indexOf(hint) !== -1) {
-                    e.backgroundColor = '#f8d7da';
-                    e.borderColor = '#f5c6cb';
-                    e.textColor = '#ffffff';
-                  }
-                }
+              // Booking events are shown in red/yellow based on status
+              // The calendar colors events that ARE bookings, dates without events are available (green in legend)
+              if (status === 'pending') {
+                e.backgroundColor = '#ffc107'; // yellow for pending
+                e.borderColor = '#ffc107';
+                e.textColor = '#000000';
+              } else if (['confirmed', 'approved', 'checked_in', 'occupied'].indexOf(status) !== -1) {
+                e.backgroundColor = '#dc3545'; // red for occupied
+                e.borderColor = '#dc3545';
+                e.textColor = '#ffffff';
+              } else {
+                // Default: show as booked/unavailable
+                e.backgroundColor = '#f8d7da';
+                e.borderColor = '#f5c6cb';
+                e.textColor = '#ffffff';
               }
 
               roomCalendar.addEvent(e);
