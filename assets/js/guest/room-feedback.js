@@ -181,21 +181,24 @@ function submitRoomFeedback() {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      showAlert(data.message || 'Review submitted successfully!', 'success');
+      showAlert('Thank you for your review! Your feedback is awaiting admin approval before it will be visible to other guests.', 'success');
       
       // Close feedback modal
       bootstrap.Modal.getInstance(document.getElementById('roomFeedbackModal')).hide();
       
-      // Refresh room details if open
-      const detailsModal = document.getElementById('roomDetailsModal');
-      if (detailsModal.classList.contains('show')) {
-        loadRoomReviews(currentRoomForFeedback);
-      }
+      // Reset form
+      form.reset();
+      document.getElementById('feedbackRatingValue').value = '';
+      const stars = document.querySelectorAll('#feedbackStarRating .star-input');
+      stars.forEach(s => {
+        s.classList.remove('active');
+        s.querySelector('i').classList.remove('fas');
+        s.querySelector('i').classList.add('far');
+      });
+      document.getElementById('feedbackRatingText').textContent = 'Click to rate';
+      document.getElementById('feedbackRatingText').style.color = '';
       
-      // Refresh room cards to update ratings
-      if (window.loadRooms) {
-        window.loadRooms();
-      }
+      // Note: Don't refresh ratings immediately since feedback is pending approval
     } else {
       throw new Error(data.error || 'Failed to submit review');
     }

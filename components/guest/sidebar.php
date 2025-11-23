@@ -35,12 +35,6 @@
         <span>Booking &amp; Reservation</span>
       </button>
     </li>
-    <li>
-      <button type="button" class="btn btn-outline-light mb-2 text-start w-100 sidebar-btn" data-section="feedback" aria-label="Feedback" title="Feedback">
-        <i class="fas fa-star me-2" aria-hidden="true"></i>
-        <span>Feedback</span>
-      </button>
-    </li>
   </ul>
 
   <a href="index.php" class="btn btn-primary mt-3 text-start w-100">
