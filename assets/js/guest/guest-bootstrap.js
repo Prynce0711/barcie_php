@@ -539,6 +539,23 @@ async function loadItems() {
       // Use first image as preview
       const previewImage = images[0];
       
+      // Generate star rating HTML
+      const averageRating = parseFloat(item.average_rating) || 0;
+      const totalReviews = parseInt(item.total_reviews) || 0;
+      const fullStars = Math.floor(averageRating);
+      const hasHalfStar = (averageRating % 1) >= 0.5;
+      let starsHTML = '';
+      
+      for (let i = 0; i < 5; i++) {
+        if (i < fullStars) {
+          starsHTML += '<i class="fas fa-star" style="color: #ffc107;"></i>';
+        } else if (i === fullStars && hasHalfStar) {
+          starsHTML += '<i class="fas fa-star-half-alt" style="color: #ffc107;"></i>';
+        } else {
+          starsHTML += '<i class="far fa-star" style="color: #ddd;"></i>';
+        }
+      }
+      
       card.innerHTML = `
         <div class="card-image position-relative" style="cursor: pointer;" data-item-id="${item.id}">
           <img src="${previewImage}" class="room-card-img" 
@@ -552,17 +569,31 @@ async function loadItems() {
           ` : ''}
         </div>
         <div class="card-content" style="padding: 20px;">
-          <h3 style="margin-bottom: 10px; color: #2c3e50;">${item.name}</h3>
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+            <div>
+              <h3 style="margin-bottom: 5px; color: #2c3e50;">${item.name}</h3>
+              <div class="room-rating" style="font-size: 0.9rem; margin-bottom: 5px;">
+                ${starsHTML}
+                <small style="color: #6c757d; margin-left: 5px;">(${totalReviews})</small>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <p style="margin: 0; color: #27ae60; font-weight: bold; font-size: 1.2em;">₱${parseInt(item.price || 0).toLocaleString()}</p>
+              <small style="color: #7f8c8d;">${item.item_type === "room" ? "/night" : "/day"}</small>
+            </div>
+          </div>
           ${item.room_number ? `<p style="margin: 5px 0; color: #7f8c8d;"><i class="fas fa-door-open me-1"></i>Room Number: ${item.room_number}</p>` : ""}
           <p style="margin: 5px 0; color: #7f8c8d;"><i class="fas fa-users me-1"></i>Capacity: ${item.capacity} ${item.item_type === "room" ? "persons" : "people"}</p>
-          <p style="margin: 5px 0; color: #27ae60; font-weight: bold; font-size: 1.1em;"><i class="fas fa-peso-sign me-1"></i>₱${parseInt(item.price || 0).toLocaleString()}${item.item_type === "room" ? "/night" : "/day"}</p>
           <p style="margin: 10px 0; color: #34495e; line-height: 1.4;">${item.description || 'Comfortable accommodation with modern amenities.'}</p>
-          <div class="card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-            <button class="btn btn-primary btn-sm view-details-btn flex-fill" data-item-id="${item.id}">
-              <i class="fas fa-eye me-1"></i>View Details
+          <div class="card-actions" style="margin-top: 15px; display: flex; gap: 8px;">
+            <button class="btn btn-primary btn-sm btn-view-details flex-fill" data-item-id="${item.id}" onclick="openRoomDetailsModal(${item.id})">
+              <i class="fas fa-info-circle me-1"></i>Details
+            </button>
+            <button class="btn btn-outline-warning btn-sm btn-leave-review flex-fill" data-item-id="${item.id}" onclick="openRoomFeedbackModal(${item.id}, '${item.name.replace(/'/g, "\\'")}')">
+              <i class="fas fa-star me-1"></i>Review
             </button>
             <button class="btn btn-success btn-sm book-now-btn flex-fill" data-item-id="${item.id}" ${card.dataset.availability !== 'available' ? 'disabled' : ''}>
-              <i class="fas fa-calendar-plus me-1"></i>Book Now
+              <i class="fas fa-calendar-plus me-1"></i>Book
             </button>
           </div>
         </div>
@@ -1188,6 +1219,7 @@ window.reservationReminder = reservationReminder;
 window.showToast = showToast;
 window.toggleSidebar = toggleSidebar;
 window.loadItems = loadItems;
+window.loadRooms = loadItems; // Alias for room feedback system
 window.filterItems = filterItems;
 window.showItemDetails = showItemDetails;
 window.redirectToBooking = redirectToBooking;
