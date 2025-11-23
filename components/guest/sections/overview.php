@@ -151,6 +151,39 @@
               </div>
             </div>
           </div>
+          
+          <!-- Additional Step: Share Feedback -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="alert alert-info border-0 shadow-sm" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #2196f3 !important;">
+                <div class="d-flex align-items-start">
+                  <div class="me-3" style="color: #1976d2;">
+                    <i class="fas fa-star fa-2x"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-2" style="color: #1976d2;">
+                      <i class="fas fa-plus-circle me-2"></i>After Your Stay: Share Your Experience
+                    </h5>
+                    <p class="mb-3">Help future guests by leaving a review! After your stay, you can rate and review your room experience. Your feedback helps us maintain quality service and assists others in making informed decisions.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                      <span class="badge" style="background-color: #1976d2; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                        <i class="fas fa-star me-1"></i>Rate Your Stay
+                      </span>
+                      <span class="badge" style="background-color: #1976d2; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                        <i class="fas fa-comment me-1"></i>Share Your Thoughts
+                      </span>
+                      <span class="badge" style="background-color: #1976d2; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                        <i class="fas fa-user-secret me-1"></i>Anonymous Option Available
+                      </span>
+                      <span class="badge" style="background-color: #f0ad4e; color: #333; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                        <i class="fas fa-shield-alt me-1"></i>Admin Approval Required
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -208,6 +241,105 @@
                 <div>
                   <h6 class="fw-bold mb-1">Payment Options</h6>
                   <p class="text-muted small mb-0">We accept bank transfers, GCash, and cash payments. Payment instructions will be sent via email.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-ban fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Cancellation Policy</h6>
+                  <p class="text-muted small mb-0">Strict no-cancellation policy. No refunds or rescheduling. Please confirm dates before booking.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-smoking-ban fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">No Smoking Policy</h6>
+                  <p class="text-muted small mb-0">All rooms and indoor facilities are strictly non-smoking. Designated smoking areas available.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-users fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Guest Capacity</h6>
+                  <p class="text-muted small mb-0">Each room has a maximum occupancy. Extra guests may incur additional charges.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-shield-alt fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Security Deposit</h6>
+                  <p class="text-muted small mb-0">A refundable security deposit may be required upon check-in for incidental charges.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-receipt fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Proof of Payment Required</h6>
+                  <p class="text-muted small mb-0">Please present your payment confirmation and booking receipt upon check-in.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-child fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Children & Pets</h6>
+                  <p class="text-muted small mb-0">Children are welcome. Pets are not allowed unless specified. Please inquire in advance.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-broom fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Room Cleanliness</h6>
+                  <p class="text-muted small mb-0">Daily housekeeping included. Additional cleaning services available upon request.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-exclamation-triangle fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Damage Liability</h6>
+                  <p class="text-muted small mb-0">Guests are responsible for any damage to room property. Charges will apply accordingly.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-start">
+                <div class="me-3" style="color: #2a5298;">
+                  <i class="fas fa-bell-slash fa-lg"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-1">Quiet Hours</h6>
+                  <p class="text-muted small mb-0">Please observe quiet hours from 10:00 PM to 7:00 AM to respect other guests.</p>
                 </div>
               </div>
             </div>
