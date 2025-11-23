@@ -18,8 +18,8 @@
 			<div class="card-body">
 				<?php if (isset($_SESSION) && !empty($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
 					<div class="mb-3 row g-2 align-items-center">
-						<div class="col-md-4">
-							<input id="feedbackSearch" class="form-control" placeholder="Search messages, IP, or guest text..." />
+						<div class="col-md-3">
+							<input id="feedbackSearch" class="form-control" placeholder="Search messages, names, rooms..." />
 						</div>
 						<div class="col-md-2">
 							<select id="feedbackRatingFilter" class="form-select">
@@ -31,8 +31,16 @@
 								<option value="1">1 star</option>
 							</select>
 						</div>
-						<div class="col-md-3 d-flex">
-							<input id="dateFrom" type="date" class="form-control me-2" />
+						<div class="col-md-2">
+							<select id="feedbackStatusFilter" class="form-select">
+								<option value="">All Status</option>
+								<option value="pending">Pending</option>
+								<option value="approved">Approved</option>
+								<option value="rejected">Rejected</option>
+							</select>
+						</div>
+						<div class="col-md-2 d-flex">
+							<input id="dateFrom" type="date" class="form-control me-1" />
 							<input id="dateTo" type="date" class="form-control" />
 						</div>
 						<div class="col-md-3 text-end">
@@ -45,14 +53,17 @@
 							<thead class="table-light sticky-top">
 								<tr>
 									<th style="width:4%">#</th>
+									<th style="width:12%">Guest</th>
+									<th style="width:15%">Room</th>
 									<th style="width:8%">Rating</th>
 									<th>Message</th>
-									<th style="width:18%">Created</th>
-									<th style="width:12%">Meta</th>
+									<th style="width:10%">Status</th>
+									<th style="width:12%">Created</th>
+									<th style="width:12%">Actions</th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr><td colspan="5" class="text-center">Loading...</td></tr>
+								<tr><td colspan="8" class="text-center">Loading...</td></tr>
 							</tbody>
 						</table>
 					</div>
@@ -80,11 +91,12 @@
 
 <script>
 	(function(){
-		// Admin-only comprehensive feedback UI
+		// Admin-only comprehensive feedback UI with approval system
 		const apiUrl = 'database/user_auth.php?action=get_feedback_data';
 		const tableBody = document.querySelector('#feedbackTable tbody');
 		const searchInput = document.getElementById('feedbackSearch');
 		const ratingFilter = document.getElementById('feedbackRatingFilter');
+		const statusFilter = document.getElementById('feedbackStatusFilter');
 		const dateFrom = document.getElementById('dateFrom');
 		const dateTo = document.getElementById('dateTo');
 		const refreshBtn = document.getElementById('refreshFeedbackBtn');
@@ -124,14 +136,16 @@
 		function applyFilters(){
 			const q = (searchInput?.value || '').toLowerCase().trim();
 			const r = (ratingFilter?.value || '').trim();
+			const s = (statusFilter?.value || '').trim();
 			const from = dateFrom?.value ? new Date(dateFrom.value) : null;
 			const to = dateTo?.value ? new Date(dateTo.value) : null;
 
 			filtered = allData.filter(item => {
-				// search across message and additional metadata
-				const hay = ((item.message||'') + ' ' + (item.ip||'') + ' ' + (item.email||'') + ' ' + (item.details||'')).toLowerCase();
+				// search across message, name, room name
+				const hay = ((item.message||'') + ' ' + (item.feedback_name||'') + ' ' + (item.room_name||'') + ' ' + (item.username||'')).toLowerCase();
 				if (q && !hay.includes(q)) return false;
 				if (r && String(item.rating) !== r) return false;
+				if (s && (item.approval_status||'') !== s) return false;
 				if (from || to) {
 					const c = item.created_at ? new Date(item.created_at) : null;
 					if (from && c && c < from) return false;
@@ -151,20 +165,54 @@
 			const slice = filtered.slice(start, start + pageSize);
 
 			if (slice.length === 0) {
-				tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No feedback found</td></tr>';
+				tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No feedback found</td></tr>';
 			} else {
 				tableBody.innerHTML = '';
 				slice.forEach((r, idx) => {
 					const tr = document.createElement('tr');
-					const stars = Number(r.rating) || Number(r.stars) || 0;
+					const stars = Number(r.rating) || 0;
 					const starHtml = Array.from({length: stars}).map(()=>'<span class="feedback-star">★</span>').join('') + (stars===0?'<span class="text-muted">—</span>':'' );
-					const msg = (r.message || r.msg || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+					const msg = (r.message || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+					const guestName = r.username || 'Anonymous Guest';
+					const roomInfo = r.room_name ? `${r.room_name} <small class="text-muted">(${r.room_type||''})</small>` : '<span class="text-muted">—</span>';
+					const status = r.approval_status || 'pending';
+					const statusClass = status === 'approved' ? 'success' : (status === 'rejected' ? 'danger' : 'warning');
+					const statusBadge = `<span class="badge bg-${statusClass}">${status}</span>`;
+					
+					// Action buttons based on status
+					let actionBtns = '';
+					if (status === 'pending') {
+						actionBtns = `
+							<button class="btn btn-sm btn-success me-1" onclick="approveFeedback(${r.id})" title="Approve">
+								<i class="fas fa-check"></i>
+							</button>
+							<button class="btn btn-sm btn-danger" onclick="rejectFeedback(${r.id})" title="Reject">
+								<i class="fas fa-times"></i>
+							</button>
+						`;
+					} else if (status === 'approved') {
+						actionBtns = `
+							<button class="btn btn-sm btn-warning" onclick="rejectFeedback(${r.id})" title="Reject">
+								<i class="fas fa-ban"></i>
+							</button>
+						`;
+					} else if (status === 'rejected') {
+						actionBtns = `
+							<button class="btn btn-sm btn-success" onclick="approveFeedback(${r.id})" title="Approve">
+								<i class="fas fa-check-circle"></i>
+							</button>
+						`;
+					}
+					
 					tr.innerHTML = `
 						<td>${start + idx + 1}</td>
+						<td><small>${guestName}</small></td>
+						<td><small>${roomInfo}</small></td>
 						<td>${starHtml}</td>
-						<td class="feedback-message">${msg}</td>
-						<td>${r.created_at || ''}</td>
-						<td><small class="text-muted">IP: ${r.ip||''}<br/>ID: ${r.id||''}</small></td>
+						<td class="feedback-message"><small>${msg}</small></td>
+						<td>${statusBadge}</td>
+						<td><small>${r.created_at || ''}</small></td>
+						<td>${actionBtns}</td>
 					`;
 					tableBody.appendChild(tr);
 				});
@@ -194,17 +242,77 @@
 		}
 
 		function exportCSV(){
-			const rows = [['id','rating','message','created_at','ip']];
-			filtered.forEach(r => rows.push([r.id||'', r.rating||r.stars||'', (r.message||'').replace(/\r?\n/g,' '), r.created_at||'', r.ip||'']));
+			const rows = [['id','guest','room','rating','message','status','created_at']];
+			filtered.forEach(r => rows.push([
+				r.id||'', 
+				r.username||'', 
+				r.room_name||'', 
+				r.rating||'', 
+				(r.message||'').replace(/\r?\n/g,' '), 
+				r.approval_status||'',
+				r.created_at||''
+			]));
 			const csv = rows.map(r => r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
 			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a'); a.href = url; a.download = 'feedback_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 		}
 
+		// Approve/Reject functions
+		window.approveFeedback = async function(feedbackId) {
+			if (!confirm('Approve this feedback? It will be visible to guests.')) return;
+			
+			const formData = new FormData();
+			formData.append('action', 'approve_feedback');
+			formData.append('feedback_id', feedbackId);
+			
+			try {
+				const res = await fetch('database/user_auth.php', {
+					method: 'POST',
+					body: formData
+				});
+				const json = await res.json();
+				if (json.success) {
+					alert(json.message || 'Feedback approved!');
+					fetchData(); // Reload data
+				} else {
+					alert('Error: ' + (json.error || 'Failed to approve feedback'));
+				}
+			} catch (err) {
+				console.error(err);
+				alert('Error approving feedback');
+			}
+		};
+
+		window.rejectFeedback = async function(feedbackId) {
+			if (!confirm('Reject this feedback? It will NOT be visible to guests.')) return;
+			
+			const formData = new FormData();
+			formData.append('action', 'reject_feedback');
+			formData.append('feedback_id', feedbackId);
+			
+			try {
+				const res = await fetch('database/user_auth.php', {
+					method: 'POST',
+					body: formData
+				});
+				const json = await res.json();
+				if (json.success) {
+					alert(json.message || 'Feedback rejected');
+					fetchData(); // Reload data
+				} else {
+					alert('Error: ' + (json.error || 'Failed to reject feedback'));
+				}
+			} catch (err) {
+				console.error(err);
+				alert('Error rejecting feedback');
+			}
+		};
+
 		// Event wiring
 		if (searchInput) searchInput.addEventListener('input', ()=> applyFilters());
 		if (ratingFilter) ratingFilter.addEventListener('change', ()=> applyFilters());
+		if (statusFilter) statusFilter.addEventListener('change', ()=> applyFilters());
 		if (dateFrom) dateFrom.addEventListener('change', ()=> applyFilters());
 		if (dateTo) dateTo.addEventListener('change', ()=> applyFilters());
 		if (refreshBtn) refreshBtn.addEventListener('click', ()=> fetchData());
