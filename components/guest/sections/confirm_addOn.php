@@ -3,6 +3,9 @@
 // This file is intended to be included on the Guest booking page (booking.php)
 ?>
 
+<!-- QRCode.js Library for generating QR codes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 <!-- Confirm Add-ons & Booking Preview Modal -->
 <div class="modal fade" id="confirmAddOnModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -29,10 +32,24 @@
               <option value="bank">Bank Transfer</option>
             </select>
           </div>
-          <div id="modal_bank_details" style="display:none;" class="card p-2 mb-2">
-            <div><strong>Account Name:</strong> La Consolacion University Philippines</div>
-            <div><strong>Account Number:</strong> 575-7-575007089</div>
-            <div><strong>Branch:</strong> Malolos Mc Arthur</div>
+          <div id="modal_bank_details" style="display:none;" class="card p-3 mb-2">
+            <div class="row">
+              <div class="col-md-7">
+                <div style="margin-bottom: 8px;"><strong>Account Name:</strong> La Consolacion University Philippines</div>
+                <div style="margin-bottom: 8px;"><strong>Account Number:</strong> 575-7-575007089</div>
+                <div style="margin-bottom: 8px;"><strong>Branch:</strong> Malolos Mc Arthur</div>
+                <div style="margin-top: 12px; padding: 10px; background-color: #fff3cd; border-radius: 5px; font-size: 13px;">
+                  <strong>📱 Scan the QR Code →</strong><br>
+                  <small class="text-muted">Use your banking app to scan and transfer payment quickly</small>
+                </div>
+              </div>
+              <div class="col-md-5 text-center">
+                <div style="padding: 10px; background: white; border: 2px solid #ddd; border-radius: 8px; display: inline-block;">
+                  <div id="bank_qr_code" style="width: 180px; height: 180px;"></div>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: #666;">Scan to Pay</div>
+              </div>
+            </div>
           </div>
           
           <div id="modal_payment_proof_wrap" style="display:none;" class="mb-2">
@@ -471,6 +488,51 @@
     return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]; });
   }
 
+  // Generate QR Code for bank transfer details
+  function generateBankQRCode() {
+    try {
+      const qrContainer = document.getElementById('bank_qr_code');
+      if (!qrContainer) return;
+      
+      // Clear any existing QR code
+      qrContainer.innerHTML = '';
+      
+      // Bank transfer details to encode
+      const bankDetails = {
+        accountName: 'La Consolacion University Philippines',
+        accountNumber: '575-7-575007089',
+        branch: 'Malolos Mc Arthur',
+        bank: 'BDO/BPI/GCash'
+      };
+      
+      // Create formatted text for QR code
+      const qrText = `Bank Transfer Payment\n\nAccount Name: ${bankDetails.accountName}\nAccount Number: ${bankDetails.accountNumber}\nBranch: ${bankDetails.branch}\nBank: ${bankDetails.bank}\n\nBarCIE International Center`;
+      
+      // Check if QRCode library is available
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(qrContainer, {
+          text: qrText,
+          width: 180,
+          height: 180,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      } else {
+        // Fallback: use API to generate QR code image
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrText)}`;
+        const img = document.createElement('img');
+        img.src = qrApiUrl;
+        img.alt = 'Bank Transfer QR Code';
+        img.style.width = '180px';
+        img.style.height = '180px';
+        qrContainer.appendChild(img);
+      }
+    } catch (err) {
+      console.error('Failed to generate QR code:', err);
+    }
+  }
+
   // Show modal, render preview & addons
   async function showPreviewModal(form, bookingData) {
     currentForm = form;
@@ -530,7 +592,13 @@
         const orig = currentForm.querySelector('[name="payment_method"]');
         if (orig) modalPay.value = orig.value || 'cash';
         modalPay.addEventListener('change', () => {
-          if (modalBank) modalBank.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
+          if (modalBank) {
+            modalBank.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
+            // Generate QR code when bank transfer is selected
+            if (modalPay.value === 'bank') {
+              generateBankQRCode();
+            }
+          }
           const proofWrap = document.getElementById('modal_payment_proof_wrap');
           if (proofWrap) proofWrap.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
         });
@@ -538,6 +606,11 @@
         if (modalBank) modalBank.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
         const proofWrapInit = document.getElementById('modal_payment_proof_wrap');
         if (proofWrapInit) proofWrapInit.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
+        
+        // Generate QR code if bank is initially selected
+        if (modalPay.value === 'bank') {
+          generateBankQRCode();
+        }
       }
     } catch (err) { /* ignore */ }
 
