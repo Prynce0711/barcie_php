@@ -2057,6 +2057,122 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
 }
 
 /* ---------------------------
+   SUBMIT ROOM FEEDBACK
+   --------------------------- */
+if ($action === 'room_feedback') {
+    $room_id = (int)($_POST['room_id'] ?? 0);
+    $guest_name = trim($_POST['guest_name'] ?? '');
+    $is_anonymous = isset($_POST['is_anonymous']) ? 1 : 0;
+    $rating = (int)($_POST['rating'] ?? 0);
+    $comment = trim($_POST['comment'] ?? '');
+    
+    // Validation
+    if ($room_id <= 0) {
+        if ($is_ajax) {
+            echo json_encode(['success' => false, 'error' => 'Invalid room ID']);
+        } else {
+            handleResponse("Invalid room ID.", false, '../Guest.php#rooms');
+        }
+        exit();
+    }
+    
+    if ($rating < 1 || $rating > 5) {
+        if ($is_ajax) {
+            echo json_encode(['success' => false, 'error' => 'Please select a star rating (1-5)']);
+        } else {
+            handleResponse("Please select a star rating.", false, '../Guest.php#rooms');
+        }
+        exit();
+    }
+    
+    // If anonymous or no name provided, set guest_name to NULL
+    if ($is_anonymous || empty($guest_name)) {
+        $guest_name = null;
+        $is_anonymous = 1;
+    }
+    
+    // Insert room feedback
+    $stmt = $conn->prepare("INSERT INTO feedback (room_id, rating, message, feedback_name, is_anonymous, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+    $stmt->bind_param("iissi", $room_id, $rating, $comment, $guest_name, $is_anonymous);
+    
+    if ($stmt->execute()) {
+        // Update average rating and review count in items table
+        $update_stmt = $conn->prepare("
+            UPDATE items 
+            SET average_rating = (
+                SELECT ROUND(AVG(rating), 2) 
+                FROM feedback 
+                WHERE room_id = ? AND rating IS NOT NULL
+            ),
+            total_reviews = (
+                SELECT COUNT(*) 
+                FROM feedback 
+                WHERE room_id = ?
+            )
+            WHERE id = ?
+        ");
+        $update_stmt->bind_param("iii", $room_id, $room_id, $room_id);
+        $update_stmt->execute();
+        $update_stmt->close();
+        
+        if ($is_ajax) {
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Thank you for your review! Your feedback helps others make better decisions.'
+            ]);
+        } else {
+            handleResponse("Thank you for your review!", true, '../Guest.php#rooms');
+        }
+    } else {
+        error_log("Room feedback submission error: " . $stmt->error);
+        if ($is_ajax) {
+            echo json_encode(['success' => false, 'error' => 'Failed to submit review. Please try again.']);
+        } else {
+            handleResponse("Error submitting review. Please try again.", false, '../Guest.php#rooms');
+        }
+    }
+    $stmt->close();
+    exit();
+}
+
+/* ---------------------------
+   GET ROOM REVIEWS
+   --------------------------- */
+if (isset($_GET['action']) && $_GET['action'] === 'get_room_reviews') {
+    $room_id = (int)($_GET['room_id'] ?? 0);
+    
+    if ($room_id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Invalid room ID']);
+        exit();
+    }
+    
+    $stmt = $conn->prepare("
+        SELECT 
+            id,
+            rating,
+            message as comment,
+            feedback_name as guest_name,
+            is_anonymous,
+            created_at
+        FROM feedback 
+        WHERE room_id = ? 
+        ORDER BY created_at DESC
+    ");
+    $stmt->bind_param("i", $room_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $reviews = [];
+    while ($row = $result->fetch_assoc()) {
+        $reviews[] = $row;
+    }
+    
+    echo json_encode(['success' => true, 'reviews' => $reviews]);
+    $stmt->close();
+    exit();
+}
+
+/* ---------------------------
    ADMIN: update booking status
    --------------------------- */
 if ($action === 'admin_update_booking') {

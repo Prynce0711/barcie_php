@@ -75,6 +75,194 @@
   </div>
 </div>
 
+<!-- Room Details Modal with Reviews -->
+<div class="modal fade" id="roomDetailsModal" tabindex="-1" aria-labelledby="roomDetailsLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%); color: white;">
+        <div>
+          <h5 class="modal-title mb-1" id="roomDetailsLabel">Room Details</h5>
+          <div class="room-rating-modal">
+            <span class="stars-display-modal">
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+            </span>
+            <small class="ms-1">(<span id="modalReviewCount">0</span> reviews)</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Room Info Section -->
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <img id="modalRoomImage" src="" alt="" class="img-fluid rounded shadow-sm" style="width: 100%; max-height: 250px; object-fit: cover;">
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <h6 class="text-muted mb-1">Price</h6>
+                <h4 class="text-primary mb-0" id="modalRoomPrice">₱0</h4>
+                <small class="text-muted">per night</small>
+              </div>
+              <div class="mb-3">
+                <h6 class="text-muted mb-1">Capacity</h6>
+                <p class="mb-0"><i class="fas fa-users me-2 text-primary"></i><span id="modalRoomCapacity">0</span> guests</p>
+              </div>
+              <div class="mb-3">
+                <h6 class="text-muted mb-1">Beds</h6>
+                <p class="mb-0"><i class="fas fa-bed me-2 text-primary"></i><span id="modalRoomBeds">0</span> beds</p>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Type</h6>
+                <span class="badge bg-primary" id="modalRoomType">Room</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Reviews Section -->
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><i class="fas fa-star text-warning me-2"></i>Guest Reviews</h5>
+            <button class="btn btn-sm btn-outline-primary" onclick="openRoomFeedbackModal()">
+              <i class="fas fa-plus me-1"></i>Write Review
+            </button>
+          </div>
+          
+          <div id="roomReviewsList">
+            <div class="text-center text-muted py-4">
+              <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
+              <p>No reviews yet. Be the first to review!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Room Feedback Modal -->
+<div class="modal fade" id="roomFeedbackModal" tabindex="-1" aria-labelledby="roomFeedbackLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #f0ad4e 0%, #ec971f 100%); color: white;">
+        <h5 class="modal-title" id="roomFeedbackLabel">
+          <i class="fas fa-star me-2"></i>Leave a Review
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="roomFeedbackForm">
+          <input type="hidden" name="action" value="room_feedback">
+          <input type="hidden" name="room_id" id="feedbackRoomId" value="">
+          <input type="hidden" name="rating" id="feedbackRatingValue" value="">
+
+          <!-- Name Input with Anonymous Option -->
+          <div class="mb-4">
+            <label for="feedbackGuestName" class="form-label fw-bold">Your Name</label>
+            <input type="text" class="form-control" name="guest_name" id="feedbackGuestName" placeholder="Enter your name">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" name="is_anonymous" id="feedbackAnonymous" value="1">
+              <label class="form-check-label" for="feedbackAnonymous">
+                <i class="fas fa-user-secret me-1"></i>Post as Anonymous
+              </label>
+            </div>
+            <small class="text-muted">Leave name empty or check anonymous to hide your identity</small>
+          </div>
+
+          <!-- Star Rating -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">Rating *</label>
+            <div class="d-flex align-items-center">
+              <div class="star-rating-input me-3" id="feedbackStarRating">
+                <span class="star-input" data-rating="1"><i class="far fa-star fa-2x"></i></span>
+                <span class="star-input" data-rating="2"><i class="far fa-star fa-2x"></i></span>
+                <span class="star-input" data-rating="3"><i class="far fa-star fa-2x"></i></span>
+                <span class="star-input" data-rating="4"><i class="far fa-star fa-2x"></i></span>
+                <span class="star-input" data-rating="5"><i class="far fa-star fa-2x"></i></span>
+              </div>
+              <small class="text-muted" id="feedbackRatingText">Click to rate</small>
+            </div>
+          </div>
+
+          <!-- Comment -->
+          <div class="mb-4">
+            <label for="feedbackComment" class="form-label fw-bold">Your Review</label>
+            <textarea class="form-control" name="comment" id="feedbackComment" rows="4" placeholder="Share your experience with this room..."></textarea>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+              <i class="fas fa-info-circle me-1"></i>Help others by sharing your honest feedback
+            </small>
+            <button type="submit" class="btn btn-warning" id="submitRoomFeedback" disabled>
+              <i class="fas fa-paper-plane me-2"></i>Submit Review
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Star Rating Styles */
+.star-rating-input {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.star-input {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #ddd;
+}
+
+.star-input:hover,
+.star-input.active {
+  color: #ffc107;
+}
+
+.star-input:hover i,
+.star-input.active i {
+  transform: scale(1.2);
+}
+
+.star-input i {
+  transition: all 0.2s ease;
+}
+
+/* Room Rating Display */
+.room-rating .stars-display i {
+  font-size: 0.9rem;
+}
+
+.room-rating-modal .stars-display-modal i {
+  font-size: 1rem;
+}
+
+/* Review Card Styles */
+.review-card {
+  border-left: 3px solid #2a5298;
+  transition: all 0.3s ease;
+}
+
+.review-card:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.review-stars {
+  color: #ffc107;
+}
+</style>
+
 <!-- Card template (hidden) -->
 <template id="roomCardTemplate">
   <div class="col-12 col-md-6 room-card-col" data-room-id="" data-item-id="">
@@ -110,14 +298,26 @@
 
       <div class="card-body bg-white">
         <div class="d-flex justify-content-between align-items-start mb-3">
-          <h5 class="card-title mb-0 room-title">Penthouse</h5>
+          <div>
+            <h5 class="card-title mb-1 room-title">Penthouse</h5>
+            <div class="room-rating mb-0">
+              <span class="stars-display">
+                <i class="fas fa-star text-warning"></i>
+                <i class="fas fa-star text-warning"></i>
+                <i class="fas fa-star text-warning"></i>
+                <i class="fas fa-star text-warning"></i>
+                <i class="fas fa-star text-muted"></i>
+              </span>
+              <small class="text-muted ms-1">(<span class="review-count">0</span>)</small>
+            </div>
+          </div>
           <div class="text-end room-price">
             <div class="price-amount">₱10,000</div>
             <small class="text-muted">per night</small>
           </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center details-row">
+        <div class="d-flex justify-content-between align-items-center details-row mb-3">
           <div class="text-center flex-fill">
             <div class="fw-bold">4</div>
             <small class="text-muted">guests</small>
@@ -127,6 +327,15 @@
             <div class="fw-bold">2</div>
             <small class="text-muted">beds</small>
           </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm flex-fill btn-view-details">
+            <i class="fas fa-info-circle me-1"></i>View Details
+          </button>
+          <button class="btn btn-outline-warning btn-sm flex-fill btn-leave-review">
+            <i class="fas fa-star me-1"></i>Leave Review
+          </button>
         </div>
       </div>
     </div>

@@ -6,7 +6,33 @@ try {
         json_error('Items table does not exist', 500);
     }
 
-    $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, images, room_status FROM items ORDER BY created_at DESC";
+    // Check if getting single item
+    if (isset($_GET['id'])) {
+        $item_id = (int)$_GET['id'];
+        $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, images, room_status, 
+                       COALESCE(average_rating, 0) as average_rating, 
+                       COALESCE(total_reviews, 0) as total_reviews
+                FROM items 
+                WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('i', $item_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        
+        if ($res && $res->num_rows > 0) {
+            $item = $res->fetch_assoc();
+            json_ok(['item' => $item]);
+        } else {
+            json_error('Item not found', 404);
+        }
+        exit();
+    }
+    
+    $sql = "SELECT id, name, item_type, room_number, description, capacity, price, image, images, room_status,
+                   COALESCE(average_rating, 0) as average_rating, 
+                   COALESCE(total_reviews, 0) as total_reviews
+            FROM items 
+            ORDER BY created_at DESC";
     $res = $conn->query($sql);
     if (!$res) {
         json_error('Query failed: ' . $conn->error, 500);
