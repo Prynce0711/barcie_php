@@ -185,22 +185,24 @@ function setupSectionNavigation() {
   
   console.log("Last active section:", lastSectionId);
 
-  // Show dashboard section by default or last active section
-  showSection(lastSectionId);
-
   // Add event listeners to navigation links
   const navLinks = document.querySelectorAll(".nav-link-custom");
   console.log("Found navigation links:", navLinks.length);
   
+  if (navLinks.length === 0) {
+    console.error("❌ NO NAVIGATION LINKS FOUND! Sidebar may not be loaded yet.");
+    return;
+  }
+  
   navLinks.forEach((link, index) => {
     const sectionId = link.getAttribute("data-section");
-    console.log(`Setting up link ${index + 1}: ${sectionId}`);
+    console.log(`  Setting up link ${index + 1}: ${sectionId}`);
     
     link.addEventListener("click", function (e) {
-      // Don't prevent default - let the hash navigation work
-      console.log("Navigation clicked:", sectionId);
-      const sectionId = this.getAttribute("data-section");
-      showSection(sectionId);
+      e.preventDefault(); // Prevent default anchor behavior
+      const clickedSectionId = this.getAttribute("data-section");
+      console.log("🖱️ Navigation clicked:", clickedSectionId);
+      showSection(clickedSectionId);
 
       // Update active state
       document
@@ -209,7 +211,7 @@ function setupSectionNavigation() {
       this.classList.add("active");
 
       // Save current section to localStorage
-      localStorage.setItem("activeSection", sectionId);
+      localStorage.setItem("activeSection", clickedSectionId);
     });
   });
 
@@ -223,6 +225,10 @@ function setupSectionNavigation() {
       .forEach((l) => l.classList.remove("active"));
     initialActiveLink.classList.add("active");
   }
+  
+  // Show dashboard section by default or last active section
+  console.log("⚡ Initial section display...");
+  showSection(lastSectionId);
   
   // Listen for hash changes (browser back/forward buttons)
   window.addEventListener('hashchange', function() {
@@ -239,6 +245,8 @@ function setupSectionNavigation() {
       }
     }
   });
+  
+  console.log("✅ Section navigation setup complete");
 }
 
 // Enhanced Section Switching

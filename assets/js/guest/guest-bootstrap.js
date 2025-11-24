@@ -149,8 +149,8 @@ function setupMobileMenu() {
 }
 
 // Section Navigation (from inline script)
-function showSection(sectionId, button) {
-  console.log("Guest: Attempting to show section:", sectionId);
+function showSection(sectionId, button, saveToStorage = true) {
+  console.log("Guest: Attempting to show section:", sectionId, "saveToStorage:", saveToStorage);
   
   // Validate sectionId
   if (!sectionId) {
@@ -178,6 +178,19 @@ function showSection(sectionId, button) {
     section.style.animation = "fadeInUp 0.4s ease";
     
     console.log("Guest: Section successfully displayed:", sectionId);
+    
+    // Save current section to sessionStorage (only valid sections and only when user navigates)
+    if (saveToStorage) {
+      const validSections = ['overview', 'availability', 'rooms', 'booking', 'feedback'];
+      if (validSections.includes(sectionId)) {
+        sessionStorage.setItem('guestCurrentSection', sectionId);
+        console.log("Guest: Saved section to sessionStorage:", sectionId);
+      } else {
+        console.warn("Guest: Not saving invalid section to sessionStorage:", sectionId);
+      }
+    } else {
+      console.log("Guest: Not saving section to sessionStorage (programmatic navigation):", sectionId);
+    }
     
     // Scroll to top of section
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -245,21 +258,51 @@ function setupSectionNavigation() {
     console.log(`Guest: Section ${index + 1} (${sec.id}): reset`);
   });
   
-  // Show overview section by default
+  // Determine which section to show
   setTimeout(() => {
-    const overviewButton = document.querySelector(".sidebar-guest button[onclick*='overview']");
-    console.log("Guest: Overview button found:", !!overviewButton);
+    let sectionToShow = 'overview';
+    const hashSection = window.location.hash.substring(1);
+    const savedSection = sessionStorage.getItem('guestCurrentSection');
     
-    // Try to show overview section
-    const overviewSection = document.getElementById("overview");
-    if (overviewSection) {
-      console.log("Guest: Showing overview section");
-      showSection("overview", overviewButton);
+    // Valid section IDs
+    const validSections = ['overview', 'availability', 'rooms', 'booking', 'feedback'];
+    
+    console.log("Guest: Hash section:", hashSection);
+    console.log("Guest: Saved section:", savedSection);
+    
+    if (hashSection && validSections.includes(hashSection) && document.getElementById(hashSection)) {
+      sectionToShow = hashSection;
+      console.log("Guest: Using hash section from URL:", sectionToShow);
+      history.replaceState(null, '', window.location.pathname);
+    } else if (savedSection && validSections.includes(savedSection) && document.getElementById(savedSection)) {
+      sectionToShow = savedSection;
+      console.log("Guest: Restoring saved section:", sectionToShow);
     } else {
-      console.warn("Guest: Overview section not found, trying first available section");
-      const firstSection = sections[0];
-      if (firstSection) {
-        showSection(firstSection.id, null);
+      console.log("Guest: Using default section: overview");
+      sectionToShow = 'overview';
+    }
+    
+    console.log("Guest: Final section to show:", sectionToShow);
+    
+    const targetButton = document.querySelector(`.sidebar-guest button[data-section="${sectionToShow}"]`);
+    console.log(`Guest: Target button for ${sectionToShow} found:`, !!targetButton);
+    
+    const targetSection = document.getElementById(sectionToShow);
+    if (targetSection) {
+      console.log("Guest: Showing section:", sectionToShow);
+      // Don't save to sessionStorage on initial page load (we're just restoring)
+      showSection(sectionToShow, targetButton, false);
+    } else {
+      console.warn("Guest: Target section not found, showing overview");
+      const overviewSection = document.getElementById("overview");
+      const overviewButton = document.querySelector(".sidebar-guest button[data-section='overview']");
+      if (overviewSection) {
+        showSection("overview", overviewButton, false);
+      } else {
+        const firstSection = sections[0];
+        if (firstSection) {
+          showSection(firstSection.id, null, false);
+        }
       }
     }
   }, 200);
@@ -879,9 +922,9 @@ function redirectToBooking(itemId) {
   const bookingButton = document.querySelector('button[onclick*="showSection(\'booking\')"]');
   console.log('Booking button found:', bookingButton);
   
-  // Switch to booking section (correct section ID)
+  // Switch to booking section (correct section ID, don't save to sessionStorage)
   console.log('Switching to booking section...');
-  showSection('booking', bookingButton);
+  showSection('booking', bookingButton, false);
   
   // Pre-fill booking form with selected item
   setTimeout(() => {
@@ -1394,8 +1437,8 @@ function loadFeaturedItems() {
     const card = e.target.closest(".featured-item");
     if (card) {
       const { itemType } = card.dataset;
-      // Switch to rooms section and filter by type
-      showSection("rooms");
+      // Switch to rooms section and filter by type (don't save to sessionStorage)
+      showSection("rooms", null, false);
       setTimeout(() => {
         const typeRadio = document.querySelector(
           `input[name="type"][value="${itemType}"]`

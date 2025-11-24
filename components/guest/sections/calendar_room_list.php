@@ -12,9 +12,42 @@
 <script>
 (function() {
   // Render rooms and facilities in list format
-  function renderRoomFacilityList() {
+  function renderRoomFacilityList(filterType) {
     const container = document.getElementById('roomListContainer');
     if (!container) return;
+
+    // simple animation helpers (tweaked timing)
+    function animateOut(el, cb) {
+      el.classList.add('list-fade-out');
+      setTimeout(() => { try { cb(); } catch(e){}; }, 220);
+    }
+    function animateIn(el) {
+      el.classList.remove('list-fade-out');
+      el.classList.add('list-fade-in');
+      setTimeout(() => { el.classList.remove('list-fade-in'); }, 320);
+    }
+
+    // spinner overlay element (create once)
+    let spinner = container.querySelector('.availability-list-spinner');
+    if (!spinner) {
+      spinner = document.createElement('div');
+      spinner.className = 'availability-list-spinner';
+      spinner.innerHTML = `\n        <div class="spinner-wrap">\n          <div class="spinner-border text-secondary" role="status" style="width:2rem;height:2rem"></div>\n          <div class="mt-2 text-muted small">Loading items…</div>\n        </div>`;
+      spinner.style.display = 'none';
+      spinner.style.position = 'absolute';
+      spinner.style.left = '0';
+      spinner.style.top = '0';
+      spinner.style.right = '0';
+      spinner.style.bottom = '0';
+      spinner.style.alignItems = 'center';
+      spinner.style.justifyContent = 'center';
+      spinner.style.background = 'rgba(255,255,255,0.85)';
+      spinner.style.zIndex = '40';
+      container.style.position = container.style.position || 'relative';
+      container.appendChild(spinner);
+    }
+    function showSpinner() { try { spinner.style.display = 'flex'; } catch(e){} }
+    function hideSpinner() { try { spinner.style.display = 'none'; } catch(e){} }
 
     function choosePreviewImage(item) {
       const defaultImg = '/assets/images/imageBg/barcie_logo.jpg';
@@ -70,8 +103,13 @@
       });
     }
 
+    showSpinner();
     waitForItems().then(items => {
+      hideSpinner();
+      // determine filter: use explicit param, fallback to global state, default 'all'
+      const filter = (typeof filterType === 'string' && filterType) ? filterType : (window._availabilityFilter || 'all');
       if (!items || items.length === 0) {
+        hideSpinner();
         container.innerHTML = `
           <div class="col-12 text-center py-5">
             <i class="fas fa-exclamation-circle fa-2x text-muted mb-3"></i>
@@ -81,9 +119,29 @@
         return;
       }
 
-      container.innerHTML = '';
-      
-      items.forEach(item => {
+      // Apply filter to items list
+      let filtered = items;
+      if (filter === 'room') {
+        filtered = items.filter(i => (i.item_type || '').toString().toLowerCase() === 'room');
+      } else if (filter === 'facility') {
+        filtered = items.filter(i => (i.item_type || '').toString().toLowerCase() === 'facility');
+      }
+
+      if (!filtered || filtered.length === 0) {
+        hideSpinner();
+        container.innerHTML = `
+          <div class="col-12 text-center py-5">
+            <i class="fas fa-exclamation-circle fa-2x text-muted mb-3"></i>
+            <p class="text-muted">No ${filter === 'room' ? 'rooms' : (filter === 'facility' ? 'facilities' : 'items')} available.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // animate list change
+      animateOut(container, () => {
+        container.innerHTML = '';
+        filtered.forEach(item => {
         const preview = choosePreviewImage(item);
         const col = document.createElement('div');
         col.className = 'col-12 mb-3';
@@ -125,20 +183,24 @@
           </div>
         `;
         
-        container.appendChild(col);
-      });
-
-      // Attach View Calendar button handlers (open room-specific modal)
-      container.querySelectorAll('.view-calendar-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const itemId = this.dataset.itemId;
-          const itemName = this.dataset.itemName || 'Room/Facility';
-          if (typeof window.openRoomCalendarModal === 'function') {
-            try { window.openRoomCalendarModal(itemId, itemName); } catch (e) { console.error(e); }
-          } else {
-            console.error('Room calendar modal function not available');
-          }
+          container.appendChild(col);
         });
+
+        // Attach View Calendar button handlers (open room-specific modal)
+        container.querySelectorAll('.view-calendar-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const itemName = this.dataset.itemName || 'Room/Facility';
+            if (typeof window.openRoomCalendarModal === 'function') {
+              try { window.openRoomCalendarModal(itemId, itemName); } catch (e) { console.error(e); }
+            } else {
+              console.error('Room calendar modal function not available');
+            }
+          });
+        });
+
+        // run entrance animation
+        animateIn(container);
       });
     });
   }
@@ -147,3 +209,16 @@
   window.renderRoomFacilityList = renderRoomFacilityList;
 })();
 </script>
+<style>
+  /* List transition animations for availability list */
+  #roomListContainer.list-fade-out {
+    opacity: 0; transform: translateY(-6px); transition: opacity 220ms ease, transform 220ms ease;
+  }
+  #roomListContainer.list-fade-in {
+    opacity: 1; transform: translateY(0); transition: opacity 320ms ease, transform 320ms ease;
+  }
+
+  /* Spinner overlay for list */
+  .availability-list-spinner { display: none; align-items: center; justify-content: center; }
+  .availability-list-spinner .spinner-wrap { text-align: center; }
+</style>

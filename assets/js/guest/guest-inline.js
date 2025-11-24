@@ -15,6 +15,66 @@ window.addEventListener('load', function () {
   });
 });
 
+// Fallback: ensure a global showPencilSuccessModal exists in case component scripts
+// are included in a different order. This stub will show a simple modal and
+// attempt a soft refresh similar to the centralized implementation.
+if (typeof window.showPencilSuccessModal !== 'function') {
+  window.showPencilSuccessModal = function(message) {
+    try {
+      const existing = document.getElementById('pencilSuccessModal');
+      if (existing) existing.remove();
+      const modalHtml = `
+        <div class="modal fade" id="pencilSuccessModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Draft Reservation Submitted!</h5>
+              </div>
+              <div class="modal-body text-center py-4">
+                <div class="mb-3"><i class="fas fa-check-circle text-success" style="font-size: 3.5rem;"></i></div>
+                <h4 class="text-success mb-2">Success!</h4>
+                <p class="mb-3">${(typeof escapeHtml === 'function') ? escapeHtml(message) : String(message)}</p>
+                <p class="small text-muted">Click <strong>Done</strong> to refresh the guest view (soft refresh). Close will keep the page as-is.</p>
+              </div>
+              <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="pencilDoneBtn" class="btn btn-success">Done</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      const modalEl = document.getElementById('pencilSuccessModal');
+      const bsModal = new bootstrap.Modal(modalEl);
+      const doneBtn = modalEl.querySelector('#pencilDoneBtn');
+      if (doneBtn) {
+        doneBtn.addEventListener('click', function() {
+          try { bsModal.hide(); } catch (e) {}
+          setTimeout(() => {
+            try {
+              let didSoft = false;
+              if (typeof window.loadItems === 'function') { window.loadItems(); didSoft = true; }
+              if (typeof window.loadRooms === 'function') { window.loadRooms(); didSoft = true; }
+              if (typeof window.reloadBookings === 'function') { window.reloadBookings(); didSoft = true; }
+              if (!didSoft) {
+                // Intentionally avoid forcing a full reload — keep the page state as-is.
+                console.log('Pencil success fallback: no soft-refresh functions available; not reloading page.');
+              }
+            } catch (err) {
+              console.error('Soft refresh failed; leaving page as-is', err);
+            }
+          }, 200);
+        });
+      }
+      modalEl.addEventListener('hidden.bs.modal', function() { setTimeout(() => { try { modalEl.remove(); } catch (e) {} }, 200); });
+      bsModal.show();
+    } catch (e) {
+      try { alert(message || 'Draft reservation submitted successfully!'); } catch (err) {}
+    }
+  };
+}
+
 // Booking & feedback form logic
 (function(){
   document.addEventListener('DOMContentLoaded', function () {
@@ -44,7 +104,7 @@ window.addEventListener('load', function () {
       if (!roomSelect || !occupantsInput) return;
       const selectedOption = roomSelect.options[roomSelect.selectedIndex];
       if (selectedOption && occupantsInput.value) {
-        const text = selectedOption.text;
+        const {text} = selectedOption.text;
         const match = text.match(/(\d+)\s+persons/);
         if (match) {
           const capacity = parseInt(match[1]);
@@ -83,19 +143,30 @@ window.addEventListener('load', function () {
       submitBtn.disabled = true;
       const formData = new FormData(form);
       const urlEncodedData = new URLSearchParams(formData).toString();
+      const isPencilBooking = buttonId === 'pencilSubmitBtn';
       fetch('database/user_auth.php', {
         method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }, body: urlEncodedData
       })
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          showAlert(data.message || 'Booking submitted successfully!', 'success');
-          form.reset();
-          form.querySelectorAll('input, select, textarea').forEach(field => field.style.borderColor = '');
+          if (isPencilBooking) {
+            // For pencil bookings, show success modal — reload only when user clicks Done
+            showPencilSuccessModal(data.message || 'Draft reservation submitted successfully! Please check your email for the conversion link.');
+          } else {
+            showAlert(data.message || 'Booking submitted successfully!', 'success');
+            form.reset();
+            form.querySelectorAll('input, select, textarea').forEach(field => field.style.borderColor = '');
+          }
         } else { throw new Error(data.error || 'Unknown error occurred'); }
       })
       .catch(err => { console.error('Error:', err); showAlert(err.message || 'Failed to submit booking. Please try again.', 'danger'); })
-      .finally(() => { submitBtn.innerHTML = originalHtml; submitBtn.disabled = false; });
+      .finally(() => { 
+        if (!isPencilBooking) {
+          submitBtn.innerHTML = originalHtml; 
+          submitBtn.disabled = false; 
+        }
+      });
     }
 
     function showAlert(message, type = 'info') {
@@ -108,6 +179,9 @@ window.addEventListener('load', function () {
       document.body.appendChild(alert);
       setTimeout(() => { if (alert.parentNode) alert.remove(); }, 5000);
     }
+
+    // showPencilSuccessModal is provided centrally in `components/guest/sections/pencil_booking.php`.
+    // This file will call `showPencilSuccessModal(message)` when a pencil booking succeeds.
 
     if (reservationForm) {
       reservationForm.addEventListener('submit', function (e) { e.preventDefault(); handleFormSubmission(this, 'reservationSubmitBtn'); });

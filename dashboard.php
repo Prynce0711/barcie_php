@@ -68,7 +68,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       </div>
 
       <!-- Dashboard Section -->
-      <section id="dashboard-section" class="content-section">
+      <section id="dashboard-section" class="content-section active d-block">
   <?php include 'components/dashboard/sections/dashboard_section.php'; ?>
       </section>
 
@@ -163,34 +163,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
           feedbackStats: <?php echo json_encode($feedback_stats); ?>
         };
 
-        // Initialize dashboard when ALL scripts are loaded (not just DOM ready)
-        window.addEventListener('load', function () {
-          console.log("🚀 Dashboard page initialization starting...");
-          console.log("📊 Checking data availability:");
-          console.log("  - calendarEvents:", window.calendarEvents ? window.calendarEvents.length + ' events' : 'NOT SET');
-          console.log("  - monthlyBookingsData:", window.monthlyBookingsData ? 'SET (' + JSON.stringify(window.monthlyBookingsData).substring(0, 50) + '...)' : 'NOT SET');
-          console.log("  - statusDistributionData:", window.statusDistributionData ? 'SET (' + JSON.stringify(window.statusDistributionData).substring(0, 50) + '...)' : 'NOT SET');
-          console.log("  - dashboardStats:", window.dashboardStats ? 'SET' : 'NOT SET');
-          
-          // Wait for dashboard-bootstrap.js to load before calling setDashboardData
-          if (typeof setDashboardData === 'function') {
-            console.log("✅ setDashboardData function found");
-            try {
-              setDashboardData(
-                window.calendarEvents,
-                window.monthlyBookingsData,
-                window.statusDistributionData,
-                window.dashboardStats
-              );
-              console.log("✅ Dashboard data set successfully");
-            } catch (error) {
-              console.error("❌ Error calling setDashboardData:", error);
-            }
-          } else {
-            console.error("❌ setDashboardData function not found - dashboard-bootstrap.js may not be loaded");
-            console.log("Available functions:", Object.keys(window).filter(k => typeof window[k] === 'function').slice(0, 20));
-          }
-        });
+        console.log("📊 Dashboard data initialized");
       </script>
 
 
@@ -356,15 +329,34 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <script src="assets/js/dashboard/mobile-enhancements.js" onerror="console.error('❌ Failed to load mobile-enhancements.js')"></script>
       <script src="assets/js/verify-structure.js" onerror="console.error('❌ Failed to load verify-structure.js')"></script>
       
-      <!-- Verify script loading -->
+      <!-- Initialize dashboard with data after all scripts are loaded -->
       <script>
-        console.log('📦 Checking loaded scripts...');
-        console.log('setDashboardData:', typeof setDashboardData);
-        console.log('initializeCalendarNavigation:', typeof initializeCalendarNavigation);
-        console.log('initializeRoomSearch:', typeof initializeRoomSearch);
-        console.log('initializeRoomsFiltering:', typeof initializeRoomsFiltering);
-        console.log('FullCalendar:', typeof FullCalendar);
-        console.log('Chart:', typeof Chart);
+        console.log('📦 All scripts loaded, checking functions...');
+        console.log('  - setDashboardData:', typeof setDashboardData);
+        console.log('  - initializeCalendarNavigation:', typeof initializeCalendarNavigation);
+        console.log('  - initializeRoomSearch:', typeof initializeRoomSearch);
+        console.log('  - initializeRoomsFiltering:', typeof initializeRoomsFiltering);
+        console.log('  - FullCalendar:', typeof FullCalendar);
+        console.log('  - Chart:', typeof Chart);
+
+        // Call setDashboardData if available
+        if (typeof setDashboardData === 'function') {
+          console.log("✅ setDashboardData function found - initializing dashboard data");
+          try {
+            setDashboardData(
+              window.calendarEvents,
+              window.monthlyBookingsData,
+              window.statusDistributionData,
+              window.dashboardStats
+            );
+            console.log("✅ Dashboard data initialized successfully");
+          } catch (error) {
+            console.error("❌ Error calling setDashboardData:", error);
+          }
+        } else {
+          console.error("❌ setDashboardData function not found");
+          console.log("Available window functions:", Object.keys(window).filter(k => typeof window[k] === 'function').slice(0, 30));
+        }
       </script>
 
       <!-- Additional utility functions -->

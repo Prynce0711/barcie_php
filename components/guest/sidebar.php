@@ -74,7 +74,7 @@
             this.setAttribute('aria-current', 'true');
             // call existing showSection if available
             if(typeof window.showSection === 'function'){
-              window.showSection(sec);
+              window.showSection(sec, this, true);
             }
           });
         });
