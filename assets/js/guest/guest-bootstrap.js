@@ -564,12 +564,16 @@ async function loadItems() {
         images = ['/assets/images/imageBg/barcie_logo.jpg'];
       }
       
-      // Normalize image paths
+      // Normalize image paths: resolve against document base so the app
+      // works correctly when served from a subfolder (avoid forcing root '/').
       images = images.map(img => {
-        if (!img.startsWith('http') && !img.startsWith('/')) {
-          return '/' + img;
+        if (typeof img !== 'string' || img.trim() === '') return img;
+        if (img.startsWith('http')) return img;
+        try {
+          return new URL(img, document.baseURI).href;
+        } catch (e) {
+          return img.startsWith('/') ? img : document.baseURI.replace(/\/$/, '') + '/' + img.replace(/^\//, '');
         }
-        return img;
       });
       
       // Store images in dataset for gallery
@@ -804,12 +808,15 @@ function populateItemModal(modal, item) {
     images = ['/assets/images/imageBg/barcie_logo.jpg'];
   }
   
-  // Normalize paths
+  // Normalize paths: resolve against document base to support subfolder installs
   images = images.map(img => {
-    if (!img.startsWith('http') && !img.startsWith('/')) {
-      return '/' + img;
+    if (typeof img !== 'string' || img.trim() === '') return img;
+    if (img.startsWith('http')) return img;
+    try {
+      return new URL(img, document.baseURI).href;
+    } catch (e) {
+      return img.startsWith('/') ? img : document.baseURI.replace(/\/$/, '') + '/' + img.replace(/^\//, '');
     }
-    return img;
   });
   
   const detailsHtml = `
