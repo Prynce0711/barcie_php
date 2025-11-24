@@ -1051,29 +1051,77 @@
 
     try { attachFieldListeners(pencilForm); } catch (e) {}
 
-    // Also attach to the pencil button (in case button is type=button)
+    // Pencil booking direct submission (bypasses modal)
     const pencilBtn = document.getElementById('pencilSubmitBtn');
     if (pencilBtn) {
-      pencilBtn.addEventListener('click', function (e) {
+      pencilBtn.addEventListener('click', async function (e) {
         e.preventDefault();
         const form = document.getElementById('pencilForm');
         if (!form) return;
+        
+        // Validate form first
         const invalid = validateFormInline(form);
-        if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
-        const bookingData = {
-          type: 'reservation',
-          _originalType: 'pencil',
-          room_id: form.querySelector('[name="room_id"]').value,
-          guest_name: form.querySelector('[name="guest_name"]').value,
-          contact: form.querySelector('[name="contact_number"]').value,
-          email: form.querySelector('[name="email"]').value,
-          checkin: form.querySelector('[name="checkin"]').value,
-          checkout: form.querySelector('[name="checkout"]').value,
-          occupants: form.querySelector('[name="occupants"]').value
-        };
-        showPreviewModal(form, bookingData);
+        if (invalid) { 
+          showInlineAlert(invalid.field, invalid.message); 
+          return; 
+        }
+        
+        // Disable button and show loading
+        pencilBtn.disabled = true;
+        pencilBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+        
+        try {
+          const formData = new FormData(form);
+          
+          // Send the form data directly
+          const response = await fetch('database/user_auth.php', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            // Show success modal
+            showPencilSuccessModal(result.message || 'Draft reservation submitted successfully!');
+            
+            // Clear the form
+            form.reset();
+            
+            // Hide the form and show reservation form
+            setTimeout(() => {
+              document.getElementById('pencilForm').style.display = 'none';
+              document.getElementById('reservationForm').style.display = 'block';
+              const reservationToggle = document.getElementById('reservationToggle');
+              if (reservationToggle) reservationToggle.checked = true;
+            }, 2000);
+          } else {
+            notify(result.message || 'Failed to submit draft reservation. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Submission error:', error);
+          notify('An error occurred. Please try again.', 'error');
+        } finally {
+          // Re-enable button
+          pencilBtn.disabled = false;
+          pencilBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Submit Draft Reservation';
+          // Re-check terms checkbox state
+          const termsCheckbox = document.getElementById('pencil_terms_checkbox');
+          if (termsCheckbox && !termsCheckbox.checked) {
+            pencilBtn.disabled = true;
+          }
+        }
       });
     }
+    
+    // NOTE: The pencil success modal implementation has been moved to
+    // `components/guest/sections/pencil_booking.php` to centralize the UI.
+    // Call `showPencilSuccessModal(message)` here; implementation lives in pencil_booking.php.
   }
 
   // Enable/disable confirm button based on both policy checkboxes

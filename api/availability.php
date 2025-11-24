@@ -14,12 +14,23 @@ try {
         $item_id_filter = " AND b.room_id = $item_id";
     }
 
-    $query = "SELECT b.details, b.checkin, b.checkout, b.status, b.room_id, i.name as room_name, i.room_number
+    // Optional filter by item_type (room|facility) to optimize server-side filtering
+    $item_type_filter = '';
+    if (isset($_GET['item_type'])) {
+        $t = strtolower(trim($_GET['item_type']));
+        if (in_array($t, ['room', 'facility'])) {
+            // safe to include since whitelisted
+            $item_type_filter = " AND i.item_type = '" . $conn->real_escape_string($t) . "'";
+        }
+    }
+
+    $query = "SELECT b.details, b.checkin, b.checkout, b.status, b.room_id, i.name as room_name, i.room_number, i.item_type
               FROM bookings b
               LEFT JOIN items i ON b.room_id = i.id
               WHERE b.status IN ('confirmed', 'approved', 'pending', 'checked_in')
               AND (b.checkin >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) OR b.checkin IS NULL)
               $item_id_filter
+              $item_type_filter
               ORDER BY b.checkin ASC";
     $result = $conn->query($query);
     if (!$result) { json_error('Query failed: ' . $conn->error, 500); }

@@ -53,7 +53,7 @@
               <?php
               // Query pencil bookings from dedicated table
               $pencilBookings = $conn->query("SELECT pb.*, i.name as room_name, i.room_number,
-                                              DATEDIFF(pb.expires_at, NOW()) as days_remaining
+                                              DATEDIFF(pb.token_expires_at, NOW()) as days_remaining
                                               FROM pencil_bookings pb
                                               LEFT JOIN items i ON pb.room_id = i.id 
                                               ORDER BY pb.created_at DESC");
@@ -129,7 +129,8 @@
                 <td>
                   <div style="font-size: 0.7rem; line-height: 1.3;">
                     <strong class="<?= $expires_class ?>"><?= $expires_text ?></strong><br>
-                    <small class="text-muted" style="font-size: 0.65rem;"><?= date('M j, Y', strtotime($booking['expires_at'])) ?></small>
+                    <?php $expiry_field = $booking['token_expires_at'] ?? $booking['expires_at'] ?? null; ?>
+                    <small class="text-muted" style="font-size: 0.65rem;"><?php echo $expiry_field ? date('M j, Y', strtotime($expiry_field)) : 'N/A'; ?></small>
                   </div>
                 </td>
                 <td>
@@ -424,7 +425,7 @@ function viewPencilBookingDetails(bookingId) {
               <tr><th>Total Price:</th><td>₱${parseFloat(booking.total_price).toLocaleString()}</td></tr>
               <tr><th>Status:</th><td><span class="badge bg-warning">${booking.status}</span></td></tr>
               <tr><th>Terms Acknowledged:</th><td>${booking.terms_acknowledged ? '<span class="text-success">✓ Yes</span>' : '<span class="text-danger">✗ No</span>'}</td></tr>
-              <tr><th>Expires At:</th><td class="text-danger">${new Date(booking.expires_at).toLocaleString()}</td></tr>
+              <tr><th>Expires At:</th><td class="text-danger">${(booking.token_expires_at || booking.expires_at) ? new Date(booking.token_expires_at || booking.expires_at).toLocaleString() : 'N/A'}</td></tr>
               <tr><th>Created:</th><td>${new Date(booking.created_at).toLocaleString()}</td></tr>
             </table>
           </div>

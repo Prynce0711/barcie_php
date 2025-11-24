@@ -62,9 +62,22 @@
   let roomCalendar = null;
   let currentItemId = null;
 
-  function fetchAndFilterEvents(itemId, fetchInfo, successCallback, failureCallback) {
+  // Now accepts explicit itemType to pass to the server (preferred)
+  function fetchAndFilterEvents(itemId, itemType, successCallback, failureCallback) {
     // Try to fetch events for item from API with query param
-    const url = 'api/availability.php' + (itemId ? ('?item_id=' + encodeURIComponent(itemId)) : '');
+    let params = [];
+    if (itemId) params.push('item_id=' + encodeURIComponent(itemId));
+    // Use explicit itemType if provided, otherwise fall back to global state or infer from items
+    try {
+      let t = (itemType || '').toString().toLowerCase();
+      if (!t) t = (window._availabilityFilter || '').toString().toLowerCase();
+      if (!t && itemId && window.allItems && Array.isArray(window.allItems)) {
+        const it = window.allItems.find(it => it.id == itemId);
+        if (it && it.item_type) t = it.item_type.toString().toLowerCase();
+      }
+      if (t === 'room' || t === 'facility') params.push('item_type=' + encodeURIComponent(t));
+    } catch(e) { /* ignore */ }
+    const url = 'api/availability.php' + (params.length ? ('?' + params.join('&')) : '');
     fetch(url).then(r => r.json()).then(data => {
       let events = [];
       if (Array.isArray(data)) events = data;
@@ -92,7 +105,7 @@
       return Math.max(240, Math.min(520, Math.floor(vh * 0.5)));
     }
 
-    function initRoomCalendar(itemId) {
+    function initRoomCalendar(itemId, itemType) {
     const container = document.getElementById('roomCalendarInner');
     if (!container) return;
 
@@ -142,7 +155,7 @@
     if (loading) loading.style.display = 'flex';
 
     // fetch events and populate calendar (non-blocking)
-    fetchAndFilterEvents(itemId, null, function(events) {
+    fetchAndFilterEvents(itemId, itemType, function(events) {
       try {
         // remove existing events quickly
         try { roomCalendar.removeAllEvents(); } catch(e){}
@@ -189,8 +202,19 @@
     const titleEl = modalEl.querySelector('.modal-title');
     if (titleEl) titleEl.textContent = (itemName ? itemName : 'Room') + ' Schedule';
 
-    // initialize calendar for this item
-    initRoomCalendar(itemId);
+    // infer itemType from client data when possible, prefer explicit inference
+    let inferredType = null;
+    try {
+      if (window.allItems && Array.isArray(window.allItems)) {
+        const it = window.allItems.find(it => it.id == itemId);
+        if (it && it.item_type) inferredType = it.item_type.toString().toLowerCase();
+      }
+      // fallback to global filter if still unknown
+      if (!inferredType && window._availabilityFilter) inferredType = window._availabilityFilter;
+    } catch(e) { inferredType = null; }
+
+    // initialize calendar for this item and inferred type
+    initRoomCalendar(itemId, inferredType);
 
     // show modal
     const bsModal = new bootstrap.Modal(modalEl);

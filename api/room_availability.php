@@ -37,29 +37,38 @@ try {
     }
     $stmt->close();
     
-    // Check pencil bookings
-    $stmt2 = $conn->prepare("
-        SELECT checkin, checkout 
-        FROM pencil_bookings 
-        WHERE room_id = ? 
-        AND status IN ('approved', 'pending', 'confirmed')
-        AND checkout >= CURDATE()
-        AND expires_at >= NOW()
-    ");
-    $stmt2->bind_param("i", $room_id);
-    $stmt2->execute();
-    $result2 = $stmt2->get_result();
-    
-    while ($row = $result2->fetch_assoc()) {
-        $start = strtotime($row['checkin']);
-        $end = strtotime($row['checkout']);
-        
-        // Add each date in the range, EXCLUDING checkout date (checkout day is available for next booking)
-        for ($date = $start; $date < $end; $date += 86400) {
-            $occupied_dates[] = date('Y-m-d', $date);
+    // Pencil bookings are NOT included by default. Include them only when the caller
+    // explicitly requests `include_pencil=1`. This avoids marking draft pencil bookings
+    // as occupied for normal reservation availability checks.
+    $include_pencil = isset($_GET['include_pencil']) && ($_GET['include_pencil'] === '1' || $_GET['include_pencil'] === 'true');
+    $exclude_pencil_id = isset($_GET['exclude_pencil_id']) ? (int)$_GET['exclude_pencil_id'] : 0;
+
+    if ($include_pencil) {
+        if ($exclude_pencil_id > 0) {
+            $stmt2 = $conn->prepare(
+                "SELECT id, checkin, checkout FROM pencil_bookings WHERE room_id = ? AND id != ? AND status IN ('approved', 'pending', 'confirmed') AND checkout >= CURDATE() AND (token_expires_at IS NOT NULL AND token_expires_at >= NOW())"
+            );
+            $stmt2->bind_param("ii", $room_id, $exclude_pencil_id);
+        } else {
+            $stmt2 = $conn->prepare(
+                "SELECT id, checkin, checkout FROM pencil_bookings WHERE room_id = ? AND status IN ('approved', 'pending', 'confirmed') AND checkout >= CURDATE() AND (token_expires_at IS NOT NULL AND token_expires_at >= NOW())"
+            );
+            $stmt2->bind_param("i", $room_id);
         }
+        $stmt2->execute();
+        $result2 = $stmt2->get_result();
+
+        while ($row = $result2->fetch_assoc()) {
+            $start = strtotime($row['checkin']);
+            $end = strtotime($row['checkout']);
+
+            // Add each date in the range, EXCLUDING checkout date (checkout day is available for next booking)
+            for ($date = $start; $date < $end; $date += 86400) {
+                $occupied_dates[] = date('Y-m-d', $date);
+            }
+        }
+        $stmt2->close();
     }
-    $stmt2->close();
     
     // Remove duplicates
     $occupied_dates = array_unique($occupied_dates);

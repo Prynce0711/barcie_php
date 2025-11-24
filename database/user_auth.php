@@ -140,9 +140,11 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
         
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
 
+        // Initialize debug log path (used even when DEBUG_MODE is off for error logging)
+        $debugLog = defined('LOG_PATH') && !empty(LOG_PATH) ? LOG_PATH . '/email_debug.log' : '';
+        
         // Enable debug output only in debug mode
-        if (DEBUG_MODE) {
-            $debugLog = LOG_PATH . '/email_debug.log';
+        if (DEBUG_MODE && !empty($debugLog)) {
             if (!is_dir(dirname($debugLog))) {
                 @mkdir(dirname($debugLog), 0777, true);
             }
@@ -181,7 +183,9 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
         if (!empty($masked['password'])) {
             $masked['password'] = str_repeat('*', 8) . ' (masked)';
         }
-        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "MAIL CONFIG: " . json_encode($masked) . PHP_EOL, FILE_APPEND);
+        if (!empty($debugLog)) {
+            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . "MAIL CONFIG: " . json_encode($masked) . PHP_EOL, FILE_APPEND);
+        }
 
         // First attempt using provided config
         $attemptConfig = $config;
@@ -210,7 +214,9 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
             } catch (\PHPMailer\PHPMailer\Exception $e) {
                 $lastException = $e;
                 error_log('PHPMailer attempt ' . $attempts . ' failed: ' . $e->getMessage());
-                @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer attempt ' . $attempts . ' failed: ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+                if (!empty($debugLog)) {
+                    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer attempt ' . $attempts . ' failed: ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+                }
 
                 // If auth error and we still have a fallback attempt, toggle secure/port and try again
                 $msg = strtolower($e->getMessage());
@@ -220,12 +226,16 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
                         $attemptConfig['secure'] = 'ssl';
                         $attemptConfig['port'] = 465;
                         error_log('PHPMailer: switching to ssl/465 and retrying');
-                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: switching to ssl/465 and retrying' . PHP_EOL, FILE_APPEND);
+                        if (!empty($debugLog)) {
+                            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: switching to ssl/465 and retrying' . PHP_EOL, FILE_APPEND);
+                        }
                     } else {
                         $attemptConfig['secure'] = 'tls';
                         $attemptConfig['port'] = 587;
                         error_log('PHPMailer: switching to tls/587 and retrying');
-                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: switching to tls/587 and retrying' . PHP_EOL, FILE_APPEND);
+                        if (!empty($debugLog)) {
+                            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: switching to tls/587 and retrying' . PHP_EOL, FILE_APPEND);
+                        }
                     }
                     // Continue loop to retry
                     continue;
@@ -241,15 +251,19 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
             error_log('=== EMAIL FAILED ===');
             error_log('PHPMailer error: ' . $lastException->getMessage());
             error_log('Error trace: ' . $lastException->getTraceAsString());
-            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . '=== EMAIL FAILED ===' . PHP_EOL, FILE_APPEND);
-            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer error: ' . $lastException->getMessage() . PHP_EOL, FILE_APPEND);
+            if (!empty($debugLog)) {
+                @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . '=== EMAIL FAILED ===' . PHP_EOL, FILE_APPEND);
+                @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer error: ' . $lastException->getMessage() . PHP_EOL, FILE_APPEND);
+            }
             // Helpful hint for common Gmail authentication problems
             try {
                 $hintMsg = '';
                 if (stripos($config['host'] ?? '', 'gmail') !== false) {
                     $hintMsg = "PHPMailer hint: Gmail may block direct SMTP logins. If you're using a regular Gmail account enable an App Password (if 2FA enabled) or use an OAuth2 flow. See: https://support.google.com/accounts/answer/185833";
                     error_log($hintMsg);
-                    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . $hintMsg . PHP_EOL, FILE_APPEND);
+                    if (!empty($debugLog)) {
+                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . $hintMsg . PHP_EOL, FILE_APPEND);
+                    }
                 }
             } catch (Exception $e) {
                 // ignore
@@ -259,7 +273,9 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
             try {
                 if (!empty($config['use_php_mail'])) {
                     error_log('PHPMailer: attempting fallback to PHP mail() as configured');
-                    @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: attempting fallback to PHP mail() as configured' . PHP_EOL, FILE_APPEND);
+                    if (!empty($debugLog)) {
+                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: attempting fallback to PHP mail() as configured' . PHP_EOL, FILE_APPEND);
+                    }
 
                     $headers = "MIME-Version: 1.0\r\n";
                     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
@@ -268,11 +284,15 @@ function send_smtp_mail($to, $subject, $body, $altBody = '') {
                     $phpMailResult = @mail($to, $subject, $body, $headers);
                     if ($phpMailResult) {
                         error_log('PHPMailer: PHP mail() fallback succeeded');
-                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: PHP mail() fallback succeeded' . PHP_EOL, FILE_APPEND);
+                        if (!empty($debugLog)) {
+                            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: PHP mail() fallback succeeded' . PHP_EOL, FILE_APPEND);
+                        }
                         return true;
                     } else {
                         error_log('PHPMailer: PHP mail() fallback failed');
-                        @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: PHP mail() fallback failed' . PHP_EOL, FILE_APPEND);
+                        if (!empty($debugLog)) {
+                            @file_put_contents($debugLog, date('[Y-m-d H:i:s] ') . 'PHPMailer: PHP mail() fallback failed' . PHP_EOL, FILE_APPEND);
+                        }
                     }
                 }
             } catch (Exception $e) {
@@ -1420,6 +1440,9 @@ if ($action === 'create_booking') {
         $checkout = $_POST['checkout'] ?? null;
         $occupants = (int)($_POST['occupants'] ?? 1);
         $company = $conn->real_escape_string($_POST['company'] ?? '');
+        
+        // Check if this is a conversion from pencil booking
+        $converted_from_pencil_id = isset($_POST['converted_from_pencil_id']) ? (int)$_POST['converted_from_pencil_id'] : 0;
 
         // Validate dates
         if (empty($checkin) || empty($checkout)) {
@@ -1442,6 +1465,24 @@ if ($action === 'create_booking') {
             handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../Guest.php');
         }
         $conflict_stmt->close();
+
+        // If this reservation is being created as a conversion from a pencil booking,
+        // ensure there are no other pencil bookings (different id) that overlap the same range.
+        if ($converted_from_pencil_id > 0) {
+            try {
+                $pencil_conflict = $conn->prepare("SELECT id FROM pencil_bookings WHERE room_id = ? AND id != ? AND status IN ('pending','confirmed','approved') AND checkin < ? AND checkout > ?");
+                $pencil_conflict->bind_param("iiss", $room_id, $converted_from_pencil_id, $checkout, $checkin);
+                $pencil_conflict->execute();
+                $pencil_conflict_result = $pencil_conflict->get_result();
+                if ($pencil_conflict_result && $pencil_conflict_result->num_rows > 0) {
+                    $pencil_conflict->close();
+                    handleResponse("Cannot convert pencil booking: another draft or confirmed pencil booking overlaps the requested dates.", false, '../Guest.php');
+                }
+                $pencil_conflict->close();
+            } catch (Exception $e) {
+                error_log("Pencil conflict check failed: " . $e->getMessage());
+            }
+        }
 
         // Validate occupancy with detailed error message
         if ($occupants > $room_data['capacity']) {
@@ -1644,6 +1685,19 @@ if ($action === 'create_booking') {
                 } else {
                     error_log("BOOKING EMAIL - Skipped: No email address provided");
                 }
+                
+                // If this booking was converted from a pencil booking, update the pencil booking status
+                if ($converted_from_pencil_id > 0) {
+                    try {
+                        $update_pencil = $conn->prepare("UPDATE pencil_bookings SET status = 'converted', converted_booking_receipt = ? WHERE id = ?");
+                        $update_pencil->bind_param("si", $receipt_no, $converted_from_pencil_id);
+                        $update_pencil->execute();
+                        $update_pencil->close();
+                        error_log("Marked pencil booking #$converted_from_pencil_id as converted to $receipt_no");
+                    } catch (Exception $e) {
+                        error_log("Failed to update pencil booking status: " . $e->getMessage());
+                    }
+                }
 
                 handleResponse("Reservation saved successfully with receipt number: $receipt_no for " . $room_data['name'], true, '../Guest.php');
             } else {
@@ -1839,7 +1893,12 @@ if ($action === 'create_booking') {
                 throw new Exception("Prepare failed: " . $conn->error);
             }
             
-            $insert_stmt->bind_param("sisssssississdds", $receipt_no, $room_id, $guest_name, $contact, $email, $checkin, $checkout, $occupants, $company, $company_contact, $discount_code, $discount_proof_path, $discount_amount, $base_price, $total_price, $terms_acknowledged, $details);
+            // Type string breakdown: s=string, i=integer, d=double/decimal
+            // receipt_no(s), room_id(i), guest_name(s), contact(s), email(s), checkin(s), checkout(s), 
+            // occupants(i), company(s), company_contact(s), discount_code(s), discount_proof_path(s), 
+            // discount_amount(d), base_price(d), total_price(d), terms_acknowledged(i), details(s)
+            // Correct type string: there are 17 placeholders — three decimal values (discount_amount, base_price, total_price)
+            $insert_stmt->bind_param("sisssssissssdddis", $receipt_no, $room_id, $guest_name, $contact, $email, $checkin, $checkout, $occupants, $company, $company_contact, $discount_code, $discount_proof_path, $discount_amount, $base_price, $total_price, $terms_acknowledged, $details);
             
             $success = $insert_stmt->execute();
             
@@ -1848,6 +1907,8 @@ if ($action === 'create_booking') {
             }
             
             if ($success) {
+                // Capture inserted pencil ID for AJAX responses or further processing
+                $pencil_id = (int)$conn->insert_id;
                 // Send email reminder about draft status
                 if (!empty($email)) {
                     error_log("========================================");
@@ -1861,6 +1922,28 @@ if ($action === 'create_booking') {
                     
                     // Calculate expiration date (2 weeks from now)
                     $expiresAt = date('F j, Y', strtotime('+14 days'));
+                    
+                    // Generate conversion token for secure link
+                    $conversion_token = bin2hex(random_bytes(32));
+                    
+                    // Store the token in the pencil_bookings table
+                    try {
+                        // Add conversion_token column if not exists
+                        $conn->query("ALTER TABLE pencil_bookings ADD COLUMN IF NOT EXISTS conversion_token VARCHAR(255) NULL");
+                        $conn->query("ALTER TABLE pencil_bookings ADD COLUMN IF NOT EXISTS token_expires_at DATETIME NULL");
+                        
+                        $token_expires = date('Y-m-d H:i:s', strtotime('+14 days'));
+                        $update_token = $conn->prepare("UPDATE pencil_bookings SET conversion_token = ?, token_expires_at = ? WHERE receipt_no = ?");
+                        $update_token->bind_param("sss", $conversion_token, $token_expires, $receipt_no);
+                        $update_token->execute();
+                        $update_token->close();
+                    } catch (Exception $e) {
+                        error_log("Failed to store conversion token: " . $e->getMessage());
+                    }
+                    
+                    // Create conversion link
+                    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                    $conversion_link = "http://{$host}/barcie_php/convert_pencil.php?token=" . urlencode($conversion_token);
                     
                     $emailContent = '
                         <h2 style="margin: 0 0 20px 0; color: #856404; font-size: 24px; font-weight: 600;">📝 Draft Reservation (Pencil Booking)</h2>
@@ -1879,6 +1962,16 @@ if ($action === 'create_booking') {
                             <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
                                 To fully secure your reservation, you must confirm and complete payment within <strong>14 days (by ' . $expiresAt . ')</strong>. 
                                 If we do not receive confirmation and payment within this timeframe, your reservation slot may be released.
+                            </p>
+                        </div>
+                        
+                        <!-- Convert to Full Reservation Button -->
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="' . $conversion_link . '" style="display: inline-block; padding: 15px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                                🎯 Click Here to Proceed to Full Reservation
+                            </a>
+                            <p style="margin: 15px 0 0 0; color: #6c757d; font-size: 13px;">
+                                <em>This link will pre-fill your booking information for easy confirmation</em>
                             </p>
                         </div>
                         
@@ -1938,26 +2031,7 @@ if ($action === 'create_booking') {
                             </ol>
                         </div>
                         
-                        <!-- Payment Information with QR Code -->
-                        <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
-                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 15px; font-weight: 600;">
-                                💳 Bank Transfer Payment Information
-                            </p>
-                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 14px; line-height: 1.6;">
-                                <strong>Bank Account Details:</strong><br>
-                                <strong>Bank Name:</strong> BDO / BPI / GCash<br>
-                                <strong>Account Name:</strong> BarCIE International Center<br>
-                                <strong>Account Number:</strong> XXXX-XXXX-XXXX
-                            </p>
-                            <p style="margin: 10px 0; text-align: center;">
-                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/bank_qr.php" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">
-                                    📱 View QR Code for Bank Transfer
-                                </a>
-                            </p>
-                            <p style="margin: 10px 0 0 0; color: #155724; font-size: 13px; line-height: 1.6;">
-                                <em>Scan the QR code with your banking app for quick and easy payment. Please upload your payment proof after completing the transaction.</em>
-                            </p>
-                        </div>
+
                         
                         <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
                             Please keep this pencil booking number for your records. If you have any questions or need to make changes, contact us with your booking number.
@@ -1973,7 +2047,24 @@ if ($action === 'create_booking') {
                     error_log("PENCIL BOOKING EMAIL - Send result: " . ($mail_sent ? "SUCCESS" : "FAILED"));
                     error_log("========================================");
                 }
-                
+
+                // If this was an AJAX request, return JSON with the created pencil id and receipt
+                $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    $resp = [
+                        'success' => true,
+                        'message' => "Draft reservation (pencil booking) saved successfully.",
+                        'pencil_id' => $pencil_id,
+                        'receipt_no' => $receipt_no
+                    ];
+                    if (!empty($conversion_token)) {
+                        $resp['conversion_token'] = $conversion_token;
+                    }
+                    echo json_encode($resp);
+                    exit();
+                }
+
                 handleResponse("Draft reservation (pencil booking) saved successfully! Receipt number: $receipt_no. Please confirm within 14 days to fully secure your reservation.", true, '../Guest.php');
             } else {
                 handleResponse("Error saving pencil booking: " . $insert_stmt->error, false, '../Guest.php');
@@ -3185,7 +3276,7 @@ if ($action === 'get_pencil_booking_details') {
     try {
         $stmt = $conn->prepare("
             SELECT pb.*, i.name as room_name, i.item_type, i.room_number, i.capacity, i.price,
-                   DATEDIFF(pb.expires_at, NOW()) as days_remaining
+                   DATEDIFF(pb.token_expires_at, NOW()) as days_remaining
             FROM pencil_bookings pb
             LEFT JOIN items i ON pb.room_id = i.id 
             WHERE pb.id = ?

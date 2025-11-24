@@ -318,7 +318,8 @@ elseif ($booking['status'] === 'approved') $status_class = 'status-approved';
             <div class="info-row">
                 <div class="info-label">Expiration Date:</div>
                 <div class="info-value" style="color: #dc3545; font-weight: 600;">
-                    <?= date('F j, Y', strtotime($booking['expires_at'])) ?>
+                    <?php $expiry_field = $booking['token_expires_at'] ?? $booking['expires_at'] ?? null; ?>
+                    <?= $expiry_field ? date('F j, Y', strtotime($expiry_field)) : 'N/A' ?>
                 </div>
             </div>
             <p style="color: #856404; background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 15px;">

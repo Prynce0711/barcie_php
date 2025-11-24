@@ -106,7 +106,7 @@
     <!-- Payment moved into confirm modal -->
 
     <button type="button" id="pencilSubmitBtn" disabled>
-      <i class="fas fa-edit me-2"></i>Confirm Draft Reservation
+      <i class="fas fa-edit me-2"></i>Submit Draft Reservation
     </button>
   </div>
 </form>
@@ -224,4 +224,75 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+</script>
+<script>
+/* Centralized pencil success modal and soft-refresh behavior.
+   Placing this in `pencil_booking.php` so confirm_addOn and other code
+   can call `showPencilSuccessModal(message)` without duplicating the implementation.
+*/
+window.showPencilSuccessModal = function(message) {
+  try {
+    const existing = document.getElementById('pencilSuccessModal');
+    if (existing) existing.remove();
+
+    const modalHtml = `
+      <div class="modal fade" id="pencilSuccessModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+              <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Draft Reservation Submitted!</h5>
+            </div>
+            <div class="modal-body text-center py-4">
+              <div class="mb-3"><i class="fas fa-check-circle text-success" style="font-size: 3.5rem;"></i></div>
+              <h4 class="text-success mb-2">Success!</h4>
+              <p class="mb-3">${(typeof escapeHtml === 'function') ? escapeHtml(message) : String(message)}</p>
+              <p class="small text-muted">Click <strong>Done</strong> to refresh the guest view (soft refresh). Close will keep the page as-is.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" id="pencilDoneBtn" class="btn btn-success">Done</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalEl = document.getElementById('pencilSuccessModal');
+    const bsModal = new bootstrap.Modal(modalEl);
+
+    // Done: attempt a soft refresh by calling known refresh functions. If none exist, fall back to full reload.
+    const doneBtn = modalEl.querySelector('#pencilDoneBtn');
+    if (doneBtn) {
+      doneBtn.addEventListener('click', function() {
+        try { bsModal.hide(); } catch (e) {}
+        setTimeout(() => {
+          try {
+            let didSoft = false;
+            if (typeof window.loadItems === 'function') { window.loadItems(); didSoft = true; }
+            if (typeof window.loadRooms === 'function') { window.loadRooms(); didSoft = true; }
+            // If a function exists to refresh bookings/listings, call it (best-effort)
+            if (typeof window.reloadBookings === 'function') { window.reloadBookings(); didSoft = true; }
+            if (!didSoft) {
+              // Intentionally do NOT force a full page reload here.
+              // Keep the page as-is and allow the user to manually refresh if desired.
+              console.log('Pencil success: no soft-refreshable functions available — page left unchanged.');
+            }
+          } catch (err) {
+            console.error('Soft refresh failed; page will be left as-is', err);
+          }
+        }, 200);
+      });
+    }
+
+    modalEl.addEventListener('hidden.bs.modal', function() {
+      setTimeout(() => { try { modalEl.remove(); } catch (e) {} }, 200);
+    });
+
+    bsModal.show();
+  } catch (e) {
+    console.error('showPencilSuccessModal error', e);
+    try { alert(message || 'Draft reservation submitted successfully!'); } catch (e) {}
+  }
+};
 </script>

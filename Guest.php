@@ -85,6 +85,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
 $username = "Guest";
 $email = "";
 $user_id = 0; // Default guest user ID
+
+// Handle pencil booking conversion data
+$pencil_conversion_data = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['convert_from_pencil'])) {
+  $pencil_conversion_data = [
+    'pencil_id' => $_POST['pencil_id'] ?? '',
+    'room_id' => $_POST['room_id'] ?? '',
+    'guest_name' => $_POST['guest_name'] ?? '',
+    'email' => $_POST['email'] ?? '',
+    'contact_number' => $_POST['contact_number'] ?? '',
+    'checkin' => $_POST['checkin'] ?? '',
+    'checkout' => $_POST['checkout'] ?? '',
+    'occupants' => $_POST['occupants'] ?? '',
+    'company' => $_POST['company'] ?? '',
+    'company_contact' => $_POST['company_contact'] ?? ''
+  ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -92,8 +109,13 @@ $user_id = 0; // Default guest user ID
   <?php include __DIR__ . '/components/guest/head.php'; ?>
   <script>
     // expose minimal globals used by guest-bootstrap.js if needed
-    window.BARCIE_GUEST = { userId: <?php echo json_encode($user_id); ?> };
+    window.BARCIE_GUEST = { 
+      userId: <?php echo json_encode($user_id); ?>,
+      pencilConversion: <?php echo json_encode($pencil_conversion_data); ?>
+    };
   </script>
+  <!-- Pencil Conversion Handler -->
+  <script src="assets/js/guest/pencil-conversion.js"></script>
 </head>
 <body>
   <!-- Mobile Menu Toggle -->

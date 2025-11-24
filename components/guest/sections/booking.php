@@ -160,20 +160,41 @@ let occupiedDatesCache = {};
 
 async function checkRoomAvailability(roomId, dateInput, infoElement) {
   if (!roomId || !dateInput) return;
-  
+
+  // If the reservation form was pre-filled from a pencil booking conversion,
+  // the form contains a hidden `converted_from_pencil_id` field. When present
+  // we should tell the API to exclude that pencil booking from the occupied
+  // dates so the user can convert their own pencil into a confirmed reservation.
+  const excludeEl = document.querySelector('input[name="converted_from_pencil_id"]');
+  const excludePencilId = excludeEl && excludeEl.value ? String(excludeEl.value) : '';
+
+  // Use a cache key that includes the exclude id so cached results are correct
+  const cacheKey = excludePencilId ? `${roomId}:${excludePencilId}` : String(roomId);
+
   // Fetch occupied dates if not cached
-  if (!occupiedDatesCache[roomId]) {
+  if (!occupiedDatesCache[cacheKey]) {
     try {
-      const response = await fetch(`api/room_availability.php?room_id=${roomId}`);
+      let url = `api/room_availability.php?room_id=${roomId}`;
+
+      // If this date input belongs to the pencil booking form, include other pencil bookings
+      // in availability checks (so pencil-to-pencil conflicts are detected). For regular
+      // reservation checks, pencil bookings are excluded by default.
+      if (dateInput && dateInput.closest && dateInput.closest('#pencilForm')) {
+        url += `&include_pencil=1`;
+      }
+
+      if (excludePencilId) url += `&exclude_pencil_id=${encodeURIComponent(excludePencilId)}`;
+
+      const response = await fetch(url);
       const data = await response.json();
       if (data.success) {
-        occupiedDatesCache[roomId] = data.occupied_dates || [];
+        occupiedDatesCache[cacheKey] = data.occupied_dates || [];
       } else {
-        occupiedDatesCache[roomId] = [];
+        occupiedDatesCache[cacheKey] = [];
       }
     } catch (error) {
       console.error('Error fetching room availability:', error);
-      occupiedDatesCache[roomId] = [];
+      occupiedDatesCache[cacheKey] = [];
     }
   }
   
@@ -185,7 +206,7 @@ async function checkRoomAvailability(roomId, dateInput, infoElement) {
   }
   
   const dateOnly = selectedDate.split('T')[0];
-  const isOccupied = occupiedDatesCache[roomId].includes(dateOnly);
+  const isOccupied = (occupiedDatesCache[cacheKey] || []).includes(dateOnly);
   
   if (isOccupied) {
     dateInput.classList.remove('date-available');
