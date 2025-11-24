@@ -564,12 +564,12 @@ async function loadItems() {
         images = ['assets/images/imageBg/barcie_logo.jpg'];
       }
       
-      // Normalize image paths: ensure they're relative to the site root
+      // Normalize image paths: ensure they're absolute from the site root
       images = images.map(img => {
-        if (typeof img !== 'string' || img.trim() === '') return 'assets/images/imageBg/barcie_logo.jpg';
+        if (typeof img !== 'string' || img.trim() === '') return '/assets/images/imageBg/barcie_logo.jpg';
         if (img.startsWith('http://') || img.startsWith('https://')) return img;
-        // Remove leading slash if present to make it relative
-        return img.replace(/^\/+/, '');
+        // Ensure path starts with a single leading slash so it's absolute from site root
+        return img.startsWith('/') ? img : '/' + img.replace(/^\/+/, '');
       });
       
       // Store images in dataset for gallery
@@ -804,12 +804,12 @@ function populateItemModal(modal, item) {
     images = ['assets/images/imageBg/barcie_logo.jpg'];
   }
   
-  // Normalize image paths: ensure they're relative to the site root
+  // Normalize image paths: ensure they're absolute from the site root
   images = images.map(img => {
-    if (typeof img !== 'string' || img.trim() === '') return 'assets/images/imageBg/barcie_logo.jpg';
+    if (typeof img !== 'string' || img.trim() === '') return '/assets/images/imageBg/barcie_logo.jpg';
     if (img.startsWith('http://') || img.startsWith('https://')) return img;
-    // Remove leading slash if present to make it relative
-    return img.replace(/^\/+/, '');
+    // Ensure path starts with a single leading slash so it's absolute from site root
+    return img.startsWith('/') ? img : '/' + img.replace(/^\/+/, '');
   });
   
   const detailsHtml = `
