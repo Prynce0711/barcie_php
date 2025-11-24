@@ -706,7 +706,6 @@
       };
     })();
   </script>
-  </div>
 </div>
 <!-- End Bookings Management Section -->
 
