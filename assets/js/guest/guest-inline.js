@@ -104,11 +104,12 @@ if (typeof window.showPencilSuccessModal !== 'function') {
       if (!roomSelect || !occupantsInput) return;
       const selectedOption = roomSelect.options[roomSelect.selectedIndex];
       if (selectedOption && occupantsInput.value) {
-        const {text} = selectedOption.text;
+        // selectedOption.text is a string, do not destructure it. Use a safe fallback for different browsers
+        const text = selectedOption.text || selectedOption.textContent || selectedOption.innerText || '';
         const match = text.match(/(\d+)\s+persons/);
         if (match) {
-          const capacity = parseInt(match[1]);
-          const occupants = parseInt(occupantsInput.value);
+          const capacity = parseInt(match[1], 10);
+          const occupants = parseInt(occupantsInput.value, 10);
           if (occupants > capacity) {
             occupantsInput.style.borderColor = '#dc3545';
             occupantsInput.title = `Maximum capacity is ${capacity} persons`;
@@ -172,12 +173,12 @@ if (typeof window.showPencilSuccessModal !== 'function') {
     function showAlert(message, type = 'info') {
       const alertClass = `alert-${type}`;
       const iconClass = type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle';
-      const alert = document.createElement('div');
-      alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-      alert.style.top = '20px'; alert.style.right = '20px'; alert.style.zIndex = '9999'; alert.style.maxWidth = '400px';
-      alert.innerHTML = `<i class="fas fa-${iconClass} me-2"></i>${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-      document.body.appendChild(alert);
-      setTimeout(() => { if (alert.parentNode) alert.remove(); }, 5000);
+      const alertEl = document.createElement('div');
+      alertEl.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+      alertEl.style.top = '20px'; alertEl.style.right = '20px'; alertEl.style.zIndex = '9999'; alertEl.style.maxWidth = '400px';
+      alertEl.innerHTML = `<i class="fas fa-${iconClass} me-2"></i>${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+      document.body.appendChild(alertEl);
+      setTimeout(() => { if (alertEl.parentNode) alertEl.remove(); }, 5000);
     }
 
     // showPencilSuccessModal is provided centrally in `components/guest/sections/pencil_booking.php`.
