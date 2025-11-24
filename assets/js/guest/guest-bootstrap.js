@@ -561,19 +561,15 @@ async function loadItems() {
       
       // Default image if no images available
       if (images.length === 0) {
-        images = ['/assets/images/imageBg/barcie_logo.jpg'];
+        images = ['assets/images/imageBg/barcie_logo.jpg'];
       }
       
-      // Normalize image paths: resolve against document base so the app
-      // works correctly when served from a subfolder (avoid forcing root '/').
+      // Normalize image paths: ensure they're absolute from the site root
       images = images.map(img => {
-        if (typeof img !== 'string' || img.trim() === '') return img;
-        if (img.startsWith('http')) return img;
-        try {
-          return new URL(img, document.baseURI).href;
-        } catch (e) {
-          return img.startsWith('/') ? img : document.baseURI.replace(/\/$/, '') + '/' + img.replace(/^\//, '');
-        }
+        if (typeof img !== 'string' || img.trim() === '') return '/assets/images/imageBg/barcie_logo.jpg';
+        if (img.startsWith('http://') || img.startsWith('https://')) return img;
+        // Ensure path starts with a single leading slash so it's absolute from site root
+        return img.startsWith('/') ? img : '/' + img.replace(/^\/+/, '');
       });
       
       // Store images in dataset for gallery
@@ -607,7 +603,7 @@ async function loadItems() {
         <div class="card-image position-relative" style="cursor: pointer;" data-item-id="${item.id}">
           <img src="${previewImage}" class="room-card-img" 
             style="width:100%;height:200px;object-fit:cover;border-radius:15px 15px 0 0;" 
-            onerror="this.onerror=null; this.src='/assets/images/imageBg/barcie_logo.jpg';"
+            onerror="this.onerror=null; this.src='assets/images/imageBg/barcie_logo.jpg';"
             alt="${item.name}">
           ${images.length > 1 ? `
           <div class="image-count-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px;">
@@ -805,25 +801,22 @@ function populateItemModal(modal, item) {
   
   // Default image
   if (images.length === 0) {
-    images = ['/assets/images/imageBg/barcie_logo.jpg'];
+    images = ['assets/images/imageBg/barcie_logo.jpg'];
   }
   
-  // Normalize paths: resolve against document base to support subfolder installs
+  // Normalize image paths: ensure they're absolute from the site root
   images = images.map(img => {
-    if (typeof img !== 'string' || img.trim() === '') return img;
-    if (img.startsWith('http')) return img;
-    try {
-      return new URL(img, document.baseURI).href;
-    } catch (e) {
-      return img.startsWith('/') ? img : document.baseURI.replace(/\/$/, '') + '/' + img.replace(/^\//, '');
-    }
+    if (typeof img !== 'string' || img.trim() === '') return '/assets/images/imageBg/barcie_logo.jpg';
+    if (img.startsWith('http://') || img.startsWith('https://')) return img;
+    // Ensure path starts with a single leading slash so it's absolute from site root
+    return img.startsWith('/') ? img : '/' + img.replace(/^\/+/, '');
   });
   
   const detailsHtml = `
     <div class="row">
       <div class="col-md-6">
         <div class="position-relative" style="cursor: pointer;" onclick="openGalleryFromModal(${JSON.stringify(images).replace(/"/g, '&quot;')}, 0, '${item.name.replace(/'/g, "\\'")}', ${item.id})">
-          <img src="${images[0]}" class="img-fluid rounded mb-3" alt="${item.name}" style="max-height: 300px; width: 100%; object-fit: cover;" onerror="this.src='/assets/images/imageBg/barcie_logo.jpg';">
+          <img src="${images[0]}" class="img-fluid rounded mb-3" alt="${item.name}" style="max-height: 300px; width: 100%; object-fit: cover;" onerror="this.src='assets/images/imageBg/barcie_logo.jpg';">
           ${images.length > 1 ? `
             <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 20px; font-size: 14px;">
               <i class="fas fa-images me-2"></i>${images.length} Photos
@@ -1817,7 +1810,7 @@ function generateThumbnails() {
     thumbImg.src = img;
     thumbImg.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
     thumbImg.onerror = function() {
-      this.src = '/assets/images/imageBg/barcie_logo.jpg';
+      this.src = 'assets/images/imageBg/barcie_logo.jpg';
     };
     
     thumb.appendChild(thumbImg);
