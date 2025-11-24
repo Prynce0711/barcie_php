@@ -9,7 +9,7 @@ APP_ENV=production
 
 SMTP_HOST=smtp.gmail.com
 SMTP_USERNAME=barcieinternationalcenter.web@gmail.com
-SMTP_PASSWORD=vqaraexykpduyewo
+SMTP_PASSWORD=vqar aexy kpdu yewo
 SMTP_PORT=587
 SMTP_SECURE=tls
 FROM_EMAIL=barcieinternationalcenter.web@gmail.com
