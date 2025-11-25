@@ -1,33 +1,65 @@
 <?php
-// Suppress any output before JSON response
-error_reporting(0);
+// Enable error logging but suppress display
+error_reporting(E_ALL);
 ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/admin_login_errors.log');
+
+// Start output buffering to catch any accidental output
+ob_start();
 
 session_start();
-header('Content-Type: application/json'); // Ensure response is JSON
 
-// Clean any output buffer that might have been started
-if (ob_get_level()) {
-    ob_clean();
+// Clean any output buffer and set JSON header
+while (ob_get_level()) {
+    ob_end_clean();
 }
+ob_start();
 
-include __DIR__ . '/db_connect.php';
+header('Content-Type: application/json');
+header('Cache-Control: no-cache, must-revalidate');
+
+// Log the request
+error_log("[" . date('Y-m-d H:i:s') . "] Admin login request received from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+
+// Set up error and exception handlers
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("[" . date('Y-m-d H:i:s') . "] PHP Error [$errno]: $errstr in $errfile on line $errline");
+    return false;
+});
+
+set_exception_handler(function($exception) {
+    error_log("[" . date('Y-m-d H:i:s') . "] Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Server error occurred', 'error' => $exception->getMessage()]);
+    exit;
+});
+
+try {
+    include __DIR__ . '/db_connect.php';
+} catch (Exception $e) {
+    error_log("[" . date('Y-m-d H:i:s') . "] DB Connection Exception: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Database connection failed', 'error' => $e->getMessage()]);
+    exit;
+}
 
 $response = ['success' => false, 'message' => 'Invalid request.'];
 
 // Check if database connection failed
-if ($conn->connect_error) {
-    $response['message'] = 'Database connection failed: ' . $conn->connect_error;
+if (!isset($conn) || $conn->connect_error) {
+    error_log("[" . date('Y-m-d H:i:s') . "] Database connection failed: " . ($conn->connect_error ?? 'Connection object not created'));
+    $response['message'] = 'Database connection failed';
     $response['debug'] = [
         'host' => $host ?? 'unknown',
         'dbname' => $dbname ?? 'unknown',
-        'error' => $conn->connect_error
+        'error' => $conn->connect_error ?? 'Connection not established'
     ];
     echo json_encode($response);
     exit;
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+try {
+    if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
@@ -93,8 +125,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $stmt->close();
+    }
+} catch (Exception $e) {
+    error_log("[" . date('Y-m-d H:i:s') . "] Login process exception: " . $e->getMessage());
+    $response['success'] = false;
+    $response['message'] = 'An error occurred during login';
+    $response['error'] = $e->getMessage();
 }
 
 $conn->close();
+
+// Clean output buffer and send JSON response
+$output = ob_get_clean();
+if (!empty($output)) {
+    error_log("[" . date('Y-m-d H:i:s') . "] Unexpected output captured: " . $output);
+}
+
 echo json_encode($response);
 exit;
