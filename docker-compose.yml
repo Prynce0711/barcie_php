@@ -17,7 +17,6 @@ services:
       - DB_USER=${DB_USER:-root}
       - DB_PASS=${DB_PASS:-root}
       - DB_NAME=${DB_NAME:-barcie_db}
-      # SMTP settings for PHPMailer (override in .env or CI)
       - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
@@ -25,14 +24,8 @@ services:
       - SMTP_SECURE=${SMTP_SECURE:-tls}
       - FROM_EMAIL=${FROM_EMAIL:-barcieinternationalcenter@gmail.com}
       - FROM_NAME=${FROM_NAME:-Barcie International Center}
-
-      # OpenAI API Key
       - OPENAIAPI_KEY=${OPENAIAPI_KEY:-}
-
-      # Test Page Password
       - TEST_PAGE_PASSWORD=${TEST_PAGE_PASSWORD:-}
-
-
     depends_on:
       - db
     networks:
@@ -45,9 +38,8 @@ services:
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_PASS:-root}
       MARIADB_DATABASE: ${DB_NAME:-barcie_db}
-      MARIADB_USER: ${DB_USER:-prynce}
+      MARIADB_USER: ${DB_USER:-root}
       MARIADB_PASSWORD: ${DB_PASS:-root}
-      
     volumes:
       - db_data:/var/lib/mysql
     networks:
@@ -60,10 +52,9 @@ services:
     ports:
       - "7081:80"
     environment:
-      - PMA_HOST=db
-      - PMA_PORT=3306
-      - PMA_ARBITRARY=1
-      # Optionally set blowfish secret via env: PMA_BLOWFISH_SECRET=some_secret
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
     depends_on:
       - db
     networks:
@@ -72,7 +63,7 @@ services:
 
   tailscale-barcie:
     image: tailscale/tailscale:latest
-    hostname: phpmyadmin
+    hostname: tailscale-barcie
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_EXTRA_ARGS=--advertise-tags=tag:container --advertise-routes=10.20.0.0/24
@@ -88,7 +79,6 @@ services:
     networks:
       app_net:
         ipv4_address: 10.20.0.5
-  
 
 volumes:
   db_data:
@@ -102,4 +92,3 @@ networks:
       config:
         - subnet: 10.20.0.0/24
           gateway: 10.20.0.1
-
