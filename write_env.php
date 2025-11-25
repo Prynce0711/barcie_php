@@ -8,13 +8,15 @@ $env_data = <<<TXT
 APP_ENV=production
 
 SMTP_HOST=smtp.gmail.com
-SMTP_USERNAME=pc.clemente11@gmail.com
-SMTP_PASSWORD=bwjnpxglrmlsurwg
+SMTP_USER=barcieinternationalcenter.web@gmail.com
+SMTP_PASS=mhtmuqvjqepkujff
 SMTP_PORT=587
 SMTP_SECURE=tls
-FROM_EMAIL=barcieinternationalcenter@gmail.com
-FROM_NAME="BarCIE International Center"
-OPENAI_API_KEY=AIzaSyAAaTeSWW_5BSPldjOMzzQsDeJ5oh1HHII
+FROM_EMAIL=barcieinternationalcenter.web@gmail.com
+FROM_NAME="Barcie International Center"
+
+OPENAIAPI_KEY=AIzaSyB4zwmnRj0p6jVHz92LqgAX3c32W1s1DW8
+
 
 TXT;
 
