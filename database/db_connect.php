@@ -1,6 +1,9 @@
 <?php
 // filepath: c:\xampp\htdocs\barcie_php\src\database\db_connect.php
 
+// Suppress error output for API responses
+error_reporting(0);
+ini_set('display_errors', 0);
 
 // Database connection details
 // Auto-detect environment: use localhost DB when on localhost, remote DB when on server
@@ -21,8 +24,8 @@ if ($is_localhost) {
     $dbname = getenv('DB_NAME') ?: "barcie_db";
 }
 
-// Enable MySQLi error reporting
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+// Enable MySQLi error reporting but don't display errors
+mysqli_report(MYSQLI_REPORT_OFF);
 
 // Create connection
 try {
