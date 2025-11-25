@@ -17,12 +17,15 @@ if (file_exists($autoload)) {
 }
 
 // Helper function to read environment variables with fallback
-function env($key, $default = null) {
-    $value = getenv($key);
-    if ($value === false) {
-        $value = $_ENV[$key] ?? $default;
+// Helper function to read environment variables with fallback
+if (!function_exists('env')) {
+    function env($key, $default = null) {
+        $value = getenv($key);
+        if ($value === false) {
+            $value = $_ENV[$key] ?? $default;
+        }
+        return $value;
     }
-    return $value;
 }
 
 // Normalize accepted environment variable names to be forgiving
