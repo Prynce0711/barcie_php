@@ -10,6 +10,8 @@ services:
       - ./uploads:/var/www/html/uploads
     ports:
       - "7080:80"
+    env_file:
+      - .env
     environment:
       - DB_HOST=db
       - DB_USER=${DB_USER:-root}
