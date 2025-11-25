@@ -62,22 +62,47 @@ echo "<h3>Total Admins: {$row['count']}</h3>";
 // List all admins (without passwords)
 echo "<h3>Admin Accounts:</h3>";
 $result = $conn->query("SELECT id, username, email, created_at, last_login FROM admins");
-if ($result->num_rows > 0) {
-    echo "<table border='1' cellpadding='5'><tr><th>ID</th><th>Username</th><th>Email</th><th>Created</th><th>Last Login</th></tr>";
-    while ($row = $result->fetch_assoc()) {
-        echo "<tr>";
-        echo "<td>{$row['id']}</td>";
-        echo "<td>{$row['username']}</td>";
-        echo "<td>{$row['email']}</td>";
-        echo "<td>{$row['created_at']}</td>";
-        echo "<td>{$row['last_login']}</td>";
-        echo "</tr>";
-    }
-    echo "</table>";
-} else {
-    echo "<p style='color:orange'>⚠️ No admin accounts found. You need to create one!</p>";
+if ($result === false) {
+    echo "<p style='color:red'>Query error: " . htmlspecialchars($conn->error) . "</p>";
     echo "<p><a href='create_admin.php'>Create Admin Account</a></p>";
+} else {
+    echo "<p>Result object type: " . get_class($result) . ", num_rows reported: " . intval($result->num_rows) . "</p>";
+    if ($result->num_rows > 0) {
+        echo "<table border='1' cellpadding='5'><tr><th>ID</th><th>Username</th><th>Email</th><th>Created</th><th>Last Login</th></tr>";
+        while ($row = $result->fetch_assoc()) {
+            echo "<tr>";
+            echo "<td>{" . htmlspecialchars($row['id']) . "}</td>";
+            echo "<td>{" . htmlspecialchars($row['username']) . "}</td>";
+            echo "<td>{" . htmlspecialchars($row['email']) . "}</td>";
+            echo "<td>{" . htmlspecialchars($row['created_at']) . "}</td>";
+            echo "<td>{" . htmlspecialchars($row['last_login']) . "}</td>";
+            echo "</tr>";
+        }
+        echo "</table>";
+    } else {
+        echo "<p style='color:orange'>⚠️ No admin accounts found. You need to create one!</p>";
+        echo "<p><a href='create_admin.php'>Create Admin Account</a></p>";
+    }
 }
+
+// Debug: show current DB user, current_user and database
+$uRes = $conn->query("SELECT USER() AS user, CURRENT_USER() AS current_user, DATABASE() AS db");
+if ($uRes) {
+    $uRow = $uRes->fetch_assoc();
+    echo "<p><strong>Debug:</strong> MySQL user: " . htmlspecialchars($uRow['user'] . ' / ' . $uRow['current_user'] . ' (DB: ' . ($uRow['db'] ?? 'NULL') . ')') . "</p>";
+}
+
+// Debug: show grants for current user
+$g = $conn->query("SHOW GRANTS FOR CURRENT_USER()");
+echo "<pre style='background:#f8f9fa;border:1px solid #ddd;padding:8px;'>";
+if ($g) {
+    while ($r = $g->fetch_row()) {
+        echo htmlspecialchars($r[0]) . "\n";
+    }
+} else {
+    echo "(unable to fetch grants: " . htmlspecialchars($conn->error) . ")\n";
+}
+echo "</pre>";
 
 $conn->close();
 ?>
