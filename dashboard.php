@@ -193,6 +193,11 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         <?php include 'components/dashboard/sections/news_section.php'; ?>
       </section>
 
+      <!-- Admin Management Section -->
+      <section id="admin-management-section" class="content-section">
+        <?php include 'components/dashboard/sections/admin_management_section.php'; ?>
+      </section>
+
 
 
       
@@ -312,6 +317,35 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
   <?php include 'components/dashboard/sections/add_item_modal.php'; ?>
   <?php include 'components/dashboard/sections/edit_item_modal.php'; ?>
+  
+  <!-- Include Admin Management Modals at page bottom so they're always accessible -->
+  <?php include 'components/dashboard/sections/modals/admin_auth_modal.php'; ?>
+  <?php include 'components/dashboard/sections/modals/add_admin_modal.php'; ?>
+  <?php include 'components/dashboard/sections/modals/edit_admin_modal.php'; ?>
+  
+  <!-- Delete Admin Confirmation Modal (header styled blue for modal theme consistency) -->
+  <div class="modal fade" id="deleteAdminModal" tabindex="-1" aria-labelledby="deleteAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="deleteAdminModalLabel">
+            <i class="fas fa-exclamation-triangle me-2"></i>Delete Administrator
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete admin <strong id="delete-admin-username"></strong>?</p>
+          <p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>This action cannot be undone!</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteAdmin">
+            <i class="fas fa-trash me-2"></i>Delete Admin
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
