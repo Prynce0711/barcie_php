@@ -270,6 +270,16 @@
  * - On confirm, appends add-on fields to the original form and submits
  */
 (function () {
+  // Get the base path dynamically from current page URL to handle any case/environment
+  const getBasePath = () => {
+    const path = window.location.pathname;
+    const match = path.match(/^(\/[^\/]+)\//); // Extract /folder_name/ from path
+    return match ? match[1] : '';
+  };
+  const BASE_PATH = getBasePath();
+  const MAX_UPLOAD_MB = 10;
+  const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+  
   // Notification helper: prefer showToast if available, fallback to alert
   function notify(message, type = 'info') {
     try {
@@ -1073,8 +1083,8 @@
         try {
           const formData = new FormData(form);
           
-          // Send the form data directly
-          const response = await fetch('database/user_auth.php', {
+          // Send the form data directly - use dynamic base path
+          const response = await fetch(BASE_PATH + '/database/user_auth.php', {
             method: 'POST',
             body: formData,
             credentials: 'same-origin',
@@ -1251,25 +1261,18 @@
       }
     } catch (err) { /* ignore */ }
 
-    // Close modal and submit
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    
-    // IMPORTANT: Remove focus from any element inside the modal before hiding
-    // to prevent aria-hidden warning on focused elements
+    // CRITICAL: Remove focus from modal elements BEFORE closing to prevent aria-hidden warning
     try {
       const active = document.activeElement;
       if (active && modalEl.contains(active)) {
-        active.blur(); // Remove focus first
-        // Then optionally move focus to a safe element outside the modal
-        const fallback = currentForm?.querySelector('#reservationSubmitBtn') 
-                      || currentForm?.querySelector('#pencilSubmitBtn') 
-                      || document.body;
-        try { fallback.focus(); } catch (e) { /* ignore */ }
+        active.blur();
+        // Move focus to safe element outside modal
+        document.body.focus();
       }
-    } catch (err) {
-      /* ignore focus errors */
-    }
+    } catch (err) { /* ignore */ }
 
+    // Close modal and submit
+    const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();
 
     // Submit via fetch so we can control post-submit behavior and redirect back to booking
@@ -1330,12 +1333,29 @@
           fd.append('action', 'create_booking');
         }
 
-        // Get the form action URL properly - use relative path to avoid environment-specific issues
+        // Get the form action URL properly - use dynamic base path
         const actionAttr = currentForm.getAttribute('action');
-        // Use form action if specified, otherwise default to user_auth.php
-        const targetUrl = actionAttr || 'database/user_auth.php';
+        // Use form action if specified, otherwise default to dynamic path
+        const targetUrl = actionAttr || (BASE_PATH + '/database/user_auth.php');
         
         console.debug('Submitting booking to', targetUrl);
+        
+        // DEBUG: Log FormData to see what's being sent
+        console.group('📝 Booking Submission Debug');
+        console.log('Form ID:', currentForm.id);
+        console.log('Target URL:', targetUrl);
+        console.log('FormData contents:');
+        for (let [key, value] of fd.entries()) {
+          if (value instanceof File) {
+            console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+          } else {
+            console.log(`  ${key}:`, value);
+          }
+        }
+        const roomIdElement = currentForm.querySelector('[name="room_id"]');
+        console.log('room_id element:', roomIdElement);
+        console.log('room_id value:', roomIdElement?.value);
+        console.groupEnd();
 
         // If the form includes an uploaded discount proof file, prefer XHR so we can show upload progress
         const proofInput = currentForm.querySelector('#discount_proof');
