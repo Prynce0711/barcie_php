@@ -957,7 +957,9 @@ function prefillBookingForm(item) {
   
   // Wait a moment for form to be visible, then set the room/facility selection
   setTimeout(() => {
-    const roomSelect = document.querySelector('#room_select, [name="room_id"]');
+    // Prefer the actual select by id. If not found, fall back to a select with name="room_id".
+    // Avoid matching hidden inputs (e.g. feedbackRoomId) that also use name="room_id".
+    const roomSelect = document.getElementById('room_select') || document.querySelector('select[name="room_id"]');
     if (roomSelect) {
       // Set the selected room/facility
       roomSelect.value = item.id;
