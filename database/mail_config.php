@@ -30,8 +30,8 @@ if (!function_exists('env')) {
 
 // Normalize accepted environment variable names to be forgiving
 $smtp_host = env('SMTP_HOST', env('MAIL_HOST', 'smtp.gmail.com'));
-$smtp_username = env('SMTP_USERNAME', env('MAIL_USER', ''));
-$smtp_password = env('SMTP_PASSWORD', env('MAIL_PASS', ''));
+$smtp_username = env('SMTP_USERNAME', env('SMTP_USER', env('MAIL_USER', '')));
+$smtp_password = env('SMTP_PASSWORD', env('SMTP_PASS', env('MAIL_PASS', '')));
 $smtp_secure = strtolower(env('SMTP_SECURE', env('MAIL_SECURE', 'tls')));
 $smtp_port = (int) env('SMTP_PORT', env('MAIL_PORT', 587));
 $from_email = env('FROM_EMAIL', env('MAIL_USER', 'barcieinternationalcenter@gmail.com'));
