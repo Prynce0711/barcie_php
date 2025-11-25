@@ -67,6 +67,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['admin_id'] = $id;
                 $_SESSION['admin_username'] = $username;
 
+                // Update last login timestamp
+                $update_stmt = $conn->prepare("UPDATE admins SET last_login = NOW() WHERE id = ?");
+                $update_stmt->bind_param("i", $id);
+                $update_stmt->execute();
+                $update_stmt->close();
+
                 $response['success'] = true;
                 $response['message'] = 'Login successful.';
             } else {

@@ -29,8 +29,13 @@
     </a>
 
     <a href="#news-section" class="nav-link nav-link-custom" data-section="news-section">
-      <i class="fas fa-newspaper"></i>
+      <i class="fas fa-newspaper"></i>  
       <span>News & Updates</span>
+    </a>
+
+    <a href="#admin-management-section" class="nav-link nav-link-custom" data-section="admin-management-section">
+      <i class="fas fa-user-shield"></i>
+      <span>Admin Management</span>
     </a>
     
   </div>
