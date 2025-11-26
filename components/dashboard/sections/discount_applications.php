@@ -12,19 +12,62 @@
         <small class="opacity-75">Review uploaded ID proofs and approve or reject discounts.</small>
       </div>
       <div class="card-body">
-        <!-- Type Filter Buttons (hidden select will drive the filter logic) -->
-        <div class="mb-3">
-          <label class="form-label">Filter by Type:</label>
-          <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-secondary type-filter-btn active" data-type="">All</button>
-            <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="room">Rooms</button>
-            <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="facility">Facilities</button>
+        <!-- Filters Section -->
+        <div class="card mb-3 border-0 bg-light">
+          <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+              <!-- Date Filter -->
+              <div class="col-md-3">
+                <label for="discountDateFilter" class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-calendar-alt me-1"></i>Date
+                </label>
+                <input type="date" id="discountDateFilter" class="form-control" onchange="filterDiscounts()">
+              </div>
+              
+              <!-- Quick Date Actions -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="setDiscountDateToday()">
+                    <i class="fas fa-calendar-day me-1"></i>Today
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearDiscountDate()">
+                    <i class="fas fa-calendar me-1"></i>All
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Type Filter -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-tag me-1"></i>Type
+                </label>
+                <div class="btn-group w-100" role="group">
+                  <button type="button" class="btn btn-outline-secondary btn-sm type-filter-btn active" data-type="">
+                    <i class="fas fa-list me-1"></i>All
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm type-filter-btn" data-type="room">
+                    <i class="fas fa-bed me-1"></i>Rooms
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm type-filter-btn" data-type="facility">
+                    <i class="fas fa-building me-1"></i>Facilities
+                  </button>
+                </div>
+                <select id="discountTypeFilter" class="form-select d-none">
+                  <option value="">All</option>
+                  <option value="room">Rooms</option>
+                  <option value="facility">Facilities</option>
+                </select>
+              </div>
+              
+              <!-- Reset Button -->
+              <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetDiscountFilters()">
+                  <i class="fas fa-redo me-1"></i>Reset
+                </button>
+              </div>
+            </div>
           </div>
-          <select id="discountTypeFilter" class="form-select d-none">
-            <option value="">All</option>
-            <option value="room">Rooms</option>
-            <option value="facility">Facilities</option>
-          </select>
         </div>
 
         <div class="table-responsive">
@@ -70,8 +113,11 @@
 
                     // Use dedicated proof_of_id column
                     $proofPath = $row['proof_of_id'] ?: '';
+                    
+                    // Extract date from created_at for filtering (format: YYYY-MM-DD)
+                    $booking_date = date('Y-m-d', strtotime($created));
 
-                    echo '<tr id="discount-row-' . $bookingId . '" data-type="' . htmlspecialchars($row_type) . '">';
+                    echo '<tr id="discount-row-' . $bookingId . '" data-type="' . htmlspecialchars($row_type) . '" data-date="' . htmlspecialchars($booking_date) . '">';
                     echo '<td><strong>' . htmlspecialchars($receipt) . '</strong></td>';
                     echo '<td>' . htmlspecialchars($guest) . '</td>';
                     echo '<td>' . htmlspecialchars($room) . '</td>';
@@ -120,13 +166,11 @@
     if (!sel) return;
     sel.value = type;
     document.querySelectorAll('.type-filter-btn').forEach(b=>{
-      b.classList.remove('active', 'btn-secondary');
-      b.classList.add('btn-outline-secondary');
+      b.classList.remove('active');
     });
     const btn = document.querySelector('.type-filter-btn[data-type="' + type + '"]');
     if (btn) {
-      btn.classList.remove('btn-outline-secondary');
-      btn.classList.add('btn-secondary', 'active');
+      btn.classList.add('active');
     }
     if (trigger !== false) {
       if (typeof window.filterDiscounts === 'function') window.filterDiscounts();
@@ -156,11 +200,15 @@
 
   function dGetAllRows(){
     const typeFilter = (document.getElementById('discountTypeFilter')?.value || '').toLowerCase();
+    const dateFilter = document.getElementById('discountDateFilter')?.value || '';
     return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => {
       if (r.id === 'discounts-no-results') return false;
       const rtype = (r.dataset.type || '').toLowerCase();
-      if (!typeFilter || typeFilter === 'all') return true;
-      return rtype === typeFilter;
+      const rdate = r.dataset.date || '';
+      
+      if (typeFilter && typeFilter !== 'all' && rtype !== typeFilter) return false;
+      if (dateFilter && rdate !== dateFilter) return false;
+      return true;
     });
   }
 
@@ -270,6 +318,32 @@
       dstate.currentPage = 1;
       dRecalc();
     } catch (err) { console.error('filterDiscounts error', err); }
+  };
+  
+  // Helper functions for date filter
+  window.setDiscountDateToday = function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('discountDateFilter');
+    if (dateInput) {
+      dateInput.value = today;
+      filterDiscounts();
+    }
+  };
+  
+  window.clearDiscountDate = function() {
+    const dateInput = document.getElementById('discountDateFilter');
+    if (dateInput) {
+      dateInput.value = '';
+      filterDiscounts();
+    }
+  };
+  
+  window.resetDiscountFilters = function() {
+    document.getElementById('discountDateFilter').value = '';
+    document.querySelectorAll('.type-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.type-filter-btn[data-type=""]').classList.add('active');
+    document.getElementById('discountTypeFilter').value = '';
+    filterDiscounts();
   };
 })();
 

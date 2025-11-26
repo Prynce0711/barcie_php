@@ -404,58 +404,61 @@
       // Display scan results
       const statusEl = document.createElement('div');
       
-      // VALIDATION: Accept if ID features are detected with minimum 30% confidence
-      if (scanResult.detected && scanResult.confidence >= 30) {
-        statusEl.className = scanResult.confidence >= 60 ? 'text-success fw-bold' : 'text-success';
+      // VALIDATION: Accept if ID features are detected
+      if (scanResult.detected) {
+        statusEl.className = 'text-success fw-bold';
         let msg = '';
         
         switch(discountType) {
-          case 'lcuppersonnel': msg = 'LCUP Personnel ID detected'; break;
-          case 'lcupstudent': msg = 'LCUP Student/Alumni ID detected'; break;
-          case 'pwd_senior': msg = 'Senior/PWD ID detected'; break;
-          default: msg = 'Valid ID detected';
+          case 'lcuppersonnel': msg = '✓ Approved: LCUP Personnel ID verified'; break;
+          case 'lcupstudent': msg = '✓ Approved: LCUP Student/Alumni ID verified'; break;
+          case 'pwd_senior': msg = '✓ Approved: Senior/PWD ID verified'; break;
+          default: msg = '✓ Approved: Valid ID verified';
         }
         
-        statusEl.innerHTML = '<i class="fas fa-check-circle me-1"></i>' + msg + ' (Confidence: ' + scanResult.confidence + '%)';
+        statusEl.innerHTML = '<i class="fas fa-check-circle me-1"></i>' + msg;
         proofInput.dataset.validProof = '1';
-        proofInput.dataset.confidence = scanResult.confidence;
       } else {
         // REJECT: No valid ID features detected
         statusEl.className = 'text-danger fw-bold';
         let msg = '';
         
-        switch(discountType) {
-          case 'lcuppersonnel':
-            msg = 'This does not appear to be a LCUP Personnel ID. Please upload a valid LCUP employee ID with the blue header.';
-            break;
-          case 'lcupstudent':
-            msg = 'This does not appear to be a LCUP Student/Alumni ID. Please upload a valid LCUP student ID with the blue header.';
-            break;
-          case 'pwd_senior':
-            msg = 'This does not appear to be a Senior/PWD ID. Please upload a valid government-issued senior citizen or PWD ID.';
-            break;
-          default:
-            msg = 'Could not detect valid ID features. Please upload a clear photo of your ID.';
+        // Use the rejection reason from scan result if available
+        if (scanResult.reason) {
+          msg = '✗ Not Approved: ' + scanResult.reason;
+        } else {
+          switch(discountType) {
+            case 'lcuppersonnel':
+              msg = '✗ Not Approved: This does not appear to be a LCUP Personnel/Faculty ID. Please upload a valid LCUP employee ID.';
+              break;
+            case 'lcupstudent':
+              msg = '✗ Not Approved: This does not appear to be a LCUP Student/Alumni ID. Please upload a valid LCUP student ID.';
+              break;
+            case 'pwd_senior':
+              msg = '✗ Not Approved: This does not appear to be a Senior/PWD ID. Please upload a valid government-issued senior citizen or PWD ID.';
+              break;
+            default:
+              msg = '✗ Not Approved: Could not verify ID. Please upload a clear photo of your ID.';
+          }
         }
         
         statusEl.innerHTML = '<i class="fas fa-times-circle me-1"></i>' + msg;
         proofInput.dataset.validProof = '0';
-        proofInput.dataset.confidence = scanResult.confidence || 0;
         
         // Show what was checked
         const hintEl = document.createElement('div');
         hintEl.className = 'text-muted small mt-2';
-        hintEl.innerHTML = '<strong>Tips:</strong><br>• Ensure good lighting and clear image<br>• ID should fill most of the frame<br>• Avoid shadows and glare<br>• Take photo on a plain background';
+        hintEl.innerHTML = '<strong>Tips for better validation:</strong><br>• Ensure good lighting and clear image<br>• ID should fill most of the frame<br>• Avoid shadows and glare<br>• Take photo on a plain background';
         proofStatus.appendChild(hintEl);
       }
       
       proofStatus.appendChild(statusEl);
       
-      // Show detected features
+      // Show detected features if available
       if (scanResult.features && scanResult.features.length > 0) {
         const featuresEl = document.createElement('div');
         featuresEl.className = 'text-muted small mt-1';
-        featuresEl.innerHTML = '<i class="fas fa-check me-1"></i>' + scanResult.features.join(' • ');
+        featuresEl.innerHTML = '<i class="fas fa-info-circle me-1"></i>Detected: ' + scanResult.features.join(' • ');
         proofStatus.appendChild(featuresEl);
       }
       
