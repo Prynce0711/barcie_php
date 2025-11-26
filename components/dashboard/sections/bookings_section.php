@@ -35,6 +35,16 @@
           <small class="opacity-75">Manage all guest reservations and bookings</small>
         </div>
         <div class="card-body">
+          <!-- Action Buttons -->
+          <div class="d-flex justify-content-end mb-2 gap-2">
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadBookingsExcel()">
+              <i class="fas fa-file-excel me-1"></i>Export to Excel
+            </button>
+            <button type="button" class="btn btn-sm btn-success" onclick="downloadBookingsPDF()">
+              <i class="fas fa-file-alt me-1"></i>Export to Text
+            </button>
+          </div>
+          
           <!-- Filters Section -->
           <div class="card mb-3 border-0 bg-light">
             <div class="card-body py-3">
@@ -799,4 +809,120 @@
     }
   });
 })();
+
+// Download bookings as text backup
+function downloadBookingsPDF() {
+  const rows = Array.from(document.querySelectorAll('#bookingsTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No bookings to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('bookingDateFilter')?.value || 'All Dates';
+  const statusFilter = document.getElementById('statusFilter')?.value || 'All Status';
+  const typeFilter = document.getElementById('typeFilter')?.value || 'All Types';
+  
+  let content = `BARCIE INTERNATIONAL CENTER - BOOKINGS BACKUP
+Generated: ${new Date().toLocaleString()}
+Total Records: ${rows.length}
+
+FILTERS APPLIED:
+- Date: ${dateFilter}
+- Status: ${statusFilter}
+- Type: ${typeFilter}
+
+${'='.repeat(80)}
+
+`;
+
+  rows.forEach((row, index) => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 8) {
+      const receipt = cells[0].textContent.trim();
+      const room = cells[1].textContent.trim();
+      const type = cells[2].textContent.trim();
+      const guest = cells[3].textContent.trim().replace(/\n/g, ' ');
+      const schedule = cells[4].textContent.trim().replace(/\n/g, ' ');
+      const status = cells[5].textContent.trim();
+      const discount = cells[6].textContent.trim();
+      const created = cells[7].textContent.trim().replace(/\n/g, ' ');
+      
+      content += `${index + 1}. ${receipt}
+   Room/Facility: ${room}
+   Type: ${type}
+   Guest: ${guest}
+   Schedule: ${schedule}
+   Status: ${status}
+   Discount: ${discount}
+   Created: ${created}
+${'-'.repeat(80)}
+
+`;
+    }
+  });
+  
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bookings_backup_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('Bookings backup downloaded successfully', 'success');
+}
+
+// Download bookings as Excel
+function downloadBookingsExcel() {
+  const rows = Array.from(document.querySelectorAll('#bookingsTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No bookings to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('bookingDateFilter')?.value || 'All Dates';
+  const statusFilter = document.getElementById('statusFilter')?.value || 'All Status';
+  const typeFilter = document.getElementById('typeFilter')?.value || 'All Types';
+  
+  let csv = 'Receipt #,Room/Facility,Type,Guest Name,Guest Contact,Schedule,Booking Status,Discount Status,Created\n';
+  
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 8) {
+      const receipt = cells[0].textContent.trim().replace(/,/g, ';');
+      const room = cells[1].textContent.trim().replace(/,/g, ';');
+      const type = cells[2].textContent.trim().replace(/,/g, ';');
+      const guestText = cells[3].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      const guestParts = guestText.split(/[📞✉]/);
+      const guestName = guestParts[0].trim();
+      const guestContact = guestParts.slice(1).join(' | ').trim();
+      const schedule = cells[4].textContent.trim().replace(/\n/g, ' | ').replace(/,/g, ';');
+      const status = cells[5].textContent.trim().replace(/,/g, ';');
+      const discount = cells[6].textContent.trim().replace(/,/g, ';');
+      const created = cells[7].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      
+      csv += `"${receipt}","${room}","${type}","${guestName}","${guestContact}","${schedule}","${status}","${discount}","${created}"\n`;
+    }
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bookings_${dateFilter.replace(/[^0-9-]/g, '') || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast(`Exported ${rows.length} bookings to Excel (Filters: Date=${dateFilter}, Status=${statusFilter}, Type=${typeFilter})`, 'success');
+}
 </script>

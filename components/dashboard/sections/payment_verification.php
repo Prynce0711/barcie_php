@@ -11,6 +11,16 @@
 				<small class="opacity-75">Review payment proofs and verify or reject payments.</small>
 			</div>
 			<div class="card-body">
+				<!-- Action Buttons -->
+				<div class="d-flex justify-content-end mb-2 gap-2">
+					<button type="button" class="btn btn-sm btn-outline-info" onclick="downloadPaymentsExcel()">
+						<i class="fas fa-file-excel me-1"></i>Export to Excel
+					</button>
+					<button type="button" class="btn btn-sm btn-info text-white" onclick="downloadPaymentsPDF()">
+						<i class="fas fa-file-alt me-1"></i>Export to Text
+					</button>
+				</div>
+				
 				<!-- Filters Section -->
 				<div class="card mb-3 border-0 bg-light">
 					<div class="card-body py-3">
@@ -381,6 +391,110 @@ if ($stmt) {
 				dateInput.value = '';
 				filterPayments();
 			}
+		};
+		
+		// Download payment verifications as text backup
+		window.downloadPaymentsPDF = function() {
+			const rows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(row => {
+				return row.style.display !== 'none' && !row.id;
+			});
+			
+			if (rows.length === 0) {
+				showToast('No payment records to export with current filters', 'warning');
+				return;
+			}
+			
+			const dateFilter = document.getElementById('paymentDateFilter')?.value || 'All Dates';
+			
+			let content = `BARCIE INTERNATIONAL CENTER - PAYMENT VERIFICATIONS BACKUP
+Generated: ${new Date().toLocaleString()}
+Total Records: ${rows.length}
+
+FILTERS APPLIED:
+- Date: ${dateFilter}
+
+${'='.repeat(80)}
+
+`;
+
+			rows.forEach((row, index) => {
+				const cells = row.querySelectorAll('td');
+				if (cells.length >= 6) {
+					const receipt = cells[0].textContent.trim();
+					const guest = cells[1].textContent.trim().replace(/\n/g, ' ');
+					const amount = cells[2].textContent.trim();
+					const method = cells[3].textContent.trim();
+					const status = cells[4].textContent.trim();
+					const date = cells[5].textContent.trim().replace(/\n/g, ' ');
+					
+					content += `${index + 1}. ${receipt}
+   Guest: ${guest}
+   Amount: ${amount}
+   Payment Method: ${method}
+   Status: ${status}
+   Date: ${date}
+${'-'.repeat(80)}
+
+`;
+				}
+			});
+			
+			const blob = new Blob([content], { type: 'text/plain' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `payment_verifications_backup_${new Date().toISOString().split('T')[0]}.txt`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+			
+			showToast('Payment verifications backup downloaded successfully', 'success');
+		};
+		
+		// Download payment verifications as Excel
+		window.downloadPaymentsExcel = function() {
+			const rows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(row => {
+				return row.style.display !== 'none' && !row.id;
+			});
+			
+			if (rows.length === 0) {
+				showToast('No payment records to export with current filters', 'warning');
+				return;
+			}
+			
+			const dateFilter = document.getElementById('paymentDateFilter')?.value || 'All Dates';
+			
+			let csv = 'Receipt #,Guest Name,Guest Contact,Amount,Payment Method,Status,Date\n';
+			
+			rows.forEach(row => {
+				const cells = row.querySelectorAll('td');
+				if (cells.length >= 6) {
+					const receipt = cells[0].textContent.trim().replace(/,/g, ';');
+					const guestText = cells[1].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+					const guestParts = guestText.split(/[📞✉]/);
+					const guestName = guestParts[0].trim();
+					const guestContact = guestParts.slice(1).join(' | ').trim();
+					const amount = cells[2].textContent.trim().replace(/,/g, '');
+					const method = cells[3].textContent.trim().replace(/,/g, ';');
+					const status = cells[4].textContent.trim().replace(/,/g, ';');
+					const date = cells[5].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+					
+					csv += `"${receipt}","${guestName}","${guestContact}","${amount}","${method}","${status}","${date}"\n`;
+				}
+			});
+			
+			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `payment_verifications_${dateFilter.replace(/[^0-9-]/g, '') || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+			
+			showToast(`Exported ${rows.length} payment records to Excel (Filter: Date=${dateFilter})`, 'success');
 		};
 	})();
 })();
