@@ -262,7 +262,11 @@
 
 		// Approve/Reject functions
 		window.approveFeedback = async function(feedbackId) {
-			if (!confirm('Approve this feedback? It will be visible to guests.')) return;
+			const confirmed = await showConfirm(
+				'Approve this feedback? It will be visible to guests.',
+				{ title: 'Approve Feedback', confirmText: 'Approve', confirmClass: 'btn-primary' }
+			);
+			if (!confirmed) return;
 			
 			const formData = new FormData();
 			formData.append('action', 'approve_feedback');
@@ -287,7 +291,11 @@
 		};
 
 		window.rejectFeedback = async function(feedbackId) {
-			if (!confirm('Reject this feedback? It will NOT be visible to guests.')) return;
+			const confirmed = await showConfirm(
+				'Reject this feedback? It will NOT be visible to guests.',
+				{ title: 'Reject Feedback', confirmText: 'Reject', confirmClass: 'btn-danger' }
+			);
+			if (!confirmed) return;
 			
 			const formData = new FormData();
 			formData.append('action', 'reject_feedback');

@@ -93,7 +93,7 @@ if ($stmt) {
 		try { showToast(message, 'info'); } catch (e) { /* ignore */ }
 	}
 	// Delegated handler for verify/reject buttons
-	document.addEventListener('click', function(e){
+	paymentContainer.addEventListener('click', async function(e) {
 		const btn = e.target.closest('.payment-action');
 		if (!btn) return;
 		const bookingId = btn.dataset.bookingId;
@@ -101,7 +101,12 @@ if ($stmt) {
 		if (!bookingId || !action) return;
 
 		const confirmMsg = action === 'verify' ? 'Verify this payment?' : 'Reject this payment?';
-		if (!confirm(confirmMsg)) return;
+		const confirmed = await showConfirm(confirmMsg, { 
+			title: 'Verify Payment', 
+			confirmText: 'Confirm', 
+			confirmClass: action === 'approve' ? 'btn-primary' : 'btn-danger' 
+		});
+		if (!confirmed) return;
 
 			btn.disabled = true;
 

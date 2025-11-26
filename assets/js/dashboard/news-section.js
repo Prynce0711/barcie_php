@@ -354,11 +354,13 @@
      * Delete news
      */
     window.deleteNews = function(newsId) {
-        if (!confirm('Are you sure you want to delete this news item? This action cannot be undone.')) {
-            return;
-        }
-
-        fetch('api/news.php', {
+        const confirmed = await showConfirm(
+          'Are you sure you want to delete this news item? This action cannot be undone.',
+          { title: 'Delete News', confirmText: 'Delete', confirmClass: 'btn-danger' }
+        );
+        if (!confirmed) {
+          return;
+        }        fetch('api/news.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
