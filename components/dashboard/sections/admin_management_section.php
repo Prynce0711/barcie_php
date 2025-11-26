@@ -169,23 +169,52 @@
       return;
     }
 
-    tbody.innerHTML = admins.map(admin => `
-      <tr>
-        <td>${admin.id}</td>
-        <td><i class="fas fa-user me-2"></i>${escapeHtml(admin.username)}</td>
-        <td>${admin.email ? escapeHtml(admin.email) : '<span class="text-muted">N/A</span>'}</td>
-        <td>${admin.created_at ? formatDate(admin.created_at) : 'N/A'}</td>
-        <td>${admin.last_login ? formatDate(admin.last_login) : '<span class="text-muted">Never</span>'}</td>
-        <td>
-          <button class="btn btn-sm btn-primary me-1" onclick="editAdmin(${admin.id})" title="Edit">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteAdmin(${admin.id}, '${escapeHtml(admin.username)}')" title="Delete">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = admins.map(admin => {
+      const adminId = admin.id || 0;
+      const username = escapeHtml(admin.username || '');
+      const email = admin.email ? escapeHtml(admin.email) : '<span class="text-muted">N/A</span>';
+      const createdAt = admin.created_at ? formatDate(admin.created_at) : 'N/A';
+      const lastLogin = admin.last_login ? formatDate(admin.last_login) : '<span class="text-muted">Never</span>';
+      
+      return `
+        <tr data-admin-id="${adminId}">
+          <td>${adminId}</td>
+          <td><i class="fas fa-user me-2"></i>${username}</td>
+          <td>${email}</td>
+          <td>${createdAt}</td>
+          <td>${lastLogin}</td>
+          <td>
+            <button class="btn btn-sm btn-primary me-1 edit-admin-btn" data-admin-id="${adminId}" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger delete-admin-btn" data-admin-id="${adminId}" data-admin-username="${username}" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach event listeners to edit buttons
+    document.querySelectorAll('.edit-admin-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const adminId = parseInt(this.getAttribute('data-admin-id'));
+        if (adminId && window.editAdmin) {
+          window.editAdmin(adminId);
+        }
+      });
+    });
+
+    // Attach event listeners to delete buttons
+    document.querySelectorAll('.delete-admin-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const adminId = parseInt(this.getAttribute('data-admin-id'));
+        const username = this.getAttribute('data-admin-username');
+        if (adminId && window.deleteAdmin) {
+          window.deleteAdmin(adminId, username);
+        }
+      });
+    });
   }
 
   // Confirm delete
@@ -229,10 +258,57 @@
   window.loadAdmins = loadAdmins;
 
   // Global function to show delete confirmation
-  window.deleteAdmin = function(adminId, username) {
-    currentDeleteAdminId = adminId;
-    document.getElementById('delete-admin-username').textContent = username;
-    deleteAdminModal.show();
+  window.deleteAdmin = async function(adminId, username) {
+    console.log('Delete admin called:', adminId, username);
+    
+    // Use custom confirmation modal
+    if (typeof showConfirm === 'function') {
+      const confirmed = await showConfirm(
+        `Are you sure you want to delete admin <strong>${username}</strong>? This action cannot be undone!`,
+        { 
+          title: 'Delete Administrator', 
+          confirmText: 'Delete', 
+          cancelText: 'Cancel',
+          confirmClass: 'btn-danger' 
+        }
+      );
+      
+      if (!confirmed) return;
+      
+      // Proceed with deletion
+      showToast('Deleting admin...', 'info', 2000);
+      
+      fetch('api/admin_management.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=delete&admin_id=${adminId}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast('Admin deleted successfully!', 'success');
+          loadAdmins();
+        } else {
+          showToast(data.message || 'Failed to delete admin', 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('Error deleting admin', 'error');
+      });
+    } else {
+      // Fallback to modal if showConfirm not available
+      currentDeleteAdminId = adminId;
+      const usernameEl = document.getElementById('delete-admin-username');
+      if (usernameEl) {
+        usernameEl.textContent = username;
+      }
+      if (deleteAdminModal) {
+        deleteAdminModal.show();
+      }
+    }
   };
 
   // Utility function for alerts (make it global)
