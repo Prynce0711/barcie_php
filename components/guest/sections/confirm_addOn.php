@@ -285,7 +285,7 @@
     try {
       if (typeof showToast === 'function') return showToast(message, type);
     } catch (e) {}
-    try { alert(message); } catch (e) { /* ignore */ }
+    try { showToast(message, 'info'); } catch (e) { /* ignore */ }
   }
 
   // Clear all form data
@@ -367,7 +367,7 @@
       }, 250);
     } catch (e) {
       console.error('Print error:', e);
-      alert('Unable to print. Please try again.');
+      showToast('Unable to print. Please try again.', 'error');
     }
   };
   
@@ -426,7 +426,7 @@
     } catch (e) {
       console.error('Error showing success modal:', e);
       // Fallback to alert
-      alert('Booking successful! ' + (message || ''));
+      showToast('Booking successful! ' + (message || ''), 'success');
       clearFormData();
     }
   }

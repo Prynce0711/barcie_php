@@ -282,7 +282,7 @@ document.addEventListener('click', function(e){
   if (!bookingId || !action) return;
 
   const confirmFn = window.showConfirmModal || function(msg){ return Promise.resolve(confirm(msg)); };
-  const alertFn = window.showAdminAlert || function(msg, type){ try { alert(msg); } catch(e){ console.log(msg); } };
+  const alertFn = window.showAdminAlert || function(msg, type){ try { showToast(msg, type || 'info'); } catch(e){ console.log(msg); } };
 
   confirmFn('Are you sure you want to ' + action + ' this discount application?').then(function(confirmed){
     if (!confirmed) return;

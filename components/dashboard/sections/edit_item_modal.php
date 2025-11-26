@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const totalImages = currentImages.length - removedImages.length + files.length;
     if (totalImages > MAX_IMAGES) {
-      alert(`Maximum ${MAX_IMAGES} images allowed. You can upload ${MAX_IMAGES - (currentImages.length - removedImages.length)} more images.`);
+      showToast(`Maximum ${MAX_IMAGES} images allowed. You can upload ${MAX_IMAGES - (currentImages.length - removedImages.length)} more images.`, 'warning');
       this.value = '';
       return;
     }
@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add addon card
   addAddonBtn.addEventListener('click', function() {
     if (addonsContainer.children.length >= 10) {
-      alert('Maximum 10 add-ons allowed.');
+      showToast('Maximum 10 add-ons allowed.', 'warning');
       return;
     }
     addAddonCard();
@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (totalCount > MAX_IMAGES) {
       e.preventDefault();
-      alert(`Maximum ${MAX_IMAGES} images allowed.`);
+      showToast(`Maximum ${MAX_IMAGES} images allowed.`, 'error');
       return;
     }
     
@@ -631,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const addonCards = addonsContainer.querySelectorAll('.addon-card');
     if (addonCards.length > 10) {
       e.preventDefault();
-      alert('Maximum 10 add-ons allowed.');
+      showToast('Maximum 10 add-ons allowed.', 'error');
       return;
     }
   });

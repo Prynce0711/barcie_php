@@ -110,7 +110,7 @@
           if (typeof window.showAdminAlert === 'function') {
             window.showAdminAlert('danger', 'Error updating admin');
           } else {
-            alert('Error updating admin');
+            showToast('Error updating admin', 'error');
           }
         })
         .finally(() => {
@@ -136,7 +136,7 @@
           if (typeof window.showAdminAlert === 'function') {
             window.showAdminAlert('danger', 'Failed to load admin details');
           } else {
-            alert('Failed to load admin details');
+            showToast('Failed to load admin details', 'error');
           }
         }
       })
@@ -145,7 +145,7 @@
         if (typeof window.showAdminAlert === 'function') {
           window.showAdminAlert('danger', 'Error loading admin details');
         } else {
-          alert('Error loading admin details');
+          showToast('Error loading admin details', 'error');
         }
       });
   };

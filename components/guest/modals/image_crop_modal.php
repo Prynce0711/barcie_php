@@ -880,7 +880,7 @@ async function extractTextFromImage(imageDataUrl) {
         reader.readAsDataURL(file);
       } catch (error) {
         console.error('Failed to load cropper:', error);
-        alert('Failed to load image editor. Processing original image...');
+        showToast('Failed to load image editor. Processing original image...', 'warning');
         processImage(file);
       }
     }
@@ -1032,7 +1032,7 @@ async function extractTextFromImage(imageDataUrl) {
           if (imgEl) imgEl.style.display = 'none';
           if (cropper) { cropper.destroy(); cropper = null; }
         } catch (err) {
-          alert('Camera access denied or not available');
+          showToast('Camera access denied or not available', 'error');
         }
       }
 

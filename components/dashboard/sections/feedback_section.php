@@ -275,14 +275,14 @@
 				});
 				const json = await res.json();
 				if (json.success) {
-					alert(json.message || 'Feedback approved!');
+					showToast(json.message || 'Feedback approved!', 'success');
 					fetchData(); // Reload data
 				} else {
-					alert('Error: ' + (json.error || 'Failed to approve feedback'));
+					showToast('Error: ' + (json.error || 'Failed to approve feedback'), 'error');
 				}
 			} catch (err) {
 				console.error(err);
-				alert('Error approving feedback');
+				showToast('Error approving feedback', 'error');
 			}
 		};
 
@@ -300,14 +300,14 @@
 				});
 				const json = await res.json();
 				if (json.success) {
-					alert(json.message || 'Feedback rejected');
+					showToast(json.message || 'Feedback rejected', 'success');
 					fetchData(); // Reload data
 				} else {
-					alert('Error: ' + (json.error || 'Failed to reject feedback'));
+					showToast('Error: ' + (json.error || 'Failed to reject feedback'), 'error');
 				}
 			} catch (err) {
 				console.error(err);
-				alert('Error rejecting feedback');
+				showToast('Error rejecting feedback', 'error');
 			}
 		};
 
