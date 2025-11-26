@@ -41,26 +41,26 @@ while ($booking = $bookings->fetch_assoc()):
   ?>
   <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
     <!-- Receipt # -->
-    <td>
+    <td data-label="Receipt #">
       <strong style="font-size: 0.7rem;">BARCIE-<?= date('Ymd', strtotime($booking['created_at'])) ?>-<?= str_pad($booking['id'], 4, '0', STR_PAD_LEFT) ?></strong>
     </td>
     
     <!-- Room/Facility -->
-    <td>
+    <td data-label="Room/Facility">
       <div style="line-height: 1.3;">
         <strong style="font-size: 0.75rem;"><?= htmlspecialchars($room_facility ?? 'Unassigned') ?></strong>
       </div>
     </td>
     
     <!-- Type -->
-    <td>
+    <td data-label="Type">
       <span class="badge bg-<?= $booking['type'] === 'reservation' ? 'primary' : 'warning' ?>" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
         <?= $booking['type'] === 'reservation' ? 'Reservation' : 'Pencil Booking' ?>
       </span>
     </td>
     
     <!-- Guest Details -->
-    <td>
+    <td data-label="Guest">
       <div style="line-height: 1.3;">
         <strong style="font-size: 0.75rem;"><?= htmlspecialchars($guest_name ?? 'Guest') ?></strong><br>
         <?php if ($guest_phone): ?>
@@ -73,7 +73,7 @@ while ($booking = $bookings->fetch_assoc()):
     </td>
     
     <!-- Schedule -->
-    <td>
+    <td data-label="Schedule">
       <div style="line-height: 1.3; font-size: 0.7rem;">
         <strong>In:</strong> <?= date('M j, Y', strtotime($booking['checkin'])) ?><br>
         <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['checkin'])) ?></small><br>
@@ -83,14 +83,14 @@ while ($booking = $bookings->fetch_assoc()):
     </td>
     
     <!-- Booking Status -->
-    <td>
+    <td data-label="Status">
       <span class="badge bg-<?= $badge_color ?>" style="font-size: 0.65rem; padding: 0.35rem 0.6rem;">
         <?= ucfirst(str_replace('_', ' ', $booking['status'])) ?>
       </span>
     </td>
     
     <!-- Discount Status -->
-    <td>
+    <td data-label="Discount">
       <?php 
       $discount_badge_colors = [
         'pending' => 'warning',
@@ -107,7 +107,7 @@ while ($booking = $bookings->fetch_assoc()):
     </td>
     
     <!-- Created -->
-    <td>
+    <td data-label="Created">
       <div style="font-size: 0.7rem; line-height: 1.3;">
         <?= date('M j, Y', strtotime($booking['created_at'])) ?><br>
         <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['created_at'])) ?></small>
@@ -115,8 +115,8 @@ while ($booking = $bookings->fetch_assoc()):
     </td>
     
     <!-- Actions -->
-    <td>
-      <div class="d-flex flex-column" style="gap: 0.25rem;">
+    <td data-label="Actions">
+      <div class="d-flex flex-column flex-md-row" style="gap: 0.25rem;">
         <!-- View Details Button (Always visible) -->
         <button class="btn btn-info btn-sm" onclick="viewBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
           <i class="fas fa-eye"></i> View
