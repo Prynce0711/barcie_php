@@ -12,22 +12,53 @@
         <small class="opacity-75">Manage all pencil bookings - tentative reservations awaiting confirmation.</small>
       </div>
       <div class="card-body">
-        <!-- Filters -->
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <label for="pencilStatusFilter" class="form-label">Filter by Status:</label>
-            <select id="pencilStatusFilter" class="form-select" onchange="filterPencilBookings()">
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-          <div class="col-md-8">
-            <label for="pencilSearch" class="form-label">Search:</label>
-            <input type="text" id="pencilSearch" class="form-control" placeholder="Search by guest name, phone, email..." oninput="filterPencilBookings()">
+        <!-- Filters Section -->
+        <div class="card mb-3 border-0 bg-light">
+          <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+              <!-- Date Filter -->
+              <div class="col-md-3">
+                <label for="pencilDateFilter" class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-calendar-alt me-1"></i>Date
+                </label>
+                <input type="date" id="pencilDateFilter" class="form-control" onchange="filterPencilBookings()">
+              </div>
+              
+              <!-- Quick Date Actions -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-warning" onclick="setPencilDateToday()">
+                    <i class="fas fa-calendar-day me-1"></i>Today
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPencilDate()">
+                    <i class="fas fa-calendar me-1"></i>All
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Status Filter -->
+              <div class="col-md-4">
+                <label for="pencilStatusFilter" class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-info-circle me-1"></i>Status
+                </label>
+                <select id="pencilStatusFilter" class="form-select" onchange="filterPencilBookings()">
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              
+              <!-- Reset Button -->
+              <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('pencilDateFilter').value='';document.getElementById('pencilStatusFilter').value='';filterPencilBookings();">
+                  <i class="fas fa-redo me-1"></i>Reset
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -92,8 +123,11 @@
                   $expires_class = 'text-success';
                   $expires_text = $days_remaining . ' days left';
                 }
+                
+                // Extract date from created_at for filtering (format: YYYY-MM-DD)
+                $booking_date = date('Y-m-d', strtotime($booking['created_at']));
               ?>
-              <tr data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
+              <tr data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
                 <td>
                   <strong style="font-size: 0.7rem;">BARCIE-<?= date('Ymd', strtotime($booking['created_at'])) ?>-<?= str_pad($booking['id'], 4, '0', STR_PAD_LEFT) ?></strong>
                 </td>
@@ -198,16 +232,16 @@
   // Client-side filtering implementation
   window.filterPencilBookings = function(){
     const status = (document.getElementById('pencilStatusFilter')?.value || '').toLowerCase();
-    const query = (document.getElementById('pencilSearch')?.value || '').toLowerCase().trim();
+    const dateFilter = document.getElementById('pencilDateFilter')?.value || '';
     const rows = document.querySelectorAll('#pencilTable tbody tr');
     let visibleCount = 0;
     rows.forEach(row => {
       const rstatus = (row.dataset.status || '').toLowerCase();
-      const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
+      const rdate = row.dataset.date || '';
       
       let show = true;
       if (status && rstatus.indexOf(status) === -1) show = false;
-      if (query && rguest.indexOf(query) === -1) show = false;
+      if (dateFilter && rdate !== dateFilter) show = false;
       
       row.style.display = show ? '' : 'none';
       if (show) visibleCount++;
@@ -240,12 +274,12 @@
 
   function doesRowMatchFilter(row){
     const status = (document.getElementById('pencilStatusFilter')?.value || '').toLowerCase();
-    const query = (document.getElementById('pencilSearch')?.value || '').toLowerCase().trim();
+    const dateFilter = document.getElementById('pencilDateFilter')?.value || '';
     const rstatus = (row.dataset.status || '').toLowerCase();
-    const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
+    const rdate = row.dataset.date || '';
 
     if (status && rstatus.indexOf(status) === -1) return false;
-    if (query && rguest.indexOf(query) === -1) return false;
+    if (dateFilter && rdate !== dateFilter) return false;
     return true;
   }
 
@@ -515,4 +549,22 @@ function showAlert(elementId, message, type) {
     }, 5000);
   }
 }
+
+// Helper functions for date filter
+window.setPencilDateToday = function() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('pencilDateFilter');
+  if (dateInput) {
+    dateInput.value = today;
+    filterPencilBookings();
+  }
+};
+
+window.clearPencilDate = function() {
+  const dateInput = document.getElementById('pencilDateFilter');
+  if (dateInput) {
+    dateInput.value = '';
+    filterPencilBookings();
+  }
+};
 </script>

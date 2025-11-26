@@ -124,17 +124,38 @@ function validateDiscountProof($text, $discountType) {
     $text = strtolower($text);
     $text = preg_replace('/[^a-z0-9 ]/', ' ', $text);
     
-    // Define keywords for each discount type
-    $lcupKeywords = [
+    // Define specific keywords for each discount type
+    $studentKeywords = [
+        'student',
+        'estudyante',
+        'undergraduate',
+        'scholar',
+        'enrollee',
+        'id no',
+        'student no',
+        'student number',
+        'alumni'
+    ];
+    
+    $facultyKeywords = [
+        'faculty',
+        'employee',
+        'personnel',
+        'staff',
+        'teacher',
+        'professor',
+        'instructor',
+        'employee no',
+        'emp no',
+        'employee id'
+    ];
+    
+    $lcupGeneral = [
         'la consolacion',
         'lcup',
         'consolacion university',
         'la consolacion university philippines',
-        'employee',
-        'personnel',
-        'student',
-        'alumni',
-        'staff'
+        'malolos'
     ];
     
     $seniorKeywords = [
@@ -142,67 +163,165 @@ function validateDiscountProof($text, $discountType) {
         'senior citizen',
         'osca',
         'office of senior citizen',
+        'elderly',
+        'lolo',
+        'lola',
+        'senior id',
+        'sc id'
+    ];
+    
+    $pwdKeywords = [
         'pwd',
         'person with disability',
         'disability',
-        'senior citizen id',
-        'senior id'
+        'persons with disabilities',
+        'pwd id',
+        'disabled'
     ];
     
     $result = [
         'valid' => false,
-        'confidence' => 0,
         'reason' => '',
-        'matched_keywords' => []
+        'matched_keywords' => [],
+        'id_type' => ''
     ];
     
     switch ($discountType) {
-        case 'lcuppersonnel':
         case 'lcupstudent':
-            // Check for LCUP-related keywords
-            $matchCount = 0;
-            foreach ($lcupKeywords as $keyword) {
+            // Must have LCUP keywords AND student-specific keywords
+            $lcupMatch = 0;
+            $studentMatch = 0;
+            
+            foreach ($lcupGeneral as $keyword) {
                 if (strpos($text, $keyword) !== false) {
-                    $matchCount++;
+                    $lcupMatch++;
                     $result['matched_keywords'][] = $keyword;
                 }
             }
             
-            if ($matchCount >= 2) {
+            foreach ($studentKeywords as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $studentMatch++;
+                    $result['matched_keywords'][] = $keyword;
+                }
+            }
+            
+            // Check if it's actually a faculty/personnel ID (reject it)
+            $facultyMatch = 0;
+            foreach ($facultyKeywords as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $facultyMatch++;
+                }
+            }
+            
+            if ($facultyMatch > 0) {
+                $result['valid'] = false;
+                $result['reason'] = 'This appears to be a Faculty/Personnel ID, not a Student ID. Please upload a valid LCUP Student or Alumni ID.';
+                $result['id_type'] = 'faculty';
+            } else if ($lcupMatch >= 1 && $studentMatch >= 1) {
                 $result['valid'] = true;
-                $result['confidence'] = min(100, $matchCount * 30);
-                $result['reason'] = 'Detected LCUP-related keywords in ID: ' . implode(', ', $result['matched_keywords']);
-            } else if ($matchCount === 1) {
-                $result['valid'] = true;
-                $result['confidence'] = 50;
-                $result['reason'] = 'Detected possible LCUP ID (confidence: low). Keywords found: ' . implode(', ', $result['matched_keywords']);
+                $result['reason'] = 'Valid LCUP Student/Alumni ID approved.';
+                $result['id_type'] = 'student';
+            } else if ($lcupMatch >= 1 && $studentMatch === 0) {
+                $result['valid'] = false;
+                $result['reason'] = 'This appears to be a LCUP ID but student-specific information is not clear. Please ensure it\'s a Student or Alumni ID.';
             } else {
-                $result['reason'] = 'No LCUP keywords detected in the ID. Please ensure you upload a valid LCUP personnel or student ID.';
+                $result['valid'] = false;
+                $result['reason'] = 'This does not appear to be a LCUP Student/Alumni ID. Please upload a valid LCUP Student or Alumni ID card.';
+            }
+            break;
+            
+        case 'lcuppersonnel':
+            // Must have LCUP keywords AND faculty/personnel keywords
+            $lcupMatch = 0;
+            $facultyMatch = 0;
+            
+            foreach ($lcupGeneral as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $lcupMatch++;
+                    $result['matched_keywords'][] = $keyword;
+                }
+            }
+            
+            foreach ($facultyKeywords as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $facultyMatch++;
+                    $result['matched_keywords'][] = $keyword;
+                }
+            }
+            
+            // Check if it's actually a student ID (reject it)
+            $studentMatch = 0;
+            foreach ($studentKeywords as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $studentMatch++;
+                }
+            }
+            
+            if ($studentMatch > 0) {
+                $result['valid'] = false;
+                $result['reason'] = 'This appears to be a Student ID, not a Faculty/Personnel ID. Please upload a valid LCUP Employee/Faculty ID.';
+                $result['id_type'] = 'student';
+            } else if ($lcupMatch >= 1 && $facultyMatch >= 1) {
+                $result['valid'] = true;
+                $result['reason'] = 'Valid LCUP Faculty/Personnel ID approved.';
+                $result['id_type'] = 'faculty';
+            } else if ($lcupMatch >= 1 && $facultyMatch === 0) {
+                $result['valid'] = false;
+                $result['reason'] = 'This appears to be a LCUP ID but personnel-specific information is not clear. Please ensure it\'s a Faculty or Employee ID.';
+            } else {
+                $result['valid'] = false;
+                $result['reason'] = 'This does not appear to be a LCUP Faculty/Personnel ID. Please upload a valid LCUP Employee or Faculty ID card.';
             }
             break;
             
         case 'pwd_senior':
-            // Check for senior/PWD keywords
-            $matchCount = 0;
+            // Must have EITHER senior OR PWD keywords (not LCUP keywords)
+            $seniorMatch = 0;
+            $pwdMatch = 0;
+            $lcupMatch = 0;
+            
             foreach ($seniorKeywords as $keyword) {
                 if (strpos($text, $keyword) !== false) {
-                    $matchCount++;
+                    $seniorMatch++;
                     $result['matched_keywords'][] = $keyword;
                 }
             }
             
-            if ($matchCount >= 1) {
+            foreach ($pwdKeywords as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $pwdMatch++;
+                    $result['matched_keywords'][] = $keyword;
+                }
+            }
+            
+            // Check if it's actually a LCUP ID (reject it)
+            foreach ($lcupGeneral as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $lcupMatch++;
+                }
+            }
+            
+            if ($lcupMatch > 0) {
+                $result['valid'] = false;
+                $result['reason'] = 'This appears to be a LCUP ID, not a Senior/PWD ID. Please upload a valid government-issued Senior Citizen or PWD ID.';
+                $result['id_type'] = 'lcup';
+            } else if ($seniorMatch >= 1) {
                 $result['valid'] = true;
-                $result['confidence'] = min(100, $matchCount * 40);
-                $result['reason'] = 'Detected senior/PWD keywords in ID: ' . implode(', ', $result['matched_keywords']);
+                $result['reason'] = 'Valid Senior Citizen ID approved.';
+                $result['id_type'] = 'senior';
+            } else if ($pwdMatch >= 1) {
+                $result['valid'] = true;
+                $result['reason'] = 'Valid PWD ID approved.';
+                $result['id_type'] = 'pwd';
             } else {
-                $result['reason'] = 'No senior citizen or PWD keywords detected. Please upload a valid government-issued senior or PWD ID.';
+                $result['valid'] = false;
+                $result['reason'] = 'This does not appear to be a Senior Citizen or PWD ID. Please upload a valid government-issued Senior or PWD ID card.';
             }
             break;
             
         default:
             $result['valid'] = true;
-            $result['confidence'] = 0;
             $result['reason'] = 'Unknown discount type - accepted by default';
     }
     
@@ -240,7 +359,6 @@ try {
         echo json_encode([
             'success' => true,
             'valid' => true,
-            'confidence' => 50,
             'reason' => $manualMsg,
             'manual_review' => true,
             'warning' => 'Automatic OCR validation not available. Your ID will be manually verified.',
@@ -255,9 +373,9 @@ try {
     echo json_encode([
         'success' => true,
         'valid' => $validation['valid'],
-        'confidence' => $validation['confidence'],
         'reason' => $validation['reason'],
         'matched_keywords' => $validation['matched_keywords'],
+        'id_type' => $validation['id_type'],
         'extracted_text_length' => strlen($extractedText)
     ]);
     

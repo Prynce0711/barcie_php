@@ -35,45 +35,80 @@
           <small class="opacity-75">Manage all guest reservations and bookings</small>
         </div>
         <div class="card-body">
-          <!-- Filter Controls -->
-          <div class="row mb-3">
-            <div class="col-md-3">
-              <label class="form-label">Filter by Status:</label>
-              <select class="form-select" id="statusFilter" onchange="filterBookings()">
-                <option value="">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="checked_in">Checked In</option>
-                <option value="checked_out">Checked Out</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Filter by Type:</label>
-              <!-- Button group for quick type filtering (keeps select for compatibility but hidden) -->
-              <div class="btn-group w-100 mb-2" role="group" aria-label="Type filter">
-                <button type="button" class="btn btn-secondary type-filter-btn active" data-type=""><i class="fas fa-list me-1"></i>All</button>
-                <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="room"><i class="fas fa-bed me-1"></i>Room</button>
-                <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="facility"><i class="fas fa-building me-1"></i>Facility</button>
+          <!-- Filters Section -->
+          <div class="card mb-3 border-0 bg-light">
+            <div class="card-body py-3">
+              <div class="row g-3">
+                <!-- Date Filter -->
+                <div class="col-md-3">
+                  <label for="bookingDateFilter" class="form-label fw-semibold text-muted small mb-2">
+                    <i class="fas fa-calendar-alt me-1"></i>Date
+                  </label>
+                  <input type="date" id="bookingDateFilter" class="form-control" onchange="filterBookings()">
+                </div>
+                
+                <!-- Quick Date Actions -->
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="setBookingDateToday()">
+                      <i class="fas fa-calendar-day me-1"></i>Today
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearBookingDate()">
+                      <i class="fas fa-calendar me-1"></i>All
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Status Filter -->
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-muted small mb-2">
+                    <i class="fas fa-info-circle me-1"></i>Status
+                  </label>
+                  <select class="form-select" id="statusFilter" onchange="filterBookings()">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="checked_in">Checked In</option>
+                    <option value="checked_out">Checked Out</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                
+                <!-- Type Filter -->
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-muted small mb-2">
+                    <i class="fas fa-tag me-1"></i>Type
+                  </label>
+                  <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm type-filter-btn active" data-type="">
+                      <i class="fas fa-list me-1"></i>All
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm type-filter-btn" data-type="room">
+                      <i class="fas fa-bed me-1"></i>Room
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm type-filter-btn" data-type="facility">
+                      <i class="fas fa-building me-1"></i>Facility
+                    </button>
+                  </div>
+                  <select class="form-select d-none" id="typeFilter" onchange="filterBookings()">
+                    <option value="">All Types</option>
+                    <option value="room">Room</option>
+                    <option value="facility">Facility</option>
+                  </select>
+                </div>
               </div>
-              <select class="form-select d-none" id="typeFilter" onchange="filterBookings()">
-                <option value="">All Types</option>
-                <option value="room">Room</option>
-                <option value="facility">Facility</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Search Guest:</label>
-              <input type="text" class="form-control" id="guestSearch"
-                placeholder="Search by guest name or booking details..." onkeyup="filterBookings()">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">&nbsp;</label>
-              <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
-                <i class="fas fa-refresh me-1"></i>Reset
-              </button>
+              
+              <!-- Reset Button Row -->
+              <div class="row mt-2">
+                <div class="col-12 text-end">
+                  <button class="btn btn-sm btn-outline-secondary" onclick="resetFilters()">
+                    <i class="fas fa-redo me-1"></i>Reset Filters
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -85,13 +120,13 @@
       <table class="table table-hover align-middle" id="bookingsTable">
               <thead class="table-dark">
                 <tr>
-                  <th style="width: 7%;">Receipt #</th>
-                  <th style="width: 10%;">Room/Facility</th>
-                  <th style="width: 6%;">Type</th>
+                  <th style="width: 8%;">Receipt #</th>
+                  <th style="width: 11%;">Room/Facility</th>
+                  <th style="width: 5%;">Type</th>
                   <th style="width: 15%;">Guest Details</th>
-                  <th style="width: 11%;">Schedule</th>
-                  <th style="width: 8%;">Booking Status</th>
-                  <th style="width: 8%;">Discount Status</th>
+                  <th style="width: 12%;">Schedule</th>
+                  <th style="width: 9%;">Booking Status</th>
+                  <th style="width: 9%;">Discount Status</th>
                   <th style="width: 8%;">Created</th>
                   <th style="width: 9%;">Actions</th>
                 </tr>
@@ -200,27 +235,19 @@
         const sel = document.getElementById('typeFilter');
         if (!sel) return;
         sel.value = type;
-        // update button visuals: active becomes filled, others outline
+        // Update button active state
         document.querySelectorAll('.type-filter-btn').forEach(b=>{
           b.classList.remove('active');
-          b.classList.remove('btn-secondary');
-          b.classList.add('btn-outline-secondary');
         });
         const btn = document.querySelector('.type-filter-btn[data-type="' + type + '"]');
         if (btn) {
           btn.classList.add('active');
-          btn.classList.remove('btn-outline-secondary');
-          btn.classList.add('btn-secondary');
         }
         if (trigger !== false) {
           try {
-            window.filterBookings && window.filterBookings();
-            // Also trigger discounts and payment verification updates when changing type
-            try { if (typeof window.filterDiscounts === 'function') window.filterDiscounts(); } catch(e){ console.error('filterDiscounts error', e); }
-            try { if (typeof window.loadPaymentVerification === 'function') window.loadPaymentVerification(); } catch(e){ /* optional function */ }
-            // Scroll bookings table into view for clarity
-            const bookingsTable = document.getElementById('bookingsTable');
-            if (bookingsTable && bookingsTable.scrollIntoView) bookingsTable.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (typeof window.filterBookings === 'function') {
+              window.filterBookings();
+            }
           } catch(e){ console.error('filterBookings() error', e); }
         }
       }
@@ -255,7 +282,7 @@
       window.filterBookings = function(){
         const status = (document.getElementById('statusFilter')?.value || '').toLowerCase();
         const type = (document.getElementById('typeFilter')?.value || '').toLowerCase();
-        const query = (document.getElementById('guestSearch')?.value || '').toLowerCase().trim();
+        const dateFilter = document.getElementById('bookingDateFilter')?.value || '';
         const rows = document.querySelectorAll('#bookingsTable tbody tr');
         let visibleCount = 0;
         rows.forEach(row => {
@@ -263,12 +290,12 @@
           if (row.closest('tbody') === null) return;
           const rstatus = (row.dataset.status || '').toLowerCase();
           const rtype = (row.dataset.type || '').toLowerCase();
-          const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
+          const rdate = row.dataset.date || '';
 
           let show = true;
           if (status && rstatus.indexOf(status) === -1) show = false;
           if (type && rtype.indexOf(type) === -1) show = false;
-          if (query && rguest.indexOf(query) === -1) show = false;
+          if (dateFilter && rdate !== dateFilter) show = false;
 
           row.style.display = show ? '' : 'none';
           if (show) visibleCount++;
@@ -288,6 +315,24 @@
           }
         } else {
           if (noRow && noRow.parentNode) noRow.parentNode.removeChild(noRow);
+        }
+      };
+      
+      // Helper functions for date filter
+      window.setBookingDateToday = function() {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('bookingDateFilter');
+        if (dateInput) {
+          dateInput.value = today;
+          filterBookings();
+        }
+      };
+      
+      window.clearBookingDate = function() {
+        const dateInput = document.getElementById('bookingDateFilter');
+        if (dateInput) {
+          dateInput.value = '';
+          filterBookings();
         }
       };
 
@@ -489,14 +534,14 @@
       function doesRowMatchFilter(row){
         const status = (document.getElementById('statusFilter')?.value || '').toLowerCase();
         const type = (document.getElementById('typeFilter')?.value || '').toLowerCase();
-        const query = (document.getElementById('guestSearch')?.value || '').toLowerCase().trim();
+        const dateFilter = document.getElementById('bookingDateFilter')?.value || '';
         const rstatus = (row.dataset.status || '').toLowerCase();
         const rtype = (row.dataset.type || '').toLowerCase();
-        const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
+        const rdate = row.dataset.date || '';
 
         if (status && rstatus.indexOf(status) === -1) return false;
         if (type && rtype.indexOf(type) === -1) return false;
-        if (query && rguest.indexOf(query) === -1) return false;
+        if (dateFilter && rdate !== dateFilter) return false;
         return true;
       }
 

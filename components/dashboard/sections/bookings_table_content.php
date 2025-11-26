@@ -38,8 +38,11 @@ while ($booking = $bookings->fetch_assoc()):
   if ($booking['room_number']) {
     $room_facility .= ' #' . $booking['room_number'];
   }
+  
+  // Extract date from created_at for filtering (format: YYYY-MM-DD)
+  $booking_date = date('Y-m-d', strtotime($booking['created_at']));
   ?>
-  <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
+  <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
     <!-- Receipt # -->
     <td data-label="Receipt #">
       <strong style="font-size: 0.7rem;">BARCIE-<?= date('Ymd', strtotime($booking['created_at'])) ?>-<?= str_pad($booking['id'], 4, '0', STR_PAD_LEFT) ?></strong>
@@ -54,8 +57,8 @@ while ($booking = $bookings->fetch_assoc()):
     
     <!-- Type -->
     <td data-label="Type">
-      <span class="badge bg-<?= $booking['type'] === 'reservation' ? 'primary' : 'warning' ?>" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-        <?= $booking['type'] === 'reservation' ? 'Reservation' : 'Pencil Booking' ?>
+      <span class="badge bg-<?= $booking['type'] === 'reservation' ? 'primary' : 'warning' ?>" style="font-size: 0.6rem; padding: 0.25rem 0.4rem; white-space: nowrap;">
+        <?= $booking['type'] === 'reservation' ? 'Reserve' : 'Pencil' ?>
       </span>
     </td>
     
@@ -116,7 +119,7 @@ while ($booking = $bookings->fetch_assoc()):
     
     <!-- Actions -->
     <td data-label="Actions">
-      <div class="d-flex flex-column flex-md-row" style="gap: 0.25rem;">
+      <div class="d-flex flex-row flex-wrap" style="gap: 0.25rem;">
         <!-- View Details Button (Always visible) -->
         <button class="btn btn-info btn-sm" onclick="viewBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
           <i class="fas fa-eye"></i> View

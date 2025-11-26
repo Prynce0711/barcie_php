@@ -11,6 +11,41 @@
 				<small class="opacity-75">Review payment proofs and verify or reject payments.</small>
 			</div>
 			<div class="card-body">
+				<!-- Filters Section -->
+				<div class="card mb-3 border-0 bg-light">
+					<div class="card-body py-3">
+						<div class="row g-3 align-items-end">
+							<!-- Date Filter -->
+							<div class="col-md-4">
+								<label for="paymentDateFilter" class="form-label fw-semibold text-muted small mb-2">
+									<i class="fas fa-calendar-alt me-1"></i>Date
+								</label>
+								<input type="date" id="paymentDateFilter" class="form-control" onchange="filterPayments()">
+							</div>
+							
+							<!-- Quick Date Actions -->
+							<div class="col-md-4">
+								<label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
+								<div class="d-flex gap-2">
+									<button type="button" class="btn btn-sm btn-info text-white" onclick="setPaymentDateToday()">
+										<i class="fas fa-calendar-day me-1"></i>Today
+									</button>
+									<button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPaymentDate()">
+										<i class="fas fa-calendar me-1"></i>All
+									</button>
+								</div>
+							</div>
+							
+							<!-- Reset Button -->
+							<div class="col-md-4 text-end">
+								<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('paymentDateFilter').value='';filterPayments();">
+									<i class="fas fa-redo me-1"></i>Reset Filters
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				
 				<div class="table-responsive">
 					<table class="table table-hover align-middle" id="paymentsTable">
 						<thead class="table-light">
@@ -25,7 +60,7 @@
 						</thead>
 						<tbody>
 <?php
-$stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.proof_of_payment, b.created_at, i.name as room_name FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE (b.payment_status = 'pending' OR (b.proof_of_payment IS NOT NULL AND b.proof_of_payment <> '')) ORDER BY b.created_at DESC");
+$stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.proof_of_payment, b.created_at, b.checkin, i.name as room_name FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE (b.payment_status = 'pending' OR (b.proof_of_payment IS NOT NULL AND b.proof_of_payment <> '')) ORDER BY b.created_at DESC");
 if ($stmt) {
 	$stmt->execute();
 	$res = $stmt->get_result();
@@ -36,6 +71,7 @@ if ($stmt) {
 			$details = $row['details'] ?: '';
 			$proof = $row['proof_of_payment'] ?: '';
 			$created = $row['created_at'];
+			$checkin = $row['checkin'] ?: '';
 			$room = $row['room_name'] ?: 'Unassigned';
 
 			// Try to extract guest and amount info from details
@@ -43,8 +79,11 @@ if ($stmt) {
 			if (preg_match('/Guest:\s*([^|]+)/', $details, $m)) $guest = trim($m[1]);
 			$amount = '';
 			if (preg_match('/Amount:\s*([^|]+)/', $details, $m)) $amount = trim($m[1]);
+			
+			// Extract date from created_at for filtering (format: YYYY-MM-DD)
+			$booking_date = date('Y-m-d', strtotime($created));
 
-			echo '<tr id="payment-row-' . $id . '">';
+			echo '<tr id="payment-row-' . $id . '" data-date="' . htmlspecialchars($booking_date) . '">';
 			echo '<td><strong>' . htmlspecialchars($receipt) . '</strong></td>';
 			echo '<td>' . htmlspecialchars($guest) . '</td>';
 			echo '<td>' . htmlspecialchars($amount ?: $room) . '</td>';
@@ -222,7 +261,13 @@ if ($stmt) {
 		let pstate = { perPage: PER_PAGE_P, currentPage: 1, totalPages: 1 };
 
 		function pGetAllRows(){
-			return Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => r.id !== 'payments-no-results');
+			const dateFilter = document.getElementById('paymentDateFilter')?.value || '';
+			return Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => {
+				if (r.id === 'payments-no-results') return false;
+				const rdate = r.dataset.date || '';
+				if (dateFilter && rdate !== dateFilter) return false;
+				return true;
+			});
 		}
 
 		let paymentsFadeToken = 0;
@@ -312,6 +357,31 @@ if ($stmt) {
 		document.addEventListener('DOMContentLoaded', function(){ pRecalc(); });
 
 		window._paymentsPagination = { setPerPage: function(n){ pstate.perPage = Math.max(1, Number(n)||PER_PAGE_P); pstate.currentPage = 1; pRecalc(); }, goToPage: function(p){ pstate.currentPage = Math.min(Math.max(1, Number(p)||1), pstate.totalPages); pRecalc(); } };
+		
+		// Helper functions for date filter
+		window.filterPayments = function() {
+			try {
+				pstate.currentPage = 1;
+				pRecalc();
+			} catch (err) { console.error('filterPayments error', err); }
+		};
+		
+		window.setPaymentDateToday = function() {
+			const today = new Date().toISOString().split('T')[0];
+			const dateInput = document.getElementById('paymentDateFilter');
+			if (dateInput) {
+				dateInput.value = today;
+				filterPayments();
+			}
+		};
+		
+		window.clearPaymentDate = function() {
+			const dateInput = document.getElementById('paymentDateFilter');
+			if (dateInput) {
+				dateInput.value = '';
+				filterPayments();
+			}
+		};
 	})();
 })();
 </script>
