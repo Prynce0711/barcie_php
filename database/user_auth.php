@@ -47,14 +47,6 @@ if ($vendor_available) {
 function create_email_template($title, $content, $footerText = '') {
     $currentYear = date('Y');
     
-    // Get base64 encoded logo
-    $logo_path = __DIR__ . '/../assets/images/imageBg/barcie_logo.jpg';
-    $logo_data = '';
-    if (file_exists($logo_path)) {
-        $logo_base64 = base64_encode(file_get_contents($logo_path));
-        $logo_data = 'data:image/jpeg;base64,' . $logo_base64;
-    }
-    
     return '
     <!DOCTYPE html>
     <html lang="en">
@@ -66,37 +58,49 @@ function create_email_template($title, $content, $footerText = '') {
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, \'Helvetica Neue\', Arial, sans-serif; background-color: #f4f4f4;">
         <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4;" cellpadding="0" cellspacing="0">
             <tr>
-                <td align="center" style="padding: 40px 0;">
+                <td align="center" style="padding: 40px 20px;">
                     <!-- Main Container -->
-                    <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" cellpadding="0" cellspacing="0">
+                    <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);" cellpadding="0" cellspacing="0">
                         
                         <!-- Header -->
                         <tr>
-                            <td style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-                                ' . ($logo_data ? '<img src="' . $logo_data . '" alt="BarCIE Logo" style="width: 80px; height: 80px; margin-bottom: 15px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" />' : '') . '
-                                <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">BarCIE International Center</h1>
-                                <p style="margin: 10px 0 0 0; color: #f0f0f0; font-size: 14px;">La Consolacion University Philippines</p>
+                            <td style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                                <div style="width: 80px; height: 80px; margin: 0 auto 20px; background-color: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.3);">
+                                    <span style="font-size: 40px; color: #ffffff;">&#127970;</span>
+                                </div>
+                                <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">BarCIE International Center</h1>
+                                <p style="margin: 12px 0 0 0; color: #e3f2fd; font-size: 15px; font-weight: 500;">La Consolacion University Philippines</p>
                             </td>
                         </tr>
                         
                         <!-- Content -->
                         <tr>
-                            <td style="padding: 40px 30px;">
+                            <td style="padding: 45px 35px;">
                                 ' . $content . '
                             </td>
                         </tr>
                         
                         <!-- Footer -->
                         <tr>
-                            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
-                                ' . ($footerText ? '<p style="margin: 0 0 15px 0; color: #6c757d; font-size: 13px;">' . $footerText . '</p>' : '') . '
-                                <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 13px;">
-                                    <strong>BarCIE International Center</strong><br>
-                                    La Consolacion University Philippines<br>
-                                    Email: pc.clemente11@gmail.com
-                                </p>
-                                <p style="margin: 15px 0 0 0; color: #adb5bd; font-size: 12px;">
-                                    © ' . $currentYear . ' BarCIE International Center. All rights reserved.
+                            <td style="background-color: #f8f9fa; padding: 35px 30px; text-align: center; border-radius: 0 0 12px 12px; border-top: 2px solid #e9ecef;">
+                                ' . ($footerText ? '<p style="margin: 0 0 20px 0; color: #6c757d; font-size: 14px; line-height: 1.5;">' . $footerText . '</p>' : '') . '
+                                <div style="margin-bottom: 20px;">
+                                    <p style="margin: 0 0 8px 0; color: #495057; font-size: 15px; font-weight: 600;">Contact Information</p>
+                                    <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 13px;">
+                                        <strong>BarCIE International Center</strong>
+                                    </p>
+                                    <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 13px;">
+                                        La Consolacion University Philippines
+                                    </p>
+                                    <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 13px;">
+                                        Email: <a href="mailto:pc.clemente11@gmail.com" style="color: #2a5298; text-decoration: none;">pc.clemente11@gmail.com</a>
+                                    </p>
+                                    <p style="margin: 0; color: #6c757d; font-size: 13px;">
+                                        Phone: [Contact Number] &bull; Hours: Mon-Fri 8:00 AM - 5:00 PM
+                                    </p>
+                                </div>
+                                <p style="margin: 0; color: #adb5bd; font-size: 12px;">
+                                    &copy; ' . $currentYear . ' BarCIE International Center. All rights reserved.
                                 </p>
                             </td>
                         </tr>
@@ -1547,60 +1551,91 @@ if ($action === 'create_booking') {
                     
                     $subject = "Booking Confirmation - BarCIE International Center";
                     
+                    // Calculate stay duration
+                    $checkin_date = new DateTime($checkin);
+                    $checkout_date = new DateTime($checkout);
+                    $duration = $checkin_date->diff($checkout_date);
+                    $nights = $duration->days;
+                    
                     // Create professional email content
                     $emailContent = '
-                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600;">Booking Confirmation</h2>
-                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
-                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                                &#128205; RESERVATION RECEIVED
+                            </div>
+                        </div>
+                        
+                        <h2 style="margin: 0 0 15px 0; color: #212529; font-size: 26px; font-weight: 700; text-align: center;">Booking Confirmation</h2>
+                        <p style="margin: 0 0 25px 0; color: #6c757d; font-size: 14px; text-align: center;">
+                            Receipt #<strong style="color: #2a5298;">' . htmlspecialchars($receipt_no) . '</strong>
                         </p>
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Thank you for your booking! We have received your reservation request with the following details:
+                        
+                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                            Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
+                            Thank you for choosing BarCIE International Center! We have successfully received your reservation request and our team will review it shortly.
                         </p>
                         
                         <!-- Booking Details Card -->
-                        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f8f9fa; border-radius: 6px; margin-bottom: 25px;" cellpadding="0" cellspacing="0">
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 10px; margin-bottom: 25px; border: 2px solid #dee2e6;" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="padding: 25px;">
+                                <td style="padding: 28px;">
+                                    <h3 style="margin: 0 0 20px 0; color: #212529; font-size: 18px; font-weight: 700; border-bottom: 2px solid #2a5298; padding-bottom: 10px;">
+                                        &#128197; Reservation Details
+                                    </h3>
                                     <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                                         <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Receipt Number:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($receipt_no) . '</td>
+                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px; width: 45%;">
+                                                <span style="font-weight: 600;">&#127970; Room/Facility:</span>
+                                            </td>
+                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . htmlspecialchars($room_data['name']) . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Room/Facility:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($room_data['name']) . '</td>
+                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
+                                                <span style="font-weight: 600;">&#128198; Check-in:</span>
+                                            </td>
+                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . date('l, F j, Y', strtotime($checkin)) . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-in Date:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y', strtotime($checkin)) . '</td>
+                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
+                                                <span style="font-weight: 600;">&#128197; Check-out:</span>
+                                            </td>
+                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . date('l, F j, Y', strtotime($checkout)) . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-out Date:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
+                                                <span style="font-weight: 600;">&#128337; Duration:</span>
+                                            </td>
+                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . $nights . ' ' . ($nights == 1 ? 'Night' : 'Nights') . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Number of Occupants:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($occupants) . '</td>
+                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
+                                                <span style="font-weight: 600;">&#128101; Occupants:</span>
+                                            </td>
+                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . htmlspecialchars($occupants) . ' ' . ($occupants == 1 ? 'Guest' : 'Guests') . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Booking Status:</td>
-                                            <td style="padding: 8px 0;">
-                                                <span style="display: inline-block; padding: 4px 12px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 600; border-radius: 4px;">Pending Approval</span>
+                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
+                                                <span style="font-weight: 600;">&#128274; Status:</span>
+                                            </td>
+                                            <td style="padding: 10px 0;">
+                                                <span style="display: inline-block; padding: 6px 16px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 700; border-radius: 20px; box-shadow: 0 2px 6px rgba(255, 193, 7, 0.3);">&#9200; Pending Approval</span>
                                             </td>
                                         </tr>';
                     
                     if (!empty($discount_type)) {
                         $emailContent .= '
                                         <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Discount Applied:</td>
-                                            <td style="padding: 8px 0;">
-                                                <span style="display: inline-block; padding: 4px 12px; background-color: #17a2b8; color: #fff; font-size: 13px; font-weight: 600; border-radius: 4px;">' . htmlspecialchars($discount_type) . '</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Discount Status:</td>
-                                            <td style="padding: 8px 0;">
-                                                <span style="display: inline-block; padding: 4px 12px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 600; border-radius: 4px;">Pending Review</span>
+                                            <td colspan="2" style="padding-top: 15px;">
+                                                <div style="background-color: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px 15px; border-radius: 4px;">
+                                                    <p style="margin: 0 0 5px 0; color: #0c5460; font-size: 14px; font-weight: 600;">
+                                                        &#127991; Discount Applied: ' . htmlspecialchars($discount_type) . '
+                                                    </p>
+                                                    <p style="margin: 0; color: #0c5460; font-size: 13px;">
+                                                        Status: <strong>Pending Review</strong> - Our team will verify your discount eligibility.
+                                                    </p>
+                                                </div>
                                             </td>
                                         </tr>';
                     }
@@ -1612,40 +1647,72 @@ if ($action === 'create_booking') {
                         </table>
                         
                         <!-- Next Steps -->
-                        <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
-                            <p style="margin: 0; color: #1976D2; font-size: 14px; line-height: 1.6;">
-                                <strong>📋 What happens next?</strong><br>
-                                Our team will review your booking request and notify you via email once it has been approved. Please keep this receipt number for your records.
-                            </p>
+                        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #2196F3; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);">
+                            <h4 style="margin: 0 0 12px 0; color: #0d47a1; font-size: 16px; font-weight: 700;">
+                                &#128221; What Happens Next?
+                            </h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #1565c0; font-size: 14px; line-height: 1.8;">
+                                <li>Our team will review your booking within 24 hours</li>
+                                <li>You will receive an email notification once your booking is approved</li>
+                                <li>Please keep your receipt number for reference</li>
+                                <li>Once approved, proceed with payment to confirm your reservation</li>
+                            </ul>
                         </div>
                         
-                        <!-- Payment Information with QR Code -->
-                        <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
-                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 15px; font-weight: 600;">
-                                💳 Bank Transfer Payment Information
+                        <!-- Payment Information -->
+                        <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-left: 5px solid #28a745; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);">
+                            <h4 style="margin: 0 0 15px 0; color: #155724; font-size: 16px; font-weight: 700;">
+                                &#128179; Payment Information
+                            </h4>
+                            <p style="margin: 0 0 12px 0; color: #155724; font-size: 14px; line-height: 1.6;">
+                                <strong>Bank Account Details:</strong>
                             </p>
-                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 14px; line-height: 1.6;">
-                                <strong>Bank Account Details:</strong><br>
-                                <strong>Bank Name:</strong> BDO / BPI / GCash<br>
-                                <strong>Account Name:</strong> BarCIE International Center<br>
-                                <strong>Account Number:</strong> XXXX-XXXX-XXXX
-                            </p>
-                            <p style="margin: 10px 0; text-align: center;">
-                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/bank_qr.php" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">
-                                    📱 View QR Code for Bank Transfer
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 15px;" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Bank Name:</td>
+                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BDO / BPI / GCash</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Name:</td>
+                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BarCIE International Center</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Number:</td>
+                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">XXXX-XXXX-XXXX</td>
+                                </tr>
+                            </table>
+                            <div style="text-align: center; margin: 15px 0;">
+                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/bank_qr.php" style="display: inline-block; padding: 14px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
+                                    &#128241; View Payment QR Code
                                 </a>
-                            </p>
-                            <p style="margin: 10px 0 0 0; color: #155724; font-size: 13px; line-height: 1.6;">
-                                <em>Scan the QR code with your banking app for quick and easy payment. Please upload your payment proof after completing the transaction.</em>
+                            </div>
+                            <p style="margin: 0; color: #155724; font-size: 13px; line-height: 1.6; font-style: italic; text-align: center;">
+                                Scan the QR code with your mobile banking app for instant payment. Upload your payment receipt after completing the transaction.
                             </p>
                         </div>
                         
-                        <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            If you have any questions or need to make changes to your booking, please contact us with your receipt number.
+                        <!-- Important Reminders -->
+                        <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
+                            <h4 style="margin: 0 0 12px 0; color: #856404; font-size: 16px; font-weight: 700;">
+                                &#9888; Important Reminders
+                            </h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px; line-height: 1.8;">
+                                <li>Check-in time: 2:00 PM | Check-out time: 12:00 PM</li>
+                                <li>Please bring a valid government-issued ID upon check-in</li>
+                                <li>Payment must be completed before check-in date</li>
+                                <li>Cancellations must be made 48 hours in advance</li>
+                            </ul>
+                        </div>
+                        
+                        <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.7; text-align: center;">
+                            For questions or modifications to your booking, please contact us with your receipt number <strong style="color: #2a5298;">' . htmlspecialchars($receipt_no) . '</strong>
                         </p>
-                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Thank you for choosing BarCIE International Center!
-                        </p>';
+                        
+                        <div style="text-align: center; padding: 20px 0; border-top: 2px solid #e9ecef; margin-top: 25px;">
+                            <p style="margin: 0; color: #1e3c72; font-size: 16px; font-weight: 600;">
+                                We look forward to welcoming you! &#127881;
+                            </p>
+                        </div>';
                     
                     $emailBody = create_email_template('Booking Confirmation', $emailContent, 'This is an automated message. Please do not reply directly to this email.');
                     
@@ -2418,55 +2485,139 @@ if ($action === 'admin_update_booking') {
             switch ($adminAction) {
                 case 'approve':
                     $emailSubject = 'Booking Approved - BarCIE International Center';
+                    
+                    // Calculate stay duration
+                    $checkin_date_approve = new DateTime($checkin);
+                    $checkout_date_approve = new DateTime($checkout);
+                    $duration_approve = $checkin_date_approve->diff($checkout_date_approve);
+                    $nights_approve = $duration_approve->days;
+                    
                     $emailContent = '
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <div style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
-                                ✓ APPROVED
+                        <div style="text-align: center; margin-bottom: 35px;">
+                            <div style="display: inline-block; padding: 15px 35px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border-radius: 50px; font-size: 16px; font-weight: 700; box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);">
+                                &#10004; BOOKING APPROVED
                             </div>
                         </div>
                         
-                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Your Booking Has Been Approved!</h2>
-                        
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
-                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        <h2 style="margin: 0 0 15px 0; color: #28a745; font-size: 28px; font-weight: 700; text-align: center;">Your Reservation is Confirmed!</h2>
+                        <p style="margin: 0 0 30px 0; color: #6c757d; font-size: 14px; text-align: center;">
+                            Confirmation sent on ' . date('F j, Y \a\t g:i A') . '
                         </p>
                         
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Great news! Your reservation has been confirmed. We are pleased to welcome you to BarCIE International Center.
+                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                            Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
+                            Excellent news! We are delighted to confirm that your reservation has been approved. We are excited to welcome you to BarCIE International Center and ensure you have a wonderful experience!
                         </p>
                         
                         <!-- Booking Details Card -->
-                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #28a745;" cellpadding="0" cellspacing="0">
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 10px; margin-bottom: 25px; border: 3px solid #28a745; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="padding: 25px;">
-                                    <h3 style="margin: 0 0 15px 0; color: #155724; font-size: 18px;">Reservation Details</h3>
+                                <td style="padding: 30px;">
+                                    <div style="text-align: center; margin-bottom: 20px;">
+                                        <span style="font-size: 48px;">&#127881;</span>
+                                    </div>
+                                    <h3 style="margin: 0 0 20px 0; color: #155724; font-size: 20px; font-weight: 700; text-align: center; border-bottom: 2px solid #28a745; padding-bottom: 12px;">
+                                        Your Confirmed Reservation
+                                    </h3>
                                     <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                                         <tr>
-                                            <td style="padding: 8px 0; color: #155724; font-size: 14px; font-weight: 600;">Room/Facility:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                            <td style="padding: 12px 0; color: #155724; font-size: 14px; font-weight: 600; width: 45%;">
+                                                &#127970; Room/Facility:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . htmlspecialchars($room_name) . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #155724; font-size: 14px; font-weight: 600;">Check-in Date:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkin)) . '</td>
+                                            <td style="padding: 12px 0; color: #155724; font-size: 14px; font-weight: 600;">
+                                                &#128198; Check-in:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . date('l, F j, Y', strtotime($checkin)) . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #155724; font-size: 14px; font-weight: 600;">Check-out Date:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                            <td style="padding: 12px 0; color: #155724; font-size: 14px; font-weight: 600;">
+                                                &#9201; Check-in Time:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">2:00 PM onwards</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #155724; font-size: 14px; font-weight: 600;">
+                                                &#128197; Check-out:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . date('l, F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #155724; font-size: 14px; font-weight: 600;">
+                                                &#9200; Check-out Time:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">Before 12:00 PM (Noon)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #155724; font-size: 14px; font-weight: 600;">
+                                                &#128337; Duration:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . $nights_approve . ' ' . ($nights_approve == 1 ? 'Night' : 'Nights') . '</td>
                                         </tr>
                                     </table>
                                 </td>
                             </tr>
                         </table>
                         
-                        <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
-                            <p style="margin: 0; color: #1976D2; font-size: 14px; line-height: 1.6;">
-                                <strong>📌 Important:</strong> Please arrive during check-in hours and bring a valid ID. If you have any special requests, feel free to contact us in advance.
+                        <!-- Important Check-in Requirements -->
+                        <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border-left: 5px solid #ffc107; padding: 22px 28px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);">
+                            <h4 style="margin: 0 0 15px 0; color: #856404; font-size: 17px; font-weight: 700;">
+                                &#128221; Check-in Requirements
+                            </h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px; line-height: 2;">
+                                <li><strong>Valid Government-Issued ID</strong> (Driver\'s License, Passport, or National ID)</li>
+                                <li><strong>Payment Confirmation</strong> receipt or reference number</li>
+                                <li><strong>This confirmation email</strong> (printed or digital copy)</li>
+                                <li>Arrive between <strong>2:00 PM - 6:00 PM</strong> for smooth check-in</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- What to Expect -->
+                        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #2196F3; padding: 22px 28px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);">
+                            <h4 style="margin: 0 0 15px 0; color: #0d47a1; font-size: 17px; font-weight: 700;">
+                                &#127775; What to Expect During Your Stay
+                            </h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #1565c0; font-size: 14px; line-height: 2;">
+                                <li>24/7 security and front desk assistance</li>
+                                <li>Clean and comfortable accommodations</li>
+                                <li>High-speed WiFi connectivity</li>
+                                <li>Complimentary toiletries and linens</li>
+                                <li>Access to common areas and facilities</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Payment Reminder -->
+                        <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-left: 5px solid #28a745; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
+                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 15px; font-weight: 700;">
+                                &#128179; Payment Required Before Check-in
+                            </p>
+                            <p style="margin: 0; color: #155724; font-size: 14px; line-height: 1.7;">
+                                Please ensure payment is completed at least 24 hours before your check-in date. You can pay via bank transfer using the details provided in your initial booking confirmation email.
                             </p>
                         </div>
                         
-                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
-                            We look forward to welcoming you!
-                        </p>';
+                        <!-- Cancellation Policy -->
+                        <div style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
+                            <p style="margin: 0 0 10px 0; color: #721c24; font-size: 15px; font-weight: 700;">
+                                &#9888; Cancellation Policy
+                            </p>
+                            <p style="margin: 0; color: #721c24; font-size: 14px; line-height: 1.7;">
+                                Cancellations must be made at least <strong>48 hours before check-in</strong> for a full refund. Cancellations made within 48 hours will incur a 50% cancellation fee. No-shows will be charged the full amount.
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 25px 0; border-top: 2px solid #e9ecef; margin-top: 30px;">
+                            <p style="margin: 0 0 10px 0; color: #28a745; font-size: 20px; font-weight: 700;">
+                                We can\'t wait to host you! &#128522;
+                            </p>
+                            <p style="margin: 0; color: #6c757d; font-size: 14px;">
+                                For any questions or special requests, please contact us anytime.
+                            </p>
+                        </div>';
                     break;
                     
                 case 'reject':
@@ -2521,98 +2672,251 @@ if ($action === 'admin_update_booking') {
                     break;
                     
                 case 'checkin':
-                    $emailSubject = 'Check-in Confirmed - BarCIE International Center';
+                    $emailSubject = 'Welcome! Check-in Confirmed - BarCIE International Center';
+                    
+                    // Calculate remaining nights
+                    $today_checkin = new DateTime();
+                    $checkout_date_checkin = new DateTime($checkout);
+                    $remaining_duration = $today_checkin->diff($checkout_date_checkin);
+                    $remaining_nights = $remaining_duration->days;
+                    
                     $emailContent = '
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <div style="display: inline-block; background-color: #17a2b8; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
-                                ✓ CHECKED IN
+                        <div style="text-align: center; margin-bottom: 35px;">
+                            <div style="display: inline-block; padding: 15px 35px; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; border-radius: 50px; font-size: 16px; font-weight: 700; box-shadow: 0 6px 20px rgba(23, 162, 184, 0.4);">
+                                &#10004; CHECK-IN CONFIRMED
                             </div>
                         </div>
                         
-                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Welcome to BarCIE!</h2>
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <span style="font-size: 64px;">&#127968;</span>
+                        </div>
                         
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
-                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        <h2 style="margin: 0 0 15px 0; color: #17a2b8; font-size: 28px; font-weight: 700; text-align: center;">Welcome to BarCIE International Center!</h2>
+                        <p style="margin: 0 0 30px 0; color: #6c757d; font-size: 14px; text-align: center;">
+                            Checked in on ' . date('F j, Y \a\t g:i A') . '
                         </p>
                         
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            You have been successfully checked in. We hope you enjoy your stay at BarCIE International Center!
+                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                            Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
+                            Welcome! You have been successfully checked in. We hope you have a comfortable and enjoyable stay with us. Our team is here to ensure your experience is exceptional!
                         </p>
                         
                         <!-- Stay Details Card -->
-                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #17a2b8;" cellpadding="0" cellspacing="0">
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border-radius: 10px; margin-bottom: 25px; border: 3px solid #17a2b8; box-shadow: 0 4px 15px rgba(23, 162, 184, 0.2);" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="padding: 25px;">
-                                    <h3 style="margin: 0 0 15px 0; color: #0c5460; font-size: 18px;">Your Stay</h3>
+                                <td style="padding: 30px;">
+                                    <h3 style="margin: 0 0 20px 0; color: #0c5460; font-size: 20px; font-weight: 700; text-align: center; border-bottom: 2px solid #17a2b8; padding-bottom: 12px;">
+                                        Your Stay Information
+                                    </h3>
                                     <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                                         <tr>
-                                            <td style="padding: 8px 0; color: #0c5460; font-size: 14px; font-weight: 600;">Room/Facility:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                            <td style="padding: 12px 0; color: #0c5460; font-size: 14px; font-weight: 600; width: 45%;">
+                                                &#127970; Room/Facility:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . htmlspecialchars($room_name) . '</td>
                                         </tr>
                                         <tr>
-                                            <td style="padding: 8px 0; color: #0c5460; font-size: 14px; font-weight: 600;">Check-out Date:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                            <td style="padding: 12px 0; color: #0c5460; font-size: 14px; font-weight: 600;">
+                                                &#128197; Check-out Date:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . date('l, F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #0c5460; font-size: 14px; font-weight: 600;">
+                                                &#9200; Check-out Time:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">Before 12:00 PM (Noon)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #0c5460; font-size: 14px; font-weight: 600;">
+                                                &#128337; Remaining Nights:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . $remaining_nights . ' ' . ($remaining_nights == 1 ? 'Night' : 'Nights') . '</td>
                                         </tr>
                                     </table>
                                 </td>
                             </tr>
                         </table>
                         
-                        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
-                            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
-                                <strong>💡 Reminder:</strong> Please remember your check-out date. If you need any assistance during your stay, our staff is here to help!
+                        <!-- Facilities & Services -->
+                        <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-left: 5px solid #4caf50; padding: 22px 28px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(76, 175, 80, 0.15);">
+                            <h4 style="margin: 0 0 15px 0; color: #2e7d32; font-size: 17px; font-weight: 700;">
+                                &#127775; Available Facilities & Services
+                            </h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #2e7d32; font-size: 14px; line-height: 2;">
+                                <li><strong>24/7 Front Desk</strong> - Always available to assist you</li>
+                                <li><strong>WiFi Access</strong> - High-speed internet throughout the facility</li>
+                                <li><strong>Common Areas</strong> - Lounge, reading areas, and recreational spaces</li>
+                                <li><strong>Housekeeping</strong> - Daily cleaning service (request at front desk)</li>
+                                <li><strong>Security</strong> - Round-the-clock security personnel on duty</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Important Reminders -->
+                        <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border-left: 5px solid #ffc107; padding: 22px 28px; margin-bottom: 25px; border-radius: 8px;">
+                            <h4 style="margin: 0 0 15px 0; color: #856404; font-size: 17px; font-weight: 700;">
+                                &#128221; Important Reminders During Your Stay
+                            </h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px; line-height: 2;">
+                                <li>Check-out time is <strong>12:00 PM (Noon)</strong> - Late check-out subject to availability</li>
+                                <li>Keep your key card safe - Lost cards incur a replacement fee</li>
+                                <li>Respect quiet hours: <strong>10:00 PM - 7:00 AM</strong></li>
+                                <li>No smoking inside rooms or indoor facilities</li>
+                                <li>Report any maintenance issues to the front desk immediately</li>
+                                <li>Keep your valuables secured - Use the room safe if available</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Need Assistance -->
+                        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #2196F3; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
+                            <p style="margin: 0 0 10px 0; color: #0d47a1; font-size: 15px; font-weight: 700;">
+                                &#128222; Need Assistance?
+                            </p>
+                            <p style="margin: 0; color: #1565c0; font-size: 14px; line-height: 1.7;">
+                                Our front desk is available 24/7 for any assistance you may need. Don\'t hesitate to reach out for recommendations, directions, or any special requests. We\'re here to make your stay comfortable!
                             </p>
                         </div>
                         
-                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
-                            Enjoy your stay!
-                        </p>';
+                        <div style="text-align: center; padding: 25px 0; border-top: 2px solid #e9ecef; margin-top: 30px;">
+                            <p style="margin: 0 0 10px 0; color: #17a2b8; font-size: 20px; font-weight: 700;">
+                                Enjoy Your Stay! &#127881;
+                            </p>
+                            <p style="margin: 0; color: #6c757d; font-size: 14px;">
+                                Make yourself at home and let us know if you need anything.
+                            </p>
+                        </div>';
                     break;
                     
                 case 'checkout':
-                    $emailSubject = 'Check-out Complete - BarCIE International Center';
+                    $emailSubject = 'Thank You for Your Stay - BarCIE International Center';
+                    
+                    // Calculate total nights stayed
+                    $checkin_date_out = new DateTime($checkin);
+                    $checkout_date_out = new DateTime($checkout);
+                    $stay_duration = $checkin_date_out->diff($checkout_date_out);
+                    $total_nights = $stay_duration->days;
+                    
                     $emailContent = '
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <div style="display: inline-block; background-color: #6f42c1; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
-                                ✓ CHECKED OUT
+                        <div style="text-align: center; margin-bottom: 35px;">
+                            <div style="display: inline-block; padding: 15px 35px; background: linear-gradient(135deg, #6f42c1 0%, #9b59b6 100%); color: white; border-radius: 50px; font-size: 16px; font-weight: 700; box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);">
+                                &#10004; CHECK-OUT COMPLETE
                             </div>
                         </div>
                         
-                        <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Thank You for Staying With Us!</h2>
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <span style="font-size: 64px;">&#127775;</span>
+                        </div>
                         
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
-                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
+                        <h2 style="margin: 0 0 15px 0; color: #6f42c1; font-size: 28px; font-weight: 700; text-align: center;">Thank You for Staying With Us!</h2>
+                        <p style="margin: 0 0 30px 0; color: #6c757d; font-size: 14px; text-align: center;">
+                            Checked out on ' . date('F j, Y \a\t g:i A') . '
                         </p>
                         
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Your check-out has been processed successfully. Thank you for choosing BarCIE International Center!
+                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
+                            Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
+                        </p>
+                        <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
+                            Your check-out has been processed successfully. It was our pleasure to host you at BarCIE International Center. We hope you had a comfortable and memorable stay!
                         </p>
                         
                         <!-- Visit Summary Card -->
-                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #e2d9f3 0%, #d6c1f0 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #6f42c1;" cellpadding="0" cellspacing="0">
+                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #e2d9f3 0%, #d6c1f0 100%); border-radius: 10px; margin-bottom: 25px; border: 3px solid #6f42c1; box-shadow: 0 4px 15px rgba(111, 66, 193, 0.2);" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="padding: 25px;">
-                                    <h3 style="margin: 0 0 15px 0; color: #4a148c; font-size: 18px;">Visit Summary</h3>
+                                <td style="padding: 30px;">
+                                    <h3 style="margin: 0 0 20px 0; color: #4a148c; font-size: 20px; font-weight: 700; text-align: center; border-bottom: 2px solid #6f42c1; padding-bottom: 12px;">
+                                        Your Visit Summary
+                                    </h3>
                                     <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                                         <tr>
-                                            <td style="padding: 8px 0; color: #4a148c; font-size: 14px; font-weight: 600;">Room/Facility:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">' . htmlspecialchars($room_name) . '</td>
+                                            <td style="padding: 12px 0; color: #4a148c; font-size: 14px; font-weight: 600; width: 45%;">
+                                                &#127970; Room/Facility:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . htmlspecialchars($room_name) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #4a148c; font-size: 14px; font-weight: 600;">
+                                                &#128198; Check-in Date:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . date('F j, Y', strtotime($checkin)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #4a148c; font-size: 14px; font-weight: 600;">
+                                                &#128197; Check-out Date:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . date('F j, Y', strtotime($checkout)) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 0; color: #4a148c; font-size: 14px; font-weight: 600;">
+                                                &#128337; Total Nights:
+                                            </td>
+                                            <td style="padding: 12px 0; color: #212529; font-size: 16px; font-weight: 700;">' . $total_nights . ' ' . ($total_nights == 1 ? 'Night' : 'Nights') . '</td>
                                         </tr>
                                     </table>
                                 </td>
                             </tr>
                         </table>
                         
-                        <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
-                            <p style="margin: 0; color: #155724; font-size: 14px; line-height: 1.6;">
-                                <strong>🌟 We hope you enjoyed your stay!</strong><br>
-                                Your feedback is important to us. If you have any comments or suggestions, please feel free to reach out.
+                        <!-- Feedback Request -->
+                        <div style="background: linear-gradient(135deg, #fff9e6 0%, #ffe7b8 100%); border-left: 5px solid #ff9800; padding: 22px 28px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(255, 152, 0, 0.15);">
+                            <h4 style="margin: 0 0 15px 0; color: #e65100; font-size: 17px; font-weight: 700;">
+                                &#11088; We Value Your Feedback!
+                            </h4>
+                            <p style="margin: 0 0 12px 0; color: #e65100; font-size: 14px; line-height: 1.7;">
+                                Your experience matters to us! Please take a moment to share your thoughts about your stay. Your feedback helps us continuously improve our services and facilities.
+                            </p>
+                            <p style="margin: 0; color: #e65100; font-size: 13px; font-style: italic;">
+                                You can reply to this email with your comments, suggestions, or any concerns you may have had during your visit.
                             </p>
                         </div>
                         
-                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
-                            We look forward to welcoming you back in the future!
-                        </p>';
+                        <!-- Future Bookings -->
+                        <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-left: 5px solid #4caf50; padding: 22px 28px; margin-bottom: 25px; border-radius: 8px;">
+                            <h4 style="margin: 0 0 15px 0; color: #2e7d32; font-size: 17px; font-weight: 700;">
+                                &#127873; Planning Another Visit?
+                            </h4>
+                            <p style="margin: 0 0 12px 0; color: #2e7d32; font-size: 14px; line-height: 1.7;">
+                                We would be delighted to host you again! Book your next stay with us and experience the same quality service and comfort you enjoyed this time.
+                            </p>
+                            <ul style="margin: 0; padding-left: 20px; color: #2e7d32; font-size: 14px; line-height: 1.8;">
+                                <li><strong>Returning Guest Perks:</strong> Priority booking for your preferred rooms</li>
+                                <li><strong>Special Offers:</strong> Exclusive discounts for repeat guests</li>
+                                <li><strong>Easy Booking:</strong> Contact us directly for faster reservations</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Receipt & Records -->
+                        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #2196F3; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
+                            <p style="margin: 0 0 10px 0; color: #0d47a1; font-size: 15px; font-weight: 700;">
+                                &#128220; Receipt & Records
+                            </p>
+                            <p style="margin: 0; color: #1565c0; font-size: 14px; line-height: 1.7;">
+                                This email serves as your check-out confirmation. For any billing inquiries or to request a detailed receipt, please contact us with your booking reference number.
+                            </p>
+                        </div>
+                        
+                        <!-- Lost & Found -->
+                        <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
+                            <p style="margin: 0 0 10px 0; color: #856404; font-size: 15px; font-weight: 700;">
+                                &#128269; Lost Something?
+                            </p>
+                            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.7;">
+                                If you left any personal belongings behind, please contact our front desk as soon as possible. We keep lost items for 30 days.
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 30px 0; border-top: 2px solid #e9ecef; margin-top: 30px;">
+                            <p style="margin: 0 0 15px 0; color: #6f42c1; font-size: 22px; font-weight: 700;">
+                                Thank You for Choosing BarCIE! &#128591;
+                            </p>
+                            <p style="margin: 0 0 10px 0; color: #495057; font-size: 15px; line-height: 1.6;">
+                                It was our pleasure to serve you. We hope to see you again soon!
+                            </p>
+                            <p style="margin: 0; color: #6c757d; font-size: 14px;">
+                                Safe travels and best wishes! &#127796;
+                            </p>
+                        </div>';
                     break;
                     
                 case 'cancel':
