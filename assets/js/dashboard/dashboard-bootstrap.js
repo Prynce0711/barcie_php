@@ -69,7 +69,7 @@ function initializeDashboard() {
     // Log what we found
     const editButtons = document.querySelectorAll('.edit-toggle-btn');
     const editForms = document.querySelectorAll('[id^="editForm"]');
-    console.log(`Found ${editButtons.length} edit buttons and ${editForms.length} edit forms`);
+    console.log('Found ' + editButtons.length + ' edit buttons and ' + editForms.length + ' edit forms');
   }, 500);
 }
 
@@ -196,12 +196,12 @@ function setupSectionNavigation() {
   
   navLinks.forEach((link, index) => {
     const sectionId = link.getAttribute("data-section");
-    console.log(`  Setting up link ${index + 1}: ${sectionId}`);
+    console.log('  Setting up link ' + (index + 1) + ': ' + sectionId);
     
     link.addEventListener("click", function (e) {
       e.preventDefault(); // Prevent default anchor behavior
       const clickedSectionId = this.getAttribute("data-section");
-      console.log("🖱️ Navigation clicked:", clickedSectionId);
+      console.log('🖱️ Navigation clicked:', clickedSectionId);
       showSection(clickedSectionId);
 
       // Update active state
@@ -263,7 +263,7 @@ function showSection(sectionId) {
   }
   
   allSections.forEach((section, index) => {
-    console.log(`  Hiding section ${index + 1}: ${section.id || 'NO ID'}`);
+    console.log('  Hiding section ' + (index + 1) + ': ' + (section.id || 'NO ID'));
     // Remove all display classes first
     section.classList.remove("d-block", "active");
     section.classList.add("d-none");
@@ -939,7 +939,7 @@ function handleEditToggle(e) {
 
   const toggleBtn = e.target.closest(".edit-toggle-btn");
   const itemId = toggleBtn.getAttribute("data-item-id");
-  const editFormContainer = document.getElementById(`editForm${itemId}`);
+  const editFormContainer = document.getElementById('editForm' + itemId);
 
   console.log(
     "Toggle button:",
@@ -981,7 +981,7 @@ function handleEditCancel(e) {
 
   const cancelBtn = e.target.closest(".edit-cancel-btn");
   const itemId = cancelBtn.getAttribute("data-item-id");
-  const editFormContainer = document.getElementById(`editForm${itemId}`);
+  const editFormContainer = document.getElementById('editForm' + itemId);
   const toggleBtn = document.querySelector(
     `[data-item-id="${itemId}"].edit-toggle-btn`
   );
@@ -1605,7 +1605,7 @@ async function loadFeedbackData(limit = 50, offset = 0) {
 
     // Then load the feedback data
     const response = await fetch(
-      `database/user_auth.php?action=get_feedback_data&limit=${limit}&offset=${offset}`
+      'database/user_auth.php?action=get_feedback_data&limit=' + limit + '&offset=' + offset
     );
     const data = await response.json();
 
@@ -1853,12 +1853,12 @@ function exportFeedback() {
 
 function viewFeedbackDetails(feedbackId) {
   // Implementation for viewing detailed feedback
-  showToast(`View details for feedback ID: ${feedbackId}`, "info");
+  showToast('View details for feedback ID: ' + feedbackId, 'info');
 }
 
 function respondToFeedback(feedbackId) {
   // Implementation for responding to feedback
-  showToast(`Respond to feedback ID: ${feedbackId}`, "info");
+  showToast('Respond to feedback ID: ' + feedbackId, 'info');
 }
 
 // Export feedback functions globally
