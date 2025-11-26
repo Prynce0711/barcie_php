@@ -95,18 +95,46 @@
         const formData = new FormData(this);
         formData.append('action', 'create');
 
+        console.log('=== ADD ADMIN FORM SUBMISSION ===');
+        console.log('Form data entries:');
+        for (let [key, value] of formData.entries()) {
+          if (key === 'password' || key === 'confirm_password') {
+            console.log(key + ':', '[REDACTED - length=' + value.length + ']');
+          } else {
+            console.log(key + ':', value);
+          }
+        }
+
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalHtml = submitBtn.innerHTML;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
         submitBtn.disabled = true;
 
+        console.log('Sending POST request to: api/admin_management.php');
+
         fetch('api/admin_management.php', {
           method: 'POST',
           body: formData
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(response => {
+          console.log('Response status:', response.status);
+          console.log('Response headers:', response.headers);
+          return response.text();
+        })
+        .then(text => {
+          console.log('Raw response text:', text);
+          let data;
+          try {
+            data = JSON.parse(text);
+            console.log('Parsed JSON response:', data);
+          } catch(e) {
+            console.error('Failed to parse JSON:', e);
+            console.error('Response was:', text);
+            throw new Error('Invalid JSON response');
+          }
+          
           if (data.success) {
+            console.log('✓ Admin created successfully! ID:', data.admin_id);
             if (typeof window.showAdminAlert === 'function') {
               window.showAdminAlert('success', 'Admin created successfully!');
             }
@@ -116,6 +144,7 @@
               window.loadAdmins();
             }
           } else {
+            console.error('✗ Failed to create admin:', data.message);
             if (typeof window.showAdminAlert === 'function') {
               window.showAdminAlert('danger', data.message || 'Failed to create admin');
             } else {
@@ -124,9 +153,9 @@
           }
         })
         .catch(error => {
-          console.error('Error:', error);
+          console.error('✗ Fetch error:', error);
           if (typeof window.showAdminAlert === 'function') {
-            window.showAdminAlert('danger', 'Error creating admin');
+            window.showAdminAlert('danger', 'Error creating admin: ' + error.message);
           } else {
             showToast('Error creating admin', 'error');
           }
@@ -134,6 +163,7 @@
         .finally(() => {
           submitBtn.innerHTML = originalHtml;
           submitBtn.disabled = false;
+          console.log('=== FORM SUBMISSION COMPLETE ===');
         });
       });
     }

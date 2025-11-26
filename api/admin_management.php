@@ -72,18 +72,29 @@ try {
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
 
+            error_log("CREATE ADMIN - Username: $username, Email: $email, Password length: " . strlen($password));
+            error_log("POST data: " . print_r($_POST, true));
+
             if (empty($username) || empty($password)) {
+                error_log("CREATE ADMIN FAILED - Missing username or password");
                 $response = ['success' => false, 'message' => 'Username and password are required'];
                 break;
             }
 
             // Check if username already exists
             $stmt = $conn->prepare("SELECT id FROM admins WHERE username = ?");
+            if (!$stmt) {
+                error_log("CREATE ADMIN FAILED - Prepare failed: " . $conn->error);
+                $response = ['success' => false, 'message' => 'Database error: ' . $conn->error];
+                break;
+            }
+            
             $stmt->bind_param("s", $username);
             $stmt->execute();
             $stmt->store_result();
             
             if ($stmt->num_rows > 0) {
+                error_log("CREATE ADMIN FAILED - Username already exists: $username");
                 $response = ['success' => false, 'message' => 'Username already exists'];
                 $stmt->close();
                 break;
@@ -92,14 +103,24 @@ try {
 
             // Hash the password
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+            error_log("CREATE ADMIN - Password hashed successfully");
 
             // Insert new admin
             $stmt = $conn->prepare("INSERT INTO admins (username, email, password, created_at) VALUES (?, ?, ?, NOW())");
+            if (!$stmt) {
+                error_log("CREATE ADMIN FAILED - Prepare INSERT failed: " . $conn->error);
+                $response = ['success' => false, 'message' => 'Database error: ' . $conn->error];
+                break;
+            }
+            
             $stmt->bind_param("sss", $username, $email, $hashed_password);
             
             if ($stmt->execute()) {
-                $response = ['success' => true, 'message' => 'Admin created successfully', 'admin_id' => $conn->insert_id];
+                $new_id = $conn->insert_id;
+                error_log("CREATE ADMIN SUCCESS - New admin ID: $new_id");
+                $response = ['success' => true, 'message' => 'Admin created successfully', 'admin_id' => $new_id];
             } else {
+                error_log("CREATE ADMIN FAILED - Execute failed: " . $stmt->error);
                 $response = ['success' => false, 'message' => 'Failed to create admin: ' . $stmt->error];
             }
             $stmt->close();
