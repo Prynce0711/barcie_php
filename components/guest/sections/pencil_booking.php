@@ -292,7 +292,7 @@ window.showPencilSuccessModal = function(message) {
     bsModal.show();
   } catch (e) {
     console.error('showPencilSuccessModal error', e);
-    try { alert(message || 'Draft reservation submitted successfully!'); } catch (e) {}
+    try { showToast(message || 'Draft reservation submitted successfully!', 'success'); } catch (e) {}
   }
 };
 </script>

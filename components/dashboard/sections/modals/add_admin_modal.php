@@ -87,7 +87,7 @@
           if (typeof window.showAdminAlert === 'function') {
             window.showAdminAlert('danger', 'Passwords do not match!');
           } else {
-            alert('Passwords do not match!');
+            showToast('Passwords do not match!', 'error');
           }
           return;
         }
@@ -128,7 +128,7 @@
           if (typeof window.showAdminAlert === 'function') {
             window.showAdminAlert('danger', 'Error creating admin');
           } else {
-            alert('Error creating admin');
+            showToast('Error creating admin', 'error');
           }
         })
         .finally(() => {

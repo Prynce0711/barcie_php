@@ -456,7 +456,7 @@ function viewPencilBookingDetails(bookingId) {
             this.remove();
           });
         } else {
-          alert(details.replace(/<[^>]*>/g, '\n'));
+          showToast('Booking details loaded', 'info', 3000);
         }
       } else {
         showAlert('pencil_alert', data.message || 'Failed to load booking details', 'danger');

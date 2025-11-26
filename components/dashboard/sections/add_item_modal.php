@@ -248,7 +248,7 @@
                     const files = e.target.files;
                     
                     if (files.length > 10) {
-                      alert('Maximum 10 images allowed');
+                      showToast('Maximum 10 images allowed', 'warning');
                       imageInput.value = '';
                       return;
                     }

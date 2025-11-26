@@ -90,7 +90,7 @@ if ($stmt) {
 		try {
 			if (typeof showToast === 'function') return showToast(message, type);
 		} catch (e) {}
-		try { alert(message); } catch (e) { /* ignore */ }
+		try { showToast(message, 'info'); } catch (e) { /* ignore */ }
 	}
 	// Delegated handler for verify/reject buttons
 	document.addEventListener('click', function(e){

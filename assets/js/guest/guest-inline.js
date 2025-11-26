@@ -70,7 +70,7 @@ if (typeof window.showPencilSuccessModal !== 'function') {
       modalEl.addEventListener('hidden.bs.modal', function() { setTimeout(() => { try { modalEl.remove(); } catch (e) {} }, 200); });
       bsModal.show();
     } catch (e) {
-      try { alert(message || 'Draft reservation submitted successfully!'); } catch (err) {}
+      try { showToast(message || 'Draft reservation submitted successfully!', 'success'); } catch (err) {}
     }
   };
 }

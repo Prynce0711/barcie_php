@@ -1010,7 +1010,7 @@ function pencilReminder() {
   if (typeof showToast === "function") {
     showToast(message, "warning");
   } else {
-    alert(message);
+    showToast(message, "warning");
   }
   return true;
 }
@@ -1022,7 +1022,7 @@ function reservationReminder() {
   if (typeof showToast === "function") {
     showToast(message, "warning");
   } else {
-    alert(message);
+    showToast(message, "warning");
   }
   return true;
 }
@@ -1658,7 +1658,7 @@ function initializeStarRating() {
     feedbackForm.addEventListener('submit', (e) => {
       if (currentRating === 0) {
         e.preventDefault();
-        alert('Please select a star rating before submitting your feedback.');
+        showToast('Please select a star rating before submitting your feedback.', 'warning');
         return false;
       }
       
