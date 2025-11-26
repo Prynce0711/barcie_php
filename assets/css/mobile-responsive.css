@@ -1,0 +1,822 @@
+/* ============================================
+   COMPREHENSIVE MOBILE RESPONSIVENESS
+   Enhanced for optimal mobile experience
+   ============================================ */
+
+/* ========== BASE MOBILE OPTIMIZATIONS ========== */
+@media (max-width: 991px) {
+  /* Main Content Adjustments */
+  .main-content {
+    padding: 1rem 0.75rem !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Container Adjustments */
+  .container-fluid {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Card Adjustments */
+  .card {
+    margin-bottom: 1rem !important;
+    border-radius: 8px !important;
+  }
+
+  .card-header {
+    padding: 0.875rem 1rem !important;
+    font-size: 0.9375rem !important;
+  }
+
+  .card-body {
+    padding: 1rem !important;
+  }
+
+  /* Sidebar Mobile Behavior */
+  .sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    z-index: 2000 !important;
+  }
+
+  .sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  /* Mobile Menu Toggle */
+  .mobile-menu-toggle {
+    display: flex !important;
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 1001 !important;
+  }
+
+  /* Table Responsiveness */
+  .table-responsive {
+    border-radius: 8px !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .table {
+    font-size: 0.75rem !important;
+  }
+
+  .table thead th {
+    padding: 0.5rem 0.35rem !important;
+    font-size: 0.65rem !important;
+    white-space: nowrap !important;
+  }
+
+  .table tbody td {
+    padding: 0.5rem 0.35rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Button Sizing */
+  .btn {
+    padding: 0.5rem 0.875rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  .btn-sm {
+    padding: 0.35rem 0.65rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Form Controls */
+  .form-control,
+  .form-select {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  .form-label {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.375rem !important;
+  }
+
+  /* Modal Adjustments */
+  .modal-dialog {
+    margin: 0.5rem !important;
+    max-width: calc(100% - 1rem) !important;
+  }
+
+  .modal-body {
+    padding: 1.25rem !important;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 1rem !important;
+  }
+
+  /* Badge Sizing */
+  .badge {
+    padding: 0.35rem 0.65rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Dashboard Stats Cards */
+  .card.bg-gradient-primary .h4,
+  .card.bg-gradient-success .h4,
+  .card.bg-gradient-warning .h4,
+  .card.bg-gradient-danger .h4 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Footer Adjustments */
+  .footer {
+    padding: 1rem !important;
+    margin-top: 2rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* ========== TABLET OPTIMIZATIONS (768px - 991px) ========== */
+@media (min-width: 768px) and (max-width: 991px) {
+  .main-content {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .card-body {
+    padding: 1.25rem !important;
+  }
+
+  .table {
+    font-size: 0.8125rem !important;
+  }
+
+  .btn {
+    padding: 0.55rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* ========== PHONE OPTIMIZATIONS (max-width: 767px) ========== */
+@media (max-width: 767px) {
+  /* Reduce overall padding */
+  body {
+    font-size: 14px !important;
+  }
+
+  .main-content {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  /* Heading Adjustments */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important;
+  }
+
+  h3 {
+    font-size: 1.125rem !important;
+  }
+
+  h4 {
+    font-size: 1rem !important;
+  }
+
+  h5 {
+    font-size: 0.9375rem !important;
+  }
+
+  h6 {
+    font-size: 0.875rem !important;
+  }
+
+  /* Card Compact Mode */
+  .card {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .card-header {
+    padding: 0.75rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  .card-body {
+    padding: 0.75rem !important;
+  }
+
+  /* Statistics Cards */
+  .row > [class*="col-"] {
+    margin-bottom: 0.75rem;
+  }
+
+  .card.bg-gradient-primary .h4,
+  .card.bg-gradient-success .h4,
+  .card.bg-gradient-warning .h4,
+  .card.bg-gradient-danger .h4 {
+    font-size: 1.25rem !important;
+  }
+
+  /* Button Adjustments */
+  .btn {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.8125rem !important;
+    width: auto !important;
+  }
+
+  .btn-block {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Action Button Groups */
+  .d-flex.gap-1,
+  .d-flex.gap-2 {
+    flex-wrap: wrap !important;
+  }
+
+  /* Table Extreme Compact */
+  .table {
+    font-size: 0.7rem !important;
+  }
+
+  .table thead th {
+    padding: 0.4rem 0.25rem !important;
+    font-size: 0.625rem !important;
+  }
+
+  .table tbody td {
+    padding: 0.4rem 0.25rem !important;
+    font-size: 0.7rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .table .btn-sm {
+    padding: 0.25rem 0.4rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  .table .badge {
+    padding: 0.25rem 0.4rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* Form Compact Mode */
+  .form-control,
+  .form-select {
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  .form-label {
+    font-size: 0.8125rem !important;
+  }
+
+  /* Modal Full Screen on Mobile */
+  .modal-dialog {
+    margin: 0 !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+  }
+
+  .modal-content {
+    height: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  .modal-body {
+    padding: 1rem !important;
+    max-height: calc(100vh - 120px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Calendar Adjustments */
+  .fc .fc-toolbar {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  .fc .fc-toolbar-chunk {
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .fc .fc-button {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .fc-daygrid-day-number {
+    font-size: 0.75rem !important;
+  }
+
+  .fc-event {
+    font-size: 0.7rem !important;
+    padding: 2px 4px !important;
+  }
+
+  /* Image Previews */
+  .item-image,
+  .room-card .thumb img {
+    height: 150px !important;
+  }
+
+  /* Sidebar Adjustments */
+  .sidebar {
+    width: 260px !important;
+    padding: 1rem !important;
+  }
+
+  .sidebar h2 {
+    font-size: 1.125rem !important;
+  }
+
+  .nav-link-custom {
+    padding: 0.65rem 0.875rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Search Bars */
+  .input-group .form-control {
+    font-size: 0.8125rem !important;
+  }
+
+  /* Filter Buttons */
+  .item-filters .btn {
+    padding: 0.5rem 0.875rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  /* Activity Timeline */
+  .activity-item {
+    padding: 0.75rem !important;
+  }
+
+  .activity-icon .icon-circle {
+    width: 35px !important;
+    height: 35px !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Quick Actions */
+  .quick-action-card {
+    padding: 0.75rem !important;
+  }
+
+  .quick-action-card .action-icon {
+    width: 35px !important;
+    height: 35px !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Text Truncation */
+  .text-truncate-mobile {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 0.75rem 0.5rem !important;
+    margin-top: 1.5rem !important;
+  }
+
+  .footer p {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* ========== SMALL PHONE OPTIMIZATIONS (max-width: 575px) ========== */
+@media (max-width: 575px) {
+  .main-content {
+    padding: 0.5rem !important;
+  }
+
+  /* Ultra Compact Cards */
+  .card {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .card-header {
+    padding: 0.625rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  .card-body {
+    padding: 0.625rem !important;
+  }
+
+  /* Single Column Layout */
+  .row > [class*="col-"] {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  /* Buttons Full Width */
+  .btn-group {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .btn-group .btn {
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Form Full Width */
+  .form-row > [class*="col-"] {
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Table Horizontal Scroll */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Room Cards Stack */
+  .room-card {
+    flex-direction: column !important;
+  }
+
+  .room-card .thumb {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+  }
+
+  .room-card .thumb img {
+    width: 100% !important;
+    height: 180px !important;
+  }
+
+  /* Action Buttons Stack */
+  .room-card .view-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .room-card .view-actions .btn {
+    width: 100% !important;
+  }
+
+  /* Calendar Day View on Small Screens */
+  .fc .fc-toolbar-title {
+    font-size: 1rem !important;
+  }
+
+  /* Reduce Icon Sizes */
+  .fas,
+  .far,
+  .fab {
+    font-size: 0.875rem !important;
+  }
+
+  /* Modal Padding */
+  .modal-body {
+    padding: 0.75rem !important;
+  }
+
+  /* Reduce Gaps */
+  .d-flex.gap-1 {
+    gap: 0.25rem !important;
+  }
+
+  .d-flex.gap-2 {
+    gap: 0.5rem !important;
+  }
+
+  .d-flex.gap-3 {
+    gap: 0.75rem !important;
+  }
+}
+
+/* ========== LANDSCAPE PHONE OPTIMIZATIONS ========== */
+@media (max-height: 575px) and (orientation: landscape) {
+  /* Reduce vertical padding */
+  .main-content {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .card {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .card-body {
+    padding: 0.75rem !important;
+  }
+
+  /* Compact sidebar */
+  .sidebar {
+    padding: 0.75rem !important;
+  }
+
+  .sidebar h2 {
+    font-size: 1rem !important;
+    margin-bottom: 0.75rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .nav-link-custom {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  /* Modal adjustments */
+  .modal-body {
+    padding: 0.75rem !important;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 0.75rem !important;
+  }
+}
+
+/* ========== TOUCH OPTIMIZATIONS ========== */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .btn {
+    min-height: 44px !important;
+  }
+
+  .nav-link-custom {
+    min-height: 44px !important;
+  }
+
+  .form-control,
+  .form-select {
+    min-height: 44px !important;
+  }
+
+  /* Remove hover effects on touch devices */
+  .btn:hover,
+  .card:hover,
+  .nav-link-custom:hover {
+    transform: none !important;
+  }
+
+  /* Better tap feedback */
+  .btn:active,
+  .nav-link-custom:active {
+    opacity: 0.8 !important;
+  }
+}
+
+/* ========== DESKTOP OPTIMIZATIONS (min-width: 992px) ========== */
+@media (min-width: 992px) {
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    transform: translateX(0) !important;
+  }
+
+  .main-content {
+    margin-left: 280px !important;
+    padding: 2rem !important;
+  }
+}
+
+/* ========== LARGE DESKTOP OPTIMIZATIONS (min-width: 1400px) ========== */
+@media (min-width: 1400px) {
+  .container-fluid {
+    max-width: 1920px !important;
+    margin: 0 auto !important;
+  }
+
+  .main-content {
+    padding: 2.5rem 3rem !important;
+  }
+
+  .card-body {
+    padding: 2rem !important;
+  }
+}
+
+/* ========== PRINT OPTIMIZATIONS ========== */
+@media print {
+  .sidebar,
+  .mobile-menu-toggle,
+  .btn,
+  .footer {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .card {
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+
+  .table {
+    font-size: 10pt !important;
+  }
+}
+
+/* ========== ACCESSIBILITY IMPROVEMENTS ========== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========== HIGH CONTRAST MODE ========== */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid #000 !important;
+  }
+
+  .btn {
+    border: 2px solid currentColor !important;
+  }
+
+  .form-control,
+  .form-select {
+    border: 2px solid #000 !important;
+  }
+}
+
+/* ========== UTILITY CLASSES FOR MOBILE ========== */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 991px) {
+  .mobile-only {
+    display: block !important;
+  }
+
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-flex {
+    display: flex !important;
+  }
+
+  .mobile-inline-flex {
+    display: inline-flex !important;
+  }
+}
+
+/* ========== RESPONSIVE TYPOGRAPHY ========== */
+@media (max-width: 767px) {
+  .display-1 {
+    font-size: 2.5rem !important;
+  }
+
+  .display-2 {
+    font-size: 2rem !important;
+  }
+
+  .display-3 {
+    font-size: 1.75rem !important;
+  }
+
+  .display-4 {
+    font-size: 1.5rem !important;
+  }
+
+  .lead {
+    font-size: 1rem !important;
+  }
+}
+
+/* ========== RESPONSIVE SPACING ========== */
+@media (max-width: 767px) {
+  .mb-lg-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .mt-lg-4 {
+    margin-top: 1rem !important;
+  }
+
+  .py-lg-5 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  .px-lg-5 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
+/* ========== BOOKINGS TABLE MOBILE OPTIMIZATIONS ========== */
+@media (max-width: 991px) {
+  #bookingsTable {
+    display: block !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+  }
+
+  #bookingsTable thead,
+  #bookingsTable tbody,
+  #bookingsTable tr,
+  #bookingsTable th,
+  #bookingsTable td {
+    display: block !important;
+  }
+
+  #bookingsTable thead {
+    display: none !important;
+  }
+
+  #bookingsTable tr {
+    margin-bottom: 1rem !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 0.75rem !important;
+    background: white !important;
+  }
+
+  #bookingsTable td {
+    text-align: left !important;
+    padding: 0.5rem !important;
+    border: none !important;
+    position: relative !important;
+    padding-left: 50% !important;
+  }
+
+  #bookingsTable td::before {
+    content: attr(data-label) !important;
+    position: absolute !important;
+    left: 0.5rem !important;
+    width: 45% !important;
+    font-weight: 600 !important;
+    color: #6b7280 !important;
+    white-space: normal !important;
+  }
+
+  #bookingsTable td:last-child {
+    border-bottom: none !important;
+  }
+}
+
+/* ========== FEEDBACK SECTION MOBILE ========== */
+@media (max-width: 767px) {
+  .feedback-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .feedback-controls .btn {
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .rating-display {
+    font-size: 0.875rem !important;
+  }
+
+  .rating-display .fa-star {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* ========== IMAGE GRID MOBILE ========== */
+@media (max-width: 767px) {
+  .image-preview-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .image-preview-item {
+    height: 120px !important;
+  }
+}
+
+/* ========== STATUS BADGE MOBILE ========== */
+@media (max-width: 575px) {
+  .status-badge,
+  .badge {
+    font-size: 0.65rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+}

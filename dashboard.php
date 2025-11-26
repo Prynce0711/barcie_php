@@ -8,10 +8,12 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=yes">
+  <meta name="theme-color" content="#3b82f6">
   <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Admin Dashboard</title>
   <!-- Bootstrap CSS -->
@@ -24,6 +26,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <!-- Custom CSS -->
   <link rel="stylesheet" href="assets/css/dashboard.css">
   <link rel="stylesheet" href="assets/css/dashboard-enhancements.css">
+  <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
   <link rel="stylesheet" href="assets/css/news.css">
 </head>
