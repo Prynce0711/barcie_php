@@ -10,8 +10,11 @@ require __DIR__ . '/../../database/db_connect.php';
 
 // ✅ Auth check: only admins can access
 if (!isset($_SESSION['admin_id'])) {
+  error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access denied. Session ID: " . session_id() . ". Session data: " . print_r($_SESSION, true));
   header("Location: index.php");
   exit;
+} else {
+  error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access granted for admin ID: " . $_SESSION['admin_id'] . " (Username: " . ($_SESSION['admin_username'] ?? 'unknown') . ")");
 }
 
 /**

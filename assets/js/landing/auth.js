@@ -33,8 +33,14 @@ function setupAdminLogin() {
   const adminForm = document.getElementById('admin-login-form');
   const adminError = document.getElementById('admin-login-error');
 
+  console.log('🎯 setupAdminLogin called');
+  console.log('📋 adminForm:', adminForm);
+  console.log('⚠️ adminError:', adminError);
+
   if (adminForm && adminError) {
+    console.log('✅ Admin form and error div found, adding submit listener');
     adminForm.addEventListener('submit', async (e) => {
+      console.log('🚀 Form submit event triggered!');
       e.preventDefault();
       adminError.classList.add('d-none');
       adminError.textContent = '';
@@ -77,16 +83,35 @@ function setupAdminLogin() {
 
         if (data.success) {
           console.log('✅ Login successful!');
+          console.log('📍 Redirect URL:', data.redirect);
           submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Success!';
           
-          // Set admin role in state manager
-          if (window.BarcieStateManager) {
-            window.BarcieStateManager.handleLoginSuccess('admin');
-          } else {
-            // Fallback if state manager not loaded
-            setTimeout(() => {
-              window.location.href = 'dashboard.php#dashboard';
-            }, 1000);
+          // Close the modal first
+          if (typeof closeSection === 'function') {
+            console.log('🚪 Closing admin-login modal');
+            try {
+              closeSection('admin-login');
+            } catch (err) {
+              console.error('Error closing section:', err);
+            }
+          }
+          
+          // Immediate redirect - no delay needed since session_write_close is called in PHP
+          console.log('🌐 Current location:', window.location.href);
+          const redirectUrl = 'dashboard.php#dashboard';
+          console.log('🔄 Redirecting NOW to:', redirectUrl);
+          
+          // Try multiple redirect methods to ensure it works
+          try {
+            window.location.href = redirectUrl;
+          } catch (err) {
+            console.error('location.href failed:', err);
+            try {
+              window.location.replace(redirectUrl);
+            } catch (err2) {
+              console.error('location.replace failed:', err2);
+              window.location = redirectUrl;
+            }
           }
         } else {
           console.error('❌ Login failed:', data.message);

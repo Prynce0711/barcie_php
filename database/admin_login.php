@@ -107,6 +107,8 @@ try {
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_id'] = $id;
                 $_SESSION['admin_username'] = $username;
+                
+                error_log("[" . date('Y-m-d H:i:s') . "] Login successful for user: $username (ID: $id). Session ID: " . session_id());
 
                 // Update last login timestamp
                 $update_stmt = $conn->prepare("UPDATE admins SET last_login = NOW() WHERE id = ?");
@@ -114,8 +116,15 @@ try {
                 $update_stmt->execute();
                 $update_stmt->close();
 
+                // Force session to be written immediately
+                session_write_close();
+                session_start(); // Restart for any further operations
+                
+                error_log("[" . date('Y-m-d H:i:s') . "] Session written. Session data: " . print_r($_SESSION, true));
+
                 $response['success'] = true;
                 $response['message'] = 'Login successful.';
+                $response['redirect'] = 'dashboard.php';
             } else {
                 $response['message'] = 'Invalid password.';
             }
