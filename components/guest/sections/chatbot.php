@@ -1,7 +1,7 @@
 <div class="chatbot-container" id="chatbotContainer">
   <div class="chatbot-header">
     <div class="d-flex align-items-center">
-      <div class="chatbot-avatar me-2"><i class="fas fa-robot"></i></div>
+      <div class="chatbot-avatar me-2"><i class="fas fa-hotel"></i></div>
       <div>
         <h6 class="mb-0">BarCIE Assistant</h6>
         <small class="text-white-50">Ask me anything!</small>
@@ -9,13 +9,13 @@
     </div>
     <div class="d-flex align-items-center">
       <div class="me-2">
-        <label style="display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:#fff;">
-          <input id="chatbotAiToggle" type="checkbox" style="width:16px;height:16px;" />
-          <span style="color:inherit">AI</span>
+        <label class="ai-toggle-label" for="chatbotAiToggle" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
+          <div class="toggle-switch">
+            <input id="chatbotAiToggle" type="checkbox" onchange="setAiEnabled(this.checked)" />
+            <span class="toggle-slider"></span>
+          </div>
+          <small id="chatbotAiStatus" class="text-white" style="font-size:.8rem;font-weight:500;">Local KB</small>
         </label>
-      </div>
-      <div class="me-2">
-        <small id="chatbotAiStatus" class="text-white-50" style="font-size:.75rem">Local KB</small>
       </div>
       <button class="chatbot-close" onclick="toggleChatbot()"><i class="fas fa-times"></i></button>
     </div>
@@ -23,7 +23,7 @@
 
   <div class="chatbot-messages" id="chatbotMessages">
     <div class="chatbot-message bot-message">
-      <div class="message-avatar"><i class="fas fa-robot"></i></div>
+      <div class="message-avatar"><i class="fas fa-hotel"></i></div>
       <div class="message-content">
         <p>Hello! 👋 I'm your BarCIE assistant. How can I help you today?</p>
         <div class="quick-replies mt-2">
@@ -43,7 +43,7 @@
 </div>
 
 <button class="chatbot-toggle" id="chatbotToggle" onclick="toggleChatbot()">
-  <i class="fas fa-comments"></i>
+  <i class="fas fa-hotel"></i>
   <span class="chatbot-badge">1</span>
 </button>
 
