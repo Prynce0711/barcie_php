@@ -281,7 +281,7 @@ document.addEventListener('click', function(e){
   const action = btn.dataset.action; // approve|reject
   if (!bookingId || !action) return;
 
-  const confirmFn = window.showConfirmModal || function(msg){ return Promise.resolve(confirm(msg)); };
+  const confirmFn = window.showConfirm || window.showConfirmModal || function(msg){ return showConfirm(msg); };
   const alertFn = window.showAdminAlert || function(msg, type){ try { showToast(msg, type || 'info'); } catch(e){ console.log(msg); } };
 
   confirmFn('Are you sure you want to ' + action + ' this discount application?').then(function(confirmed){

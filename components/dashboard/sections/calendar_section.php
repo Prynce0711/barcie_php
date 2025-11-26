@@ -385,7 +385,7 @@
           handleBookingAction(action, bookingId);
         });
 
-        function handleBookingAction(action, bookingId) {
+        async function handleBookingAction(action, bookingId) {
           // simple action routing. Adjust URLs to actual app routes if available.
           console.log('Booking action', action, 'for', bookingId);
           const details = document.getElementById('roomBookingDetailsContent');
@@ -403,7 +403,11 @@
           }
           if (action === 'cancel') {
             // optimistic UI: show confirmation inline and then POST to cancel endpoint if exists
-            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            const confirmed = await showConfirm(
+              'Are you sure you want to cancel this booking?',
+              { title: 'Cancel Booking', confirmText: 'Yes, Cancel', confirmClass: 'btn-danger' }
+            );
+            if (!confirmed) return;
             // call API to cancel (endpoint not defined here) - attempt to hit a sensible endpoint
             fetch('api/cancel_booking.php', {
               method: 'POST',

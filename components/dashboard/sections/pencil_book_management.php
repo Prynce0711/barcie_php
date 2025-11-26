@@ -468,8 +468,12 @@ function viewPencilBookingDetails(bookingId) {
     });
 }
 
-function updatePencilBookingStatus(bookingId, newStatus) {
-  if (!confirm(`Are you sure you want to ${newStatus} this pencil booking?`)) {
+async function updatePencilBookingStatus(bookingId, newStatus) {
+  const confirmed = await showConfirm(
+    `Are you sure you want to ${newStatus} this pencil booking?`,
+    { title: 'Confirm Status Change', confirmText: 'Yes, Continue', confirmClass: 'btn-primary' }
+  );
+  if (!confirmed) {
     return;
   }
   
