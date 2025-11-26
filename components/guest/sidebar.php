@@ -1,13 +1,9 @@
 <nav class="sidebar-guest" aria-label="Guest portal navigation">
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="mb-3">
     <h2 class="h5 mb-0"><i class="fas fa-user-circle me-2" aria-hidden="true"></i>
       <span class="visually-hidden">Guest Portal:</span>
       <span class="d-none d-sm-inline">Guest Portal</span>
     </h2>
-    <!-- Mobile collapse toggle -->
-    <button type="button" class="btn btn-outline-light sidebar-toggle d-sm-none" aria-expanded="true" aria-label="Toggle guest navigation">
-      <i class="fas fa-bars" aria-hidden="true"></i>
-    </button>
   </div>
 
   <ul class="list-unstyled mb-2">
@@ -42,22 +38,13 @@
     <span>Back to Home</span>
   </a>
 
-  <!-- Small JS to handle the mobile toggle, keyboard and active state (non-intrusive) -->
+  <!-- Small JS to handle keyboard and active state (non-intrusive) -->
   <script>
     (function(){
       try {
         var sidebar = document.querySelector('.sidebar-guest');
         if(!sidebar) return;
-        var toggle = sidebar.querySelector('.sidebar-toggle');
         var buttons = sidebar.querySelectorAll('.sidebar-btn');
-
-        // Mobile collapse toggle
-        if(toggle){
-          toggle.addEventListener('click', function(){
-            var collapsed = sidebar.classList.toggle('collapsed');
-            this.setAttribute('aria-expanded', (!collapsed).toString());
-          });
-        }
 
         // Click & keyboard support for sidebar buttons
         buttons.forEach(function(btn){
