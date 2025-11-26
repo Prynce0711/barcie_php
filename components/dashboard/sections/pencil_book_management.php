@@ -12,6 +12,16 @@
         <small class="opacity-75">Manage all pencil bookings - tentative reservations awaiting confirmation.</small>
       </div>
       <div class="card-body">
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-end mb-2 gap-2">
+          <button type="button" class="btn btn-sm btn-outline-warning" onclick="downloadPencilBookingsExcel()">
+            <i class="fas fa-file-excel me-1"></i>Export to Excel
+          </button>
+          <button type="button" class="btn btn-sm btn-warning" onclick="downloadPencilBookingsPDF()">
+            <i class="fas fa-file-alt me-1"></i>Export to Text
+          </button>
+        </div>
+        
         <!-- Filters Section -->
         <div class="card mb-3 border-0 bg-light">
           <div class="card-body py-3">
@@ -567,4 +577,114 @@ window.clearPencilDate = function() {
     filterPencilBookings();
   }
 };
+
+// Download pencil bookings as text backup
+function downloadPencilBookingsPDF() {
+  const rows = Array.from(document.querySelectorAll('#pencilTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No pencil bookings to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('pencilDateFilter')?.value || 'All Dates';
+  const statusFilter = document.getElementById('pencilStatusFilter')?.value || 'All Status';
+  
+  let content = `BARCIE INTERNATIONAL CENTER - PENCIL BOOKINGS BACKUP
+Generated: ${new Date().toLocaleString()}
+Total Records: ${rows.length}
+
+FILTERS APPLIED:
+- Date: ${dateFilter}
+- Status: ${statusFilter}
+
+${'='.repeat(80)}
+
+`;
+
+  rows.forEach((row, index) => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 7) {
+      const receipt = cells[0].textContent.trim();
+      const room = cells[1].textContent.trim();
+      const guest = cells[2].textContent.trim().replace(/\n/g, ' ');
+      const schedule = cells[3].textContent.trim().replace(/\n/g, ' ');
+      const status = cells[4].textContent.trim();
+      const expires = cells[5].textContent.trim().replace(/\n/g, ' ');
+      const created = cells[6].textContent.trim().replace(/\n/g, ' ');
+      
+      content += `${index + 1}. ${receipt}
+   Room/Facility: ${room}
+   Guest: ${guest}
+   Schedule: ${schedule}
+   Status: ${status}
+   Expires: ${expires}
+   Created: ${created}
+${'-'.repeat(80)}
+
+`;
+    }
+  });
+  
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pencil_bookings_backup_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('Pencil bookings backup downloaded successfully', 'success');
+}
+
+// Download pencil bookings as Excel
+function downloadPencilBookingsExcel() {
+  const rows = Array.from(document.querySelectorAll('#pencilTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No pencil bookings to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('pencilDateFilter')?.value || 'All Dates';
+  const statusFilter = document.getElementById('pencilStatusFilter')?.value || 'All Status';
+  
+  let csv = 'Receipt #,Room/Facility,Guest Name,Guest Contact,Schedule,Status,Expires,Created\n';
+  
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 7) {
+      const receipt = cells[0].textContent.trim().replace(/,/g, ';');
+      const room = cells[1].textContent.trim().replace(/,/g, ';');
+      const guestText = cells[2].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      const guestParts = guestText.split(/[📞✉]/);
+      const guestName = guestParts[0].trim();
+      const guestContact = guestParts.slice(1).join(' | ').trim();
+      const schedule = cells[3].textContent.trim().replace(/\n/g, ' | ').replace(/,/g, ';');
+      const status = cells[4].textContent.trim().replace(/,/g, ';');
+      const expires = cells[5].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      const created = cells[6].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      
+      csv += `"${receipt}","${room}","${guestName}","${guestContact}","${schedule}","${status}","${expires}","${created}"\n`;
+    }
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pencil_bookings_${dateFilter.replace(/[^0-9-]/g, '') || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast(`Exported ${rows.length} pencil bookings to Excel (Filters: Date=${dateFilter}, Status=${statusFilter})`, 'success');
+}
 </script>

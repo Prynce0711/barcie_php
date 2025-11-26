@@ -12,6 +12,16 @@
         <small class="opacity-75">Review uploaded ID proofs and approve or reject discounts.</small>
       </div>
       <div class="card-body">
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-end mb-2 gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadDiscountsExcel()">
+            <i class="fas fa-file-excel me-1"></i>Export to Excel
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="downloadDiscountsPDF()">
+            <i class="fas fa-file-alt me-1"></i>Export to Text
+          </button>
+        </div>
+        
         <!-- Filters Section -->
         <div class="card mb-3 border-0 bg-light">
           <div class="card-body py-3">
@@ -462,6 +472,113 @@ document.addEventListener('click', function(e){
     window.open(proof, '_blank');
   }
 });
+
+// Download discount applications as text backup
+function downloadDiscountsPDF() {
+  const rows = Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No discount applications to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('discountDateFilter')?.value || 'All Dates';
+  const typeFilter = document.getElementById('discountTypeFilter')?.value || 'All Types';
+  
+  let content = `BARCIE INTERNATIONAL CENTER - DISCOUNT APPLICATIONS BACKUP
+Generated: ${new Date().toLocaleString()}
+Total Records: ${rows.length}
+
+FILTERS APPLIED:
+- Date: ${dateFilter}
+- Type: ${typeFilter}
+
+${'='.repeat(80)}
+
+`;
+
+  rows.forEach((row, index) => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 6) {
+      const booking = cells[0].textContent.trim();
+      const type = cells[1].textContent.trim();
+      const guest = cells[2].textContent.trim().replace(/\n/g, ' ');
+      const discountType = cells[3].textContent.trim();
+      const status = cells[4].textContent.trim();
+      const created = cells[5].textContent.trim().replace(/\n/g, ' ');
+      
+      content += `${index + 1}. Booking: ${booking}
+   Type: ${type}
+   Guest: ${guest}
+   Discount Type: ${discountType}
+   Status: ${status}
+   Created: ${created}
+${'-'.repeat(80)}
+
+`;
+    }
+  });
+  
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `discount_applications_backup_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('Discount applications backup downloaded successfully', 'success');
+}
+
+// Download discount applications as Excel
+function downloadDiscountsExcel() {
+  const rows = Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No discount applications to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('discountDateFilter')?.value || 'All Dates';
+  const typeFilter = document.getElementById('discountTypeFilter')?.value || 'All Types';
+  
+  let csv = 'Booking ID,Type,Guest Name,Guest Contact,Discount Type,Status,Created\n';
+  
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 6) {
+      const booking = cells[0].textContent.trim().replace(/,/g, ';');
+      const type = cells[1].textContent.trim().replace(/,/g, ';');
+      const guestText = cells[2].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      const guestParts = guestText.split(/[📞✉]/);
+      const guestName = guestParts[0].trim();
+      const guestContact = guestParts.slice(1).join(' | ').trim();
+      const discountType = cells[3].textContent.trim().replace(/,/g, ';');
+      const status = cells[4].textContent.trim().replace(/,/g, ';');
+      const created = cells[5].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      
+      csv += `"${booking}","${type}","${guestName}","${guestContact}","${discountType}","${status}","${created}"\n`;
+    }
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `discount_applications_${dateFilter.replace(/[^0-9-]/g, '') || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast(`Exported ${rows.length} discount applications to Excel (Filters: Date=${dateFilter}, Type=${typeFilter})`, 'success');
+}
 </script>
 
 <style>
