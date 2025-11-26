@@ -12,6 +12,7 @@
         <div class="modal-body">
           <input type="hidden" name="action" value="update">
           <input type="hidden" name="id" id="editItemId">
+          <input type="hidden" name="existing_images" id="editExistingImages">
           
           <!-- Basic Information -->
           <div class="card mb-4">
@@ -284,6 +285,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function loadImageGallery(itemId) {
     imageGallery.innerHTML = '';
     currentImages = [];
+    removedImages = [];
+    removedImagesInput.value = '';
     
     // Method 1: Try to get images from the data attribute on the item card
     const itemCard = document.querySelector(`.item-card[data-item-id="${itemId}"]`);
@@ -348,6 +351,9 @@ document.addEventListener('DOMContentLoaded', function() {
       imageGallery.innerHTML = '<div class="col-12 text-center text-muted py-4"><i class="fas fa-images fa-3x mb-2 d-block"></i><p>No images found. Add new images below.</p></div>';
     }
     
+    // Store existing images in hidden field for backend preservation
+    document.getElementById('editExistingImages').value = JSON.stringify(currentImages);
+    
     updateImageCount();
   }
   
@@ -404,7 +410,9 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       // Select
       galleryItem.classList.add('selected');
-      removedImages.push(imgPath);
+      if (!removedImages.includes(imgPath)) {
+        removedImages.push(imgPath);
+      }
     }
     
     removedImagesInput.value = removedImages.join(',');
