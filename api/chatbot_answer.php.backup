@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 header('Content-Type: application/json; charset=utf-8');
 
 $raw = file_get_contents('php://input');
@@ -73,8 +73,8 @@ if (!$gemini_key) {
 
 // helper: call Google Gemini API
 function call_gemini_api($apiKey, $prompt, $max_tokens = 800) {
-    // Use Gemini 2.5 Flash for responses (stable, fast and efficient model)
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey;
+    // Use Gemini 1.5 Flash for fast responses
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey;
     
     $payload = json_encode([
         'contents' => [[
@@ -165,8 +165,8 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
 
     $local_summary = implode("\n\n", $parts);
 
-    // If Gemini key available, ask the model to produce a short project overview using the files
-    if (!empty($gemini_key)) {
+    // If OpenAI key available, ask the model to produce a short project overview using the files
+    if (!empty($openai_key)) {
         // --- Build smarter context by indexing project files and extracting relevant snippets ---
         $allowed_exts = ['php','md','js','json','css','html','txt'];
         $exclude_dirs = ['vendor', 'node_modules', '.git', 'uploads', 'storage', 'tailscale-nginx'];
@@ -255,8 +255,8 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
         // Add comprehensive BarCIE website context
         $barcie_context = "\n\n=== BARCIE INTERNATIONAL CENTER WEBSITE INFORMATION ===\n\n";
         $barcie_context .= "ABOUT: BarCIE International Center is a hotel and event venue located at La Consolacion University Philippines (LCUP). We provide comfortable accommodations and function halls for guests, students, alumni, and event organizers.\n\n";
-        $barcie_context .= "ROOMS & FACILITIES:\n- Standard Rooms: â‚±1,500+/night with AC, WiFi, cable TV, private bathroom\n- Deluxe Rooms: â‚±2,500+/night with premium amenities\n- Function Halls: Small (50pax), Medium (100pax), Large (200pax) - â‚±3,000-â‚±8,000\n- All rooms: Air conditioning, free WiFi, clean linens, 24/7 security, parking\n\n";
-        $barcie_context .= "BOOKING PROCESS:\n1. Visit Guest Portal â†’ Booking & Reservation\n2. Choose Reservation (rooms) or Pencil Booking (function halls)\n3. Fill in details: name, contact, dates, room type\n4. Upload ID if claiming discount\n5. Submit - receive email confirmation with payment details\n6. No account needed - direct booking system\n\n";
+        $barcie_context .= "ROOMS & FACILITIES:\n- Standard Rooms: ₱1,500+/night with AC, WiFi, cable TV, private bathroom\n- Deluxe Rooms: ₱2,500+/night with premium amenities\n- Function Halls: Small (50pax), Medium (100pax), Large (200pax) - ₱3,000-₱8,000\n- All rooms: Air conditioning, free WiFi, clean linens, 24/7 security, parking\n\n";
+        $barcie_context .= "BOOKING PROCESS:\n1. Visit Guest Portal → Booking & Reservation\n2. Choose Reservation (rooms) or Pencil Booking (function halls)\n3. Fill in details: name, contact, dates, room type\n4. Upload ID if claiming discount\n5. Submit - receive email confirmation with payment details\n6. No account needed - direct booking system\n\n";
         $barcie_context .= "DISCOUNTS AVAILABLE:\n- PWD/Senior Citizens: 20% off\n- LCUP Personnel: 10% off\n- LCUP Students/Alumni: 7% off\n- Upload valid ID (School ID, PWD card, Company ID) during booking\n\n";
         $barcie_context .= "CHECK-IN/OUT:\n- Check-in: 2:00 PM onwards (early check-in if available)\n- Check-out: 12:00 PM (late checkout on request + charges)\n- 24/7 front desk for late arrivals\n- Bring valid ID and booking confirmation\n\n";
         $barcie_context .= "PAYMENT: Bank transfer, GCash, on-site payment. QR code provided after booking approval. Deposit may be required.\n\n";
@@ -307,61 +307,8 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
 }
 
 // For general queries (not specifically about project code), use Gemini with BarCIE context
-error_log("CHATBOT DEBUG - Gemini key available: " . (!empty($gemini_key) ? 'YES' : 'NO'));
-error_log("CHATBOT DEBUG - Message: " . $message);
-
 if (!empty($gemini_key)) {
-    error_log("CHATBOT DEBUG - Calling Gemini API...");
-    $barcie_context = "You are the BarCIE International Center AI Assistant, a helpful chatbot for our hotel and event venue website.\n\n";
-    $barcie_context .= "=== ABOUT BARCIE ===\n";
-    $barcie_context .= "BarCIE International Center is located at La Consolacion University Philippines (LCUP). We offer:\n";
-    $barcie_context .= "- Comfortable hotel rooms (Standard ₱1,500+, Deluxe ₱2,500+/night)\n";
-    $barcie_context .= "- Function halls for events (50-200 capacity, ₱3,000-₱8,000)\n";
-    $barcie_context .= "- Amenities: AC, WiFi, cable TV, parking, 24/7 security\n";
-    $barcie_context .= "- Discounts: PWD/Senior 20%, LCUP Personnel 10%, Students/Alumni 7%\n";
-    $barcie_context .= "- Check-in 2PM, Check-out 12PM\n";
-    $barcie_context .= "- Contact: barcieinternationalcenter.web@gmail.com\n";
-    $barcie_context .= "- Easy online booking - no account needed!\n\n";
-    
-    $barcie_context .= "=== WEBSITE FEATURES ===\n";
-    $barcie_context .= "1. Real-time Availability Calendar\n";
-    $barcie_context .= "2. Direct booking system (rooms & function halls)\n";
-    $barcie_context .= "3. Discount application with ID upload\n";
-    $barcie_context .= "4. Email confirmations\n";
-    $barcie_context .= "5. Guest feedback system\n";
-    $barcie_context .= "6. AI chatbot (that's me!)\n\n";
-    
-    $prompt = $barcie_context;
-    $prompt .= "GUEST QUESTION: " . $message . "\n\n";
-    $prompt .= "Provide a helpful, friendly answer. Include relevant details about BarCIE if applicable. ";
-    $prompt .= "If asked about bookings/rooms/prices, provide the information above. ";
-    $prompt .= "If asked general questions, answer naturally. ";
-    $prompt .= "Keep response conversational and under 400 words.\n\n";
-    $prompt .= "ANSWER:";
-    
-    $res = call_gemini_api($gemini_key, $prompt, 800);
-    error_log("CHATBOT DEBUG - Gemini response: " . json_encode($res));
-    
-    // Check if we got a valid response
-    if (isset($res['candidates'][0]['content']['parts'][0]['text'])) {
-        $model_answer = $res['candidates'][0]['content']['parts'][0]['text'];
-        error_log("CHATBOT DEBUG - Got answer: " . substr($model_answer, 0, 100));
-        // Suggest relevant quick replies
-        $qr = [];
-        if (stripos($message, 'book') !== false) $qr[] = 'booking process';
-        if (stripos($message, 'room') !== false) $qr[] = 'room availability';
-        if (stripos($message, 'price') !== false || stripos($message, 'cost') !== false) $qr[] = 'pricing';
-        if (stripos($message, 'discount') !== false) $qr[] = 'discount';
-        if (empty($qr)) $qr = ['booking process', 'facilities', 'pricing'];
-        echo json_encode(['answer' => trim($model_answer), 'quickReplies' => array_slice(array_unique($qr), 0, 3)]);
-        exit;
-    } else if (isset($res['error'])) {
-        // Log the error but continue to fallback
-        error_log("CHATBOT ERROR - Gemini API failed: " . $res['error'] . " - Falling back to local KB");
-    }
-}
-
-// Final fallback - return null to use frontend local knowledge base
-echo json_encode(['answer' => null, 'sourceFiles' => $sources]);
+    $barcie_context = \"You are the BarCIE International Center AI Assistant, a helpful chatbot for our hotel and event venue website.\\n\\n\";\n    $barcie_context .= \"=== ABOUT BARCIE ===\\n\";\n    $barcie_context .= \"BarCIE International Center is located at La Consolacion University Philippines (LCUP). We offer:\\n\";\n    $barcie_context .= \"- Comfortable hotel rooms (Standard \u20b11,500+, Deluxe \u20b12,500+/night)\\n\";\n    $barcie_context .= \"- Function halls for events (50-200 capacity, \u20b13,000-\u20b18,000)\\n\";\n    $barcie_context .= \"- Amenities: AC, WiFi, cable TV, parking, 24/7 security\\n\";\n    $barcie_context .= \"- Discounts: PWD/Senior 20%, LCUP Personnel 10%, Students/Alumni 7%\\n\";\n    $barcie_context .= \"- Check-in 2PM, Check-out 12PM\\n\";\n    $barcie_context .= \"- Contact: barcieinternationalcenter.web@gmail.com\\n\";\n    $barcie_context .= \"- Easy online booking - no account needed!\\n\\n\";\n    \n    $barcie_context .= \"=== WEBSITE FEATURES ===\\n\";\n    $barcie_context .= \"1. Real-time Availability Calendar\\n\";\n    $barcie_context .= \"2. Direct booking system (rooms & function halls)\\n\";\n    $barcie_context .= \"3. Discount application with ID upload\\n\";\n    $barcie_context .= \"4. Email confirmations\\n\";\n    $barcie_context .= \"5. Guest feedback system\\n\";\n    $barcie_context .= \"6. AI chatbot (that's me!)\\n\\n\";\n    \n    $prompt = $barcie_context;\n    $prompt .= \"GUEST QUESTION: \" . $message . \"\\n\\n\";\n    $prompt .= \"Provide a helpful, friendly answer. Include relevant details about BarCIE if applicable. \";\n    $prompt .= \"If asked about bookings/rooms/prices, provide the information above. \";\n    $prompt .= \"If asked general questions, answer naturally. \";\n    $prompt .= \"Keep response conversational and under 400 words.\\n\\n\";\n    $prompt .= \"ANSWER:\";\n    \n    $res = call_gemini_api($gemini_key, $prompt, 800);\n    if (isset($res['candidates'][0]['content']['parts'][0]['text'])) {\n        $model_answer = $res['candidates'][0]['content']['parts'][0]['text'];\n        // Suggest relevant quick replies\n        $qr = [];\n        if (stripos($message, 'book') !== false) $qr[] = 'booking process';\n        if (stripos($message, 'room') !== false) $qr[] = 'room availability';\n        if (stripos($message, 'price') !== false || stripos($message, 'cost') !== false) $qr[] = 'pricing';\n        if (stripos($message, 'discount') !== false) $qr[] = 'discount';\n        if (empty($qr)) $qr = ['booking process', 'facilities', 'pricing'];\n        echo json_encode(['answer' => trim($model_answer), 'quickReplies' => array_slice(array_unique($qr), 0, 3)]);\n        exit;\n    }\n}\n\n// Final fallback - return null to use local knowledge base\necho json_encode(['answer' => null, 'sourceFiles' => $sources]);
 exit;
+
 ?>

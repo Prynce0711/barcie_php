@@ -73,8 +73,8 @@ if (!$gemini_key) {
 
 // helper: call Google Gemini API
 function call_gemini_api($apiKey, $prompt, $max_tokens = 800) {
-    // Use Gemini 2.5 Flash for responses (stable, fast and efficient model)
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey;
+    // Use Gemini 1.5 Flash for fast responses
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey;
     
     $payload = json_encode([
         'contents' => [[
@@ -165,8 +165,8 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
 
     $local_summary = implode("\n\n", $parts);
 
-    // If Gemini key available, ask the model to produce a short project overview using the files
-    if (!empty($gemini_key)) {
+    // If OpenAI key available, ask the model to produce a short project overview using the files
+    if (!empty($openai_key)) {
         // --- Build smarter context by indexing project files and extracting relevant snippets ---
         $allowed_exts = ['php','md','js','json','css','html','txt'];
         $exclude_dirs = ['vendor', 'node_modules', '.git', 'uploads', 'storage', 'tailscale-nginx'];
@@ -307,61 +307,3 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
 }
 
 // For general queries (not specifically about project code), use Gemini with BarCIE context
-error_log("CHATBOT DEBUG - Gemini key available: " . (!empty($gemini_key) ? 'YES' : 'NO'));
-error_log("CHATBOT DEBUG - Message: " . $message);
-
-if (!empty($gemini_key)) {
-    error_log("CHATBOT DEBUG - Calling Gemini API...");
-    $barcie_context = "You are the BarCIE International Center AI Assistant, a helpful chatbot for our hotel and event venue website.\n\n";
-    $barcie_context .= "=== ABOUT BARCIE ===\n";
-    $barcie_context .= "BarCIE International Center is located at La Consolacion University Philippines (LCUP). We offer:\n";
-    $barcie_context .= "- Comfortable hotel rooms (Standard ₱1,500+, Deluxe ₱2,500+/night)\n";
-    $barcie_context .= "- Function halls for events (50-200 capacity, ₱3,000-₱8,000)\n";
-    $barcie_context .= "- Amenities: AC, WiFi, cable TV, parking, 24/7 security\n";
-    $barcie_context .= "- Discounts: PWD/Senior 20%, LCUP Personnel 10%, Students/Alumni 7%\n";
-    $barcie_context .= "- Check-in 2PM, Check-out 12PM\n";
-    $barcie_context .= "- Contact: barcieinternationalcenter.web@gmail.com\n";
-    $barcie_context .= "- Easy online booking - no account needed!\n\n";
-    
-    $barcie_context .= "=== WEBSITE FEATURES ===\n";
-    $barcie_context .= "1. Real-time Availability Calendar\n";
-    $barcie_context .= "2. Direct booking system (rooms & function halls)\n";
-    $barcie_context .= "3. Discount application with ID upload\n";
-    $barcie_context .= "4. Email confirmations\n";
-    $barcie_context .= "5. Guest feedback system\n";
-    $barcie_context .= "6. AI chatbot (that's me!)\n\n";
-    
-    $prompt = $barcie_context;
-    $prompt .= "GUEST QUESTION: " . $message . "\n\n";
-    $prompt .= "Provide a helpful, friendly answer. Include relevant details about BarCIE if applicable. ";
-    $prompt .= "If asked about bookings/rooms/prices, provide the information above. ";
-    $prompt .= "If asked general questions, answer naturally. ";
-    $prompt .= "Keep response conversational and under 400 words.\n\n";
-    $prompt .= "ANSWER:";
-    
-    $res = call_gemini_api($gemini_key, $prompt, 800);
-    error_log("CHATBOT DEBUG - Gemini response: " . json_encode($res));
-    
-    // Check if we got a valid response
-    if (isset($res['candidates'][0]['content']['parts'][0]['text'])) {
-        $model_answer = $res['candidates'][0]['content']['parts'][0]['text'];
-        error_log("CHATBOT DEBUG - Got answer: " . substr($model_answer, 0, 100));
-        // Suggest relevant quick replies
-        $qr = [];
-        if (stripos($message, 'book') !== false) $qr[] = 'booking process';
-        if (stripos($message, 'room') !== false) $qr[] = 'room availability';
-        if (stripos($message, 'price') !== false || stripos($message, 'cost') !== false) $qr[] = 'pricing';
-        if (stripos($message, 'discount') !== false) $qr[] = 'discount';
-        if (empty($qr)) $qr = ['booking process', 'facilities', 'pricing'];
-        echo json_encode(['answer' => trim($model_answer), 'quickReplies' => array_slice(array_unique($qr), 0, 3)]);
-        exit;
-    } else if (isset($res['error'])) {
-        // Log the error but continue to fallback
-        error_log("CHATBOT ERROR - Gemini API failed: " . $res['error'] . " - Falling back to local KB");
-    }
-}
-
-// Final fallback - return null to use frontend local knowledge base
-echo json_encode(['answer' => null, 'sourceFiles' => $sources]);
-exit;
-?>
