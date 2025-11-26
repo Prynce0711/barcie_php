@@ -34,8 +34,9 @@
   <?php
   // Ensure server-side times use Philippine time
   date_default_timezone_set('Asia/Manila');
-  $v = time(); // Cache busting
+  $v = time() . '_' . rand(1000, 9999); // Strong cache busting
   ?>
+  <script>console.log('🔄 Cache bust version: <?php echo $v; ?>');</script>
   <script src="assets/js/page-state-manager.js?v=<?php echo $v; ?>"></script>
   <script src="assets/js/landing/main.js?v=<?php echo $v; ?>"></script>
   <script src="assets/js/landing/auth.js?v=<?php echo $v; ?>"></script>
