@@ -17,7 +17,7 @@
       </div>
       <div class="modal-body">
         <div id="roomCalendarInner" style="min-height: 220px; position:relative;">
-          <div id="roomCalendarLegend" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;padding:8px;background:#f8f9fa;border-radius:6px;">
+          <div id="roomCalendarLegend" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;padding:8px;background:#f8f9fa;border-radius:6px;flex-wrap:wrap;">
             <small class="text-muted fw-bold me-2">Legend:</small>
             <div style="display:flex;align-items:center;gap:6px;">
               <div style="width:16px;height:16px;background:#ffffff;border:2px solid #dee2e6;border-radius:3px;"></div>
@@ -26,6 +26,10 @@
             <div style="display:flex;align-items:center;gap:6px;">
               <div style="width:16px;height:16px;background:#ffc107;border:1px solid #ffc107;border-radius:3px;"></div>
               <small class="text-muted">Pending</small>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:16px;height:16px;background:#fd7e14;border:1px solid #fd7e14;border-radius:3px;"></div>
+              <small class="text-muted">Pencil Booking</small>
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
               <div style="width:16px;height:16px;background:#dc3545;border:1px solid #dc3545;border-radius:3px;"></div>
@@ -167,14 +171,20 @@
               const props = e.extendedProps || {};
               let status = (props.booking_status || props.status || e.status || e.booking_status || '').toString().toLowerCase();
 
-              // Booking events are shown in red/yellow based on status
-              // The calendar colors events that ARE bookings, dates without events are available (green in legend)
-              if (status === 'pending') {
+              // Booking events are shown in colors based on status
+              // The calendar colors events that ARE bookings, dates without events are available
+              const bookingType = props.booking_type || '';
+              
+              if (status === 'pencil' || bookingType === 'pencil') {
+                e.backgroundColor = '#fd7e14'; // orange for pencil bookings
+                e.borderColor = '#fd7e14';
+                e.textColor = '#ffffff';
+              } else if (status === 'pending') {
                 e.backgroundColor = '#ffc107'; // yellow for pending
                 e.borderColor = '#ffc107';
                 e.textColor = '#000000';
               } else if (['confirmed', 'approved', 'checked_in', 'occupied'].indexOf(status) !== -1) {
-                e.backgroundColor = '#dc3545'; // red for occupied
+                e.backgroundColor = '#dc3545'; // red for confirmed bookings
                 e.borderColor = '#dc3545';
                 e.textColor = '#ffffff';
               } else {

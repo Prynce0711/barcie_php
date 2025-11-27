@@ -1659,38 +1659,6 @@ if ($action === 'create_booking') {
                             </ul>
                         </div>
                         
-                        <!-- Payment Information -->
-                        <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-left: 5px solid #28a745; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);">
-                            <h4 style="margin: 0 0 15px 0; color: #155724; font-size: 16px; font-weight: 700;">
-                                &#128179; Payment Information
-                            </h4>
-                            <p style="margin: 0 0 12px 0; color: #155724; font-size: 14px; line-height: 1.6;">
-                                <strong>Bank Account Details:</strong>
-                            </p>
-                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 15px;" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Bank Name:</td>
-                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BDO / BPI / GCash</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Name:</td>
-                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BarCIE International Center</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Number:</td>
-                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">XXXX-XXXX-XXXX</td>
-                                </tr>
-                            </table>
-                            <div style="text-align: center; margin: 15px 0;">
-                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/bank_qr.php" style="display: inline-block; padding: 14px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
-                                    &#128241; View Payment QR Code
-                                </a>
-                            </div>
-                            <p style="margin: 0; color: #155724; font-size: 13px; line-height: 1.6; font-style: italic; text-align: center;">
-                                Scan the QR code with your mobile banking app for instant payment. Upload your payment receipt after completing the transaction.
-                            </p>
-                        </div>
-                        
                         <!-- Important Reminders -->
                         <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
                             <h4 style="margin: 0 0 12px 0; color: #856404; font-size: 16px; font-weight: 700;">
@@ -2010,7 +1978,7 @@ if ($action === 'create_booking') {
                     
                     // Create conversion link
                     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-                    $conversion_link = "http://{$host}/barcie_php/convert_pencil.php?token=" . urlencode($conversion_token);
+                    $conversion_link = "http://{$host}/barcie_php/components/guest/convert_pencil.php?token=" . urlencode($conversion_token);
                     
                     $emailContent = '
                         <h2 style="margin: 0 0 20px 0; color: #856404; font-size: 24px; font-weight: 600;">📝 Draft Reservation (Pencil Booking)</h2>
@@ -2098,7 +2066,42 @@ if ($action === 'create_booking') {
                             </ol>
                         </div>
                         
-
+                        <!-- Payment Information -->
+                        <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-left: 5px solid #28a745; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);">
+                            <h4 style="margin: 0 0 15px 0; color: #155724; font-size: 16px; font-weight: 700;">
+                                &#128179; Payment Information
+                            </h4>
+                            <p style="margin: 0 0 15px 0; color: #155724; font-size: 14px; line-height: 1.6;">
+                                <strong>Bank Transfer Details:</strong>
+                            </p>
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 15px;" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Bank Name:</td>
+                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BDO / BPI</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Name:</td>
+                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BarCIE International Center</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Number:</td>
+                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">XXXX-XXXX-XXXX</td>
+                                </tr>
+                            </table>
+                            <div style="text-align: center; margin: 15px 0;">
+                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/components/guest/bank_qr.php" style="display: inline-block; padding: 14px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
+                                    &#128241; View Payment QR Code
+                                </a>
+                            </div>
+                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 13px; line-height: 1.6; font-style: italic; text-align: center;">
+                                Scan the QR code with your banking app or use the account details above. Upload your payment receipt after completing the transaction.
+                            </p>
+                            <div style="background-color: #fff3cd; padding: 12px; border-radius: 6px; margin-top: 15px;">
+                                <p style="margin: 0; color: #856404; font-size: 13px; line-height: 1.6; font-weight: 600; text-align: center;">
+                                    ⚠️ <strong>Payment is required before check-in and is non-refundable.</strong>' . (strtotime($checkout) - strtotime($checkin) <= 86400 ? ' <br><em>Note: For 1-day bookings, we recommend walk-in reservations for more flexibility.</em>' : '') . '
+                                </p>
+                            </div>
+                        </div>
                         
                         <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
                             Please keep this pencil booking number for your records. If you have any questions or need to make changes, contact us with your booking number.
@@ -2588,26 +2591,6 @@ if ($action === 'admin_update_booking') {
                                 <li>Complimentary toiletries and linens</li>
                                 <li>Access to common areas and facilities</li>
                             </ul>
-                        </div>
-                        
-                        <!-- Payment Reminder -->
-                        <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-left: 5px solid #28a745; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
-                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 15px; font-weight: 700;">
-                                &#128179; Payment Required Before Check-in
-                            </p>
-                            <p style="margin: 0; color: #155724; font-size: 14px; line-height: 1.7;">
-                                Please ensure payment is completed at least 24 hours before your check-in date. You can pay via bank transfer using the details provided in your initial booking confirmation email.
-                            </p>
-                        </div>
-                        
-                        <!-- Cancellation Policy -->
-                        <div style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
-                            <p style="margin: 0 0 10px 0; color: #721c24; font-size: 15px; font-weight: 700;">
-                                &#9888; Cancellation Policy
-                            </p>
-                            <p style="margin: 0; color: #721c24; font-size: 14px; line-height: 1.7;">
-                                Cancellations must be made at least <strong>48 hours before check-in</strong> for a full refund. Cancellations made within 48 hours will incur a 50% cancellation fee. No-shows will be charged the full amount.
-                            </p>
                         </div>
                         
                         <div style="text-align: center; padding: 25px 0; border-top: 2px solid #e9ecef; margin-top: 30px;">

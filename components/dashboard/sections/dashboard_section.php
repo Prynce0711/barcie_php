@@ -180,13 +180,13 @@
                   <?php
                   $total_for_percentage = $total_bookings > 0 ? $total_bookings : 1;
                   $status_colors = [
-                    'pending' => 'warning',
-                    'approved' => 'success',
-                    'confirmed' => 'success',
-                    'checked_in' => 'info',
-                    'checked_out' => 'secondary',
-                    'cancelled' => 'danger',
-                    'rejected' => 'danger'
+                    'pending' => 'warning',     // Yellow
+                    'approved' => 'success',    // Green
+                    'confirmed' => 'info',      // Cyan
+                    'checked_in' => 'primary',  // Blue
+                    'checked_out' => 'secondary', // Gray
+                    'cancelled' => 'warning',   // Orange-Yellow (distinct from pending)
+                    'rejected' => 'danger'      // Red
                   ];
 
                   foreach ($status_distribution as $status => $count):

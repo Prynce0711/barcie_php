@@ -197,12 +197,12 @@
                         <i class="fas fa-times"></i> Reject
                       </button>
                     <?php elseif ($booking['status'] === 'approved'): ?>
-                      <button class="btn btn-primary btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'confirmed')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-                        <i class="fas fa-check-circle"></i> Confirm & Convert
-                      </button>
                       <button class="btn btn-secondary btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-                        Cancel
+                        <i class="fas fa-ban"></i> Cancel
                       </button>
+                      <small class="text-info" style="font-size: 0.6rem;">
+                        <i class="fas fa-info-circle"></i> Auto-converts when guest proceeds
+                      </small>
                     <?php endif; ?>
                     
                     <?php if ($booking['terms_acknowledged']): ?>

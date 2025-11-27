@@ -1273,11 +1273,13 @@ function initializeCharts() {
               {
                 data: statusValues,
                 backgroundColor: [
-                  "#f6c23e", // pending - yellow
-                  "#1cc88a", // approved - green
-                  "#36b9cc", // checked_in - info
-                  "#5a5c69", // checked_out - secondary
-                  "#e74a3b", // cancelled - red
+                  "#ffc107", // pending - yellow
+                  "#28a745", // approved - green
+                  "#17a2b8", // confirmed - cyan
+                  "#0d6efd", // checked_in - blue
+                  "#6c757d", // checked_out - gray
+                  "#f39c12", // cancelled - orange-yellow
+                  "#dc3545", // rejected - red
                 ],
                 borderWidth: 2,
                 borderColor: "#ffffff",
