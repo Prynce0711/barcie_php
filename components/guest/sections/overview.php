@@ -1,31 +1,59 @@
 <section id="overview" class="content-section">
-  <!-- Hero Banner -->
+  <!-- Hero Banner with Carousel Background -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card shadow-lg border-0 overflow-hidden position-relative" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
-        <!-- Decorative Background Pattern -->
-        <div class="position-absolute w-100 h-100" style="opacity: 0.05;">
-          <i class="fas fa-hotel position-absolute" style="font-size: 15rem; top: -3rem; right: -3rem; transform: rotate(-15deg);"></i>
+      <div class="card shadow-lg border-0 overflow-hidden position-relative hero-carousel-wrapper" style="min-height: 500px;">
+        <!-- Background Carousel -->
+        <div class="hero-carousel-container position-absolute w-100 h-100" style="background: linear-gradient(135deg, #0d1f3d 0%, #1a3a5c 100%);">
+          <div class="hero-carousel d-flex" style="transition: transform 0.5s ease-in-out; opacity: 0.2;">
+            <div class="hero-slide" style="background-image: url('assets/images/Lobby/BarCIE-9.1.jpg');"></div>
+            <div class="hero-slide" style="background-image: url('assets/images/Lobby/BarCIE-8.jpg');"></div>
+            <div class="hero-slide" style="background-image: url('assets/images/Lobby/BarCIE-9.2.jpg');"></div>
+            <div class="hero-slide" style="background-image: url('assets/images/Lobby/BarCIE-1.jpg');"></div>
+            <div class="hero-slide" style="background-image: url('assets/images/Lobby/BarCIE-9.3.jpg');"></div>
+          </div>
         </div>
-        <div class="card-body p-5 text-center position-relative">
-          <div class="text-white hero-content">
-            <div class="mb-4">
-              <i class="fas fa-hotel hero-icon" style="font-size: 5rem;"></i>
+        
+        <!-- Content Over Carousel -->
+        <div class="card-body py-5 px-4 text-center position-relative" style="z-index: 2; min-height: 500px; display: flex; align-items: center; justify-content: center;">
+          <div class="hero-content" style="max-width: 900px;">
+            <!-- LCUP Logo and Building Icon -->
+            <div class="mb-4 d-flex justify-content-center align-items-center gap-3">
+              <img src="assets/images/imageBg/barcie_logo.jpg" alt="LCUP Logo" class="hero-logo" style="height: 85px; width: auto; filter: brightness(0) invert(1) drop-shadow(0 4px 8px rgba(0,0,0,0.5));">
+              <i class="fas fa-hotel hero-icon" style="font-size: 4.5rem; color: #FFD700; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));"></i>
             </div>
-            <h1 class="display-3 fw-bold mb-3 hero-title">Welcome to BarCIE International Center</h1>
-            <p class="fs-5 mb-2"><i class="fas fa-university me-2"></i>La Consolacion University Philippines</p>
-            <p class="fs-6 mb-4 opacity-90">Your Premier Hospitality Destination</p>
-            <div class="d-flex flex-wrap justify-content-center gap-3 mb-4">
-              <span class="badge bg-white text-primary px-3 py-2 fs-6"><i class="fas fa-check-circle me-1"></i>Instant Booking</span>
-              <span class="badge bg-white text-primary px-3 py-2 fs-6"><i class="fas fa-user-shield me-1"></i>No Account Needed</span>
-              <span class="badge bg-white text-primary px-3 py-2 fs-6"><i class="fas fa-star me-1"></i>Premium Service</span>
+            
+            <h1 class="display-2 fw-bold mb-4 hero-title" style="color: #FFFFFF; text-shadow: 3px 3px 12px rgba(0,0,0,0.7), 0 0 20px rgba(255,215,0,0.3); letter-spacing: -1px; line-height: 1.2;">
+              Welcome to BarCIE International Center
+            </h1>
+            
+            <p class="fs-3 mb-3 fw-semibold" style="color: #FFD700; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);">
+              <i class="fas fa-university me-2"></i>La Consolacion University Philippines
+            </p>
+            
+            <p class="fs-5 mb-5 fw-light" style="color: #E8F4F8; text-shadow: 2px 2px 6px rgba(0,0,0,0.7); line-height: 1.6;">
+              The Laboratory of the College of International Tourism and Hospitality Management
+            </p>
+            
+            <div class="d-flex flex-wrap justify-content-center gap-3 mb-5">
+              <span class="badge px-4 py-3 fs-6 rounded-pill shadow-lg hero-badge" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1a3a5c; font-weight: 700; border: 2px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-check-circle me-2"></i>Instant Booking
+              </span>
+              <span class="badge px-4 py-3 fs-6 rounded-pill shadow-lg hero-badge" style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); color: #FFFFFF; font-weight: 700; border: 2px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-user-shield me-2"></i>No Account Needed
+              </span>
+              <span class="badge px-4 py-3 fs-6 rounded-pill shadow-lg hero-badge" style="background: linear-gradient(135deg, #FF6B9D 0%, #C06C84 100%); color: #FFFFFF; font-weight: 700; border: 2px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-star me-2"></i>Premium Service
+              </span>
             </div>
-            <button class="btn btn-light btn-lg px-5 py-3 shadow-sm hero-btn" onclick="showSection('booking')">
+            
+            <button class="btn btn-lg px-5 py-4 shadow-lg hero-btn fw-bold" onclick="showSection('booking')" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1a3a5c; border: 3px solid #FFFFFF; border-radius: 50px; font-size: 1.2rem; transition: all 0.4s ease;">
               <i class="fas fa-calendar-check me-2"></i>Book Your Stay Now
               <i class="fas fa-arrow-right ms-2"></i>
             </button>
           </div>
         </div>
+        
       </div>
     </div>
   </div>
@@ -240,7 +268,7 @@
                 </div>
                 <div>
                   <h6 class="fw-bold mb-1">Payment Options</h6>
-                  <p class="text-muted small mb-0">We accept bank transfers, GCash, and cash payments. Payment instructions will be sent via email.</p>
+                  <p class="text-muted small mb-0">We accept bank transfers (BDO / BPI) only. Payment instructions will be sent via email.</p>
                 </div>
               </div>
             </div>
@@ -307,17 +335,6 @@
                 <div>
                   <h6 class="fw-bold mb-1">Children & Pets</h6>
                   <p class="text-muted small mb-0">Children are welcome. Pets are not allowed unless specified. Please inquire in advance.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6 mb-3">
-              <div class="d-flex align-items-start">
-                <div class="me-3" style="color: #2a5298;">
-                  <i class="fas fa-broom fa-lg"></i>
-                </div>
-                <div>
-                  <h6 class="fw-bold mb-1">Room Cleanliness</h6>
-                  <p class="text-muted small mb-0">Daily housekeeping included. Additional cleaning services available upon request.</p>
                 </div>
               </div>
             </div>
@@ -393,7 +410,6 @@
           <div class="d-flex flex-wrap gap-2">
             <span class="badge amenity-badge" style="background-color: #e3f2fd; color: #2a5298; border: 1px solid #2a5298;"><i class="fas fa-wifi me-1"></i>Free WiFi</span>
             <span class="badge amenity-badge" style="background-color: #e3f2fd; color: #2a5298; border: 1px solid #2a5298;"><i class="fas fa-car me-1"></i>Free Parking</span>
-            <span class="badge amenity-badge" style="background-color: #e3f2fd; color: #2a5298; border: 1px solid #2a5298;"><i class="fas fa-coffee me-1"></i>Breakfast</span>
             <span class="badge amenity-badge" style="background-color: #e3f2fd; color: #2a5298; border: 1px solid #2a5298;"><i class="fas fa-concierge-bell me-1"></i>24/7 Service</span>
           </div>
         </div>
@@ -403,11 +419,84 @@
 </section>
 
 <style>
+/* Hero Carousel Styles */
+.hero-carousel-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-carousel-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.hero-carousel {
+  display: flex;
+  width: 500%;
+  height: 100%;
+  transition: transform 0.8s ease-in-out;
+  will-change: transform;
+}
+
+.hero-slide {
+  flex-shrink: 0;
+  width: 20%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.carousel-indicators-custom {
+  display: flex;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.indicator-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.indicator-dot.active {
+  background: white;
+  width: 30px;
+  border-radius: 6px;
+}
+
+.indicator-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
 /* Hero Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
   }
   to {
     opacity: 1;
@@ -433,26 +522,83 @@
   }
 }
 
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .hero-content {
-  animation: fadeInUp 0.8s ease-out;
+  animation: fadeInUp 1s ease-out;
+}
+
+.hero-logo {
+  animation: fadeInDown 1s ease-out;
 }
 
 .hero-icon {
-  animation: float 3s ease-in-out infinite;
+  animation: float 3s ease-in-out infinite, fadeInDown 1s ease-out;
 }
 
 .hero-title {
-  animation: fadeInUp 0.8s ease-out 0.2s backwards;
+  animation: fadeInUp 1s ease-out 0.3s backwards;
+}
+
+.hero-content p:nth-of-type(1) {
+  animation: slideInLeft 1s ease-out 0.5s backwards;
+}
+
+.hero-content p:nth-of-type(2) {
+  animation: slideInRight 1s ease-out 0.6s backwards;
+}
+
+.hero-content .badge {
+  animation: fadeInUp 0.8s ease-out backwards;
+}
+
+.hero-content .badge:nth-child(1) {
+  animation-delay: 0.7s;
+}
+
+.hero-content .badge:nth-child(2) {
+  animation-delay: 0.8s;
+}
+
+.hero-content .badge:nth-child(3) {
+  animation-delay: 0.9s;
 }
 
 .hero-btn {
-  transition: all 0.3s ease;
-  animation: fadeInUp 0.8s ease-out 0.4s backwards;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: fadeInUp 1s ease-out 1s backwards;
 }
 
 .hero-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+  background: linear-gradient(135deg, #FFA500 0%, #FFD700 100%) !important;
+  border-color: #FFD700 !important;
+}
+
+.hero-badge:hover {
+  transform: translateY(-3px) scale(1.05);
+  transition: all 0.3s ease;
 }
 
 /* Stat Cards Hover Effect */
@@ -538,3 +684,66 @@
   }
 }
 </style>
+
+<script>
+// Hero Carousel Auto-play
+(function() {
+  let currentSlide = 0;
+  const totalSlides = 5;
+  let autoPlayInterval;
+  
+  function switchSlide(slideIndex) {
+    currentSlide = slideIndex;
+    const carousel = document.querySelector('.hero-carousel');
+    const offset = currentSlide * -20; // Each slide is 20% width
+    carousel.style.transform = `translateX(${offset}%)`;
+    
+    // Update indicators
+    document.querySelectorAll('.indicator-dot').forEach((dot, index) => {
+      dot.classList.toggle('active', index === currentSlide);
+    });
+  }
+  
+  function nextSlide() {
+    currentSlide = (currentSlide + 1) % totalSlides;
+    switchSlide(currentSlide);
+  }
+  
+  function startAutoPlay() {
+    autoPlayInterval = setInterval(nextSlide, 3000); // Change every 3 seconds
+  }
+  
+  function stopAutoPlay() {
+    if (autoPlayInterval) {
+      clearInterval(autoPlayInterval);
+    }
+  }
+  
+  function resetAutoPlay() {
+    stopAutoPlay();
+    startAutoPlay();
+  }
+  
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set up indicator click handlers
+    document.querySelectorAll('.indicator-dot').forEach((dot, index) => {
+      dot.addEventListener('click', function() {
+        switchSlide(index);
+        resetAutoPlay();
+      });
+    });
+    
+    // Pause on hover
+    const carouselWrapper = document.querySelector('.hero-carousel-wrapper');
+    if (carouselWrapper) {
+      carouselWrapper.addEventListener('mouseenter', stopAutoPlay);
+      carouselWrapper.addEventListener('mouseleave', startAutoPlay);
+    }
+    
+    // Start auto-play
+    startAutoPlay();
+  });
+})();
+</script>
+

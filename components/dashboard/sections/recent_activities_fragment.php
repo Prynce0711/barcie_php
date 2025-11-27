@@ -7,8 +7,83 @@
 // When accessed directly (e.g. fetch), behave as an endpoint and send headers.
 require_once __DIR__ . '/../../../database/db_connect.php';
 
+// Pagination setup
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$per_page = 10;
+$offset = ($page - 1) * $per_page;
+
 $recent_activities = [];
-$recent_activity_result = $conn->query("SELECT b.type, b.details, b.created_at FROM bookings b ORDER BY b.created_at DESC LIMIT 8");
+
+// Fetch bookings (reservations)
+$bookings_query = "SELECT 'booking' as activity_type, 
+                         CONCAT('New booking for ', i.name, 
+                                CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' #', i.room_number) ELSE '' END) as activity_title,
+                         CONCAT('Guest: ', SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Guest:', -1), '|', 1), 
+                                ' - Status: ', UPPER(SUBSTRING(b.status, 1, 1)), SUBSTRING(b.status, 2)) as activity_details,
+                         b.status as activity_status,
+                         b.created_at as activity_time,
+                         'fa-calendar-check' as activity_icon,
+                         'primary' as activity_color
+                  FROM bookings b
+                  LEFT JOIN items i ON b.room_id = i.id
+                  ORDER BY b.created_at DESC";
+
+// Fetch pencil bookings
+$pencil_query = "SELECT 'pencil' as activity_type,
+                        CONCAT('Pencil booking for ', i.name,
+                               CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' #', i.room_number) ELSE '' END) as activity_title,
+                        CONCAT('Guest: ', pb.guest_name, ' - Status: ', UPPER(SUBSTRING(pb.status, 1, 1)), SUBSTRING(pb.status, 2)) as activity_details,
+                        pb.status as activity_status,
+                        pb.created_at as activity_time,
+                        'fa-pencil-alt' as activity_icon,
+                        'warning' as activity_color
+                 FROM pencil_bookings pb
+                 LEFT JOIN items i ON pb.room_id = i.id
+                 ORDER BY pb.created_at DESC";
+
+// Fetch feedback
+$feedback_query = "SELECT 'feedback' as activity_type,
+                          CONCAT('New feedback received - Rating: ', rating, '/5') as activity_title,
+                          CONCAT(SUBSTRING(comments, 1, 100), CASE WHEN LENGTH(comments) > 100 THEN '...' ELSE '' END) as activity_details,
+                          'received' as activity_status,
+                          created_at as activity_time,
+                          'fa-comment-dots' as activity_icon,
+                          'info' as activity_color
+                   FROM feedback
+                   ORDER BY created_at DESC";
+
+// Fetch discount applications
+$discount_query = "SELECT 'discount' as activity_type,
+                          CONCAT('Discount application - ', 
+                                 CASE 
+                                   WHEN discount_status = 'approved' THEN 'Approved'
+                                   WHEN discount_status = 'rejected' THEN 'Rejected'
+                                   ELSE 'Pending'
+                                 END) as activity_title,
+                          CONCAT('Booking: BARCIE-', DATE_FORMAT(b.created_at, '%Y%m%d'), '-', LPAD(b.id, 4, '0')) as activity_details,
+                          b.discount_status as activity_status,
+                          b.updated_at as activity_time,
+                          'fa-tag' as activity_icon,
+                          CASE 
+                            WHEN b.discount_status = 'approved' THEN 'success'
+                            WHEN b.discount_status = 'rejected' THEN 'danger'
+                            ELSE 'secondary'
+                          END as activity_color
+                   FROM bookings b
+                   WHERE b.discount_status IS NOT NULL AND b.discount_status != 'none'
+                   ORDER BY b.updated_at DESC";
+
+// Combine all queries with UNION and get total count
+$union_query = "($bookings_query) UNION ALL ($pencil_query) UNION ALL ($feedback_query) UNION ALL ($discount_query) ORDER BY activity_time DESC";
+
+// Get total count for pagination
+$count_result = $conn->query("SELECT COUNT(*) as total FROM ($union_query) as all_activities");
+$total_activities = $count_result ? $count_result->fetch_assoc()['total'] : 0;
+$total_pages = ceil($total_activities / $per_page);
+
+// Get paginated results
+$paginated_query = "$union_query LIMIT $per_page OFFSET $offset";
+$recent_activity_result = $conn->query($paginated_query);
 if ($recent_activity_result) {
   while ($row = $recent_activity_result->fetch_assoc()) {
     $recent_activities[] = $row;
@@ -26,26 +101,92 @@ if (empty($recent_activities)):
 <?php
 else:
   foreach ($recent_activities as $index => $activity):
+    $icon = $activity['activity_icon'] ?? 'fa-circle';
+    $color = $activity['activity_color'] ?? 'primary';
+    $title = $activity['activity_title'] ?? 'Activity';
+    $details = $activity['activity_details'] ?? '';
+    $time = $activity['activity_time'] ?? '';
+    
+    // Status badge color
+    $status = $activity['activity_status'] ?? '';
+    $status_badge_color = 'secondary';
+    if (in_array($status, ['approved', 'confirmed', 'checked_in'])) {
+      $status_badge_color = 'success';
+    } elseif ($status === 'pending') {
+      $status_badge_color = 'warning';
+    } elseif (in_array($status, ['rejected', 'cancelled'])) {
+      $status_badge_color = 'danger';
+    } elseif ($status === 'received') {
+      $status_badge_color = 'info';
+    }
 ?>
   <div class="activity-item d-flex p-3 <?php echo $index < count($recent_activities) - 1 ? 'border-bottom' : ''; ?>">
     <div class="activity-icon me-3">
-      <div class="icon-circle bg-primary bg-opacity-10 text-primary">
-        <i class="fas fa-circle fa-xs"></i>
+      <div class="icon-circle bg-<?php echo $color; ?> bg-opacity-10 text-<?php echo $color; ?>" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <i class="fas <?php echo $icon; ?>"></i>
       </div>
     </div>
     <div class="flex-grow-1">
       <div class="activity-content">
-        <h6 class="mb-1 text-dark"><?php echo htmlspecialchars($activity['type']); ?></h6>
-        <p class="text-muted small mb-1"><?php echo htmlspecialchars($activity['details']); ?></p>
-        <div class="text-muted small">
-          <i class="fas fa-user me-1"></i>Guest •
-          <i class="fas fa-clock me-1"></i><?php echo date('M d, H:i', strtotime($activity['created_at'])); ?>
+        <h6 class="mb-1 text-dark" style="font-size: 0.9rem;"><?php echo htmlspecialchars($title); ?></h6>
+        <p class="text-muted small mb-1"><?php echo htmlspecialchars($details); ?></p>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-<?php echo $status_badge_color; ?>" style="font-size: 0.65rem;">
+            <?php echo ucfirst($status); ?>
+          </span>
+          <span class="text-muted small">
+            <i class="fas fa-clock me-1"></i><?php echo date('M d, Y H:i', strtotime($time)); ?>
+          </span>
         </div>
       </div>
     </div>
   </div>
 <?php
   endforeach;
+  
+  // Pagination controls
+  if ($total_pages > 1):
+?>
+  <div class="activity-pagination border-top pt-3 mt-2">
+    <nav aria-label="Recent activities pagination">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        <?php if ($page > 1): ?>
+          <li class="page-item">
+            <a class="page-link" href="#" onclick="loadRecentActivitiesPage(<?php echo $page - 1; ?>); return false;">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        <?php endif; ?>
+        
+        <?php
+        // Show page numbers
+        $start_page = max(1, $page - 2);
+        $end_page = min($total_pages, $page + 2);
+        
+        for ($i = $start_page; $i <= $end_page; $i++):
+        ?>
+          <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
+            <a class="page-link" href="#" onclick="loadRecentActivitiesPage(<?php echo $i; ?>); return false;">
+              <?php echo $i; ?>
+            </a>
+          </li>
+        <?php endfor; ?>
+        
+        <?php if ($page < $total_pages): ?>
+          <li class="page-item">
+            <a class="page-link" href="#" onclick="loadRecentActivitiesPage(<?php echo $page + 1; ?>); return false;">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        <?php endif; ?>
+      </ul>
+    </nav>
+    <p class="text-center text-muted small mb-0 mt-2">
+      Page <?php echo $page; ?> of <?php echo $total_pages; ?> (<?php echo $total_activities; ?> activities)
+    </p>
+  </div>
+<?php
+  endif;
 endif;
 $fragment = ob_get_clean();
 

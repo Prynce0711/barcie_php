@@ -7,15 +7,15 @@ $bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number,
                           WHERE b.type = 'reservation' OR b.type IS NULL
                           ORDER BY b.created_at DESC");
 while ($booking = $bookings->fetch_assoc()):
-  // Determine status badge color
+  // Determine status badge color - each status has unique color
   $status_color = [
-    'pending' => 'warning',
-    'approved' => 'success',
-    'confirmed' => 'info',
-    'checked_in' => 'primary',
-    'checked_out' => 'secondary',
-    'cancelled' => 'danger',
-    'rejected' => 'danger'
+    'pending' => 'warning',     // Yellow #ffc107
+    'approved' => 'success',    // Green #28a745
+    'confirmed' => 'info',      // Cyan #17a2b8
+    'checked_in' => 'primary',  // Blue #0d6efd
+    'checked_out' => 'secondary', // Gray #6c757d
+    'cancelled' => 'warning',   // Orange-Yellow (will style differently)
+    'rejected' => 'danger'      // Red #dc3545
   ];
   $badge_color = $status_color[$booking['status']] ?? 'secondary';
   

@@ -262,7 +262,8 @@
 
 		// Approve/Reject functions
 		window.approveFeedback = async function(feedbackId) {
-			const confirmed = await showConfirm(
+			const confirmFn = window.showConfirm || window.showConfirmModal || function(msg){ return Promise.resolve(confirm(msg)); };
+			const confirmed = await confirmFn(
 				'Approve this feedback? It will be visible to guests.',
 				{ title: 'Approve Feedback', confirmText: 'Approve', confirmClass: 'btn-primary' }
 			);
@@ -291,7 +292,8 @@
 		};
 
 		window.rejectFeedback = async function(feedbackId) {
-			const confirmed = await showConfirm(
+			const confirmFn = window.showConfirm || window.showConfirmModal || function(msg){ return Promise.resolve(confirm(msg)); };
+			const confirmed = await confirmFn(
 				'Reject this feedback? It will NOT be visible to guests.',
 				{ title: 'Reject Feedback', confirmText: 'Reject', confirmClass: 'btn-danger' }
 			);

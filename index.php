@@ -11,6 +11,8 @@
 
   <?php include 'components/landing/sections/about.php'; ?>
 
+  <?php include 'components/landing/sections/vision_mission.php'; ?>
+
   <?php include 'components/landing/sections/news.php'; ?>
 
   <?php include 'components/landing/sections/services.php'; ?>
@@ -20,6 +22,8 @@
   <?php include 'components/landing/sections/event_stylists.php'; ?>
 
   <?php include 'components/landing/sections/caterings.php'; ?>
+  
+  <?php include 'components/landing/sections/brochure.php'; ?>
   
   <?php include 'components/landing/sections/features.php'; ?>
 

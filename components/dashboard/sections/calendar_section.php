@@ -95,18 +95,27 @@
             $item_type = $booking['item_type'] ?: 'room';
             $guest = 'Guest';
             $status = $booking['status'];
-            $display_title = $item_name . $room_number . ' - ' . $guest;
-            $color = '#28a745';
-            if ($status == 'checked_in') $color = '#0d6efd';
-            if ($status == 'checked_out') $color = '#6f42c1';
-            if ($status == 'pending') $color = '#fd7e14';
+            $checkin = $booking['checkin'];
+            $checkout = $booking['checkout'];
+            $duration_days = ceil((strtotime($checkout) - strtotime($checkin)) / 86400);
+            $duration_text = $duration_days > 1 ? "({$duration_days} days)" : '(1 day)';
+            $display_title = $item_name . $room_number . ' - Booked ' . $duration_text;
+            // Unique colors for each status
+            $color = '#dc3545';  // Red for default/booked
+            if ($status == 'pending') $color = '#ffc107';      // Yellow
+            if ($status == 'approved') $color = '#28a745';     // Green
+            if ($status == 'confirmed') $color = '#17a2b8';    // Cyan
+            if ($status == 'checked_in') $color = '#0d6efd';   // Blue
+            if ($status == 'checked_out') $color = '#6c757d';  // Gray
+            if ($status == 'cancelled') $color = '#f39c12';    // Orange-Yellow
+            if ($status == 'rejected') $color = '#dc3545';     // Red
 
             // Emit booking as an event
             echo "window.roomEvents.push({\n";
             echo "  id: 'booking-{$booking['id']}',\n";
             echo "  title: '{$display_title}',\n";
-            echo "  start: '{$booking['checkin']}',\n";
-            echo "  end: '" . date('Y-m-d', strtotime($booking['checkout'] . ' +1 day')) . "',\n";
+            echo "  start: '{$checkin}',\n";
+            echo "  end: '" . date('Y-m-d', strtotime($checkout . ' +1 day')) . "',\n";
             echo "  backgroundColor: '{$color}',\n";
             echo "  borderColor: '{$color}',\n";
             echo "  textColor: '#ffffff',\n";
@@ -116,11 +125,64 @@
             echo "    itemType: '{$item_type}',\n";
             echo "    guest: '{$guest}',\n";
             echo "    status: '{$status}',\n";
-            echo "    checkin: '{$booking['checkin']}',\n";
-            echo "    checkout: '{$booking['checkout']}',\n";
+            echo "    bookingType: 'regular',\n";
+            echo "    checkin: '{$checkin}',\n";
+            echo "    checkout: '{$checkout}',\n";
+            echo "    durationDays: {$duration_days},\n";
             echo "    roomId: " . ($booking['room_id'] ?: 'null') . "\n";
             echo "  }\n";
             echo "});\n";
+          }
+        }
+
+        // Fetch pencil bookings if table exists
+        $table_check = $conn->query("SHOW TABLES LIKE 'pencil_bookings'");
+        if ($table_check && $table_check->num_rows > 0) {
+          $pencil_query = "SELECT pb.*, i.name as item_name, i.item_type, i.room_number
+                           FROM pencil_bookings pb
+                           LEFT JOIN items i ON pb.room_id = i.id
+                           WHERE pb.status IN ('approved', 'pending', 'confirmed')
+                           AND pb.token_expires_at >= NOW()
+                           AND pb.checkin >= CURDATE() - INTERVAL 7 DAY
+                           AND pb.checkin <= CURDATE() + INTERVAL 30 DAY
+                           ORDER BY pb.checkin ASC";
+          $pencil_result = $conn->query($pencil_query);
+
+          if ($pencil_result && $pencil_result->num_rows > 0) {
+            while ($pencil = $pencil_result->fetch_assoc()) {
+              $item_name = $pencil['item_name'] ? addslashes($pencil['item_name']) : 'Unassigned Room/Facility';
+              $room_number = $pencil['room_number'] ? '#' . $pencil['room_number'] : '';
+              $item_type = $pencil['item_type'] ?: 'room';
+              $guest = $pencil['guest_name'] ? addslashes($pencil['guest_name']) : 'Guest';
+              $checkin = $pencil['checkin'];
+              $checkout = $pencil['checkout'];
+              $duration_days = ceil((strtotime($checkout) - strtotime($checkin)) / 86400);
+              $duration_text = $duration_days > 1 ? "({$duration_days} days)" : '(1 day)';
+              $display_title = $item_name . $room_number . ' - Pencil ' . $duration_text;
+              $color = '#fd7e14'; // Orange for pencil bookings
+
+              echo "window.roomEvents.push({\n";
+              echo "  id: 'pencil-{$pencil['id']}',\n";
+              echo "  title: '{$display_title}',\n";
+              echo "  start: '{$checkin}',\n";
+              echo "  end: '" . date('Y-m-d', strtotime($checkout . ' +1 day')) . "',\n";
+              echo "  backgroundColor: '{$color}',\n";
+              echo "  borderColor: '{$color}',\n";
+              echo "  textColor: '#ffffff',\n";
+              echo "  extendedProps: {\n";
+              echo "    itemName: '{$item_name}',\n";
+              echo "    roomNumber: '" . ($pencil['room_number'] ?: '') . "',\n";
+              echo "    itemType: '{$item_type}',\n";
+              echo "    guest: '{$guest}',\n";
+              echo "    status: 'pencil',\n";
+              echo "    bookingType: 'pencil',\n";
+              echo "    checkin: '{$checkin}',\n";
+              echo "    checkout: '{$checkout}',\n";
+              echo "    durationDays: {$duration_days},\n";
+              echo "    roomId: " . ($pencil['room_id'] ?: 'null') . "\n";
+              echo "  }\n";
+              echo "});\n";
+            }
           }
         }
 

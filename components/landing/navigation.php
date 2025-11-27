@@ -19,35 +19,30 @@
         <li class="nav-item">
           <a class="nav-link" href="#about">About</a>
         </li>
-
-        <li> <a class="nav-link" href="#news">News & Updates</a></li>
-
-
+        <li class="nav-item">
+          <a class="nav-link" href="#vision-mission">Vision & Mission</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#news">News & Updates</a>
+        </li>
         <li class="nav-item">
           <a class="nav-link" href="#services">Services</a>
         </li>
-
         <li class="nav-item">
           <a class="nav-link" href="#event-stylists">Event Stylists</a>
         </li>
-
-
         <li class="nav-item">
           <a class="nav-link" href="#caterings">Caterings</a>
         </li>
-
         <li class="nav-item">
-          <a class="nav-link" href="#features">Features</a>
+          <a class="nav-link" href="#brochure">Brochure</a>
         </li>
-
 
         <li class="nav-item">
           <a class="nav-link" href="#contact">Contact</a>
         </li>
       </ul>
-
       <div class="navbar-nav">
-
         <button class="btn btn-primary-custom" onclick="showSection('admin-login')">
           <i class="fas fa-shield-alt me-1"></i> Admin
         </button>

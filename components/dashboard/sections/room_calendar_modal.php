@@ -47,7 +47,7 @@
         <!-- Legend Card -->
         <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; overflow: hidden;">
           <div class="card-body py-3 px-4" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);">
-            <div class="d-flex align-items-center justify-content-center gap-5 flex-wrap">
+            <div class="d-flex align-items-center justify-content-center gap-4 flex-wrap">
               <div class="d-flex align-items-center">
                 <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #d1ecf1; border: 2px solid #bee5eb; border-radius: 6px; margin-right: 10px;"></span>
                 <span style="font-weight: 500; color: #0c5460; font-size: 0.95rem;">
@@ -55,15 +55,21 @@
                 </span>
               </div>
               <div class="d-flex align-items-center">
-                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 6px; margin-right: 10px;"></span>
+                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #ffc107; border: 2px solid #ffc107; border-radius: 6px; margin-right: 10px;"></span>
                 <span style="font-weight: 500; color: #856404; font-size: 0.95rem;">
                   <i class="fas fa-clock me-1"></i>Pending
                 </span>
               </div>
               <div class="d-flex align-items-center">
+                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #fd7e14; border: 2px solid #fd7e14; border-radius: 6px; margin-right: 10px;"></span>
+                <span style="font-weight: 500; color: #7d3f07; font-size: 0.95rem;">
+                  <i class="fas fa-pencil-alt me-1"></i>Pencil Booking
+                </span>
+              </div>
+              <div class="d-flex align-items-center">
                 <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #f8d7da; border: 2px solid #f5c6cb; border-radius: 6px; margin-right: 10px;"></span>
                 <span style="font-weight: 500; color: #721c24; font-size: 0.95rem;">
-                  <i class="fas fa-ban me-1"></i>Reserved
+                  <i class="fas fa-ban me-1"></i>Booked
                 </span>
               </div>
               <div class="text-muted small">
@@ -341,11 +347,15 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
+.badge-pending { background: #ffc107; color: #000; }
 .badge-approved { background: #28a745; }
+.badge-confirmed { background: #17a2b8; }
+.badge-checked_in { background: #0d6efd; }
 .badge-checkedin { background: #0d6efd; }
-.badge-checkedout { background: #6f42c1; }
-.badge-pending { background: #fd7e14; }
-.badge-cancelled { background: #dc3545; }
+.badge-checked_out { background: #6c757d; }
+.badge-checkedout { background: #6c757d; }
+.badge-cancelled { background: #f39c12; }
+.badge-rejected { background: #dc3545; }
 
 /* Booking details styling */
 #roomBookingDetailsContent {

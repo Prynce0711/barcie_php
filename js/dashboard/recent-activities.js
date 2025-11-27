@@ -89,7 +89,8 @@
 
     var base = window.BARCIE_BASE_PATH || '';
     var targetPath = 'components/dashboard/sections/recent_activities_fragment.php';
-    var url = joinPath(base, targetPath);
+    var page = options.page || 1;
+    var url = joinPath(base, targetPath) + '?page=' + page;
 
     fetchFragment(url, function (html) {
       var container = document.getElementById('recent-activities-container');
@@ -101,6 +102,10 @@
       if (button) { button.disabled = false; button.innerHTML = originalHTML; }
       showToast('Failed to refresh recent activities', 'danger');
     });
+  }
+
+  function loadRecentActivitiesPage(page) {
+    refreshRecentActivities(null, { page: page, silent: true });
   }
 
   function startRecentActivitiesAutoRefresh(intervalSeconds) {
@@ -117,6 +122,7 @@
 
   // Expose API
   window.refreshRecentActivities = refreshRecentActivities;
+  window.loadRecentActivitiesPage = loadRecentActivitiesPage;
   window.startRecentActivitiesAutoRefresh = startRecentActivitiesAutoRefresh;
   window.stopRecentActivitiesAutoRefresh = stopRecentActivitiesAutoRefresh;
 
