@@ -14,19 +14,21 @@ $offset = ($page - 1) * $per_page;
 
 $recent_activities = [];
 
-// Fetch bookings (reservations)
-$bookings_query = "SELECT 'booking' as activity_type, 
-                         CONCAT('New booking for ', i.name, 
-                                CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' #', i.room_number) ELSE '' END) as activity_title,
-                         CONCAT('Guest: ', SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Guest:', -1), '|', 1), 
-                                ' - Status: ', UPPER(SUBSTRING(b.status, 1, 1)), SUBSTRING(b.status, 2)) as activity_details,
-                         b.status as activity_status,
-                         b.created_at as activity_time,
-                         'fa-calendar-check' as activity_icon,
-                         'primary' as activity_color
-                  FROM bookings b
-                  LEFT JOIN items i ON b.room_id = i.id
-                  ORDER BY b.created_at DESC";
+// Fetch bookings (reservations) and show recent updates (creation, status changes)
+$bookings_query = "SELECT 'booking' as activity_type,
+          CASE
+            WHEN b.updated_at IS NOT NULL AND b.updated_at > b.created_at THEN CONCAT('Booking updated - ', UPPER(LEFT(b.status,1)), SUBSTRING(b.status,2))
+            ELSE CONCAT('New booking for ', i.name, CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' #', i.room_number) ELSE '' END)
+          END as activity_title,
+          CONCAT('Guest: ', SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Guest:', -1), '|', 1),
+            ' - Status: ', UPPER(LEFT(b.status,1)), SUBSTRING(b.status,2)) as activity_details,
+          b.status as activity_status,
+          GREATEST(COALESCE(b.updated_at, b.created_at), COALESCE(b.payment_verified_at, '1970-01-01 00:00:00')) as activity_time,
+          'fa-calendar-check' as activity_icon,
+          'primary' as activity_color
+        FROM bookings b
+        LEFT JOIN items i ON b.room_id = i.id
+          ";
 
 // Fetch pencil bookings
 $pencil_query = "SELECT 'pencil' as activity_type,
@@ -39,7 +41,7 @@ $pencil_query = "SELECT 'pencil' as activity_type,
                         'warning' as activity_color
                  FROM pencil_bookings pb
                  LEFT JOIN items i ON pb.room_id = i.id
-                 ORDER BY pb.created_at DESC";
+                           ";
 
 // Fetch feedback
 $feedback_query = "SELECT 'feedback' as activity_type,
@@ -50,7 +52,7 @@ $feedback_query = "SELECT 'feedback' as activity_type,
                           'fa-comment-dots' as activity_icon,
                           'info' as activity_color
                    FROM feedback
-                   ORDER BY created_at DESC";
+                         ";
 
 // Fetch discount applications
 $discount_query = "SELECT 'discount' as activity_type,
@@ -71,20 +73,55 @@ $discount_query = "SELECT 'discount' as activity_type,
                           END as activity_color
                    FROM bookings b
                    WHERE b.discount_status IS NOT NULL AND b.discount_status != 'none'
-                   ORDER BY b.updated_at DESC";
+                   ";
+
+        // Fetch admin news updates (create/publish/update)
+        $news_query = "SELECT 'news' as activity_type,
+                                CONCAT('News: ', COALESCE(NULLIF(n.status, ''), 'updated')) as activity_title,
+                                CONCAT(n.title, ' - ', SUBSTRING(n.content, 1, 120)) as activity_details,
+                                n.status as activity_status,
+                                GREATEST(COALESCE(n.updated_at, n.published_date, n.created_at), n.published_date) as activity_time,
+                                'fa-newspaper' as activity_icon,
+                                CASE WHEN n.status = 'published' THEN 'success' ELSE 'secondary' END as activity_color
+                         FROM news_updates n
+                         ORDER BY activity_time DESC";
+
+                      // Fetch payment verification events (verify/reject)
+                      $payment_query = "SELECT 'payment' as activity_type,
+                                CONCAT('Payment ',
+                                  CASE WHEN b.payment_status = 'verified' THEN 'verified' WHEN b.payment_status = 'rejected' THEN 'rejected' ELSE 'updated' END,
+                                  ' for ', i.name,
+                                  CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' #', i.room_number) ELSE '' END) as activity_title,
+                                CONCAT('Guest: ', SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Guest:', -1), '|', 1),
+                                  ' - Payment: ', COALESCE(b.payment_status, 'unknown')) as activity_details,
+                                COALESCE(b.payment_status, '') as activity_status,
+                                COALESCE(b.payment_verified_at, b.updated_at, b.created_at) as activity_time,
+                                'fa-credit-card' as activity_icon,
+                                CASE WHEN b.payment_status = 'verified' THEN 'success' WHEN b.payment_status = 'rejected' THEN 'danger' ELSE 'secondary' END as activity_color
+                              FROM bookings b
+                              LEFT JOIN items i ON b.room_id = i.id
+                              WHERE b.payment_status IS NOT NULL
+                              ";
 
 // Combine all queries with UNION and get total count
-$union_query = "($bookings_query) UNION ALL ($pencil_query) UNION ALL ($feedback_query) UNION ALL ($discount_query) ORDER BY activity_time DESC";
+$union_query = "($bookings_query) UNION ALL ($pencil_query) UNION ALL ($feedback_query) UNION ALL ($discount_query) UNION ALL ($payment_query) ORDER BY activity_time DESC";
 
 // Get total count for pagination
 $count_result = $conn->query("SELECT COUNT(*) as total FROM ($union_query) as all_activities");
-$total_activities = $count_result ? $count_result->fetch_assoc()['total'] : 0;
+if (!$count_result) {
+  error_log("RecentActivities COUNT query failed: " . $conn->error);
+  $total_activities = 0;
+} else {
+  $total_activities = $count_result->fetch_assoc()['total'];
+}
 $total_pages = ceil($total_activities / $per_page);
 
 // Get paginated results
 $paginated_query = "$union_query LIMIT $per_page OFFSET $offset";
 $recent_activity_result = $conn->query($paginated_query);
-if ($recent_activity_result) {
+if (!$recent_activity_result) {
+  error_log("RecentActivities paginated query failed: " . $conn->error);
+} else {
   while ($row = $recent_activity_result->fetch_assoc()) {
     $recent_activities[] = $row;
   }

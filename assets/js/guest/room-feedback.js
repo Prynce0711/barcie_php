@@ -4,6 +4,8 @@
  */
 
 let currentRoomForFeedback = null;
+// Cache reviews per room to avoid refetch on filter
+let roomReviewsCache = {};
 
 // Initialize room feedback system
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,6 +20,7 @@ function initializeRoomFeedbackSystem() {
   const submitBtn = document.getElementById('submitRoomFeedback');
   const anonymousCheckbox = document.getElementById('feedbackAnonymous');
   const guestNameInput = document.getElementById('feedbackGuestName');
+  const nameErrorEl = document.getElementById('feedbackNameError');
 
   if (starRatingContainer) {
     const stars = starRatingContainer.querySelectorAll('.star-input');
@@ -84,10 +87,25 @@ function initializeRoomFeedbackSystem() {
         guestNameInput.disabled = true;
         guestNameInput.value = '';
         guestNameInput.placeholder = 'Posting as Anonymous';
+        if (nameErrorEl) {
+          nameErrorEl.style.display = 'none';
+          nameErrorEl.textContent = '';
+        }
       } else {
         guestNameInput.disabled = false;
         guestNameInput.placeholder = 'Enter your name';
       }
+      updateSubmitState();
+    });
+  }
+
+  if (guestNameInput) {
+    guestNameInput.addEventListener('input', function() {
+      if (nameErrorEl && this.value.trim() !== '') {
+        nameErrorEl.style.display = 'none';
+        nameErrorEl.textContent = '';
+      }
+      updateSubmitState();
     });
   }
 
@@ -98,6 +116,22 @@ function initializeRoomFeedbackSystem() {
       e.preventDefault();
       submitRoomFeedback();
     });
+  }
+
+  function updateSubmitState() {
+    const submitBtn = document.getElementById('submitRoomFeedback');
+    const rating = document.getElementById('feedbackRatingValue').value;
+    const anonChecked = anonymousCheckbox ? anonymousCheckbox.checked : false;
+    const nameFilled = guestNameInput ? guestNameInput.value.trim() !== '' : false;
+
+    if (!submitBtn) return;
+
+    // Enable only when rating is selected and (anonymous OR name filled)
+    if (rating && (anonChecked || nameFilled)) {
+      submitBtn.disabled = false;
+    } else {
+      submitBtn.disabled = true;
+    }
   }
 
   // Add event delegation for dynamically created buttons
@@ -159,9 +193,24 @@ function submitRoomFeedback() {
   const form = document.getElementById('roomFeedbackForm');
   const submitBtn = document.getElementById('submitRoomFeedback');
   const rating = document.getElementById('feedbackRatingValue').value;
+  const anonChecked = document.getElementById('feedbackAnonymous') ? document.getElementById('feedbackAnonymous').checked : false;
+  const guestName = document.getElementById('feedbackGuestName') ? document.getElementById('feedbackGuestName').value.trim() : '';
+  const nameErrorEl = document.getElementById('feedbackNameError');
   
   if (!rating) {
     showAlert('Please select a star rating', 'danger');
+    return;
+  }
+
+  // Validate name requirement: if not anonymous, name is required
+  if (!anonChecked && !guestName) {
+    if (nameErrorEl) {
+      nameErrorEl.textContent = 'Please enter your name or select "Post as Anonymous".';
+      nameErrorEl.style.display = '';
+      nameErrorEl.focus && nameErrorEl.focus();
+    } else {
+      showAlert('Please enter your name or select anonymous.', 'danger');
+    }
     return;
   }
   
@@ -170,6 +219,9 @@ function submitRoomFeedback() {
   submitBtn.disabled = true;
   
   const formData = new FormData(form);
+  // Disable form controls while submitting
+  const controls = form.querySelectorAll('input, textarea, button, select');
+  controls.forEach(el => el.disabled = true);
   
   fetch('database/user_auth.php', {
     method: 'POST',
@@ -181,24 +233,20 @@ function submitRoomFeedback() {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      showAlert('Thank you for your review! Your feedback is awaiting admin approval before it will be visible to other guests.', 'success');
-      
-      // Close feedback modal
-      bootstrap.Modal.getInstance(document.getElementById('roomFeedbackModal')).hide();
-      
-      // Reset form
-      form.reset();
-      document.getElementById('feedbackRatingValue').value = '';
-      const stars = document.querySelectorAll('#feedbackStarRating .star-input');
-      stars.forEach(s => {
-        s.classList.remove('active');
-        s.querySelector('i').classList.remove('fas');
-        s.querySelector('i').classList.add('far');
-      });
-      document.getElementById('feedbackRatingText').textContent = 'Click to rate';
-      document.getElementById('feedbackRatingText').style.color = '';
-      
-      // Note: Don't refresh ratings immediately since feedback is pending approval
+      showAlert('Thank you for your review! Redirecting to Rooms & Facilities...', 'success');
+
+      // Close the feedback modal and redirect back to the rooms section so the guest sees their review in context
+      try {
+        const modalEl = document.getElementById('roomFeedbackModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+      } catch (e) { /* ignore */ }
+
+      // Short delay to allow modal to close smoothly, then navigate to rooms
+      setTimeout(() => {
+        // Assuming this script runs on Guest.php; navigate to the rooms anchor
+        window.location.href = 'Guest.php#rooms';
+      }, 300);
     } else {
       throw new Error(data.error || 'Failed to submit review');
     }
@@ -208,9 +256,17 @@ function submitRoomFeedback() {
     showAlert(error.message || 'Failed to submit review. Please try again.', 'danger');
   })
   .finally(() => {
+    // Re-enable controls and restore button
+    controls.forEach(el => el.disabled = false);
     submitBtn.innerHTML = originalHtml;
-    if (document.getElementById('feedbackRatingValue').value) {
+    // Re-evaluate submit enabled state
+    const hasRating = document.getElementById('feedbackRatingValue').value;
+    const anonCheckedNow = document.getElementById('feedbackAnonymous') ? document.getElementById('feedbackAnonymous').checked : false;
+    const nameFilledNow = document.getElementById('feedbackGuestName') ? document.getElementById('feedbackGuestName').value.trim() !== '' : false;
+    if (hasRating && (anonCheckedNow || nameFilledNow)) {
       submitBtn.disabled = false;
+    } else {
+      submitBtn.disabled = true;
     }
   });
 }
@@ -268,27 +324,28 @@ function openRoomDetailsModal(roomId) {
 
 function loadRoomReviews(roomId) {
   const reviewsList = document.getElementById('roomReviewsList');
-  reviewsList.innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i></div>';
-  
   fetch(`database/user_auth.php?action=get_room_reviews&room_id=${roomId}`)
     .then(response => response.json())
     .then(data => {
       if (data.success && data.reviews) {
-        if (data.reviews.length === 0) {
-          reviewsList.innerHTML = `
-            <div class="text-center text-muted py-4">
-              <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
-              <p>No reviews yet. Be the first to review!</p>
-            </div>
-          `;
-        } else {
-          reviewsList.innerHTML = data.reviews.map(review => createReviewCard(review)).join('');
+        // cache reviews and render
+        roomReviewsCache[roomId] = data.reviews;
+        try {
+          renderReviews(roomId, data.reviews);
+        } catch (err) {
+          console.error('Error rendering reviews:', err);
+          reviewsList.innerHTML = `\n            <div class="text-center text-danger py-4">\n              <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>\n              <p>Unable to display reviews</p>\n            </div>\n          `;
+        }
+        try {
+          renderReviewFilterControls(roomId);
+        } catch (err) {
+          console.warn('Could not attach review filter controls', err);
         }
       } else {
         reviewsList.innerHTML = `
           <div class="text-center text-muted py-4">
-            <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
-            <p>Unable to load reviews</p>
+            <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
+            <p>No reviews yet. Be the first to review!</p>
           </div>
         `;
       }
@@ -302,6 +359,48 @@ function loadRoomReviews(roomId) {
         </div>
       `;
     });
+}
+
+function renderReviewFilterControls(roomId) {
+  const container = document.getElementById('reviewStarFilter');
+  if (!container) return;
+
+  // attach click handlers to buttons
+  container.querySelectorAll('button[data-star]').forEach(btn => {
+    btn.onclick = function() {
+      // toggle active class
+      container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const star = this.getAttribute('data-star');
+      applyReviewFilter(roomId, star);
+    };
+  });
+}
+
+function applyReviewFilter(roomId, star) {
+  const reviewsList = document.getElementById('roomReviewsList');
+  const reviews = roomReviewsCache[roomId] || [];
+  let filtered = reviews;
+  if (star && star !== 'all') {
+    const n = parseInt(star, 10);
+    filtered = reviews.filter(r => parseInt(r.rating, 10) === n);
+  }
+  renderReviews(roomId, filtered);
+}
+
+function renderReviews(roomId, reviews) {
+  const reviewsList = document.getElementById('roomReviewsList');
+  if (!reviews || reviews.length === 0) {
+    reviewsList.innerHTML = `
+      <div class="text-center text-muted py-4">
+        <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
+        <p>No reviews yet. Be the first to review!</p>
+      </div>
+    `;
+    return;
+  }
+  // render review cards
+  reviewsList.innerHTML = reviews.map(review => createReviewCard(review)).join('');
 }
 
 function createReviewCard(review) {

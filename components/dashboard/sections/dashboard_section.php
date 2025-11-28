@@ -348,3 +348,7 @@
           window.BARCIE_BASE_PATH = '<?php echo $barcie_base_path; ?>';
         </script>
         <script src="<?php echo ($barcie_base_path ? $barcie_base_path : ''); ?>/js/dashboard/recent-activities.js"></script>
+                <script>
+                  // Auto-refresh recent activities every 20 seconds
+                  try { if (typeof startRecentActivitiesAutoRefresh === 'function') startRecentActivitiesAutoRefresh(20); } catch(e) { console.warn('Recent activities auto-refresh start failed', e); }
+                </script>

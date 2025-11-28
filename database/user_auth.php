@@ -1254,9 +1254,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             $limit = (int)($_GET['limit'] ?? 50);
             $offset = (int)($_GET['offset'] ?? 0);
             
-            // Get feedback with room details and approval status
+            // Get feedback with room details
             $stmt = $conn->prepare("SELECT f.id, f.room_id, f.rating, f.message, f.created_at, 
-                                   f.feedback_name, f.is_anonymous, f.approval_status,
+                                   f.feedback_name, f.is_anonymous,
                                    i.name as room_name, i.item_type as room_type
                                    FROM feedback f 
                                    LEFT JOIN items i ON f.room_id = i.id
@@ -2249,32 +2249,37 @@ if ($action === 'room_feedback') {
         exit();
     }
     
-    // If anonymous or no name provided, set guest_name to NULL
-    if ($is_anonymous || empty($guest_name)) {
-        $guest_name = null;
-        $is_anonymous = 1;
+    // Require name unless anonymous is explicitly selected
+    if ($is_anonymous) {
+        // anonymous allowed: clear name if empty
+        if (empty($guest_name)) {
+            $guest_name = null;
+            $is_anonymous = 1;
+        } else {
+            // user provided a name but marked anonymous: still store as anonymous
+            $is_anonymous = 1;
+        }
+    } else {
+        // not anonymous: name is required
+        if (empty($guest_name)) {
+            if ($is_ajax) {
+                echo json_encode(['success' => false, 'error' => 'Please enter your name or select anonymous.']);
+            } else {
+                handleResponse('Please enter your name or select anonymous.', false, '../Guest.php#rooms');
+            }
+            exit();
+        } else {
+            $is_anonymous = 0;
+        }
     }
     
-    // Insert room feedback with pending approval status
-    $stmt = $conn->prepare("INSERT INTO feedback (room_id, rating, message, feedback_name, is_anonymous, approval_status, created_at) VALUES (?, ?, ?, ?, ?, 'pending', NOW())");
+    // Insert room feedback (no approval required)
+    $stmt = $conn->prepare("INSERT INTO feedback (room_id, rating, message, feedback_name, is_anonymous, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
     $stmt->bind_param("iissi", $room_id, $rating, $comment, $guest_name, $is_anonymous);
     
     if ($stmt->execute()) {
-        // Update average rating and review count in items table (only approved reviews)
-        $update_stmt = $conn->prepare("
-            UPDATE items 
-            SET average_rating = (
-                SELECT ROUND(AVG(rating), 2) 
-                FROM feedback 
-                WHERE room_id = ? AND rating IS NOT NULL AND approval_status = 'approved'
-            ),
-            total_reviews = (
-                SELECT COUNT(*) 
-                FROM feedback 
-                WHERE room_id = ? AND approval_status = 'approved'
-            )
-            WHERE id = ?
-        ");
+        // Update average rating and review count in items table (include all reviews)
+        $update_stmt = $conn->prepare("\n            UPDATE items \n            SET average_rating = (\n                SELECT ROUND(AVG(rating), 2) \n                FROM feedback \n                WHERE room_id = ? AND rating IS NOT NULL\n            ),\n            total_reviews = (\n                SELECT COUNT(*) \n                FROM feedback \n                WHERE room_id = ?\n            )\n            WHERE id = ?\n        ");
         $update_stmt->bind_param("iii", $room_id, $room_id, $room_id);
         $update_stmt->execute();
         $update_stmt->close();
@@ -2319,7 +2324,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_room_reviews') {
             is_anonymous,
             created_at
         FROM feedback 
-        WHERE room_id = ? AND approval_status = 'approved'
+        WHERE room_id = ?
         ORDER BY created_at DESC
     ");
     $stmt->bind_param("i", $room_id);
@@ -2350,6 +2355,8 @@ if ($action === 'approve_feedback' || $action === 'reject_feedback') {
         exit();
     }
     
+    // feedback moderation short-circuited above
+
     $feedback_id = (int)($_POST['feedback_id'] ?? 0);
     
     if ($feedback_id <= 0) {
@@ -2357,53 +2364,8 @@ if ($action === 'approve_feedback' || $action === 'reject_feedback') {
         exit();
     }
     
-    $new_status = ($action === 'approve_feedback') ? 'approved' : 'rejected';
-    
-    // Update feedback approval status
-    $stmt = $conn->prepare("UPDATE feedback SET approval_status = ? WHERE id = ?");
-    $stmt->bind_param("si", $new_status, $feedback_id);
-    
-    if ($stmt->execute()) {
-        // If approved, update the room's average rating
-        if ($new_status === 'approved') {
-            // Get room_id from this feedback
-            $get_room = $conn->prepare("SELECT room_id FROM feedback WHERE id = ?");
-            $get_room->bind_param("i", $feedback_id);
-            $get_room->execute();
-            $result = $get_room->get_result();
-            
-            if ($row = $result->fetch_assoc()) {
-                $room_id = $row['room_id'];
-                
-                // Update room ratings
-                $update_stmt = $conn->prepare("
-                    UPDATE items 
-                    SET average_rating = (
-                        SELECT ROUND(AVG(rating), 2) 
-                        FROM feedback 
-                        WHERE room_id = ? AND rating IS NOT NULL AND approval_status = 'approved'
-                    ),
-                    total_reviews = (
-                        SELECT COUNT(*) 
-                        FROM feedback 
-                        WHERE room_id = ? AND approval_status = 'approved'
-                    )
-                    WHERE id = ?
-                ");
-                $update_stmt->bind_param("iii", $room_id, $room_id, $room_id);
-                $update_stmt->execute();
-                $update_stmt->close();
-            }
-            $get_room->close();
-        }
-        
-        $message = ($new_status === 'approved') ? 'Feedback approved successfully' : 'Feedback rejected';
-        echo json_encode(['success' => true, 'message' => $message]);
-    } else {
-        echo json_encode(['success' => false, 'error' => 'Failed to update feedback status']);
-    }
-    
-    $stmt->close();
+    // Moderation disabled — approve/reject logic is not used anymore.
+    echo json_encode(['success' => false, 'error' => 'Feedback moderation disabled']);
     exit();
 }
 
@@ -2442,8 +2404,8 @@ if ($action === 'admin_update_booking') {
     $booking_data = $booking_result->fetch_assoc();
     $booking_stmt->close();
 
-    // Update booking status
-    $stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+    // Update booking status (also update timestamp so activity feed detects changes)
+    $stmt = $conn->prepare("UPDATE bookings SET status = ?, updated_at = NOW() WHERE id = ?");
     $stmt->bind_param("si", $newStatus, $bookingId);
     $success = $stmt->execute();
     $stmt->close();
@@ -3317,7 +3279,8 @@ if ($action === 'admin_update_payment') {
 
     // Update payment status and set audit trail (who verified and when)
     $admin_id = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : 0;
-    $stmt = $conn->prepare("UPDATE bookings SET payment_status = ?, payment_verified_by = ?, payment_verified_at = NOW() WHERE id = ?");
+    // Update payment status and touch updated_at so activity feed sees the event
+    $stmt = $conn->prepare("UPDATE bookings SET payment_status = ?, payment_verified_by = ?, payment_verified_at = NOW(), updated_at = NOW() WHERE id = ?");
     $stmt->bind_param("sii", $newPaymentStatus, $admin_id, $bookingId);
     $success = $stmt->execute();
     $stmt->close();
