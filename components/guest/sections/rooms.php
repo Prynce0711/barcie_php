@@ -79,6 +79,7 @@
 <div class="modal fade" id="roomDetailsModal" tabindex="-1" aria-labelledby="roomDetailsLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
+        
       <div class="modal-header" style="background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%); color: white;">
         <div>
           <h5 class="modal-title mb-1" id="roomDetailsLabel">Room Details</h5>
@@ -129,7 +130,18 @@
         <!-- Reviews Section -->
         <div>
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0"><i class="fas fa-star text-warning me-2"></i>Guest Reviews</h5>
+            <div class="d-flex align-items-center">
+              <h5 class="mb-0"><i class="fas fa-star text-warning me-2"></i>Guest Reviews</h5>
+              <!-- Star filter controls -->
+              <div id="reviewStarFilter" class="ms-3 btn-group btn-group-sm" role="group" aria-label="Filter by stars">
+                <button type="button" class="btn btn-outline-secondary active" data-star="all">All</button>
+                <button type="button" class="btn btn-outline-secondary" data-star="5">5★</button>
+                <button type="button" class="btn btn-outline-secondary" data-star="4">4★</button>
+                <button type="button" class="btn btn-outline-secondary" data-star="3">3★</button>
+                <button type="button" class="btn btn-outline-secondary" data-star="2">2★</button>
+                <button type="button" class="btn btn-outline-secondary" data-star="1">1★</button>
+              </div>
+            </div>
             <button class="btn btn-sm btn-outline-primary" onclick="openRoomFeedbackModal()">
               <i class="fas fa-plus me-1"></i>Write Review
             </button>
@@ -167,6 +179,7 @@
           <div class="mb-4">
             <label for="feedbackGuestName" class="form-label fw-bold">Your Name</label>
             <input type="text" class="form-control" name="guest_name" id="feedbackGuestName" placeholder="Enter your name">
+            <div id="feedbackNameError" class="text-danger small mt-1" style="display:none;"></div>
             <div class="form-check mt-2">
               <input class="form-check-input" type="checkbox" name="is_anonymous" id="feedbackAnonymous" value="1">
               <label class="form-check-label" for="feedbackAnonymous">
@@ -257,6 +270,9 @@
   transform: translateX(5px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+/* Feedback modal loading overlay */
+/* removed feedback loading overlay styling */
 
 .review-stars {
   color: #ffc107;

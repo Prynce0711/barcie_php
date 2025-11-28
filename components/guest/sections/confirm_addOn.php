@@ -241,7 +241,7 @@
         <!-- Booking Details for Print -->
         <div id="bookingDetailsForPrint" class="text-start border rounded p-3 mb-3" style="display: none;">
           <h6 class="fw-bold mb-3">Booking Details</h6>
-          <div id="printBookingDetails"></div>
+          <div id="printBookingDetails"></div>S
         </div>
         
         <div class="alert alert-info">
@@ -249,9 +249,9 @@
           <small>Please check your email for the booking confirmation.</small>
         </div>
       </div>
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-outline-primary" id="printBookingBtn" onclick="printBookingDetails()">
-          <i class="fas fa-print me-2"></i>Print Booking
+      <div class="modal-footer justify-content-center print-buttons-container">
+        <button type="button" class="btn btn-primary" onclick="printBookingSimple()" title="Download your receipt">
+          <i class="fas fa-download me-2"></i>Download Your Receipt
         </button>
         <button type="button" class="btn btn-success" id="doneBookingBtn" disabled>
           <i class="fas fa-spinner fa-spin me-2" id="doneSpinner"></i>
@@ -335,28 +335,182 @@
     }
   }
   
-  // Print booking details
+  // Print booking details with elegant PDF
   window.printBookingDetails = function() {
     try {
-      const printContent = document.getElementById('bookingDetailsForPrint').innerHTML;
-      const originalContent = document.body.innerHTML;
+      let receiptNumber = '';
+      let bookingType = 'reservation';
       
-      // Create print window content
+      // First, try to get from stored global variables (most reliable)
+      if (window.lastBookingReceiptNumber) {
+        receiptNumber = window.lastBookingReceiptNumber;
+        bookingType = window.lastBookingType || 'reservation';
+      }
+      
+      // Fallback: try to extract from DOM elements
+      if (!receiptNumber) {
+        const receiptElement = document.querySelector('#printBookingDetails .receipt-number, [data-receipt]');
+        if (receiptElement) {
+          receiptNumber = receiptElement.textContent || receiptElement.getAttribute('data-receipt') || '';
+          receiptNumber = receiptNumber.replace(/[^A-Z0-9\-]/g, ''); // Clean receipt number
+        }
+      }
+      
+      // Another fallback: try to get from form inputs
+      if (!receiptNumber) {
+        const regularReceiptInput = document.getElementById('receipt_no');
+        const pencilReceiptInput = document.getElementById('pencil_receipt_no');
+        
+        if (regularReceiptInput && regularReceiptInput.value) {
+          receiptNumber = regularReceiptInput.value;
+          bookingType = 'reservation';
+        } else if (pencilReceiptInput && pencilReceiptInput.value) {
+          receiptNumber = pencilReceiptInput.value;
+          bookingType = 'pencil_booking';
+        }
+      }
+      
+      // Determine booking type if not already set
+      if (receiptNumber && !window.lastBookingType) {
+        if (receiptNumber.includes('PENCIL') || 
+            document.querySelector('#pencilForm:not([style*="display: none"])') ||
+            document.querySelector('.pencil-booking-indicator')) {
+          bookingType = 'pencil_booking';
+        }
+      }
+      
+      if (!receiptNumber) {
+        showToast('❌ Unable to identify booking receipt number for PDF generation. Please ensure your booking was submitted successfully.', 'error');
+        return;
+      }
+      
+      // Show loading notification
+      const loadingToast = showToast(`
+        <div class="d-flex align-items-center">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <div>
+            <strong>🎨 Generating Elegant PDF Receipt</strong><br>
+            <small>Creating professional document with BarCIE logo watermark...</small>
+          </div>
+        </div>
+      `, 'info', 0);
+      
+      // Generate PDF URL
+      const pdfUrl = `api/generate_booking_pdf.php?receipt_number=${encodeURIComponent(receiptNumber)}&type=${encodeURIComponent(bookingType)}`;
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.target = '_blank';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      
+      // Trigger download
+      link.click();
+      
+      // Remove loading toast and show success
+      setTimeout(() => {
+        if (loadingToast && loadingToast.remove) {
+          loadingToast.remove();
+        }
+        
+        const successHTML = `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-file-pdf text-primary me-2 fs-4"></i>
+            <div>
+              <strong>🎊 PDF Receipt Generated Successfully!</strong><br>
+              <small>✨ Professional booking confirmation with BarCIE logo watermark</small>
+            </div>
+          </div>
+        `;
+        showToast(successHTML, 'success', 5000);
+        
+        // Clean up
+        document.body.removeChild(link);
+      }, 2000);
+      
+    } catch (e) {
+      console.error('PDF generation error:', e);
+      showToast('❌ Unable to generate PDF. Please try the simple print option.', 'error');
+      
+      // Fallback to simple print
+      try {
+        const printContent = document.getElementById('bookingDetailsForPrint').innerHTML;
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Booking Confirmation</title>');
+        printWindow.document.write('<style>');
+        printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }');
+        printWindow.document.write('h6 { color: #333; margin-bottom: 15px; font-size: 16px; }');
+        printWindow.document.write('p { margin: 8px 0; }');
+        printWindow.document.write('.text-muted { color: #666; }');
+        printWindow.document.write('strong { color: #000; font-weight: 600; }');
+        printWindow.document.write('@media print { body { padding: 10px; } }');
+        printWindow.document.write('</style></head><body>');
+        printWindow.document.write('<div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">');
+        printWindow.document.write('<h1 style="color: #1e3a8a; margin: 0;">BarCIE International Center</h1>');
+        printWindow.document.write('<h2 style="color: #666; margin: 5px 0;">Booking Confirmation</h2>');
+        printWindow.document.write('<p style="font-style: italic; color: #888; margin: 0;">Tempora Mutantur, Nos Et Mutamur In Illis</p>');
+        printWindow.document.write('</div>');
+        printWindow.document.write(printContent);
+        printWindow.document.write('<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">');
+        printWindow.document.write('<p>BarCIE International Center - Barangay Center for Innovative Education © 2000</p>');
+        printWindow.document.write('<p>Generated on ' + new Date().toLocaleString() + '</p>');
+        printWindow.document.write('</div>');
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+        
+        showToast('📄 Simple print version opened as fallback', 'info');
+      } catch (fallbackError) {
+        console.error('Fallback print error:', fallbackError);
+        showToast('❌ Both PDF and print options failed. Please contact support.', 'error');
+      }
+    }
+  };
+  
+  // Simple print function (fallback)
+  window.printBookingSimple = function() {
+    try {
+      const printContent = document.getElementById('bookingDetailsForPrint').innerHTML;
       const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Booking Confirmation</title>');
+      
+      printWindow.document.write('<html><head><title>Booking Confirmation - BarCIE</title>');
       printWindow.document.write('<style>');
-      printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; }');
-      printWindow.document.write('h6 { color: #333; margin-bottom: 15px; }');
-      printWindow.document.write('p { margin: 8px 0; line-height: 1.6; }');
+      printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; max-width: 800px; margin: 0 auto; }');
+      printWindow.document.write('.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; }');
+      printWindow.document.write('.header h1 { color: #1e3a8a; margin: 0; font-size: 28px; }');
+      printWindow.document.write('.header h2 { color: #666; margin: 5px 0 10px 0; font-size: 18px; }');
+      printWindow.document.write('.header .subtitle { font-style: italic; color: #888; margin: 0; }');
+      printWindow.document.write('h6 { color: #333; margin: 20px 0 10px 0; font-size: 16px; padding-bottom: 5px; border-bottom: 1px solid #ddd; }');
+      printWindow.document.write('p { margin: 8px 0; }');
       printWindow.document.write('.text-muted { color: #666; }');
-      printWindow.document.write('strong { color: #000; }');
-      printWindow.document.write('@media print { body { padding: 10px; } }');
+      printWindow.document.write('strong { color: #000; font-weight: 600; }');
+      printWindow.document.write('.footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; color: #666; font-size: 12px; }');
+      printWindow.document.write('@media print { body { padding: 15px; } .no-print { display: none; } }');
       printWindow.document.write('</style></head><body>');
-      printWindow.document.write('<div style="text-align: center; margin-bottom: 20px;">');
-      printWindow.document.write('<h2>BarCIE International Center</h2>');
-      printWindow.document.write('<p>Booking Confirmation</p>');
+      
+      printWindow.document.write('<div class="header">');
+      printWindow.document.write('<h1>BarCIE International Center</h1>');
+      printWindow.document.write('<h2>Booking Confirmation</h2>');
+      printWindow.document.write('<p class="subtitle">Tempora Mutantur, Nos Et Mutamur In Illis</p>');
       printWindow.document.write('</div>');
+      
       printWindow.document.write(printContent);
+      
+      printWindow.document.write('<div class="footer">');
+      printWindow.document.write('<p><strong>BarCIE International Center</strong></p>');
+      printWindow.document.write('<p>Barangay Center for Innovative Education © 2000</p>');
+      printWindow.document.write('<p>Generated on ' + new Date().toLocaleString() + '</p>');
+      printWindow.document.write('<p style="margin-top: 15px; font-size: 11px;">For inquiries and assistance, please contact our front desk.</p>');
+      printWindow.document.write('</div>');
+      
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.focus();
@@ -365,9 +519,12 @@
         printWindow.print();
         printWindow.close();
       }, 250);
+      
+      showToast('🖨️ Simple print dialog opened', 'success');
+      
     } catch (e) {
-      console.error('Print error:', e);
-      showToast('Unable to print. Please try again.', 'error');
+      console.error('Simple print error:', e);
+      showToast('❌ Unable to open print dialog. Please try again.', 'error');
     }
   };
   
@@ -815,6 +972,10 @@
     if (!currentBooking || !currentItem) return '';
     
     let html = '';
+    // Add receipt number at the top for PDF generation reference
+    if (window.lastBookingReceiptNumber) {
+      html += `<p class="receipt-number" data-receipt="${escapeHtml(window.lastBookingReceiptNumber)}"><strong>Receipt Number:</strong> ${escapeHtml(window.lastBookingReceiptNumber)}</p>`;
+    }
     html += `<p><strong>Room/Facility:</strong> ${escapeHtml(currentItem.name)}`;
     if (currentItem.room_number) html += ` (Room #${escapeHtml(currentItem.room_number)})`;
     html += '</p>';
@@ -1097,11 +1258,30 @@
           const result = await response.json();
           
           if (result.success) {
-            // Show success modal
-            showPencilSuccessModal(result.message || 'Draft reservation submitted successfully!');
+            // Store receipt number for PDF generation
+            if (result.receipt_no) {
+              window.lastBookingReceiptNumber = result.receipt_no;
+              window.lastBookingType = 'pencil_booking';
+              
+              // Update the form input with actual receipt number
+              const pencilReceiptInput = document.getElementById('pencil_receipt_no');
+              if (pencilReceiptInput) {
+                pencilReceiptInput.value = result.receipt_no;
+              }
+            }
             
-            // Clear the form
+            // Show success modal with receipt number
+            showPencilSuccessModal(result.message || 'Draft reservation submitted successfully!', result.receipt_no);
+            
+            // Clear the form but preserve receipt number
+            const currentReceiptNo = result.receipt_no;
             form.reset();
+            if (currentReceiptNo) {
+              const pencilReceiptInput = document.getElementById('pencil_receipt_no');
+              if (pencilReceiptInput) {
+                pencilReceiptInput.value = currentReceiptNo;
+              }
+            }
             
             // Hide the form and show reservation form
             setTimeout(() => {
@@ -1440,6 +1620,13 @@
               }
 
               if (xhr.status >= 200 && xhr.status < 300 && jsonResponse && jsonResponse.success) {
+                // Extract receipt number from response message
+                const receiptMatch = (jsonResponse.message || '').match(/receipt number:?\s*([A-Z0-9\-]+)/i);
+                if (receiptMatch) {
+                  window.lastBookingReceiptNumber = receiptMatch[1];
+                  window.lastBookingType = currentBooking.type || 'reservation';
+                }
+                
                 // Build booking details HTML for print
                 let bookingDetailsHtml = buildPrintableBookingDetails();
                 
@@ -1788,5 +1975,103 @@
   #doneBookingBtn:not(:disabled):hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  /* Enhanced Print Buttons Styling */
+  .print-buttons-container {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .elegant-pdf-btn {
+    position: relative;
+    background: linear-gradient(135deg, #1e40af, #3730a3);
+    border-color: #1e40af;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .elegant-pdf-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+  }
+  
+  .elegant-pdf-btn:hover {
+    background: linear-gradient(135deg, #1e3a8a, #312e81);
+    border-color: #1e3a8a;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(30, 64, 175, 0.4);
+  }
+  
+  .elegant-pdf-btn:hover::before {
+    left: 100%;
+  }
+  
+  .elegant-pdf-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 15px rgba(30, 64, 175, 0.3);
+  }
+  
+  .simple-print-btn {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    border-width: 2px;
+  }
+  
+  .simple-print-btn:hover {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(107, 114, 128, 0.3);
+  }
+  
+  .simple-print-btn:active {
+    transform: translateY(-1px);
+  }
+  
+  /* Loading state for PDF button */
+  .elegant-pdf-btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+  }
+  
+  .elegant-pdf-btn.loading i {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+    .print-buttons-container {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .elegant-pdf-btn,
+    .simple-print-btn {
+      width: 100%;
+      max-width: 250px;
+      justify-content: center;
+    }
   }
 </style>

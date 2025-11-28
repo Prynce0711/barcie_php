@@ -16,9 +16,6 @@
       <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="discounts-tab">
         <i class="fas fa-id-card-alt me-1"></i> Discount Applications
       </button>
-      <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="payments-tab">
-        <i class="fas fa-credit-card me-1"></i> Payment Verification
-      </button>
     </div>
   </div>
 </div>
@@ -774,10 +771,7 @@
   <?php include __DIR__ . '/discount_applications.php'; ?>
 </div>
 
-<!-- Payment Verification Section -->
-<div id="payments-tab" class="booking-tab-content" style="display:none;">
-  <?php include __DIR__ . '/payment_verification.php'; ?>
-</div>
+<!-- Payment Verification moved to its own dashboard section (see main dashboard include) -->
 
 <script>
 // Section navigation handler

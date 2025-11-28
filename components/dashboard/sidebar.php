@@ -23,6 +23,11 @@
       <span>Bookings</span>
     </a>
 
+    <a href="#payment-verification-section" class="nav-link nav-link-custom" data-section="payment-verification-section">
+      <i class="fas fa-credit-card"></i>
+      <span>Payment Verification</span>
+    </a>
+
     <a href="#feedback-section" class="nav-link nav-link-custom" data-section="feedback-section">
       <i class="fas fa-comments"></i>
       <span>Feedback</span>

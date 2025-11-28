@@ -196,6 +196,11 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         <?php include 'components/dashboard/sections/news_section.php'; ?>
       </section>
 
+      <!-- Payment Verification Section -->
+      <section id="payment-verification-section" class="content-section">
+        <?php include 'components/dashboard/sections/payment_verification.php'; ?>
+      </section>
+
       <!-- Admin Management Section -->
       <section id="admin-management-section" class="content-section">
         <?php include 'components/dashboard/sections/admin_management_section.php'; ?>
