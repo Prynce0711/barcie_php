@@ -6,10 +6,42 @@
 
   <?php include __DIR__ . '/discount_application.php'; ?>
 
+  <!-- ID Upload Section -->
+  <div class="card mb-3" id="pencilIdUploadCard">
+    <div class="card-header bg-info text-white">
+      <strong><i class="fas fa-id-card me-2"></i>Valid ID Upload</strong>
+    </div>
+    <div class="card-body">
+      <div class="mb-2">
+        <label for="pencil_id_upload" class="form-label">Upload Valid ID <span class="text-danger" id="pencil_id_required">*</span></label>
+        <input type="file" name="id_upload" id="pencil_id_upload" class="form-control" accept="image/*,application/pdf">
+        <input type="hidden" name="id_upload_cropped" id="pencil_id_upload_cropped">
+        <input type="hidden" name="id_upload_validated" id="pencil_id_upload_validated" value="0">
+        <small class="form-text text-muted">Required: Government-issued ID (image or PDF). Not needed if discount with ID is applied.</small>
+        
+        <!-- Validation status -->
+        <div id="pencil_id_validation" style="margin-top:8px;display:none;"></div>
+        
+        <!-- Preview area -->
+        <div id="pencil_id_preview" style="margin-top:10px;display:none;">
+          <div id="pencil_id_thumb" style="margin-top:8px;max-width:160px;"></div>
+        </div>
+      </div>
+      <div class="alert alert-info mb-0" style="font-size: 0.9rem;">
+        <i class="fas fa-info-circle me-2"></i>If you apply for a discount above, the discount ID proof will be used and this upload becomes optional.
+      </div>
+    </div>
+  </div>
+
   <!-- Inline alert area for form-level validation messages -->
   <div class="form-alert mb-2" id="pencil_form_alert" style="display:none;"></div>
 
-  <div class="form-grid">
+  <!-- ID Required Notice -->
+  <div class="alert alert-warning" id="pencil_id_notice" style="display:block;">
+    <i class="fas fa-lock me-2"></i><strong>ID Upload Required:</strong> Please upload a valid ID above to unlock and fill out the booking form.
+  </div>
+
+  <div class="form-grid" id="pencil_form_fields">
     <label class="full-width">
       <span class="label-text">Pencil Booking no:</span>
       <input type="text" name="receipt_no" id="pencil_receipt_no" readonly placeholder="Auto-generated on submit" style="background-color: #f8f9fa; font-weight: 600; color: #856404;">
@@ -66,13 +98,32 @@
     </label>
 
     <label>
-      <span class="label-text">Check-in Date & Time *</span>
-      <input type="datetime-local" name="checkin" required>
+      <span class="label-text">Age *</span>
+      <input type="number" name="age" id="pencil_age" required min="18" max="120" placeholder="Enter your age">
+      <small class="form-text text-danger" id="pencil_age_error" style="display:none;">You must be at least 18 years old to make a booking.</small>
+    </label>
+
+    <!-- Booking Time Notice -->
+    <div class="full-width" style="margin: 0.5rem 0; padding: 0.75rem; background-color: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+      <div style="display: flex; align-items: center;">
+        <i class="fas fa-clock" style="color: #2196F3; font-size: 1.2rem; margin-right: 10px;"></i>
+        <div>
+          <strong style="color: #1976D2;">Standard Booking Hours:</strong>
+          <div style="font-size: 0.9rem; color: #424242; margin-top: 2px;">
+            Check-in: <strong>2:00 PM</strong> | Check-out: <strong>12:00 Noon</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <label>
+      <span class="label-text">Check-in Date *</span>
+      <input type="date" name="checkin" required>
     </label>
 
     <label>
-      <span class="label-text">Check-out Date & Time *</span>
-      <input type="datetime-local" name="checkout" required>
+      <span class="label-text">Check-out Date *</span>
+      <input type="date" name="checkout" required>
     </label>
 
     <label>
@@ -135,17 +186,23 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (termsCheckbox && submitBtn) {
     termsCheckbox.addEventListener('change', function() {
-      submitBtn.disabled = !this.checked;
-      if (this.checked) {
+      // Only enable button if both terms are checked AND form fields are unlocked (ID uploaded)
+      const formFields = document.getElementById('pencil_form_fields');
+      const hasUnlockedFields = formFields && !formFields.querySelector('input:disabled, select:disabled');
+      
+      if (this.checked && hasUnlockedFields) {
+        submitBtn.removeAttribute('disabled');
         submitBtn.style.opacity = '1';
         submitBtn.style.cursor = 'pointer';
       } else {
+        submitBtn.setAttribute('disabled', 'disabled');
         submitBtn.style.opacity = '0.6';
         submitBtn.style.cursor = 'not-allowed';
       }
     });
     
-    // Initial state
+    // Initial state - will be updated by checkAndEnableFormFields
+    submitBtn.setAttribute('disabled', 'disabled');
     submitBtn.style.opacity = '0.6';
     submitBtn.style.cursor = 'not-allowed';
   }
@@ -278,27 +335,14 @@ window.showPencilSuccessModal = function(message, receiptNumber = null) {
     const modalEl = document.getElementById('pencilSuccessModal');
     const bsModal = new bootstrap.Modal(modalEl);
 
-    // Done: attempt a soft refresh by calling known refresh functions. If none exist, fall back to full reload.
+    // Done: auto-reload the page
     const doneBtn = modalEl.querySelector('#pencilDoneBtn');
     if (doneBtn) {
       doneBtn.addEventListener('click', function() {
         try { bsModal.hide(); } catch (e) {}
         setTimeout(() => {
-          try {
-            let didSoft = false;
-            if (typeof window.loadItems === 'function') { window.loadItems(); didSoft = true; }
-            if (typeof window.loadRooms === 'function') { window.loadRooms(); didSoft = true; }
-            // If a function exists to refresh bookings/listings, call it (best-effort)
-            if (typeof window.reloadBookings === 'function') { window.reloadBookings(); didSoft = true; }
-            if (!didSoft) {
-              // Intentionally do NOT force a full page reload here.
-              // Keep the page as-is and allow the user to manually refresh if desired.
-              console.log('Pencil success: no soft-refreshable functions available — page left unchanged.');
-            }
-          } catch (err) {
-            console.error('Soft refresh failed; page will be left as-is', err);
-          }
-        }, 200);
+          window.location.reload();
+        }, 300);
       });
     }
 

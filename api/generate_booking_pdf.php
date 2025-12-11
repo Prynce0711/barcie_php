@@ -6,7 +6,8 @@ require_once '../database/db_connect.php';
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-header('Content-Type: application/json');
+// Don't set JSON header - we're returning PDF
+// header('Content-Type: application/json');
 
 try {
     // Get booking data from request
@@ -75,12 +76,15 @@ try {
     
     $dompdf = new Dompdf($options);
     
-    // Get logo path and convert to base64
-    $logoPath = '../assets/images/imageBg/barcie_logo.jpg';
+    // Get logo path and convert to base64 - use absolute path
+    $logoPath = __DIR__ . '/../assets/images/imageBg/barcie_logo.jpg';
     $logoBase64 = '';
     if (file_exists($logoPath)) {
         $logoData = base64_encode(file_get_contents($logoPath));
         $logoBase64 = 'data:image/jpeg;base64,' . $logoData;
+        error_log("PDF Logo loaded: " . strlen($logoData) . " bytes from " . $logoPath);
+    } else {
+        error_log("PDF Logo NOT FOUND at: " . $logoPath);
     }
     
     // Generate current date and time
@@ -133,11 +137,6 @@ try {
     <style>
         @page {
             margin: 15mm;
-            background-image: url("' . $logoBase64 . '");
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: 300px 300px;
-            background-opacity: 0.08;
         }
         
         body {
@@ -150,16 +149,20 @@ try {
             position: relative;
         }
         
-        .watermark {
-            position: fixed;
+        .watermark-logo {
+            position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            opacity: 0.05;
-            z-index: -1;
-            font-size: 80px;
-            font-weight: bold;
-            color: #1e3a8a;
+            transform: translate(-50%, -50%);
+            opacity: 0.15;
+            z-index: 0;
+            width: 500px;
+            height: auto;
+        }
+        
+        .page-content {
+            position: relative;
+            z-index: 1;
         }
         
         .header {
@@ -457,8 +460,9 @@ try {
     </style>
 </head>
 <body>
-    <div class="watermark">BARCIE</div>
+    ' . ($logoBase64 ? '<img src="' . $logoBase64 . '" class="watermark-logo" alt="BarCIE Logo Watermark">' : '') . '
     
+    <div class="page-content">
     <div class="header">
         <h1>BarCIE International Center</h1>
         <h2>Booking Confirmation Receipt</h2>
@@ -614,6 +618,7 @@ try {
         <div>Generated on ' . $currentDateTime . '</div>
     </div>
     
+    </div>
 </body>
 </html>';
 

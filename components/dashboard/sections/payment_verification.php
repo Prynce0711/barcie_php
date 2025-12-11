@@ -63,14 +63,14 @@
 								<th>Receipt #</th>
 								<th>Guest</th>
 								<th>Amount / Details</th>
-								<th>Proof</th>
+								<th>View Details</th>
 								<th>Submitted</th>
 								<th>Actions</th>
 							</tr>
 						</thead>
 						<tbody>
 <?php
-$stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.proof_of_payment, b.created_at, b.checkin, i.name as room_name FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE (b.payment_status = 'pending' OR (b.proof_of_payment IS NOT NULL AND b.proof_of_payment <> '')) ORDER BY b.created_at DESC");
+$stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.proof_of_payment, b.proof_of_id, b.guest_age, b.amount, b.created_at, b.checkin, i.name as room_name FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.payment_status = 'pending' ORDER BY b.created_at DESC");
 if ($stmt) {
 	$stmt->execute();
 	$res = $stmt->get_result();
@@ -98,19 +98,12 @@ if ($stmt) {
 			echo '<td>' . htmlspecialchars($guest) . '</td>';
 			echo '<td>' . htmlspecialchars($amount ?: $room) . '</td>';
 			echo '<td>';
-			if (!empty($proof) && file_exists(__DIR__ . '/../../' . $proof)) {
-				$url = '../' . ltrim($proof, '/');
-				echo '<a href="#" class="view-payment-proof" data-proof="' . htmlspecialchars($url) . '" data-booking-id="' . $id . '"><img src="' . htmlspecialchars($url) . '" alt="Payment Proof" style="max-width:120px; max-height:80px; object-fit:cover; border-radius:4px; border:1px solid #e9ecef;"></a>';
-			} elseif (!empty($proof)) {
-				echo '<a href="#" class="view-payment-proof" data-proof="' . htmlspecialchars($proof) . '" data-booking-id="' . $id . '">View Proof</a>';
-			} else {
-				echo 'No proof uploaded';
-			}
+			echo '<button class="btn btn-info btn-sm" onclick="viewPaymentDetails(' . $id . ')" title="View Details"><i class="fas fa-eye me-1"></i>View Details</button>';
 			echo '</td>';
 			echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($created))) . '</td>';
 			echo '<td>';
-			echo '<button class="btn btn-success btn-sm payment-action" data-booking-id="' . $id . '" data-action="verify"><i class="fas fa-check me-1"></i>Verify</button> ';
-			echo '<button class="btn btn-danger btn-sm payment-action" data-booking-id="' . $id . '" data-action="reject"><i class="fas fa-times me-1"></i>Reject</button>';
+			echo '<button class="btn btn-success btn-sm payment-action me-1 mb-1" data-booking-id="' . $id . '" data-action="verify"><i class="fas fa-check me-1"></i>Verify</button> ';
+			echo '<button class="btn btn-danger btn-sm payment-action mb-1" data-booking-id="' . $id . '" data-action="reject"><i class="fas fa-times me-1"></i>Reject</button>';
 			echo '</td>';
 			echo '</tr>';
 		}
@@ -141,8 +134,9 @@ if ($stmt) {
 		} catch (e) {}
 		try { showToast(message, 'info'); } catch (e) { /* ignore */ }
 	}
+	
 	// Delegated handler for verify/reject buttons
-	paymentContainer.addEventListener('click', async function(e) {
+	document.addEventListener('click', function(e) {
 		const btn = e.target.closest('.payment-action');
 		if (!btn) return;
 		const bookingId = btn.dataset.bookingId;
@@ -150,36 +144,33 @@ if ($stmt) {
 		if (!bookingId || !action) return;
 
 		const confirmMsg = action === 'verify' ? 'Verify this payment?' : 'Reject this payment?';
-		const confirmed = await showConfirm(confirmMsg, { 
-			title: 'Verify Payment', 
-			confirmText: 'Confirm', 
-			confirmClass: action === 'approve' ? 'btn-primary' : 'btn-danger' 
-		});
+		const confirmed = confirm(confirmMsg);
 		if (!confirmed) return;
 
-			btn.disabled = true;
+		btn.disabled = true;
 
-			// show spinner overlay while request runs
-			let removeSpinner = function(){};
-			try {
-				const parentEl = btn.closest('.table-responsive') || document.querySelector('#paymentsTable');
-				if (typeof showTableSpinner === 'function') {
-					removeSpinner = showTableSpinner(parentEl);
-				} else {
-					// fallback overlay
-					try {
-						const parent = parentEl && parentEl.closest && parentEl.closest('.table-responsive') ? parentEl.closest('.table-responsive') : (parentEl || document.body);
-						const prevPos = parent.style.position || '';
-						const computed = window.getComputedStyle(parent).position;
-						if (computed === 'static') parent.style.position = 'relative';
-						const overlay = document.createElement('div'); overlay.className = 'table-spinner-overlay'; overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-						parent.appendChild(overlay);
-						removeSpinner = function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){} };
-					} catch (e) { /* ignore */ }
-				}
-			} catch(e) { /* ignore */ }
-			const body = 'action=admin_update_payment&booking_id=' + encodeURIComponent(bookingId) + '&payment_action=' + encodeURIComponent(action);
-			fetch('database/user_auth.php', {
+		// show spinner overlay while request runs
+		let removeSpinner = function(){};
+		try {
+			const parentEl = btn.closest('.table-responsive') || document.querySelector('#paymentsTable');
+			if (typeof showTableSpinner === 'function') {
+				removeSpinner = showTableSpinner(parentEl);
+			} else {
+				// fallback overlay
+				try {
+					const parent = parentEl && parentEl.closest && parentEl.closest('.table-responsive') ? parentEl.closest('.table-responsive') : (parentEl || document.body);
+					const prevPos = parent.style.position || '';
+					const computed = window.getComputedStyle(parent).position;
+					if (computed === 'static') parent.style.position = 'relative';
+					const overlay = document.createElement('div'); overlay.className = 'table-spinner-overlay'; overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+					parent.appendChild(overlay);
+					removeSpinner = function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){} };
+				} catch (e) { /* ignore */ }
+			}
+		} catch(e) { /* ignore */ }
+		
+		const body = 'action=admin_update_payment&booking_id=' + encodeURIComponent(bookingId) + '&payment_action=' + encodeURIComponent(action);
+		fetch('database/user_auth.php', {
 			method: 'POST',
 			credentials: 'same-origin',
 			headers: {
@@ -187,41 +178,44 @@ if ($stmt) {
 				'X-Requested-With': 'XMLHttpRequest'
 			},
 			body: body
-			}).then(r => r.json()).then(json => {
-				try { removeSpinner(); } catch(e){}
-				if (json && json.success) {
-					const row = document.getElementById('payment-row-' + bookingId);
-					if (row) {
-						const actionsCell = row.querySelector('td:last-child');
-						if (actionsCell) {
-							actionsCell.innerHTML = action === 'verify' ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-danger">Rejected</span>';
-							// append verifier info if available
-							if (json.verifier_username || json.verified_at) {
-								const info = document.createElement('div');
-								info.className = 'mt-2 small text-muted';
-								let txt = '';
-								if (json.verifier_username) txt += 'By: ' + json.verifier_username;
-								if (json.verified_at) txt += (txt ? ' • ' : '') + json.verified_at;
-								info.textContent = txt;
-								actionsCell.appendChild(info);
-							}
-						}
-						row.classList.add('table-success');
+		}).then(r => r.json()).then(json => {
+			try { removeSpinner(); } catch(e){}
+			if (json && json.success) {
+				const row = document.getElementById('payment-row-' + bookingId);
+				if (row) {
+					// Show success message with fade out effect
+					const actionsCell = row.querySelector('td:last-child');
+					if (actionsCell) {
+						actionsCell.innerHTML = action === 'verify' ? '<span class="badge bg-success">Verified ✓</span>' : '<span class="badge bg-danger">Rejected ✗</span>';
 					}
-					notify(json.message || 'Payment updated', 'success');
-				} else {
-					notify((json && (json.error || json.message)) || 'Failed to update payment', 'error');
-					btn.disabled = false;
+					row.classList.add('table-success');
+					
+					// Fade out and remove row after 2 seconds
+					setTimeout(() => {
+						row.style.transition = 'opacity 0.5s ease-out';
+						row.style.opacity = '0';
+						setTimeout(() => {
+							row.remove();
+							// Check if table is empty
+							const tbody = document.querySelector('#paymentsTable tbody');
+							if (tbody && tbody.querySelectorAll('tr').length === 0) {
+								tbody.innerHTML = '<tr><td colspan="6" class="text-center">No pending payment verifications.</td></tr>';
+							}
+						}, 500);
+					}, 2000);
 				}
-			}).catch(err => {
-				try { removeSpinner(); } catch(e){}
-				console.error(err);
-					notify('Request failed — check console', 'error');
+				notify(json.message || 'Payment updated', 'success');
+			} else {
+				notify((json && (json.error || json.message)) || 'Failed to update payment', 'error');
 				btn.disabled = false;
-			});
-	});
-
-	// reuse proof modal logic from bookings_section (basic)
+			}
+		}).catch(err => {
+			try { removeSpinner(); } catch(e){}
+			console.error(err);
+			notify('Request failed — check console', 'error');
+			btn.disabled = false;
+		});
+	});	// reuse proof modal logic from bookings_section (basic)
 	document.addEventListener('click', function(e){
 		const el = e.target.closest('.view-payment-proof');
 		if (!el) return;
@@ -393,6 +387,16 @@ if ($stmt) {
 			}
 		};
 		
+		// Set default filter to today on page load
+		document.addEventListener('DOMContentLoaded', function() {
+			const today = new Date().toISOString().split('T')[0];
+			const dateInput = document.getElementById('paymentDateFilter');
+			if (dateInput && !dateInput.value) {
+				dateInput.value = today;
+				filterPayments();
+			}
+		});
+		
 		// Download payment verifications as text backup
 		window.downloadPaymentsPDF = function() {
 			const rows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(row => {
@@ -497,5 +501,191 @@ ${'-'.repeat(80)}
 			showToast(`Exported ${rows.length} payment records to Excel (Filter: Date=${dateFilter})`, 'success');
 		};
 	})();
+	
+	// View Payment Details Modal Function
+	window.viewPaymentDetails = function(bookingId) {
+		if (!bookingId) return;
+		
+		// Fetch booking details via AJAX
+		fetch('database/user_auth.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'X-Requested-With': 'XMLHttpRequest'
+			},
+			body: 'action=get_booking_details&booking_id=' + encodeURIComponent(bookingId)
+		})
+		.then(r => r.json())
+		.then(data => {
+			if (!data || !data.success) {
+				notify('Failed to load booking details', 'error');
+				return;
+			}
+			
+			const booking = data.booking;
+			const modalId = 'payment-details-modal-' + bookingId;
+			
+			// Build modal HTML
+			let modalHTML = `
+				<div class="modal fade" id="${modalId}" tabindex="-1">
+					<div class="modal-dialog modal-dialog-centered modal-lg">
+						<div class="modal-content">
+							<div class="modal-header bg-primary text-white">
+								<h5 class="modal-title"><i class="fas fa-file-invoice me-2"></i>Booking Details - ${booking.receipt_no || 'N/A'}</h5>
+								<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+							</div>
+							<div class="modal-body">
+								<div class="row g-3">
+									<div class="col-md-6">
+										<h6 class="text-muted mb-2"><i class="fas fa-user me-2"></i>Guest Information</h6>
+										<table class="table table-sm table-borderless">
+											<tr><td class="fw-bold">Name:</td><td>${booking.guest_name || 'N/A'}</td></tr>
+											<tr><td class="fw-bold">Email:</td><td>${booking.guest_email || 'N/A'}</td></tr>
+											<tr><td class="fw-bold">Contact:</td><td>${booking.guest_phone || 'N/A'}</td></tr>
+											<tr><td class="fw-bold">Age:</td><td>${booking.guest_age || 'N/A'}</td></tr>
+										</table>
+									</div>
+									<div class="col-md-6">
+										<h6 class="text-muted mb-2"><i class="fas fa-calendar me-2"></i>Booking Information</h6>
+										<table class="table table-sm table-borderless">
+											<tr><td class="fw-bold">Room:</td><td>${booking.room_name || 'N/A'}</td></tr>
+											<tr><td class="fw-bold">Check-in:</td><td>${booking.checkin || 'N/A'}</td></tr>
+											<tr><td class="fw-bold">Check-out:</td><td>${booking.checkout || 'N/A'}</td></tr>
+											<tr><td class="fw-bold">Room Price:</td><td>₱${booking.room_price ? parseFloat(booking.room_price).toFixed(2) : '0.00'}</td></tr>
+											<tr><td class="fw-bold">Total Amount:</td><td class="text-success fw-bold">₱${booking.amount ? parseFloat(booking.amount).toFixed(2) : '0.00'}</td></tr>
+										</table>
+									</div>
+								</div>`;
+			
+			// Add-ons Section
+			if (booking.add_ons) {
+				try {
+					const addOns = JSON.parse(booking.add_ons);
+					if (addOns && addOns.length > 0) {
+						modalHTML += `
+								<hr class="my-3">
+								<div class="row">
+									<div class="col-12">
+										<h6 class="text-muted mb-2"><i class="fas fa-plus-circle me-2"></i>Selected Add-ons</h6>
+										<ul class="list-group list-group-flush">`;
+						addOns.forEach(addon => {
+							modalHTML += `<li class="list-group-item px-0"><i class="fas fa-check text-success me-2"></i>${addon.name} - ₱${parseFloat(addon.price).toFixed(2)}</li>`;
+						});
+						modalHTML += `
+										</ul>
+									</div>
+								</div>`;
+					}
+				} catch (e) {
+					console.error('Error parsing add-ons:', e);
+				}
+			}
+			
+			modalHTML += `
+								<hr class="my-3">
+								
+								<div class="row g-3">`;
+			
+			// ID Proof Section
+			if (booking.proof_of_id) {
+				modalHTML += `
+									<div class="col-md-6">
+										<h6 class="text-muted mb-2"><i class="fas fa-id-card me-2"></i>Uploaded ID</h6>
+										<div class="text-center p-2 border rounded">
+											<img src="${booking.proof_of_id}" alt="ID Proof" class="img-thumbnail" style="max-width:100%; max-height:300px; cursor:pointer;" onclick="showImageModal('${booking.proof_of_id}', 'Uploaded ID')">
+											<div class="mt-2">
+												<button type="button" class="btn btn-sm btn-primary" onclick="showImageModal('${booking.proof_of_id}', 'Uploaded ID')"><i class="fas fa-search-plus me-1"></i>View Full Size</button>
+											</div>
+										</div>
+									</div>`;
+			}
+			
+			// Payment Proof Section
+			if (booking.proof_of_payment) {
+				modalHTML += `
+									<div class="col-md-6">
+										<h6 class="text-muted mb-2"><i class="fas fa-receipt me-2"></i>Payment Proof</h6>
+										<div class="text-center p-2 border rounded">
+											<img src="${booking.proof_of_payment}" alt="Payment Proof" class="img-thumbnail" style="max-width:100%; max-height:300px; cursor:pointer;" onclick="showImageModal('${booking.proof_of_payment}', 'Payment Proof')">
+											<div class="mt-2">
+												<button type="button" class="btn btn-sm btn-success" onclick="showImageModal('${booking.proof_of_payment}', 'Payment Proof')"><i class="fas fa-search-plus me-1"></i>View Full Size</button>
+											</div>
+										</div>
+									</div>`;
+			}
+			
+			modalHTML += `
+								</div>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			`;
+			
+			// Remove any existing modal with same ID
+			const existingModal = document.getElementById(modalId);
+			if (existingModal) existingModal.remove();
+			
+			// Add modal to body and show
+			document.body.insertAdjacentHTML('beforeend', modalHTML);
+			const modalEl = document.getElementById(modalId);
+			const bsModal = new bootstrap.Modal(modalEl);
+			bsModal.show();
+			
+			// Clean up after modal is hidden
+			modalEl.addEventListener('hidden.bs.modal', function() {
+				modalEl.remove();
+			});
+		})
+		.catch(err => {
+			console.error('Error fetching booking details:', err);
+			notify('Failed to load booking details', 'error');
+		});
+	};
+	
+	// Function to show image in full-size modal
+	window.showImageModal = function(imageSrc, title) {
+		const imageModalId = 'image-viewer-modal';
+		
+		// Remove existing image modal if any
+		const existingImageModal = document.getElementById(imageModalId);
+		if (existingImageModal) existingImageModal.remove();
+		
+		// Create full-size image modal
+		const imageModalHTML = `
+			<div class="modal fade" id="${imageModalId}" tabindex="-1">
+				<div class="modal-dialog modal-dialog-centered modal-xl">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title"><i class="fas fa-image me-2"></i>${title}</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+						</div>
+						<div class="modal-body text-center p-2" style="background-color: #f8f9fa;">
+							<img src="${imageSrc}" alt="${title}" style="max-width:100%; max-height:80vh; width:auto; height:auto; object-fit:contain;">
+						</div>
+						<div class="modal-footer">
+							<a href="${imageSrc}" download class="btn btn-primary"><i class="fas fa-download me-1"></i>Download</a>
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
+		
+		// Add modal to body and show
+		document.body.insertAdjacentHTML('beforeend', imageModalHTML);
+		const imageModalEl = document.getElementById(imageModalId);
+		const bsImageModal = new bootstrap.Modal(imageModalEl);
+		bsImageModal.show();
+		
+		// Clean up after modal is hidden
+		imageModalEl.addEventListener('hidden.bs.modal', function() {
+			imageModalEl.remove();
+		});
+	};
 })();
 </script>

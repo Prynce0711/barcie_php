@@ -241,7 +241,7 @@
         <!-- Booking Details for Print -->
         <div id="bookingDetailsForPrint" class="text-start border rounded p-3 mb-3" style="display: none;">
           <h6 class="fw-bold mb-3">Booking Details</h6>
-          <div id="printBookingDetails"></div>S
+          <div id="printBookingDetails"></div>
         </div>
         
         <div class="alert alert-info">
@@ -255,7 +255,7 @@
         </button>
         <button type="button" class="btn btn-success" id="doneBookingBtn" disabled>
           <i class="fas fa-spinner fa-spin me-2" id="doneSpinner"></i>
-          <span id="doneButtonText">Done (<span id="doneTimer">15</span>s)</span>
+          <span id="doneButtonText">Done (<span id="doneTimer">15</span>)</span>
         </button>
       </div>
     </div>
@@ -572,11 +572,10 @@
           successModal.hide();
           clearFormData();
           
-          // Scroll to booking section
-          try {
-            const bookingSection = document.getElementById('booking') || document.querySelector('[name="booking"]');
-            if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          } catch (e) {}
+          // Auto-reload the page to refresh data
+          setTimeout(() => {
+            window.location.reload();
+          }, 300);
         };
       }
       
@@ -766,11 +765,55 @@
   function validateFormInline(form) {
     if (!form) return null;
     clearInlineAlerts(form);
+    
+    // Check ID upload requirement first
+    const formId = form.id;
+    const isReservation = formId === 'reservationForm';
+    const isPencil = formId === 'pencilForm';
+    
+    if (isReservation || isPencil) {
+      const discountTypeSelect = document.getElementById('discount_type');
+      const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
+      const discountProof = document.getElementById('discount_proof');
+      const idUpload = document.getElementById(isReservation ? 'reservation_id_upload' : 'pencil_id_upload');
+      const idValidated = document.getElementById(isReservation ? 'reservation_id_upload_validated' : 'pencil_id_upload_validated');
+      
+      // Check if either discount proof OR ID upload is provided
+      const hasDiscountProof = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
+      const hasIdUpload = idUpload && idUpload.files && idUpload.files.length > 0;
+      const isIdValidated = idValidated && idValidated.value === '1';
+      
+      if (!hasDiscountProof && !hasIdUpload) {
+        return { 
+          field: idUpload || discountProof, 
+          message: 'Please upload a valid ID. If you have a discount with ID proof, that can be used instead.' 
+        };
+      }
+      
+      // Check if ID was uploaded but not validated
+      if (hasIdUpload && !hasDiscountProof && !isIdValidated) {
+        return {
+          field: idUpload,
+          message: 'The uploaded file does not appear to be a valid ID document. Please upload a clear photo of a government-issued ID.'
+        };
+      }
+    }
+    
     // HTML5 validation first: find required fields missing or pattern mismatch
     const requiredFields = Array.from(form.querySelectorAll('[required]'));
     for (const f of requiredFields) {
-      // skip hidden inputs
-      if (f.type === 'hidden' || f.offsetParent === null && f.type !== 'datetime-local') continue;
+      // skip hidden inputs and ID upload if discount is selected
+      if (f.type === 'hidden' || f.offsetParent === null && f.type !== 'date') continue;
+      
+      // Skip ID upload validation if discount with proof exists
+      if ((f.id === 'reservation_id_upload' || f.id === 'pencil_id_upload')) {
+        const discountTypeSelect = document.getElementById('discount_type');
+        const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
+        const discountProof = document.getElementById('discount_proof');
+        const hasDiscountProof = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
+        if (hasDiscountProof) continue; // Skip ID validation, discount proof is sufficient
+      }
+      
       if (!f.checkValidity()) {
         // Build friendly message
         let msg = '';
@@ -792,6 +835,18 @@
       // enforce gmail domain if user intends (title suggests gmail)
       if (val && !val.toLowerCase().endsWith('@gmail.com')) {
         return { field: email, message: 'Please use a Gmail address (example@gmail.com).' };
+      }
+    }
+    
+    // Age validation - must be 18 or older
+    const age = form.querySelector('[name="age"]');
+    if (age) {
+      const ageValue = parseInt(age.value);
+      if (ageValue && ageValue < 18) {
+        return { field: age, message: 'You must be at least 18 years old to make a booking.' };
+      }
+      if (ageValue && (ageValue < 1 || ageValue > 120)) {
+        return { field: age, message: 'Please enter a valid age.' };
       }
     }
 
@@ -833,7 +888,7 @@
     });
   }
 
-  // Calculate nights between two datetime-local inputs (reservation)
+  // Calculate nights between two date inputs (reservation)
   function calcNights(checkin, checkout) {
     try {
       const diff = Math.max(0, new Date(checkout) - new Date(checkin));
@@ -1507,6 +1562,24 @@
             fd.append('payment_proof', modalPaymentProof.files[0]);
           }
         } catch (e) { /* ignore */ }
+        
+        // Collect selected add-ons data and append as JSON
+        try {
+          const selectedAddons = [];
+          document.querySelectorAll('.addon-checkbox:checked').forEach(cb => {
+            const label = document.querySelector(`label[for="${cb.id}"]`);
+            const priceElement = cb.closest('.form-check')?.querySelector('.text-success, .fw-bold');
+            if (label) {
+              const addonName = label.textContent.trim();
+              const priceMatch = priceElement?.textContent.match(/[\d,]+(?:\.\d{2})?/);
+              const price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : 0;
+              selectedAddons.push({ name: addonName, price: price });
+            }
+          });
+          if (selectedAddons.length > 0) {
+            fd.append('add_ons', JSON.stringify(selectedAddons));
+          }
+        } catch (e) { console.error('Error collecting add-ons:', e); }
         
         // CRITICAL: Add the action field if not present (required by user_auth.php)
         if (!fd.has('action')) {

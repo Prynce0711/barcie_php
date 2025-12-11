@@ -436,6 +436,9 @@ function ensureDatabaseStructure($conn) {
             'discount_status' => 'VARCHAR(50) DEFAULT "none"',
             // Dedicated column to store path to uploaded discount proof (if any)
             'proof_of_id' => 'VARCHAR(255) NULL',
+            'guest_age' => 'INT NULL',
+            'amount' => 'DECIMAL(10,2) NULL',
+            'add_ons' => 'TEXT NULL',
             // Payment verification columns
             'payment_status' => 'VARCHAR(50) DEFAULT "none"',
             'proof_of_payment' => 'VARCHAR(255) NULL',
@@ -1389,6 +1392,23 @@ if ($action === 'create_booking') {
             error_log("Payment proof uploaded to: " . $payment_proof_path);
         }
     }
+    
+    // Handle file upload for ID upload (separate from discount proof)
+    $id_upload_path = '';
+    if (isset($_FILES['id_upload']) && $_FILES['id_upload']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = __DIR__ . '/../uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        $file_tmp = $_FILES['id_upload']['tmp_name'];
+        $file_ext = pathinfo($_FILES['id_upload']['name'], PATHINFO_EXTENSION);
+        $file_name = time() . '_id_' . uniqid() . '.' . $file_ext;
+        $target_path = $upload_dir . $file_name;
+        if (move_uploaded_file($file_tmp, $target_path)) {
+            $id_upload_path = 'uploads/' . $file_name;
+            error_log("ID upload saved to: " . $id_upload_path);
+        }
+    }
     // Validate room/facility selection
     if ($room_id <= 0) {
         handleResponse("Please select a room or facility.", false, '../Guest.php');
@@ -1443,7 +1463,18 @@ if ($action === 'create_booking') {
         $checkin = $_POST['checkin'] ?? null;
         $checkout = $_POST['checkout'] ?? null;
         $occupants = (int)($_POST['occupants'] ?? 1);
+        $guest_age = (int)($_POST['age'] ?? 0);
         $company = $conn->real_escape_string($_POST['company'] ?? '');
+        
+        // Get add-ons data if provided
+        $add_ons_json = $_POST['add_ons'] ?? '';
+        
+        // Calculate amount based on room price and duration
+        $checkin_date = new DateTime($checkin);
+        $checkout_date = new DateTime($checkout);
+        $duration = $checkin_date->diff($checkout_date);
+        $nights = $duration->days;
+        $amount = $room_data['price'] * $nights;
         
         // Check if this is a conversion from pencil booking
         $converted_from_pencil_id = isset($_POST['converted_from_pencil_id']) ? (int)$_POST['converted_from_pencil_id'] : 0;
@@ -1497,12 +1528,11 @@ if ($action === 'create_booking') {
         // Add discount info to details and set discount_status
         $discount_info = '';
         $discount_status = 'none';
-        // store a separate column value for proof path (nullable)
-        $proof_of_id = null;
+        // Use id_upload_path for proof_of_id column, fallback to discount proof if ID not uploaded
+        $proof_of_id = !empty($id_upload_path) ? $id_upload_path : (!empty($discount_proof_path) ? $discount_proof_path : null);
         if (!empty($discount_type)) {
             $discount_info = " | Discount: $discount_type | Discount Details: $discount_details | Proof: $discount_proof_path";
             $discount_status = 'pending'; // Set discount status to pending for admin review
-            if (!empty($discount_proof_path)) $proof_of_id = $discount_proof_path;
         }
 
         $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Email: $email | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
@@ -1515,11 +1545,13 @@ if ($action === 'create_booking') {
             error_log("Booking Debug - Status: $status, Checkin: $checkin, Checkout: $checkout");
 
             // Include proof_of_id and proof_of_payment columns so uploaded proof paths are stored separately
-            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, proof_of_id, proof_of_payment, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            // Set initial payment_status as 'pending' so booking goes to payment verification first
+            $payment_status = 'pending';
+            $stmt = $conn->prepare("INSERT INTO bookings (type, room_id, receipt_no, details, status, discount_status, proof_of_id, proof_of_payment, payment_status, guest_age, amount, add_ons, checkin, checkout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $conn->error);
             }
-            $stmt->bind_param("sissssssss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $proof_of_id, $payment_proof_path, $checkin, $checkout);
+            $stmt->bind_param("sississssidsss", $type, $room_id, $receipt_no, $details, $status, $discount_status, $proof_of_id, $payment_proof_path, $payment_status, $guest_age, $amount, $add_ons_json, $checkin, $checkout);
             $success = $stmt->execute();
 
             if (!$success) {
@@ -1651,12 +1683,17 @@ if ($action === 'create_booking') {
                             <h4 style="margin: 0 0 12px 0; color: #0d47a1; font-size: 16px; font-weight: 700;">
                                 &#128221; What Happens Next?
                             </h4>
-                            <ul style="margin: 0; padding-left: 20px; color: #1565c0; font-size: 14px; line-height: 1.8;">
-                                <li>Our team will review your booking within 24 hours</li>
-                                <li>You will receive an email notification once your booking is approved</li>
-                                <li>Please keep your receipt number for reference</li>
-                                <li>Once approved, proceed with payment to confirm your reservation</li>
-                            </ul>
+                            <ol style="margin: 0; padding-left: 20px; color: #1565c0; font-size: 14px; line-height: 1.8;">
+                                <li><strong>Upload Payment Proof:</strong> Submit your payment proof/receipt through the guest portal</li>
+                                <li><strong>Payment Verification:</strong> Our admin team will verify your payment (usually within 24 hours)</li>
+                                <li><strong>Booking Approval:</strong> Once payment is verified, your booking will be approved and confirmed</li>
+                                <li><strong>Confirmation Email:</strong> You will receive a final confirmation email once approved</li>
+                            </ol>
+                            <div style="margin-top: 15px; padding: 12px; background-color: #fff3cd; border-radius: 6px;">
+                                <p style="margin: 0; color: #856404; font-size: 13px; font-weight: 600; text-align: center;">
+                                    ⚠️ Your booking will appear in the admin booking section only after payment verification
+                                </p>
+                            </div>
                         </div>
                         
                         <!-- Important Reminders -->
@@ -3269,8 +3306,8 @@ if ($action === 'admin_update_payment') {
 
     $newPaymentStatus = $paymentAction === 'verify' ? 'verified' : 'rejected';
 
-    // Get booking details first
-    $booking_stmt = $conn->prepare("SELECT details, proof_of_payment, payment_status FROM bookings WHERE id = ?");
+    // Get booking details first including room_id
+    $booking_stmt = $conn->prepare("SELECT details, proof_of_payment, payment_status, room_id FROM bookings WHERE id = ?");
     $booking_stmt->bind_param("i", $bookingId);
     $booking_stmt->execute();
     $booking_result = $booking_stmt->get_result();
@@ -3280,10 +3317,38 @@ if ($action === 'admin_update_payment') {
     // Update payment status and set audit trail (who verified and when)
     $admin_id = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : 0;
     // Update payment status and touch updated_at so activity feed sees the event
-    $stmt = $conn->prepare("UPDATE bookings SET payment_status = ?, payment_verified_by = ?, payment_verified_at = NOW(), updated_at = NOW() WHERE id = ?");
+    // Also update booking status to 'approved' when payment is verified
+    if ($paymentAction === 'verify') {
+        $stmt = $conn->prepare("UPDATE bookings SET payment_status = ?, payment_verified_by = ?, payment_verified_at = NOW(), status = 'approved', updated_at = NOW() WHERE id = ?");
+    } else {
+        // When rejecting, also update booking status to 'rejected'
+        $stmt = $conn->prepare("UPDATE bookings SET payment_status = ?, payment_verified_by = ?, payment_verified_at = NOW(), status = 'rejected', updated_at = NOW() WHERE id = ?");
+    }
     $stmt->bind_param("sii", $newPaymentStatus, $admin_id, $bookingId);
     $success = $stmt->execute();
     $stmt->close();
+    
+    // If payment is rejected, release the room/facility (make it available again)
+    if ($success && $paymentAction === 'reject' && !empty($booking_data['room_id'])) {
+        $room_id = (int)$booking_data['room_id'];
+        
+        // Check if there are any other active bookings for this room
+        $check_stmt = $conn->prepare("SELECT COUNT(*) as count FROM bookings WHERE room_id = ? AND id != ? AND status IN ('pending', 'approved', 'confirmed', 'checked_in')");
+        $check_stmt->bind_param("ii", $room_id, $bookingId);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        $check_data = $check_result->fetch_assoc();
+        $check_stmt->close();
+        
+        // Only set to available if no other active bookings exist
+        if ($check_data['count'] == 0) {
+            $update_room = $conn->prepare("UPDATE items SET room_status = 'available' WHERE id = ?");
+            $update_room->bind_param("i", $room_id);
+            $update_room->execute();
+            $update_room->close();
+            error_log("Room/Facility ID $room_id set to available after payment rejection for booking ID $bookingId");
+        }
+    }
 
     if ($success && $booking_data) {
         // Extract guest info from details
@@ -3373,6 +3438,85 @@ if ($action === 'admin_update_payment') {
         $_SESSION['msg'] = $success ? "Payment " . ($paymentAction === 'verify' ? 'verified' : 'rejected') . " successfully." : "Error updating payment.";
         redirect('../dashboard.php');
     }
+}
+
+/* ---------------------------
+   ADMIN: Get booking details for payment verification
+   --------------------------- */
+if ($action === 'get_booking_details') {
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Access denied. Admin login required.']);
+        exit;
+    }
+
+    $bookingId = (int)($_POST['booking_id'] ?? 0);
+    
+    if ($bookingId <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Invalid booking ID.']);
+        exit;
+    }
+
+    // Get booking details with room information
+    $stmt = $conn->prepare("SELECT b.*, i.name as room_name, i.room_number, i.price as room_price 
+                            FROM bookings b 
+                            LEFT JOIN items i ON b.room_id = i.id 
+                            WHERE b.id = ?");
+    $stmt->bind_param("i", $bookingId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $booking = $result->fetch_assoc();
+    $stmt->close();
+
+    if (!$booking) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Booking not found.']);
+        exit;
+    }
+
+    // Extract guest info from details
+    $guest_name = 'Guest';
+    $guest_phone = '';
+    $guest_email = '';
+    
+    if (preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
+        $guest_name = trim($matches[1]);
+    }
+    if (preg_match('/Contact:\s*([^|]+)/', $booking['details'], $matches)) {
+        $guest_phone = trim($matches[1]);
+    }
+    if (preg_match('/Email:\s*([^|]+)/', $booking['details'], $matches)) {
+        $guest_email = trim($matches[1]);
+    }
+
+    // Build response
+    $response = [
+        'success' => true,
+        'booking' => [
+            'id' => $booking['id'],
+            'receipt_no' => $booking['receipt_no'],
+            'guest_name' => $guest_name,
+            'guest_email' => $guest_email,
+            'guest_phone' => $guest_phone,
+            'guest_age' => $booking['guest_age'],
+            'room_name' => $booking['room_name'] . ($booking['room_number'] ? ' #' . $booking['room_number'] : ''),
+            'checkin' => $booking['checkin'] ? date('M j, Y g:i A', strtotime($booking['checkin'])) : 'N/A',
+            'checkout' => $booking['checkout'] ? date('M j, Y g:i A', strtotime($booking['checkout'])) : 'N/A',
+            'amount' => $booking['amount'],
+            'room_price' => $booking['room_price'],
+            'add_ons' => $booking['add_ons'] ?: null,
+            'proof_of_id' => $booking['proof_of_id'] ?: null,
+            'proof_of_payment' => $booking['proof_of_payment'] ?: null,
+            'status' => $booking['status'],
+            'payment_status' => $booking['payment_status'],
+            'created_at' => date('M j, Y g:i A', strtotime($booking['created_at']))
+        ]
+    ];
+
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit;
 }
 
 /* ---------------------------
