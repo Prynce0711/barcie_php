@@ -335,6 +335,15 @@ function toggleBookingForm() {
   if (type === "reservation") {
     generateReceiptNumber();
   }
+  
+  // Trigger field lock check when switching forms (if function exists)
+  if (typeof checkAndEnableFormFields === 'function') {
+    if (type === "reservation") {
+      checkAndEnableFormFields('reservation');
+    } else if (type === "pencil") {
+      checkAndEnableFormFields('pencil');
+    }
+  }
 }
 
 // Setup Booking Forms

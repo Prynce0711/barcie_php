@@ -342,6 +342,16 @@
           filterBookings();
         }
       };
+      
+      // Set default filter to today on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('bookingDateFilter');
+        if (dateInput && !dateInput.value) {
+          dateInput.value = today;
+          filterBookings();
+        }
+      });
 
     })();
   </script>

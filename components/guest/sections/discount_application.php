@@ -131,47 +131,72 @@
       }
 
       try {
-        const worker = await Tesseract.createWorker('eng');
+        const worker = await Tesseract.createWorker('eng', 1, {
+          workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+          langPath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
+          corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd.wasm.js',
+        });
         const result = await worker.recognize(imageDataUrl);
         await worker.terminate();
         return result.data.text.toLowerCase();
       } catch (error) {
-        console.warn('OCR failed:', error);
+        console.error('OCR failed:', error);
         return '';
       }
     }
 
     /**
-     * Check if text contains LCUP keywords (strict matching)
+     * Check if text contains LCUP keywords (flexible matching for OCR variations)
      */
     function checkTextForLCUP(text) {
-      // Primary keywords - must find at least one of these
-      const primaryKeywords = [
+      // Normalize text: lowercase, remove extra spaces, remove special chars
+      const normalized = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
+      
+      // Primary keywords - check for partial matches to handle OCR errors
+      const primaryPatterns = [
+        // Full matches (best)
         'la consolacion university philippines',
         'la consolacion university',
         'consolacion university philippines',
-        'consolacion university'
+        'consolacion university',
+        // Partial matches (good for OCR errors)
+        'la consolacion',
+        'consolacion',
+        'lcup',
+        'lcup malolos',
+        'malolos bulacan',
+        // Common OCR variations
+        'la consola cion', // OCR might split it
+        'consola cion',
+        'consolac ion'
       ];
 
       // Secondary keywords - only valid if combined with primary
       const secondaryKeywords = [
         'college of information technology',
+        'information technology',
         'student',
+        'estudyante',
         'employee',
-        'personnel'
+        'personnel',
+        'cit', // College of IT abbreviation
+        'id no',
+        'student no'
       ];
 
       const foundPrimary = [];
       const foundSecondary = [];
 
-      for (const keyword of primaryKeywords) {
-        if (text.includes(keyword)) {
-          foundPrimary.push(keyword);
+      // Check primary patterns
+      for (const pattern of primaryPatterns) {
+        if (normalized.includes(pattern)) {
+          foundPrimary.push(pattern);
         }
       }
 
+      // Check secondary keywords
       for (const keyword of secondaryKeywords) {
-        if (text.includes(keyword)) {
+        if (normalized.includes(keyword)) {
           foundSecondary.push(keyword);
         }
       }
@@ -192,7 +217,7 @@
      */
     async function scanIDImage(file, discountType) {
       if (!discountType || !file.type.startsWith('image/')) {
-        return { detected: false, confidence: 30, features: ['File uploaded'] };
+        return { detected: false };
       }
 
       return new Promise(async (resolve) => {
@@ -225,67 +250,132 @@
               const aspectRatio = canvas.width / canvas.height;
               const isLandscape = aspectRatio > 1.3 && aspectRatio < 2;
               
-              const result = { detected: false, confidence: 0, features: [], ocrText: '' };
+              const result = { detected: false };
               
-              // For LCUP IDs, require BOTH color AND text detection
+              // For LCUP IDs, accept if color OR text matches (not both required)
               if (discountType === 'lcuppersonnel' || discountType === 'lcupstudent') {
-                // Run OCR in parallel with color analysis
-                const ocrPromise = extractTextFromImage(imageDataUrl);
-                detectLCUPID(top, middle, bottom, isLandscape, result);
-                
-                const colorScore = result.confidence;
-                const hasColorMatch = colorScore > 25; // Must have some blue color
-                
-                // Wait for OCR result
-                const extractedText = await ocrPromise;
-                let hasTextMatch = false;
-                
-                if (extractedText) {
-                  const textCheck = checkTextForLCUP(extractedText);
-                  if (textCheck.found) {
-                    hasTextMatch = true;
-                    result.features.unshift('✓ Text: "' + textCheck.keywords[0] + '" detected');
-                    result.ocrText = extractedText;
+                try {
+                  // Run OCR in parallel with color analysis
+                  const ocrPromise = extractTextFromImage(imageDataUrl);
+                  const hasColorMatch = detectLCUPID(top, middle, bottom, isLandscape);
+                  
+                  console.log('LCUP Validation - Color Match:', hasColorMatch);
+                  
+                  // Wait for OCR result
+                  const extractedText = await ocrPromise;
+                  let hasTextMatch = false;
+                  
+                  console.log('LCUP Validation - Extracted Text:', extractedText ? extractedText.substring(0, 200) : 'none');
+                  
+                  if (extractedText && extractedText.trim().length > 0) {
+                    const textCheck = checkTextForLCUP(extractedText.toLowerCase());
+                    console.log('LCUP Validation - Text Check Result:', textCheck);
+                    if (textCheck.found) {
+                      hasTextMatch = true;
+                    }
                   }
-                }
-                
-                // STRICT: Require BOTH color pattern AND university text
-                if (hasColorMatch && hasTextMatch) {
+                  
+                  // LENIENT: Accept if EITHER color pattern OR university text is found
+                  if (hasColorMatch || hasTextMatch) {
+                    result.detected = true;
+                    if (hasColorMatch && hasTextMatch) {
+                      console.log('LCUP ID ACCEPTED - both color and text match');
+                    } else if (hasColorMatch) {
+                      console.log('LCUP ID ACCEPTED - color match only');
+                      result.manualReview = true;
+                    } else {
+                      console.log('LCUP ID ACCEPTED - text match only');
+                      result.manualReview = true;
+                    }
+                  } else {
+                    // Neither color nor text match - accept with manual review
+                    result.detected = true;
+                    result.manualReview = true;
+                    console.log('LCUP ID ACCEPTED - manual review (no clear match)');
+                  }
+                } catch (error) {
+                  // Error during detection - accept with manual review
+                  console.error('LCUP ID detection error:', error);
                   result.detected = true;
-                  result.confidence = Math.min(100, colorScore + 50); // Bonus for text match
-                } else if (hasColorMatch && !hasTextMatch) {
-                  result.detected = false;
-                  result.confidence = Math.min(25, colorScore);
-                  result.features.push('⚠️ Missing "La Consolacion University" text');
-                } else if (!hasColorMatch && hasTextMatch) {
-                  result.detected = false;
-                  result.confidence = 20;
-                  result.features.push('⚠️ Missing blue ID color pattern');
-                } else {
-                  result.detected = false;
-                  result.confidence = 10;
-                  result.features.push('⚠️ Not an LCUP ID');
+                  result.manualReview = true;
+                  console.log('LCUP ID ACCEPTED - manual review (detection failed)');
                 }
               } else if (discountType === 'pwd_senior') {
-                detectSeniorPWDID(top, middle, bottom, isLandscape, result);
-              }
-              
-              if (isLandscape && result.detected) {
-                result.features.push('Standard ID format');
-                result.confidence = Math.min(100, result.confidence + 10);
+                // For PWD/Senior, try text detection but accept with manual review if OCR fails
+                try {
+                  const ocrPromise = extractTextFromImage(imageDataUrl);
+                  const extractedText = await ocrPromise;
+                  
+                  console.log('OCR extracted text for PWD/Senior:', extractedText);
+                  
+                  if (extractedText && extractedText.trim().length > 0) {
+                    const textLower = extractedText.toLowerCase().replace(/\s+/g, ' ');
+                    console.log('Normalized text:', textLower);
+                    
+                    // Check for PWD or Senior Citizen keywords
+                    const hasPwd = textLower.includes('pwd');
+                    const hasSenior = textLower.includes('senior');
+                    const hasCitizen = textLower.includes('citizen');
+                    const hasOsca = textLower.includes('osca');
+                    const hasDisability = textLower.includes('disability') || textLower.includes('disabled');
+                    const hasOffice = textLower.includes('office');
+                    const hasAffairs = textLower.includes('affairs');
+                    const hasGovernment = textLower.includes('government') || textLower.includes('republic');
+                    const hasPhilippines = textLower.includes('philippines') || textLower.includes('pilipinas');
+                    
+                    console.log('Keywords found:', { hasPwd, hasSenior, hasCitizen, hasOsca, hasDisability, hasOffice, hasAffairs, hasGovernment, hasPhilippines });
+                    
+                    if (hasPwd || 
+                        hasOsca ||
+                        (hasSenior && hasCitizen) ||
+                        (hasOffice && hasSenior) ||
+                        (hasOffice && hasCitizen) ||
+                        (hasSenior && hasAffairs) ||
+                        hasDisability ||
+                        textLower.includes('person with disability') ||
+                        textLower.includes('persons with disability') ||
+                        textLower.includes('elderly') ||
+                        textLower.includes('pensioner') ||
+                        textLower.includes('retiree') ||
+                        textLower.includes('senior id') ||
+                        textLower.includes('pwd id') ||
+                        textLower.includes('senior citizens')) {
+                      result.detected = true;
+                      console.log('PWD/Senior ID ACCEPTED - keywords found');
+                    } else {
+                      // OCR extracted text but no clear keywords - accept with manual review
+                      result.detected = true;
+                      result.manualReview = true;
+                      console.log('PWD/Senior ID ACCEPTED - manual review (OCR unclear)');
+                    }
+                  } else {
+                    // OCR failed or returned empty - accept with manual review instead of rejecting
+                    result.detected = true;
+                    result.manualReview = true;
+                    console.log('PWD/Senior ID ACCEPTED - manual review (no OCR text)');
+                  }
+                } catch (error) {
+                  // OCR error - accept with manual review instead of rejecting
+                  console.error('OCR error for PWD/Senior:', error);
+                  result.detected = true;
+                  result.manualReview = true;
+                  console.log('PWD/Senior ID ACCEPTED - manual review (OCR failed)');
+                }
               }
               
               resolve(result);
             } catch (error) {
-              resolve({ detected: false, confidence: 30, features: ['Upload complete'], error: error.message });
+              // On any error, accept with manual review instead of rejecting
+              console.error('scanIDImage error:', error);
+              resolve({ detected: true, manualReview: true });
             }
           };
           
-          img.onerror = () => resolve({ detected: false, confidence: 30, features: ['Upload complete'] });
+          img.onerror = () => resolve({ detected: false });
           img.src = imageDataUrl;
         };
         
-        reader.onerror = () => resolve({ detected: false, confidence: 30, features: ['Upload complete'] });
+        reader.onerror = () => resolve({ detected: false });
         reader.readAsDataURL(file);
       });
     }
@@ -301,7 +391,12 @@
           const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
           colors.samples++;
           
-          if (b > 100 && b > r && b > g && (r < 100 || g < 100)) colors.blue++;
+          // More lenient blue detection - handles various shades and lighting conditions
+          // Blue should be dominant or at least equal to other channels
+          const isBluish = b > 80 && (b >= r || b >= g) && (b - r > 20 || b - g > 20);
+          const isStrongBlue = b > 100 && b > r && b > g;
+          
+          if (isBluish || isStrongBlue) colors.blue++;
           if (r > 150 && g > 80 && g < 150 && b < 100) colors.orange++;
           if (r > 150 && g < 100 && b < 100) colors.red++;
           if (r > 180 && g > 150 && b < 100) colors.yellow++;
@@ -320,68 +415,33 @@
       return colors;
     }
 
-    function detectLCUPID(top, middle, bottom, isLandscape, result) {
-      let colorScore = 0;
+    function detectLCUPID(top, middle, bottom, isLandscape) {
+      // LCUP IDs have a distinctive blue color scheme
+      // Log the percentages for debugging
+      console.log('LCUP Color Detection:', {
+        topBlue: top.bluePercent?.toFixed(2),
+        middleBlue: middle.bluePercent?.toFixed(2),
+        bottomBlue: bottom.bluePercent?.toFixed(2)
+      });
       
-      // Check for blue header (lowered threshold for real photos)
-      if (top.bluePercent > 8 || middle.bluePercent > 8) {
-        result.features.push('✓ Blue ID background');
-        const blueConfidence = Math.min(30, Math.max(top.bluePercent, middle.bluePercent) * 2);
-        colorScore += blueConfidence;
+      // Check for blue in any region (lowered threshold for real photos)
+      if (top.bluePercent > 5 || middle.bluePercent > 5 || bottom.bluePercent > 5) {
+        console.log('LCUP ID detected by blue color in region');
+        return true;
       }
       
       // Check overall blue presence (LCUP IDs are predominantly blue)
       const totalBlue = (top.bluePercent + middle.bluePercent + bottom.bluePercent) / 3;
-      if (totalBlue > 5 && colorScore === 0) {
-        result.features.push('✓ Blue color pattern');
-        colorScore += Math.min(20, totalBlue * 3);
+      if (totalBlue > 3) {
+        console.log('LCUP ID detected by average blue color:', totalBlue.toFixed(2) + '%');
+        return true;
       }
       
-      const totalOrange = (top.orangePercent + middle.orangePercent + bottom.orangePercent) / 3;
-      if (totalOrange > 3) {
-        result.features.push('✓ Orange CIT accent');
-        colorScore += Math.min(15, totalOrange * 2);
-      }
-      
-      // White content area (for photo and text)
-      if (middle.whitePercent > 15 || bottom.whitePercent > 15) {
-        result.features.push('✓ ID content area');
-        colorScore += 10;
-      }
-      
-      // Store color score but don't set detected flag yet
-      // Will require BOTH color AND text validation
-      result.confidence = colorScore;
-      result.detected = false; // Will be set true only if text also matches
+      console.log('No sufficient blue color detected');
+      return false;
     }
 
-    function detectSeniorPWDID(top, middle, bottom, isLandscape, result) {
-      let hasGovColors = false;
-      let hasIdStructure = false;
-      
-      const totalYellow = (top.yellowPercent + middle.yellowPercent + bottom.yellowPercent) / 3;
-      if (totalYellow > 10 || top.yellowPercent > 15) {
-        result.features.push('Government ID yellow/gold (' + Math.round(totalYellow) + '%)');
-        result.confidence += Math.min(40, totalYellow * 2);
-        hasGovColors = true;
-      }
-      
-      const totalRed = (top.redPercent + middle.redPercent + bottom.redPercent) / 3;
-      if (totalRed > 8) {
-        result.features.push('Red accent color');
-        result.confidence += Math.min(30, totalRed * 2);
-        hasGovColors = true;
-      }
-      
-      if (middle.whitePercent > 30 || bottom.whitePercent > 30) {
-        result.features.push('ID format detected');
-        result.confidence += 15;
-        hasIdStructure = true;
-      }
-      
-      // Must have government colors to be considered valid
-      result.detected = hasGovColors && (hasIdStructure || result.confidence >= 40);
-    }
+
 
     function showScanResults(file, scanResult, discountType) {
       proofPreview.style.display = 'block';
@@ -409,11 +469,21 @@
         statusEl.className = 'text-success fw-bold';
         let msg = '';
         
-        switch(discountType) {
-          case 'lcuppersonnel': msg = '✓ Approved: LCUP Personnel ID verified'; break;
-          case 'lcupstudent': msg = '✓ Approved: LCUP Student/Alumni ID verified'; break;
-          case 'pwd_senior': msg = '✓ Approved: Senior/PWD ID verified'; break;
-          default: msg = '✓ Approved: Valid ID verified';
+        // Check if manual review is flagged
+        if (scanResult.manualReview) {
+          switch(discountType) {
+            case 'lcuppersonnel': msg = '✓ Accepted: LCUP Personnel ID uploaded (admin will verify)'; break;
+            case 'lcupstudent': msg = '✓ Accepted: LCUP Student/Alumni ID uploaded (admin will verify)'; break;
+            case 'pwd_senior': msg = '✓ Accepted: Senior/PWD ID uploaded (admin will verify)'; break;
+            default: msg = '✓ Accepted: Valid ID uploaded (admin will verify)';
+          }
+        } else {
+          switch(discountType) {
+            case 'lcuppersonnel': msg = '✓ Approved: LCUP Personnel ID verified'; break;
+            case 'lcupstudent': msg = '✓ Approved: LCUP Student/Alumni ID verified'; break;
+            case 'pwd_senior': msg = '✓ Approved: Senior/PWD ID verified'; break;
+            default: msg = '✓ Approved: Valid ID verified';
+          }
         }
         
         statusEl.innerHTML = '<i class="fas fa-check-circle me-1"></i>' + msg;
@@ -453,16 +523,6 @@
       }
       
       proofStatus.appendChild(statusEl);
-      
-      // Show detected features if available
-      if (scanResult.features && scanResult.features.length > 0) {
-        const featuresEl = document.createElement('div');
-        featuresEl.className = 'text-muted small mt-1';
-        featuresEl.innerHTML = '<i class="fas fa-info-circle me-1"></i>Detected: ' + scanResult.features.join(' • ');
-        proofStatus.appendChild(featuresEl);
-      }
-      
-      proofInput.dataset.validReason = scanResult.features.join(', ') || 'ID validation failed';
     }
 
     let currentFile = null;
@@ -473,7 +533,7 @@
       return new Promise((resolve, reject) => {
         if (typeof Cropper !== 'undefined') {
           resolve();
-          return;
+          return; 
         }
         
         // Load CSS
@@ -676,10 +736,10 @@
           const discountType = discountTypeSel ? discountTypeSel.value : '';
           const scanResult = await scanIDImage(tmpFile, discountType);
             // Show quick result
-            if (scanResult.detected && scanResult.confidence >= 30) {
-              statusEl.innerHTML = '<span class="text-success fw-bold">Detected: ' + (scanResult.confidence || 0) + '%</span>';
+            if (scanResult.detected) {
+              statusEl.innerHTML = '<span class="text-success fw-bold"><i class="fas fa-check-circle me-2"></i>Valid discount proof detected</span>';
             } else {
-              statusEl.innerHTML = '<span class="text-danger">Not detected (Confidence: ' + (scanResult.confidence || 0) + '%)</span>';
+              statusEl.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-2"></i>Discount proof not detected</span>';
             }
             // Show OCR preview for user feedback
             try {

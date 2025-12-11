@@ -578,6 +578,16 @@ window.clearPencilDate = function() {
   }
 };
 
+// Set default filter to today on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('pencilDateFilter');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = today;
+    filterPencilBookings();
+  }
+});
+
 // Download pencil bookings as text backup
 function downloadPencilBookingsPDF() {
   const rows = Array.from(document.querySelectorAll('#pencilTable tbody tr')).filter(row => {

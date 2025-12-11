@@ -130,7 +130,7 @@ function validateDiscountProof($text, $discountType) {
         'estudyante',
         'undergraduate',
         'scholar',
-        'enrollee',
+        'enrollee', 
         'id no',
         'student no',
         'student number',
@@ -235,7 +235,7 @@ function validateDiscountProof($text, $discountType) {
             // Must have LCUP keywords AND faculty/personnel keywords
             $lcupMatch = 0;
             $facultyMatch = 0;
-            
+                
             foreach ($lcupGeneral as $keyword) {
                 if (strpos($text, $keyword) !== false) {
                     $lcupMatch++;

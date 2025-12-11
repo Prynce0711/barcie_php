@@ -1,10 +1,12 @@
 <?php
 // Bookings Table Content
+// Only show bookings where payment has been verified (payment_status = 'verified')
 $bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number,
                           IFNULL(b.discount_status, 'none') as discount_status
                           FROM bookings b 
                           LEFT JOIN items i ON b.room_id = i.id 
-                          WHERE b.type = 'reservation' OR b.type IS NULL
+                          WHERE (b.type = 'reservation' OR b.type IS NULL)
+                          AND (b.payment_status = 'verified' OR b.payment_status IS NULL OR b.payment_status = 'none')
                           ORDER BY b.created_at DESC");
 while ($booking = $bookings->fetch_assoc()):
   // Determine status badge color - each status has unique color
