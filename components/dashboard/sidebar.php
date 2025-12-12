@@ -38,7 +38,7 @@
       <span>News & Updates</span>
     </a>
 
-    <a href="#admin-management-section" class="nav-link nav-link-custom" data-section="admin-management-section">
+    <a href="#admin-management-section" class="nav-link nav-link-custom admin-management-link" data-section="admin-management-section">
       <i class="fas fa-user-shield"></i>
       <span>Admin Management</span>
     </a>
@@ -52,3 +52,25 @@
     </a>
   </div>
 </div>
+
+<script>
+  // Hide Admin Management link for non-super_admin users
+  (function() {
+    function hideAdminManagementForNonSuperAdmin() {
+      const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+      if (role !== 'super_admin') {
+        const adminLink = document.querySelector('.admin-management-link');
+        if (adminLink) {
+          adminLink.style.display = 'none';
+        }
+      }
+    }
+    
+    // Run on load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideAdminManagementForNonSuperAdmin);
+    } else {
+      hideAdminManagementForNonSuperAdmin();
+    }
+  })();
+</script>

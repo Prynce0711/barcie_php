@@ -48,12 +48,22 @@
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control" id="searchItems" placeholder="Search by name, room number, or description...">
               </div>
-              <!-- Add New Button -->
-              <div class="d-grid">
+              <!-- Add New Button - Only for managers and super_admins -->
+              <div class="d-grid" id="add-room-button-container">
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
                   <i class="fas fa-plus me-2"></i>Add New Room / Facility
                 </button>
               </div>
+              <script>
+                // Hide Add New button for staff and admin (front desk)
+                (function() {
+                  const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
+                  const addBtn = document.getElementById('add-room-button-container');
+                  if (addBtn && !['manager', 'super_admin'].includes(currentRole)) {
+                    addBtn.style.display = 'none';
+                  }
+                })();
+              </script>
             </div>
           </div>
         </div>

@@ -408,12 +408,14 @@
           });
         }
 
-        // Populate booking details pane
+        // Populate booking details pane with comprehensive information
         function showBookingDetailsInPane(event) {
           const container = document.getElementById('roomBookingDetailsContent');
           if (!container) return;
           const p = event.extendedProps || {};
           const bookingId = (event.id || '').toString();
+          const bookingNumericId = bookingId.replace('booking-', '').replace('pencil-', '');
+          
           // map status to badge class
           const status = (p.status || '').toLowerCase();
           let badgeClass = 'badge-pending';
@@ -422,19 +424,84 @@
           if (status === 'checked_out') badgeClass = 'badge-checkedout';
           if (status === 'pending') badgeClass = 'badge-pending';
           if (status === 'cancelled') badgeClass = 'badge-cancelled';
+          if (status === 'pencil') badgeClass = 'badge-warning';
 
           const html = [];
-          html.push(`<div class="fw-bold mb-2">${(p.itemName || event.title || 'Booking')} <span class="booking-badge ${badgeClass} ms-2">${(p.status || 'Unknown')}</span></div>`);
-          if (p.roomNumber) html.push(`<div class="detail-row"><span class="detail-key">Room:</span> ${p.roomNumber}</div>`);
-          if (p.guest) html.push(`<div class="detail-row"><span class="detail-key">Guest:</span> ${p.guest}</div>`);
-          if (p.checkin) html.push(`<div class="detail-row"><span class="detail-key">Check-in:</span> ${p.checkin}</div>`);
-          if (p.checkout) html.push(`<div class="detail-row"><span class="detail-key">Check-out:</span> ${p.checkout}</div>`);
-          if (p.details) html.push(`<div class="mt-2 small text-muted">${p.details}</div>`);
+          
+          // Header
+          html.push(`<div class="card border-0 shadow-sm">`);
+          html.push(`<div class="card-header bg-primary text-white">`);
+          html.push(`<h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Booking Details</h6>`);
+          html.push(`</div>`);
+          html.push(`<div class="card-body">`);
+          
+          // Booking Title and Status
+          html.push(`<div class="d-flex justify-content-between align-items-start mb-3">`);
+          html.push(`<div class="fw-bold fs-5">${(p.itemName || event.title || 'Booking')}</div>`);
+          html.push(`<span class="booking-badge ${badgeClass} ms-2">${(p.status || 'Unknown').toUpperCase()}</span>`);
+          html.push(`</div>`);
+          
+          // Booking Type
+          if (p.bookingType) {
+            const typeIcon = p.bookingType === 'pencil' ? 'fa-pencil-alt' : 'fa-calendar-check';
+            const typeClass = p.bookingType === 'pencil' ? 'text-warning' : 'text-primary';
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas ${typeIcon} ${typeClass} me-2"></i>Type:</span> <strong>${p.bookingType === 'pencil' ? 'Pencil Booking (Draft)' : 'Confirmed Booking'}</strong></div>`);
+          }
+          
+          // Room/Facility Details
+          if (p.roomNumber) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-door-open text-info me-2"></i>Room:</span> <strong>#${p.roomNumber}</strong></div>`);
+          }
+          if (p.itemType) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-building text-secondary me-2"></i>Type:</span> ${p.itemType.charAt(0).toUpperCase() + p.itemType.slice(1)}</div>`);
+          }
+          
+          // Guest Information
+          if (p.guest) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-user text-success me-2"></i>Guest:</span> <strong>${p.guest}</strong></div>`);
+          }
+          
+          // Date Information
+          html.push(`<hr class="my-3">`);
+          html.push(`<h6 class="mb-2"><i class="fas fa-calendar-alt text-primary me-2"></i>Stay Duration</h6>`);
+          if (p.checkin) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-sign-in-alt text-success me-1"></i>Check-in:</span> <strong>${formatDate(p.checkin)}</strong></div>`);
+          }
+          if (p.checkout) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-sign-out-alt text-danger me-1"></i>Check-out:</span> <strong>${formatDate(p.checkout)}</strong></div>`);
+          }
+          if (p.durationDays) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-clock text-info me-1"></i>Duration:</span> <strong>${p.durationDays} ${p.durationDays === 1 ? 'day' : 'days'}</strong></div>`);
+          }
+          
+          // Additional Details
+          if (p.details) {
+            html.push(`<hr class="my-3">`);
+            html.push(`<div class="small text-muted"><i class="fas fa-sticky-note me-2"></i>${p.details}</div>`);
+          }
 
-          // action buttons
-          html.push(`<div class="booking-actions"><button class="btn btn-sm btn-outline-primary booking-action-btn" data-action="view" data-booking-id="${bookingId}">View</button><button class="btn btn-sm btn-outline-secondary booking-action-btn" data-action="edit" data-booking-id="${bookingId}">Edit</button><button class="btn btn-sm btn-outline-danger booking-action-btn" data-action="cancel" data-booking-id="${bookingId}">Cancel</button></div>`);
+          // Action buttons
+          html.push(`<hr class="my-3">`);
+          html.push(`<div class="booking-actions d-grid gap-2">`);
+          html.push(`<button class="btn btn-sm btn-primary booking-action-btn" data-action="view" data-booking-id="${bookingId}"><i class="fas fa-eye me-2"></i>View Full Details</button>`);
+          html.push(`<div class="d-flex gap-2">`);
+          html.push(`<button class="btn btn-sm btn-outline-secondary flex-fill booking-action-btn" data-action="edit" data-booking-id="${bookingId}"><i class="fas fa-edit me-2"></i>Edit</button>`);
+          html.push(`<button class="btn btn-sm btn-outline-danger flex-fill booking-action-btn" data-action="cancel" data-booking-id="${bookingId}"><i class="fas fa-times-circle me-2"></i>Cancel</button>`);
+          html.push(`</div>`);
+          html.push(`</div>`);
+          
+          html.push(`</div>`); // card-body
+          html.push(`</div>`); // card
 
           container.innerHTML = html.join('\n');
+        }
+        
+        // Helper function to format dates nicely
+        function formatDate(dateStr) {
+          if (!dateStr) return '';
+          const date = new Date(dateStr);
+          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+          return date.toLocaleDateString('en-US', options);
         }
 
         // Handle action buttons in booking details pane

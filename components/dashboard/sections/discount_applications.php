@@ -144,7 +144,7 @@
                     }
                     echo '</td>';
                     echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($created))) . '</td>';
-                    echo '<td>';
+                    echo '<td class="discount-action-buttons">';
                     echo '<button class="btn btn-success btn-sm discount-action" data-booking-id="' . $bookingId . '" data-action="approve">Approve</button> ';
                     echo '<button class="btn btn-danger btn-sm discount-action" data-booking-id="' . $bookingId . '" data-action="reject">Reject</button>';
                     echo '</td>';
@@ -170,6 +170,23 @@
 
 <script>
 (function(){
+  // Hide discount action buttons for staff
+  function hideStaffDiscountActions() {
+    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    if (role === 'staff') {
+      document.querySelectorAll('.discount-action-buttons').forEach(td => {
+        td.innerHTML = '<span class="badge bg-secondary">View Only</span>';
+      });
+    }
+  }
+  
+  // Run on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideStaffDiscountActions);
+  } else {
+    hideStaffDiscountActions();
+  }
+
   // Sync type filter buttons with hidden select
   function setTypeFilter(type, trigger){
     const sel = document.getElementById('discountTypeFilter');

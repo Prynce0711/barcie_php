@@ -185,19 +185,19 @@
                 </td>
                 <td>
                   <div class="d-flex flex-column" style="gap: 0.25rem;">
-                    <button class="btn btn-info btn-sm" onclick="viewPencilBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                    <button class="btn btn-info btn-sm view-pencil-btn" onclick="viewPencilBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
                       <i class="fas fa-eye"></i> View
                     </button>
                     
                     <?php if ($booking['status'] === 'pending'): ?>
-                      <button class="btn btn-success btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                      <button class="btn btn-success btn-sm pencil-action-btn" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
                         <i class="fas fa-check"></i> Approve
                       </button>
-                      <button class="btn btn-danger btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                      <button class="btn btn-danger btn-sm pencil-action-btn" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
                         <i class="fas fa-times"></i> Reject
                       </button>
                     <?php elseif ($booking['status'] === 'approved'): ?>
-                      <button class="btn btn-secondary btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                      <button class="btn btn-secondary btn-sm pencil-action-btn" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
                         <i class="fas fa-ban"></i> Cancel
                       </button>
                       <small class="text-info" style="font-size: 0.6rem;">
@@ -237,6 +237,30 @@
     `;
     const s = document.createElement('style'); s.id = styleId; s.appendChild(document.createTextNode(css));
     document.head.appendChild(s);
+  }
+
+  // Hide pencil booking action buttons for staff (except view)
+  function hideStaffPencilActions() {
+    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    if (role === 'staff') {
+      document.querySelectorAll('.pencil-action-btn').forEach(btn => {
+        btn.style.display = 'none';
+      });
+    }
+  }
+  
+  // Run on load and after table updates
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideStaffPencilActions);
+  } else {
+    hideStaffPencilActions();
+  }
+  
+  // Re-run when pencil table updates
+  const observer = new MutationObserver(hideStaffPencilActions);
+  const pencilTable = document.querySelector('#pencilTable tbody');
+  if (pencilTable) {
+    observer.observe(pencilTable, { childList: true, subtree: true });
   }
 
   // Client-side filtering implementation

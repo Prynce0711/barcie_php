@@ -34,6 +34,16 @@
             <label for="add-confirm-password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
             <input type="password" class="form-control" id="add-confirm-password" name="confirm_password" required>
           </div>
+          <div class="mb-3" id="add-role-group" style="display: none;">
+            <label for="add-role" class="form-label">Role</label>
+            <select id="add-role" name="role" class="form-select">
+              <option value="staff">Staff</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+            <div class="form-text">Assign a role to this administrator</div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -56,6 +66,25 @@
     if (modalElement) {
       addAdminModal = new bootstrap.Modal(modalElement);
     }
+
+    // Delay role visibility check to ensure currentAdmin is loaded
+    setTimeout(function() {
+      try {
+        const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
+        const roleGroup = document.getElementById('add-role-group');
+        console.log('Add Admin Modal - Current role:', currentRole);
+        if (['super_admin', 'manager'].includes(currentRole)) {
+          if (roleGroup) {
+            roleGroup.style.display = '';
+            console.log('✓ Role field shown for:', currentRole);
+          }
+        } else {
+          if (roleGroup) roleGroup.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('Error applying role visibility for Add Admin modal:', e);
+      }
+    }, 100);
 
     // Password toggle
     const toggleBtn = document.getElementById('toggleAddPassword');
@@ -94,6 +123,12 @@
 
         const formData = new FormData(this);
         formData.append('action', 'create');
+
+        // If role field is hidden or not allowed, ensure it isn't sent (server will default to staff)
+        const roleGroup = document.getElementById('add-role-group');
+        if (!roleGroup || roleGroup.style.display === 'none') {
+          formData.delete('role');
+        }
 
         console.log('=== ADD ADMIN FORM SUBMISSION ===');
         console.log('Form data entries:');

@@ -69,20 +69,41 @@ try {
         exit;
     }
 
-    $stmt = $conn->prepare("SELECT id, password FROM admins WHERE username = ?");
-    
+    // Detect whether `role` column exists; fall back if not
+    $hasRoleColumn = false;
+    try {
+        $colRes = $conn->query("SHOW COLUMNS FROM `admins` LIKE 'role'");
+        if ($colRes && $colRes->num_rows > 0) {
+            $hasRoleColumn = true;
+        }
+    } catch (Throwable $e) {
+        // ignore - assume column missing
+    }
+
+    if ($hasRoleColumn) {
+        $stmt = $conn->prepare("SELECT id, password, role FROM admins WHERE username = ?");
+    } else {
+        // Older schema without role
+        $stmt = $conn->prepare("SELECT id, password FROM admins WHERE username = ?");
+    }
+
     if (!$stmt) {
         $response['message'] = 'Database query error: ' . $conn->error;
         echo json_encode($response);
         exit;
     }
-    
-      $stmt->bind_param("s", $username);
+
+    $stmt->bind_param("s", $username);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
-        $stmt->bind_result($id, $storedPassword);
+        if ($hasRoleColumn) {
+            $stmt->bind_result($id, $storedPassword, $role);
+        } else {
+            $stmt->bind_result($id, $storedPassword);
+            $role = null;
+        }
         $stmt->fetch();
 
         // Ensure $storedPassword is a string before operating on it
@@ -107,6 +128,8 @@ try {
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_id'] = $id;
                 $_SESSION['admin_username'] = $username;
+                // Store role in session (fallback to 'staff' if null or DB doesn't have column)
+                $_SESSION['admin_role'] = ($hasRoleColumn && !empty($role)) ? $role : 'staff';
                 
                 error_log("[" . date('Y-m-d H:i:s') . "] Login successful for user: $username (ID: $id). Session ID: " . session_id());
 

@@ -123,29 +123,29 @@ while ($booking = $bookings->fetch_assoc()):
     <td data-label="Actions">
       <div class="d-flex flex-row flex-wrap" style="gap: 0.25rem;">
         <!-- View Details Button (Always visible) -->
-        <button class="btn btn-info btn-sm" onclick="viewBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+        <button class="btn btn-info btn-sm view-booking-btn" onclick="viewBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
           <i class="fas fa-eye"></i> View
         </button>
         
         <?php if ($booking['status'] === 'pending'): ?>
-          <button class="btn btn-success btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-success btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             <i class="fas fa-check"></i> Approve
           </button>
-          <button class="btn btn-danger btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-danger btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             <i class="fas fa-times"></i> Reject
           </button>
         <?php elseif ($booking['status'] === 'approved'): ?>
-          <button class="btn btn-primary btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_in')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-primary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_in')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             <i class="fas fa-sign-in-alt"></i> Check In
           </button>
-          <button class="btn btn-secondary btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-secondary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             Cancel
           </button>
         <?php elseif ($booking['status'] === 'checked_in'): ?>
-          <button class="btn btn-info btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_out')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-info btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_out')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             <i class="fas fa-sign-out-alt"></i> Check Out
           </button>
-          <button class="btn btn-secondary btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-secondary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             Cancel
           </button>
         <?php endif; ?>

@@ -2,8 +2,9 @@
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top" id="mainNavbar">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center" href="#home">
-      <img src="/assets/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo" width="40" height="40"
-        class="rounded-circle me-2">
+      <img src="/assets/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo" 
+        style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;"
+        class="me-2">
       <span class="fw-bold">BarCIE</span>
     </a>
 

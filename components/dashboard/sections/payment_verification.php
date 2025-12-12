@@ -102,8 +102,9 @@ if ($stmt) {
 			echo '</td>';
 			echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($created))) . '</td>';
 			echo '<td>';
+			echo '<td class="payment-action-buttons">';
 			echo '<button class="btn btn-success btn-sm payment-action me-1 mb-1" data-booking-id="' . $id . '" data-action="verify"><i class="fas fa-check me-1"></i>Verify</button> ';
-			echo '<button class="btn btn-danger btn-sm payment-action mb-1" data-booking-id="' . $id . '" data-action="reject"><i class="fas fa-times me-1"></i>Reject</button>';
+			echo '<button class="btn btn-danger btn-sm payment-action me-1 mb-1" data-booking-id="' . $id . '" data-action="reject"><i class="fas fa-times me-1"></i>Reject</button>';
 			echo '</td>';
 			echo '</tr>';
 		}
@@ -133,6 +134,23 @@ if ($stmt) {
 			if (typeof showToast === 'function') return showToast(message, type);
 		} catch (e) {}
 		try { showToast(message, 'info'); } catch (e) { /* ignore */ }
+	}
+	
+	// Hide payment action buttons for staff
+	function hideStaffPaymentActions() {
+		const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+		if (role === 'staff') {
+			document.querySelectorAll('.payment-action-buttons').forEach(td => {
+				td.innerHTML = '<span class="badge bg-secondary">View Only</span>';
+			});
+		}
+	}
+	
+	// Run on load
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', hideStaffPaymentActions);
+	} else {
+		hideStaffPaymentActions();
 	}
 	
 	// Delegated handler for verify/reject buttons

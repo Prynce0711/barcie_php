@@ -123,7 +123,7 @@ while ($item = $res->fetch_assoc()):
         </div>
 
         <!-- Action Buttons -->
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 room-action-buttons">
           <button type="button" class="btn btn-outline-primary flex-fill" 
             onclick="openEditModal(<?= $item['id'] ?>)" 
             data-item-id="<?= $item['id'] ?>">
@@ -134,6 +134,16 @@ while ($item = $res->fetch_assoc()):
             <i class="fas fa-trash me-1"></i>Delete
           </button>
         </div>
+        <script>
+          // Hide edit/delete buttons for staff
+          (function() {
+            const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+            if (role === 'staff') {
+              const buttons = document.querySelectorAll('.room-action-buttons');
+              buttons.forEach(btn => btn.style.display = 'none');
+            }
+          })();
+        </script>
 
         <!-- Hidden Edit Form (kept for data extraction by modal) -->
         <div class="edit-form-container mt-3" id="editForm<?= $item['id'] ?>" style="display: none;">
