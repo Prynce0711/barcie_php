@@ -1,11 +1,87 @@
 /**
  * Room Feedback System
- * Handles room reviews, ratings, and feedback modal
+ * Handles room reviews, ratings, and feedback modal with Google Sign-In
  */
 
 let currentRoomForFeedback = null;
 // Cache reviews per room to avoid refetch on filter
 let roomReviewsCache = {};
+// Google Sign-In state
+let googleUser = null;
+
+// Google Sign-In Callback
+function handleGoogleSignIn(response) {
+  // Decode the JWT token
+  const responsePayload = parseJwt(response.credential);
+  
+  googleUser = {
+    id: responsePayload.sub,
+    email: responsePayload.email,
+    name: responsePayload.name,
+    picture: responsePayload.picture
+  };
+  
+  // Hide Google Sign-In option and name input
+  const signInOption = document.getElementById('googleSignInOption');
+  if (signInOption) signInOption.style.display = 'none';
+  
+  const nameInputSection = document.getElementById('nameInputSection');
+  if (nameInputSection) nameInputSection.style.display = 'none';
+  
+  // Show signed in user info
+  const signedInInfo = document.getElementById('signedInUserInfo');
+  if (signedInInfo) signedInInfo.style.display = 'block';
+  
+  // Update user info
+  document.getElementById('feedbackGoogleId').value = googleUser.id;
+  document.getElementById('feedbackGoogleEmail').value = googleUser.email;
+  document.getElementById('feedbackGuestName').value = googleUser.name; // Store name for submission
+  document.getElementById('userGoogleName').textContent = googleUser.name;
+  document.getElementById('userGoogleEmail').textContent = googleUser.email;
+  
+  if (googleUser.picture) {
+    const photoEl = document.getElementById('userGooglePhoto');
+    photoEl.src = googleUser.picture;
+    photoEl.style.display = 'block';
+  }
+  
+  // Re-check submit button state
+  if (typeof updateSubmitState === 'function') {
+    updateSubmitState();
+  }
+  
+  console.log('Google Sign-In successful:', googleUser.name);
+}
+
+function parseJwt(token) {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
+}
+
+function signOutGoogle() {
+  googleUser = null;
+  
+  // Show Google Sign-In option and name input
+  const signInOption = document.getElementById('googleSignInOption');
+  if (signInOption) signInOption.style.display = 'block';
+  
+  const nameInputSection = document.getElementById('nameInputSection');
+  if (nameInputSection) nameInputSection.style.display = 'block';
+  
+  // Hide signed in user info
+  const signedInInfo = document.getElementById('signedInUserInfo');
+  if (signedInInfo) signedInInfo.style.display = 'none';
+  
+  // Clear hidden fields
+  document.getElementById('feedbackGoogleId').value = '';
+  document.getElementById('feedbackGoogleEmail').value = '';
+  
+  console.log('Signed out from Google');
+}
 
 // Initialize room feedback system
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,9 +94,6 @@ function initializeRoomFeedbackSystem() {
   const ratingValueInput = document.getElementById('feedbackRatingValue');
   const ratingText = document.getElementById('feedbackRatingText');
   const submitBtn = document.getElementById('submitRoomFeedback');
-  const anonymousCheckbox = document.getElementById('feedbackAnonymous');
-  const guestNameInput = document.getElementById('feedbackGuestName');
-  const nameErrorEl = document.getElementById('feedbackNameError');
 
   if (starRatingContainer) {
     const stars = starRatingContainer.querySelectorAll('.star-input');
@@ -80,35 +153,6 @@ function initializeRoomFeedbackSystem() {
     });
   }
 
-  // Anonymous checkbox handler
-  if (anonymousCheckbox && guestNameInput) {
-    anonymousCheckbox.addEventListener('change', function() {
-      if (this.checked) {
-        guestNameInput.disabled = true;
-        guestNameInput.value = '';
-        guestNameInput.placeholder = 'Posting as Anonymous';
-        if (nameErrorEl) {
-          nameErrorEl.style.display = 'none';
-          nameErrorEl.textContent = '';
-        }
-      } else {
-        guestNameInput.disabled = false;
-        guestNameInput.placeholder = 'Enter your name';
-      }
-      updateSubmitState();
-    });
-  }
-
-  if (guestNameInput) {
-    guestNameInput.addEventListener('input', function() {
-      if (nameErrorEl && this.value.trim() !== '') {
-        nameErrorEl.style.display = 'none';
-        nameErrorEl.textContent = '';
-      }
-      updateSubmitState();
-    });
-  }
-
   // Form submission
   const feedbackForm = document.getElementById('roomFeedbackForm');
   if (feedbackForm) {
@@ -121,13 +165,12 @@ function initializeRoomFeedbackSystem() {
   function updateSubmitState() {
     const submitBtn = document.getElementById('submitRoomFeedback');
     const rating = document.getElementById('feedbackRatingValue').value;
-    const anonChecked = anonymousCheckbox ? anonymousCheckbox.checked : false;
-    const nameFilled = guestNameInput ? guestNameInput.value.trim() !== '' : false;
+    const googleId = document.getElementById('feedbackGoogleId').value;
 
     if (!submitBtn) return;
 
-    // Enable only when rating is selected and (anonymous OR name filled)
-    if (rating && (anonChecked || nameFilled)) {
+    // Enable submit button only when rating is selected AND user is signed in with Google
+    if (rating && googleId) {
       submitBtn.disabled = false;
     } else {
       submitBtn.disabled = true;
@@ -145,6 +188,18 @@ function initializeRoomFeedbackSystem() {
       }
     }
     
+    // Handle Write Review button in modal
+    if (e.target.closest('#writeReviewBtn')) {
+      // Get the current room from the modal
+      const modalTitle = document.getElementById('roomDetailsLabel');
+      if (modalTitle && currentRoomForFeedback) {
+        const roomName = modalTitle.textContent.replace('Room Details', '').trim();
+        openRoomFeedbackModal(currentRoomForFeedback, roomName);
+      } else {
+        openRoomFeedbackModal(currentRoomForFeedback);
+      }
+    }
+    
     if (e.target.closest('.btn-view-details')) {
       const card = e.target.closest('.room-card-col');
       if (card) {
@@ -156,61 +211,94 @@ function initializeRoomFeedbackSystem() {
 }
 
 function openRoomFeedbackModal(roomId, roomName) {
+  console.log('openRoomFeedbackModal called with:', roomId, roomName);
+  
   if (!roomId) {
     roomId = currentRoomForFeedback;
   }
   
   currentRoomForFeedback = roomId;
   
-  const modal = new bootstrap.Modal(document.getElementById('roomFeedbackModal'));
-  document.getElementById('feedbackRoomId').value = roomId;
-  
-  // Update modal title if room name is provided
-  if (roomName) {
-    document.getElementById('roomFeedbackLabel').innerHTML = 
-      `<i class="fas fa-star me-2"></i>Review: ${roomName}`;
+  // Find the modal element
+  const modalElement = document.getElementById('roomFeedbackModal');
+  if (!modalElement) {
+    console.error('Modal element #roomFeedbackModal not found!');
+    return;
   }
   
-  // Reset form
-  document.getElementById('roomFeedbackForm').reset();
-  document.getElementById('feedbackRatingValue').value = '';
-  document.getElementById('feedbackRatingText').textContent = 'Click to rate';
-  document.getElementById('feedbackRatingText').style.color = '';
-  document.getElementById('submitRoomFeedback').disabled = true;
-  document.getElementById('feedbackGuestName').disabled = false;
+  // Check if Bootstrap is available
+  if (typeof bootstrap === 'undefined') {
+    console.error('Bootstrap is not loaded!');
+    return;
+  }
+  
+  // Set room ID
+  const roomIdInput = document.getElementById('feedbackRoomId');
+  if (roomIdInput) {
+    roomIdInput.value = roomId;
+  }
+  
+  // Update modal title if room name is provided
+  const labelElement = document.getElementById('roomFeedbackLabel');
+  if (labelElement && roomName) {
+    labelElement.innerHTML = `<i class="fas fa-star me-2"></i>Review: ${roomName}`;
+  }
+  
+  // Reset form if it exists
+  const formElement = document.getElementById('roomFeedbackForm');
+  if (formElement) {
+    formElement.reset();
+  }
+  
+  const ratingValueInput = document.getElementById('feedbackRatingValue');
+  if (ratingValueInput) {
+    ratingValueInput.value = '';
+  }
+  
+  const ratingText = document.getElementById('feedbackRatingText');
+  if (ratingText) {
+    ratingText.textContent = 'Click to rate';
+    ratingText.style.color = '';
+  }
+  
+  const submitBtn = document.getElementById('submitRoomFeedback');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+  }
   
   // Reset stars
   document.querySelectorAll('.star-input').forEach(star => {
     star.classList.remove('active');
-    star.querySelector('i').classList.remove('fas');
-    star.querySelector('i').classList.add('far');
+    const icon = star.querySelector('i');
+    if (icon) {
+      icon.classList.remove('fas');
+      icon.classList.add('far');
+    }
   });
   
-  modal.show();
+  // Create and show modal
+  try {
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    console.log('Modal shown successfully');
+  } catch (error) {
+    console.error('Error showing modal:', error);
+  }
 }
 
 function submitRoomFeedback() {
   const form = document.getElementById('roomFeedbackForm');
   const submitBtn = document.getElementById('submitRoomFeedback');
   const rating = document.getElementById('feedbackRatingValue').value;
-  const anonChecked = document.getElementById('feedbackAnonymous') ? document.getElementById('feedbackAnonymous').checked : false;
-  const guestName = document.getElementById('feedbackGuestName') ? document.getElementById('feedbackGuestName').value.trim() : '';
-  const nameErrorEl = document.getElementById('feedbackNameError');
+  const googleId = document.getElementById('feedbackGoogleId') ? document.getElementById('feedbackGoogleId').value : '';
   
   if (!rating) {
     showAlert('Please select a star rating', 'danger');
     return;
   }
 
-  // Validate name requirement: if not anonymous, name is required
-  if (!anonChecked && !guestName) {
-    if (nameErrorEl) {
-      nameErrorEl.textContent = 'Please enter your name or select "Post as Anonymous".';
-      nameErrorEl.style.display = '';
-      nameErrorEl.focus && nameErrorEl.focus();
-    } else {
-      showAlert('Please enter your name or select anonymous.', 'danger');
-    }
+  if (!googleId) {
+    showAlert('Please sign in with Google to submit your review.', 'danger');
     return;
   }
   

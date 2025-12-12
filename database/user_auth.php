@@ -1272,7 +1272,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             $feedback = [];
             while ($row = $result->fetch_assoc()) {
                 // Display name based on anonymous flag
-                $row['username'] = ($row['is_anonymous'] || empty($row['feedback_name'])) ? 'Anonymous Guest' : $row['feedback_name'];
+                // If anonymous and has feedback_name (e.g., "Ba**"), use it; otherwise show "Anonymous"
+                if ($row['is_anonymous']) {
+                    $row['username'] = !empty($row['feedback_name']) ? $row['feedback_name'] : 'Anonymous';
+                } else {
+                    $row['username'] = !empty($row['feedback_name']) ? $row['feedback_name'] : 'Guest';
+                }
                 $row['email'] = '';
                 $feedback[] = $row;
             }
@@ -1713,6 +1718,19 @@ if ($action === 'create_booking') {
                             For questions or modifications to your booking, please contact us with your receipt number <strong style="color: #2a5298;">' . htmlspecialchars($receipt_no) . '</strong>
                         </p>
                         
+                        <!-- Cancel Booking Section -->
+                        <div style="text-align: center; margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+                            <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
+                                Need to cancel your booking?
+                            </p>
+                            <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                                Cancel Booking
+                            </a>
+                            <p style="margin: 15px 0 0 0; color: #6c757d; font-size: 12px; font-style: italic;">
+                                Cancellations must be made at least 48 hours before check-in
+                            </p>
+                        </div>
+                        
                         <div style="text-align: center; padding: 20px 0; border-top: 2px solid #e9ecef; margin-top: 25px;">
                             <p style="margin: 0; color: #1e3c72; font-size: 16px; font-weight: 600;">
                                 We look forward to welcoming you! &#127881;
@@ -2143,6 +2161,17 @@ if ($action === 'create_booking') {
                         <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
                             Please keep this pencil booking number for your records. If you have any questions or need to make changes, contact us with your booking number.
                         </p>
+                        
+                        <!-- Cancel Pencil Booking Section -->
+                        <div style="text-align: center; margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+                            <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
+                                Need to cancel your pencil booking?
+                            </p>
+                            <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '&type=pencil" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                                Cancel Pencil Booking
+                            </a>
+                        </div>
+                        
                         <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
                             Thank you for choosing BarCIE International Center!
                         </p>';
@@ -2262,10 +2291,27 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
    --------------------------- */
 if ($action === 'room_feedback') {
     $room_id = (int)($_POST['room_id'] ?? 0);
-    $guest_name = trim($_POST['guest_name'] ?? '');
-    $is_anonymous = isset($_POST['is_anonymous']) ? 1 : 0;
     $rating = (int)($_POST['rating'] ?? 0);
     $comment = trim($_POST['comment'] ?? '');
+    $is_anonymous = isset($_POST['is_anonymous']) ? 1 : 0;
+    
+    // Google Sign-In data
+    $google_id = trim($_POST['google_id'] ?? '');
+    $google_email = trim($_POST['google_email'] ?? '');
+    
+    // Get guest name from Google Sign-In (hidden field populated by JS)
+    $guest_name = trim($_POST['guest_name'] ?? '');
+    
+    // If Google Sign-In is used, extract name from userGoogleName
+    if (empty($guest_name) && !empty($google_email)) {
+        // Try to get name from the form data or use email prefix
+        $guest_name = explode('@', $google_email)[0];
+    }
+    
+    // If anonymous is checked, show only first 2 letters of name
+    if ($is_anonymous && !empty($guest_name)) {
+        $guest_name = substr($guest_name, 0, 2) . '**';
+    }
     
     // Validation
     if ($room_id <= 0) {
@@ -2286,28 +2332,14 @@ if ($action === 'room_feedback') {
         exit();
     }
     
-    // Require name unless anonymous is explicitly selected
-    if ($is_anonymous) {
-        // anonymous allowed: clear name if empty
-        if (empty($guest_name)) {
-            $guest_name = null;
-            $is_anonymous = 1;
+    // Require Google Sign-In
+    if (empty($google_id)) {
+        if ($is_ajax) {
+            echo json_encode(['success' => false, 'error' => 'Please sign in with Google to submit your review.']);
         } else {
-            // user provided a name but marked anonymous: still store as anonymous
-            $is_anonymous = 1;
+            handleResponse('Please sign in with Google to submit your review.', false, '../Guest.php#rooms');
         }
-    } else {
-        // not anonymous: name is required
-        if (empty($guest_name)) {
-            if ($is_ajax) {
-                echo json_encode(['success' => false, 'error' => 'Please enter your name or select anonymous.']);
-            } else {
-                handleResponse('Please enter your name or select anonymous.', false, '../Guest.php#rooms');
-            }
-            exit();
-        } else {
-            $is_anonymous = 0;
-        }
+        exit();
     }
     
     // Insert room feedback (no approval required)
@@ -3100,9 +3132,15 @@ if ($action === 'admin_update_booking') {
    ADMIN: update discount status (SEPARATE ACTION)
    --------------------------- */
 if ($action === 'admin_update_discount') {
+    // Only Front Desk (admin), managers and super_admin can process discounts - staff CANNOT
+    require_once __DIR__ . '/role_check.php';
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
         // Return JSON for AJAX clients; for normal requests redirect with session message
         handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
+    }
+    $role = $_SESSION['admin_role'] ?? 'staff';
+    if (!in_array($role, ['admin','manager','super_admin'], true)) {
+        handleResponse('You do not have permission to process discount applications.', false, '../dashboard.php');
     }
 
     $bookingId = (int)($_POST['booking_id'] ?? 0);
@@ -3292,9 +3330,13 @@ if ($action === 'admin_update_discount') {
    ADMIN: update payment verification status
    --------------------------- */
 if ($action === 'admin_update_payment') {
+    // Require login and roles: Front Desk (admin) and above can verify payments
+    require_once __DIR__ . '/role_check.php';
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
         handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }
+    // Enforce role permission for payment verification
+    page_require_roles(['admin','manager','super_admin'], '../dashboard.php', 'You do not have permission to verify payments');
 
     $bookingId = (int)($_POST['booking_id'] ?? 0);
     $paymentAction = $_POST['payment_action'] ?? ''; // 'verify' or 'reject'
@@ -3700,6 +3742,18 @@ if ($action === 'get_pencil_booking_details') {
    UPDATE PENCIL BOOKING STATUS
    --------------------------- */
 if ($action === 'update_pencil_booking_status') {
+    // Only Front Desk (admin), managers and super_admin can update pencil booking status - staff CANNOT
+    require_once __DIR__ . '/role_check.php';
+    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        echo json_encode(['success' => false, 'message' => 'Access denied. Admin login required.']);
+        exit;
+    }
+    $role = $_SESSION['admin_role'] ?? 'staff';
+    if (!in_array($role, ['admin','manager','super_admin'], true)) {
+        echo json_encode(['success' => false, 'message' => 'You do not have permission to modify pencil bookings']);
+        exit;
+    }
+    
     header('Content-Type: application/json');
     
     $booking_id = (int)($_POST['booking_id'] ?? 0);

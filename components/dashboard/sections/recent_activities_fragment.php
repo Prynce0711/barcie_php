@@ -17,28 +17,47 @@ $recent_activities = [];
 // Fetch bookings (reservations) and show recent updates (creation, status changes)
 $bookings_query = "SELECT 'booking' as activity_type,
           CASE
-            WHEN b.updated_at IS NOT NULL AND b.updated_at > b.created_at THEN CONCAT('Booking updated - ', UPPER(LEFT(b.status,1)), SUBSTRING(b.status,2))
-            ELSE CONCAT('New booking for ', i.name, CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' #', i.room_number) ELSE '' END)
+            WHEN b.updated_at IS NOT NULL AND b.updated_at > DATE_ADD(b.created_at, INTERVAL 1 MINUTE) THEN 
+              CONCAT('Booking updated - ', UPPER(LEFT(b.status,1)), SUBSTRING(b.status,2), ' - ', i.name)
+            ELSE CONCAT('New booking for ', i.name, CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' (Room #', i.room_number, ')') ELSE '' END)
           END as activity_title,
-          CONCAT('Guest: ', SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Guest:', -1), '|', 1),
+          CONCAT('Guest: ', b.guest_name,
+            ' - Check-in: ', DATE_FORMAT(b.check_in_date, '%b %d, %Y'),
             ' - Status: ', UPPER(LEFT(b.status,1)), SUBSTRING(b.status,2)) as activity_details,
           b.status as activity_status,
           GREATEST(COALESCE(b.updated_at, b.created_at), COALESCE(b.payment_verified_at, '1970-01-01 00:00:00')) as activity_time,
           'fa-calendar-check' as activity_icon,
-          'primary' as activity_color
+          CASE 
+            WHEN b.status = 'confirmed' OR b.status = 'approved' THEN 'success'
+            WHEN b.status = 'pending' THEN 'warning'
+            WHEN b.status = 'cancelled' THEN 'danger'
+            ELSE 'primary'
+          END as activity_color
         FROM bookings b
         LEFT JOIN items i ON b.room_id = i.id
           ";
 
 // Fetch pencil bookings
 $pencil_query = "SELECT 'pencil' as activity_type,
-                        CONCAT('Pencil booking for ', i.name,
-                               CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' #', i.room_number) ELSE '' END) as activity_title,
-                        CONCAT('Guest: ', pb.guest_name, ' - Status: ', UPPER(SUBSTRING(pb.status, 1, 1)), SUBSTRING(pb.status, 2)) as activity_details,
+                        CASE
+                          WHEN pb.updated_at IS NOT NULL AND pb.updated_at > DATE_ADD(pb.created_at, INTERVAL 1 MINUTE) THEN
+                            CONCAT('Pencil booking updated - ', UPPER(SUBSTRING(pb.status, 1, 1)), SUBSTRING(pb.status, 2), ' - ', i.name)
+                          ELSE 
+                            CONCAT('New pencil booking for ', i.name,
+                                   CASE WHEN i.room_number IS NOT NULL THEN CONCAT(' (Room #', i.room_number, ')') ELSE '' END)
+                        END as activity_title,
+                        CONCAT('Guest: ', pb.guest_name, 
+                               ' - Date: ', DATE_FORMAT(pb.checkin, '%b %d, %Y'),
+                               ' - Status: ', UPPER(SUBSTRING(pb.status, 1, 1)), SUBSTRING(pb.status, 2)) as activity_details,
                         pb.status as activity_status,
-                        pb.created_at as activity_time,
+                        GREATEST(COALESCE(pb.updated_at, pb.created_at), pb.created_at) as activity_time,
                         'fa-pencil-alt' as activity_icon,
-                        'warning' as activity_color
+                        CASE 
+                          WHEN pb.status = 'confirmed' OR pb.status = 'converted' THEN 'success'
+                          WHEN pb.status = 'pending' THEN 'warning'
+                          WHEN pb.status = 'cancelled' THEN 'danger'
+                          ELSE 'info'
+                        END as activity_color
                  FROM pencil_bookings pb
                  LEFT JOIN items i ON pb.room_id = i.id
                            ";

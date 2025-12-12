@@ -167,6 +167,12 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         };
 
         console.log("📊 Dashboard data initialized");
+        // Current admin info exposed to frontend
+        window.currentAdmin = <?php echo json_encode([
+            'id' => $_SESSION['admin_id'] ?? null,
+            'username' => $_SESSION['admin_username'] ?? null,
+            'role' => $_SESSION['admin_role'] ?? 'staff'
+        ]); ?>;
       </script>
 
 

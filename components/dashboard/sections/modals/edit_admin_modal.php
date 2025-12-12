@@ -29,6 +29,16 @@
             </div>
             <div class="form-text">Leave blank to keep current password</div>
           </div>
+          <div class="mb-3" id="edit-role-group" style="display: none;">
+            <label for="edit-role" class="form-label">Role</label>
+            <select id="edit-role" name="role" class="form-select">
+              <option value="staff">Staff</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+            <div class="form-text">Change role (only allowed for managers or super admins; you cannot change your own role)</div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -77,6 +87,12 @@
 
         const formData = new FormData(this);
         formData.append('action', 'update');
+
+        // If role field is hidden or not allowed, remove it from submission
+        const roleGroup = document.getElementById('edit-role-group');
+        if (!roleGroup || roleGroup.style.display === 'none') {
+          formData.delete('role');
+        }
 
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalHtml = submitBtn.innerHTML;
@@ -131,6 +147,31 @@
           document.getElementById('edit-username').value = data.admin.username;
           document.getElementById('edit-email').value = data.admin.email || '';
           document.getElementById('edit-password').value = '';
+          // Set role in modal if available
+          try {
+            const editRoleEl = document.getElementById('edit-role');
+            const editRoleGroup = document.getElementById('edit-role-group');
+            if (editRoleEl) {
+              editRoleEl.value = data.admin.role || 'staff';
+            }
+
+            // Show role selector only if current user has permission
+            const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
+            const currentId = (window.currentAdmin && window.currentAdmin.id) ? window.currentAdmin.id : 0;
+            console.log('Edit Admin Modal - Current role:', currentRole, 'Current ID:', currentId, 'Editing ID:', data.admin.id);
+            
+            if (['super_admin', 'manager'].includes(currentRole) && (currentId !== data.admin.id)) {
+              if (editRoleGroup) {
+                editRoleGroup.style.display = '';
+                console.log('✓ Role field shown for editing admin ID:', data.admin.id);
+              }
+            } else {
+              if (editRoleGroup) editRoleGroup.style.display = 'none';
+              console.log('✗ Role field hidden (cannot edit own role or insufficient permissions)');
+            }
+          } catch (e) {
+            console.error('Error setting role field:', e);
+          }
           editAdminModal.show();
         } else {
           if (typeof window.showAdminAlert === 'function') {

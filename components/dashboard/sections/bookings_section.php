@@ -929,4 +929,30 @@ function downloadBookingsExcel() {
   
   showToast(`Exported ${rows.length} bookings to Excel (Filters: Date=${dateFilter}, Status=${statusFilter}, Type=${typeFilter})`, 'success');
 }
+
+// Hide booking action buttons for staff (except view)
+(function() {
+  function hideStaffBookingActions() {
+    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    if (role === 'staff') {
+      document.querySelectorAll('.booking-action-btn').forEach(btn => {
+        btn.style.display = 'none';
+      });
+    }
+  }
+  
+  // Run on load and after table updates
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideStaffBookingActions);
+  } else {
+    hideStaffBookingActions();
+  }
+  
+  // Re-run when bookings table updates
+  const observer = new MutationObserver(hideStaffBookingActions);
+  const bookingsTable = document.querySelector('#bookingsTable tbody');
+  if (bookingsTable) {
+    observer.observe(bookingsTable, { childList: true, subtree: true });
+  }
+})();
 </script>

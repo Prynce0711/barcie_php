@@ -20,7 +20,30 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
+// Only super_admin can access admin management
+$current_role = $_SESSION['admin_role'] ?? 'staff';
+if ($current_role !== 'super_admin') {
+    error_log("Admin management access denied for role: $current_role");
+    echo json_encode([
+        'success' => false,
+        'message' => 'Access denied - Only Super Administrators can manage admin accounts',
+        'role' => $current_role
+    ]);
+    exit;
+}
+
 require_once __DIR__ . '/../database/db_connect.php';
+
+// Detect whether `role` column exists to remain compatible with older DBs
+$hasRoleColumn = false;
+try {
+    $colRes = $conn->query("SHOW COLUMNS FROM `admins` LIKE 'role'");
+    if ($colRes && $colRes->num_rows > 0) {
+        $hasRoleColumn = true;
+    }
+} catch (Throwable $e) {
+    // ignore and assume column missing
+}
 
 $response = ['success' => false, 'message' => 'Invalid request'];
 
@@ -29,8 +52,12 @@ try {
 
     switch ($action) {
         case 'list':
-            // Get all admins
-            $query = "SELECT id, username, email, created_at, last_login FROM admins ORDER BY id ASC";
+            // Get all admins. If `role` column doesn't exist, fall back to query without it.
+            if ($hasRoleColumn) {
+                $query = "SELECT id, username, email, role, created_at, last_login FROM admins ORDER BY id ASC";
+            } else {
+                $query = "SELECT id, username, email, created_at, last_login FROM admins ORDER BY id ASC";
+            }
             $result = $conn->query($query);
             
             if ($result) {
@@ -53,12 +80,20 @@ try {
                 break;
             }
 
-            $stmt = $conn->prepare("SELECT id, username, email, created_at, last_login FROM admins WHERE id = ?");
+            if ($hasRoleColumn) {
+                $stmt = $conn->prepare("SELECT id, username, email, role, created_at, last_login FROM admins WHERE id = ?");
+            } else {
+                $stmt = $conn->prepare("SELECT id, username, email, created_at, last_login FROM admins WHERE id = ?");
+            }
             $stmt->bind_param("i", $admin_id);
             $stmt->execute();
             $result = $stmt->get_result();
             
             if ($row = $result->fetch_assoc()) {
+                // If role column is missing, ensure we return a default role for frontend compatibility
+                if (!isset($row['role'])) {
+                    $row['role'] = 'staff';
+                }
                 $response = ['success' => true, 'admin' => $row];
             } else {
                 $response = ['success' => false, 'message' => 'Admin not found'];
@@ -71,6 +106,16 @@ try {
             $username = trim($_POST['username'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
+            // Role handling: only allow assigning role if current user has permission
+            $requested_role = trim($_POST['role'] ?? '');
+            $current_role = $_SESSION['admin_role'] ?? 'staff';
+            $allowed_setters = ['super_admin', 'manager'];
+            if ($hasRoleColumn && in_array($current_role, $allowed_setters, true) && !empty($requested_role)) {
+                $role_to_set = $requested_role;
+            } else {
+                // If DB doesn't support role, always default to staff
+                $role_to_set = 'staff';
+            }
 
             error_log("CREATE ADMIN - Username: $username, Email: $email, Password length: " . strlen($password));
             error_log("POST data: " . print_r($_POST, true));
@@ -105,15 +150,23 @@ try {
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
             error_log("CREATE ADMIN - Password hashed successfully");
 
-            // Insert new admin
-            $stmt = $conn->prepare("INSERT INTO admins (username, email, password, created_at) VALUES (?, ?, ?, NOW())");
+            // Insert new admin (include role if column exists)
+            if ($hasRoleColumn) {
+                $stmt = $conn->prepare("INSERT INTO admins (username, email, password, role, created_at) VALUES (?, ?, ?, ?, NOW())");
+            } else {
+                $stmt = $conn->prepare("INSERT INTO admins (username, email, password, created_at) VALUES (?, ?, ?, NOW())");
+            }
             if (!$stmt) {
                 error_log("CREATE ADMIN FAILED - Prepare INSERT failed: " . $conn->error);
                 $response = ['success' => false, 'message' => 'Database error: ' . $conn->error];
                 break;
             }
             
-            $stmt->bind_param("sss", $username, $email, $hashed_password);
+            if ($hasRoleColumn) {
+                $stmt->bind_param("ssss", $username, $email, $hashed_password, $role_to_set);
+            } else {
+                $stmt->bind_param("sss", $username, $email, $hashed_password);
+            }
             
             if ($stmt->execute()) {
                 $new_id = $conn->insert_id;
@@ -132,6 +185,11 @@ try {
             $username = trim($_POST['username'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
+            $requested_role = trim($_POST['role'] ?? '');
+            $current_role = $_SESSION['admin_role'] ?? 'staff';
+            $allowed_setters = ['super_admin', 'manager'];
+            // Prevent changing own role via this endpoint
+            $can_set_role = $hasRoleColumn && in_array($current_role, $allowed_setters, true) && ($admin_id != ($_SESSION['admin_id'] ?? 0));
 
             if ($admin_id <= 0 || empty($username)) {
                 $response = ['success' => false, 'message' => 'Admin ID and username are required'];
@@ -155,12 +213,22 @@ try {
             if (!empty($password)) {
                 // Update with new password
                 $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-                $stmt = $conn->prepare("UPDATE admins SET username = ?, email = ?, password = ? WHERE id = ?");
-                $stmt->bind_param("sssi", $username, $email, $hashed_password, $admin_id);
+                if ($can_set_role && !empty($requested_role)) {
+                    $stmt = $conn->prepare("UPDATE admins SET username = ?, email = ?, password = ?, role = ? WHERE id = ?");
+                    $stmt->bind_param("ssssi", $username, $email, $hashed_password, $requested_role, $admin_id);
+                } else {
+                    $stmt = $conn->prepare("UPDATE admins SET username = ?, email = ?, password = ? WHERE id = ?");
+                    $stmt->bind_param("sssi", $username, $email, $hashed_password, $admin_id);
+                }
             } else {
                 // Update without changing password
-                $stmt = $conn->prepare("UPDATE admins SET username = ?, email = ? WHERE id = ?");
-                $stmt->bind_param("ssi", $username, $email, $admin_id);
+                if ($can_set_role && !empty($requested_role)) {
+                    $stmt = $conn->prepare("UPDATE admins SET username = ?, email = ?, role = ? WHERE id = ?");
+                    $stmt->bind_param("sssi", $username, $email, $requested_role, $admin_id);
+                } else {
+                    $stmt = $conn->prepare("UPDATE admins SET username = ?, email = ? WHERE id = ?");
+                    $stmt->bind_param("ssi", $username, $email, $admin_id);
+                }
             }
             
             if ($stmt->execute()) {

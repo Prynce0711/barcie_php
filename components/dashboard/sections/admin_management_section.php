@@ -61,6 +61,8 @@
               <th>ID</th>
               <th>Username</th>
               <th>Email</th>
+              <th>Role</th>
+              <th>Access Level</th>
               <th>Created At</th>
               <th>Last Login</th>
               <th>Actions</th>
@@ -68,7 +70,7 @@
           </thead>
           <tbody id="adminsTableBody">
             <tr>
-              <td colspan="6" class="text-center">
+              <td colspan="8" class="text-center">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Loading...</span>
                 </div>
@@ -113,8 +115,43 @@
 
   // Check and handle access to admin management
   function checkAndHandleAccess() {
+    // Only super_admin can access Admin Management
+    const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
+    
+    if (currentRole !== 'super_admin') {
+      // Not super_admin - show access denied
+      document.getElementById('admin-management-content').classList.add('d-none');
+      document.getElementById('admin-management-locked').classList.remove('d-none');
+      
+      // Update locked message for non-super admins
+      const lockedSection = document.getElementById('admin-management-locked');
+      if (lockedSection) {
+        lockedSection.innerHTML = `
+          <div class="row justify-content-center" style="min-height: 60vh;">
+            <div class="col-md-6 d-flex align-items-center">
+              <div class="text-center w-100">
+                <div class="mb-4">
+                  <i class="fas fa-shield-alt fa-5x text-danger"></i>
+                </div>
+                <h2 class="mb-3">
+                  <i class="fas fa-user-shield me-2"></i>Admin Management
+                </h2>
+                <p class="text-muted mb-4">
+                  Access Denied: Only Super Administrators can manage admin accounts.
+                </p>
+                <p class="text-muted small">
+                  Your role: <span class="badge bg-secondary">${currentRole}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+    
     if (window.checkAdminVerification && window.checkAdminVerification()) {
-      // Already verified
+      // Super admin verified
       document.getElementById('admin-management-content').classList.remove('d-none');
       document.getElementById('admin-management-locked').classList.add('d-none');
       loadAdmins();
@@ -165,7 +202,7 @@
   function displayAdmins(admins) {
     const tbody = document.getElementById('adminsTableBody');
     if (!admins || admins.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center">No administrators found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center">No administrators found</td></tr>';
       return;
     }
 
@@ -173,14 +210,31 @@
       const adminId = admin.id || 0;
       const username = escapeHtml(admin.username || '');
       const email = admin.email ? escapeHtml(admin.email) : '<span class="text-muted">N/A</span>';
+      const rawRole = (admin.role || 'admin').toString();
+      const roleMap = {
+        'super_admin': 'Super Admin',
+        'admin': 'Admin',
+        'manager': 'Manager',
+        'staff': 'Staff'
+      };
+      const role = roleMap[rawRole] || rawRole;
+      const accessLevel = admin.access_level || (rawRole === 'super_admin' || rawRole === 'manager' ? 'Full Access' : rawRole === 'admin' ? 'Manage Bookings & Payments' : 'View Only');
       const createdAt = admin.created_at ? formatDate(admin.created_at) : 'N/A';
       const lastLogin = admin.last_login ? formatDate(admin.last_login) : '<span class="text-muted">Never</span>';
       
-      return `
+      // Role badge color
+      const roleBadgeClass = role === 'Super Admin' ? 'bg-danger' : 
+                             role === 'Manager' ? 'bg-warning text-dark' : (role === 'Staff' ? 'bg-secondary' : 'bg-primary');
+      
+      // Access level badge - based on actual access level text
+      const accessBadgeClass = accessLevel.includes('Full') ? 'bg-success' : 
+                               accessLevel.includes('Manage') ? 'bg-info' : 'bg-secondary';      return `
         <tr data-admin-id="${adminId}">
           <td>${adminId}</td>
           <td><i class="fas fa-user me-2"></i>${username}</td>
           <td>${email}</td>
+          <td><span class="badge ${roleBadgeClass}">${role}</span></td>
+          <td><span class="badge ${accessBadgeClass}">${accessLevel}</span></td>
           <td>${createdAt}</td>
           <td>${lastLogin}</td>
           <td>

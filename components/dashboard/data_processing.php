@@ -53,6 +53,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // DELETE ITEM
     if ($action === "delete" && isset($_POST['id'])) {
+      // Only managers and super_admin can delete rooms/facilities
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to delete rooms or facilities');
+      
       $id = intval($_POST['id']);
       
       // Get the image path before deleting
@@ -91,6 +95,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // UPDATE ITEM
     if ($action === "update" && isset($_POST['id'])) {
+      // Only managers and super_admin can edit rooms/facilities
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to edit rooms or facilities');
+      
       $id = intval($_POST['id']);
       $name = trim($_POST['name']);
   // Normalize item type server-side to canonical values
@@ -336,6 +344,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // UPDATE BOOKING STATUS
     if ($action === "update_booking_status" && isset($_POST['booking_id']) && isset($_POST['new_status'])) {
+      // Only Front Desk (admin), managers and super_admin can modify booking status - staff CANNOT
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['admin','manager','super_admin'], 'dashboard.php#bookings', 'You do not have permission to modify bookings');
       $booking_id = intval($_POST['booking_id']);
       $new_status = $_POST['new_status'];
       
@@ -349,6 +360,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // DELETE BOOKING
     if ($action === "delete_booking" && isset($_POST['booking_id'])) {
+      // Only managers or super_admin can delete bookings (prevent staff/front desk from deleting)
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager','super_admin'], 'dashboard.php#bookings', 'You do not have permission to delete bookings');
       $booking_id = intval($_POST['booking_id']);
       
       $stmt = $conn->prepare("DELETE FROM bookings WHERE id=?");
@@ -361,6 +375,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // PROCESS DISCOUNT APPLICATION
     if ($action === "process_discount" && isset($_POST['discount_id']) && isset($_POST['discount_action'])) {
+      // Front Desk and above may process discount applications
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['admin','manager','super_admin'], 'dashboard.php#bookings', 'You do not have permission to process discounts');
       $discount_id = intval($_POST['discount_id']);
       $discount_action = $_POST['discount_action'];
       
@@ -375,6 +392,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   // ADD ITEM
   if (isset($_POST['add_item'])) {
+    // Only managers and super_admin can add rooms/facilities
+    require_once __DIR__ . '/../../database/role_check.php';
+    page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to add rooms or facilities');
+    
     // --- Preflight: ensure PHP ini limits allow our desired 20MB uploads ---
     /**
      * Convert php.ini shorthand (e.g. '2M', '512K') to bytes
