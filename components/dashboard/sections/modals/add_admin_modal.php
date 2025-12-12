@@ -37,12 +37,9 @@
           <div class="mb-3" id="add-role-group" style="display: none;">
             <label for="add-role" class="form-label">Role</label>
             <select id="add-role" name="role" class="form-select">
-              <option value="staff">Staff</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
-              <option value="super_admin">Super Admin</option>
+              <!-- Options will be populated based on current user role -->
             </select>
-            <div class="form-text">Assign a role to this administrator</div>
+            <div class="form-text" id="add-role-help">Assign a role to this administrator</div>
           </div>
         </div>
         <div class="modal-footer">
@@ -72,14 +69,52 @@
       try {
         const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
         const roleGroup = document.getElementById('add-role-group');
+        const roleSelect = document.getElementById('add-role');
+        const roleHelp = document.getElementById('add-role-help');
+        
         console.log('Add Admin Modal - Current role:', currentRole);
-        if (['super_admin', 'manager'].includes(currentRole)) {
-          if (roleGroup) {
-            roleGroup.style.display = '';
-            console.log('✓ Role field shown for:', currentRole);
+        
+        // Super Admin: can add all roles
+        if (currentRole === 'super_admin') {
+          if (roleGroup) roleGroup.style.display = '';
+          if (roleSelect) {
+            roleSelect.innerHTML = `
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+              <option value="super_admin">Super Admin</option>
+            `;
           }
-        } else {
+          if (roleHelp) roleHelp.textContent = 'Super Admin can create any role';
+          console.log('✓ Super Admin: Can add all roles');
+        }
+        // Manager: can add staff and admin only (not super_admin)
+        else if (currentRole === 'manager') {
+          if (roleGroup) roleGroup.style.display = '';
+          if (roleSelect) {
+            roleSelect.innerHTML = `
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            `;
+          }
+          if (roleHelp) roleHelp.textContent = 'Manager can create Staff and Admin roles';
+          console.log('✓ Manager: Can add staff and admin');
+        }
+        // Admin: can add staff only
+        else if (currentRole === 'admin') {
+          if (roleGroup) roleGroup.style.display = '';
+          if (roleSelect) {
+            roleSelect.innerHTML = `
+              <option value="staff">Staff</option>
+            `;
+          }
+          if (roleHelp) roleHelp.textContent = 'Admin can create Staff only';
+          console.log('✓ Admin: Can add staff only');
+        }
+        // Staff: no access (should not reach here)
+        else {
           if (roleGroup) roleGroup.style.display = 'none';
+          console.log('✗ Staff: No role management access');
         }
       } catch (e) {
         console.error('Error applying role visibility for Add Admin modal:', e);

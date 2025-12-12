@@ -38,9 +38,9 @@
       <span>News & Updates</span>
     </a>
 
-    <a href="#admin-management-section" class="nav-link nav-link-custom admin-management-link" data-section="admin-management-section">
+    <a href="#admin-management-section" class="nav-link nav-link-custom manage-roles-link" data-section="admin-management-section">
       <i class="fas fa-user-shield"></i>
-      <span>Admin Management</span>
+      <span>Manage Roles</span>
     </a>
     
   </div>
@@ -54,23 +54,38 @@
 </div>
 
 <script>
-  // Hide Admin Management link for non-super_admin users
+  // Role-based navigation visibility based on permission table
   (function() {
-    function hideAdminManagementForNonSuperAdmin() {
+    function applyRoleBasedNavigation() {
       const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
-      if (role !== 'super_admin') {
-        const adminLink = document.querySelector('.admin-management-link');
-        if (adminLink) {
-          adminLink.style.display = 'none';
+      
+      console.log('Applying navigation permissions for role:', role);
+      
+      // Manage Roles: Staff=Hidden (✗), Admin/Manager/Super Admin=Visible (✓ with different permissions)
+      // Super Admin: Full access (manage all)
+      // Manager: Can manage except super_admin
+      // Admin: Can manage staff only (add, no delete)
+      const manageRolesLink = document.querySelector('.manage-roles-link');
+      if (manageRolesLink) {
+        if (role === 'staff') {
+          manageRolesLink.style.display = 'none';
+          console.log('Hiding Manage Roles - staff has no access');
+        } else {
+          manageRolesLink.style.display = '';
+          console.log('Showing Manage Roles for role:', role);
         }
       }
     }
     
-    // Run on load
+    // Run immediately
+    applyRoleBasedNavigation();
+    
+    // Run on DOMContentLoaded
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', hideAdminManagementForNonSuperAdmin);
-    } else {
-      hideAdminManagementForNonSuperAdmin();
+      document.addEventListener('DOMContentLoaded', applyRoleBasedNavigation);
     }
+    
+    // Re-run after a short delay to ensure currentAdmin is set
+    setTimeout(applyRoleBasedNavigation, 100);
   })();
 </script>

@@ -207,7 +207,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         <?php include 'components/dashboard/sections/payment_verification.php'; ?>
       </section>
 
-      <!-- Admin Management Section -->
+      <!-- Admin Management Section (Manage Roles) -->
       <section id="admin-management-section" class="content-section">
         <?php include 'components/dashboard/sections/admin_management_section.php'; ?>
       </section>
@@ -299,7 +299,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
             // Initialize edit forms directly
             if (typeof setupEditFormToggles === 'function') {
-              setupEditFormToggles();
+              setupEditFormToggles(); 
             }
 
             // Debug: log all edit buttons and forms found

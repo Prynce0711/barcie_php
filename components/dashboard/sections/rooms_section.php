@@ -55,12 +55,37 @@
                 </button>
               </div>
               <script>
-                // Hide Add New button for staff and admin (front desk)
+                // Role-based access control for Rooms & Facilities
+                // Staff: CANNOT edit any data (❌) - can only view
+                // Admin: Can edit assigned modules only (✓ assigned modules)
+                // Manager/Super Admin: Full access (✓)
                 (function() {
                   const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
+                  
+                  // Hide Add New button for staff (no add permission)
                   const addBtn = document.getElementById('add-room-button-container');
-                  if (addBtn && !['manager', 'super_admin'].includes(currentRole)) {
+                  if (addBtn && currentRole === 'staff') {
                     addBtn.style.display = 'none';
+                  }
+                  
+                  // Hide edit/delete buttons for staff
+                  function applyRoomsRoleRestrictions() {
+                    if (currentRole === 'staff') {
+                      document.querySelectorAll('.edit-toggle-btn, .delete-item-btn, [onclick*="deleteItem"]').forEach(btn => {
+                        btn.style.display = 'none';
+                      });
+                      console.log('Rooms: Staff restricted to view-only');
+                    }
+                  }
+                  
+                  // Apply on load and when items are updated
+                  applyRoomsRoleRestrictions();
+                  setTimeout(applyRoomsRoleRestrictions, 300);
+                  
+                  const itemsContainer = document.getElementById('items-container');
+                  if (itemsContainer) {
+                    const observer = new MutationObserver(applyRoomsRoleRestrictions);
+                    observer.observe(itemsContainer, { childList: true, subtree: true });
                   }
                 })();
               </script>

@@ -32,12 +32,9 @@
           <div class="mb-3" id="edit-role-group" style="display: none;">
             <label for="edit-role" class="form-label">Role</label>
             <select id="edit-role" name="role" class="form-select">
-              <option value="staff">Staff</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
-              <option value="super_admin">Super Admin</option>
+              <!-- Options will be populated based on current user role -->
             </select>
-            <div class="form-text">Change role (only allowed for managers or super admins; you cannot change your own role)</div>
+            <div class="form-text" id="edit-role-help">Change role (you cannot change your own role)</div>
           </div>
         </div>
         <div class="modal-footer">
@@ -151,23 +148,56 @@
           try {
             const editRoleEl = document.getElementById('edit-role');
             const editRoleGroup = document.getElementById('edit-role-group');
-            if (editRoleEl) {
-              editRoleEl.value = data.admin.role || 'staff';
-            }
-
+            const editRoleHelp = document.getElementById('edit-role-help');
+            const targetRole = data.admin.role || 'staff';
+            
             // Show role selector only if current user has permission
             const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
             const currentId = (window.currentAdmin && window.currentAdmin.id) ? window.currentAdmin.id : 0;
-            console.log('Edit Admin Modal - Current role:', currentRole, 'Current ID:', currentId, 'Editing ID:', data.admin.id);
+            console.log('Edit Admin Modal - Current role:', currentRole, 'Current ID:', currentId, 'Editing ID:', data.admin.id, 'Target role:', targetRole);
             
-            if (['super_admin', 'manager'].includes(currentRole) && (currentId !== data.admin.id)) {
-              if (editRoleGroup) {
-                editRoleGroup.style.display = '';
-                console.log('✓ Role field shown for editing admin ID:', data.admin.id);
-              }
-            } else {
+            // Cannot edit own account or if no permission
+            if (currentId === data.admin.id) {
               if (editRoleGroup) editRoleGroup.style.display = 'none';
-              console.log('✗ Role field hidden (cannot edit own role or insufficient permissions)');
+              console.log('✗ Cannot edit own role');
+            }
+            // Super Admin: can edit all roles
+            else if (currentRole === 'super_admin') {
+              if (editRoleGroup) editRoleGroup.style.display = '';
+              if (editRoleEl) {
+                editRoleEl.innerHTML = `
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                  <option value="manager">Manager</option>
+                  <option value="super_admin">Super Admin</option>
+                `;
+                editRoleEl.value = targetRole;
+              }
+              if (editRoleHelp) editRoleHelp.textContent = 'Super Admin can change any role';
+              console.log('✓ Super Admin: Can edit all roles');
+            }
+            // Manager: can edit staff and admin (cannot edit super_admin)
+            else if (currentRole === 'manager' && targetRole !== 'super_admin') {
+              if (editRoleGroup) editRoleGroup.style.display = '';
+              if (editRoleEl) {
+                editRoleEl.innerHTML = `
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                `;
+                editRoleEl.value = targetRole;
+              }
+              if (editRoleHelp) editRoleHelp.textContent = 'Manager can edit Staff and Admin roles';
+              console.log('✓ Manager: Can edit staff and admin');
+            }
+            // Admin: can only view staff (no role change - edit is for other fields only)
+            else if (currentRole === 'admin' && targetRole === 'staff') {
+              if (editRoleGroup) editRoleGroup.style.display = 'none';
+              console.log('✓ Admin: Can edit staff details (no role change)');
+            }
+            // No permission
+            else {
+              if (editRoleGroup) editRoleGroup.style.display = 'none';
+              console.log('✗ No permission to edit this user');
             }
           } catch (e) {
             console.error('Error setting role field:', e);
