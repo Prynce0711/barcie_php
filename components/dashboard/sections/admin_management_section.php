@@ -114,16 +114,18 @@
   });
 
   // Check and handle access to admin management
+  // Super Admin: Full access (manage all roles)
+  // Manager: Can manage staff, admin (cannot manage super_admin)
+  // Admin: Can manage staff only (add only, no delete)
+  // Staff: No access
   function checkAndHandleAccess() {
-    // Only super_admin can access Admin Management
     const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
     
-    if (currentRole !== 'super_admin') {
-      // Not super_admin - show access denied
+    // Staff has no access
+    if (currentRole === 'staff') {
       document.getElementById('admin-management-content').classList.add('d-none');
       document.getElementById('admin-management-locked').classList.remove('d-none');
       
-      // Update locked message for non-super admins
       const lockedSection = document.getElementById('admin-management-locked');
       if (lockedSection) {
         lockedSection.innerHTML = `
@@ -134,10 +136,10 @@
                   <i class="fas fa-shield-alt fa-5x text-danger"></i>
                 </div>
                 <h2 class="mb-3">
-                  <i class="fas fa-user-shield me-2"></i>Admin Management
+                  <i class="fas fa-user-shield me-2"></i>Role Management
                 </h2>
                 <p class="text-muted mb-4">
-                  Access Denied: Only Super Administrators can manage admin accounts.
+                  Access Denied: Staff members cannot access role management.
                 </p>
                 <p class="text-muted small">
                   Your role: <span class="badge bg-secondary">${currentRole}</span>
@@ -150,13 +152,14 @@
       return;
     }
     
-    if (window.checkAdminVerification && window.checkAdminVerification()) {
-      // Super admin verified
+    // Admin, Manager, and Super Admin have access (no authentication required)
+    if (['admin', 'manager', 'super_admin'].includes(currentRole)) {
+      // Grant access directly - no authentication needed
       document.getElementById('admin-management-content').classList.remove('d-none');
       document.getElementById('admin-management-locked').classList.add('d-none');
       loadAdmins();
     } else {
-      // Not verified - show locked state
+      // Staff or unrecognized role - show locked state
       document.getElementById('admin-management-content').classList.add('d-none');
       document.getElementById('admin-management-locked').classList.remove('d-none');
     }
@@ -198,13 +201,17 @@
       });
   }
 
-  // Display admins in table
+  // Display admins in table with role-based action buttons
   function displayAdmins(admins) {
     const tbody = document.getElementById('adminsTableBody');
     if (!admins || admins.length === 0) {
       tbody.innerHTML = '<tr><td colspan="8" class="text-center">No administrators found</td></tr>';
       return;
     }
+
+    const currentRole = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    const currentId = (window.currentAdmin && window.currentAdmin.id) || 0;
+    console.log('Displaying admins with current role:', currentRole, 'ID:', currentId);
 
     tbody.innerHTML = admins.map(admin => {
       const adminId = admin.id || 0;
@@ -228,7 +235,33 @@
       
       // Access level badge - based on actual access level text
       const accessBadgeClass = accessLevel.includes('Full') ? 'bg-success' : 
-                               accessLevel.includes('Manage') ? 'bg-info' : 'bg-secondary';      return `
+                               accessLevel.includes('Manage') ? 'bg-info' : 'bg-secondary';
+      
+      // Determine which action buttons to show based on role hierarchy
+      let canEdit = false;
+      let canDelete = false;
+      
+      // Super Admin: can edit/delete all except themselves
+      if (currentRole === 'super_admin' && currentId !== adminId) {
+        canEdit = true;
+        canDelete = true;
+      }
+      // Manager: can edit/delete staff and admin (not super_admin)
+      else if (currentRole === 'manager' && currentId !== adminId && rawRole !== 'super_admin') {
+        canEdit = true;
+        canDelete = true;
+      }
+      // Admin: can only edit staff (no delete permission)
+      else if (currentRole === 'admin' && rawRole === 'staff') {
+        canEdit = true;
+        canDelete = false;
+      }
+      
+      const editBtn = canEdit ? `<button class="btn btn-sm btn-primary me-1 edit-admin-btn" data-admin-id="${adminId}" title="Edit"><i class="fas fa-edit"></i></button>` : '';
+      const deleteBtn = canDelete ? `<button class="btn btn-sm btn-danger delete-admin-btn" data-admin-id="${adminId}" data-admin-username="${username}" title="Delete"><i class="fas fa-trash"></i></button>` : '';
+      const noAccessBadge = (!canEdit && !canDelete) ? '<span class="badge bg-secondary"><i class="fas fa-lock me-1"></i>No Access</span>' : '';
+      
+      return `
         <tr data-admin-id="${adminId}">
           <td>${adminId}</td>
           <td><i class="fas fa-user me-2"></i>${username}</td>
@@ -238,12 +271,9 @@
           <td>${createdAt}</td>
           <td>${lastLogin}</td>
           <td>
-            <button class="btn btn-sm btn-primary me-1 edit-admin-btn" data-admin-id="${adminId}" title="Edit">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-danger delete-admin-btn" data-admin-id="${adminId}" data-admin-username="${username}" title="Delete">
-              <i class="fas fa-trash"></i>
-            </button>
+            ${editBtn}
+            ${deleteBtn}
+            ${noAccessBadge}
           </td>
         </tr>
       `;

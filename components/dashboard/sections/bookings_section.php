@@ -930,29 +930,52 @@ function downloadBookingsExcel() {
   showToast(`Exported ${rows.length} bookings to Excel (Filters: Date=${dateFilter}, Status=${statusFilter}, Type=${typeFilter})`, 'success');
 }
 
-// Hide booking action buttons for staff (except view)
+// Role-based access control for Bookings section
+// Staff: Can add data but CANNOT edit/delete/approve (❌)
+// Admin/Manager/Super Admin: Full access (✓)
 (function() {
-  function hideStaffBookingActions() {
+  function applyBookingsRoleRestrictions() {
     const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    console.log('Applying bookings restrictions for role:', role);
+    
     if (role === 'staff') {
-      document.querySelectorAll('.booking-action-btn').forEach(btn => {
-        btn.style.display = 'none';
+      // Hide all action buttons (edit, delete, approve, reject, status change)
+      document.querySelectorAll('.booking-action-btn, .btn-danger, .btn-warning, .discount-action').forEach(btn => {
+        const btnText = btn.textContent.toLowerCase();
+        const isViewBtn = btnText.includes('view') || btnText.includes('details') || btn.classList.contains('btn-info');
+        if (!isViewBtn) {
+          btn.style.display = 'none';
+        }
       });
+      
+      // Disable export buttons
+      const exportBtns = document.querySelectorAll('[onclick*="downloadBookings"]');
+      exportBtns.forEach(btn => btn.style.display = 'none');
+      
+      console.log('Bookings: Staff restricted from edit/delete/approve actions');
     }
   }
   
-  // Run on load and after table updates
+  // Run on load
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hideStaffBookingActions);
+    document.addEventListener('DOMContentLoaded', applyBookingsRoleRestrictions);
   } else {
-    hideStaffBookingActions();
+    applyBookingsRoleRestrictions();
   }
   
-  // Re-run when bookings table updates
-  const observer = new MutationObserver(hideStaffBookingActions);
+  // Re-run when table content changes
+  const observer = new MutationObserver(applyBookingsRoleRestrictions);
   const bookingsTable = document.querySelector('#bookingsTable tbody');
   if (bookingsTable) {
     observer.observe(bookingsTable, { childList: true, subtree: true });
   }
+  
+  // Also observe discount table
+  const discountsTable = document.querySelector('#discountsTable tbody');
+  if (discountsTable) {
+    observer.observe(discountsTable, { childList: true, subtree: true });
+  }
+  
+  setTimeout(applyBookingsRoleRestrictions, 200);
 })();
 </script>

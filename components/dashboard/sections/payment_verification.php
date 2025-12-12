@@ -706,4 +706,51 @@ ${'-'.repeat(80)}
 		});
 	};
 })();
+
+// Role-based access control for Payment Verification
+// Staff: CANNOT approve/verify payments (❌)
+// Admin/Manager/Super Admin: Full access (✓)
+(function() {
+  function applyPaymentRoleRestrictions() {
+    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    console.log('Applying payment verification restrictions for role:', role);
+    
+    if (role === 'staff') {
+      // Hide verify/reject action buttons
+      document.querySelectorAll('.payment-action').forEach(btn => {
+        btn.style.display = 'none';
+      });
+      
+      // Disable export buttons
+      const exportBtns = document.querySelectorAll('[onclick*="downloadPayments"]');
+      exportBtns.forEach(btn => btn.style.display = 'none');
+      
+      // Add read-only notice
+      const cardBody = document.querySelector('.card-header.bg-info')?.parentElement;
+      if (cardBody && !document.getElementById('payment-readonly-notice')) {
+        const notice = document.createElement('div');
+        notice.id = 'payment-readonly-notice';
+        notice.className = 'alert alert-warning mx-3 mt-3 mb-0';
+        notice.innerHTML = '<i class="fas fa-info-circle me-2"></i>You have view-only access to payment verifications.';
+        cardBody.querySelector('.card-header').insertAdjacentElement('afterend', notice);
+      }
+      
+      console.log('Payment Verification: Staff restricted to view-only');
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyPaymentRoleRestrictions);
+  } else {
+    applyPaymentRoleRestrictions();
+  }
+  
+  const observer = new MutationObserver(applyPaymentRoleRestrictions);
+  const paymentsTable = document.querySelector('#paymentsTable tbody');
+  if (paymentsTable) {
+    observer.observe(paymentsTable, { childList: true, subtree: true });
+  }
+  
+  setTimeout(applyPaymentRoleRestrictions, 200);
+})();
 </script>
