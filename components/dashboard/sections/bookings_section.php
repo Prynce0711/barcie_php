@@ -13,9 +13,7 @@
       <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="pencil-tab">
         <i class="fas fa-pencil-alt me-1"></i> Pencil Book Management
       </button>
-      <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="discounts-tab">
-        <i class="fas fa-id-card-alt me-1"></i> Discount Applications
-      </button>
+      <!-- Discount Applications tab removed - discounts now auto-approved when ID uploaded -->
     </div>
   </div>
 </div>

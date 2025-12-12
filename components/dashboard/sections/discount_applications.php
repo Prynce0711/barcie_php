@@ -1,10 +1,33 @@
 <?php
-// Discount Applications Section
-// This section displays discount applications management
+// Discount Applications Section - DEPRECATED
+// Discounts are now automatically approved when ID proof is uploaded
+// This section is hidden but kept for reference
 ?>
 
-<!-- Discount Applications Section -->
-<div class="row mb-4">
+<!-- Discount Applications Section - HIDDEN (Auto-approval enabled) -->
+<div class="row mb-4" style="display: none;">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-info text-white">
+        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Discount Applications</h6>
+        <small class="opacity-75">Discounts are now automatically approved when valid ID proof is uploaded. No manual approval needed.</small>
+      </div>
+      <div class="card-body text-center py-5">
+        <div class="mb-3">
+          <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="text-muted">Automatic Discount Approval Enabled</h5>
+        <p class="text-muted mb-0">
+          When guests upload valid ID proof with their booking, discounts are automatically calculated and applied.<br>
+          No manual review is required.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Original discount applications table (kept for reference, hidden) -->
+<div class="row mb-4" style="display: none;">
   <div class="col-12">
     <div class="card">
       <div class="card-header bg-secondary text-white">

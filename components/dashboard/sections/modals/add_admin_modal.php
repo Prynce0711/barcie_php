@@ -21,6 +21,16 @@
             <div class="form-text">Optional - for contact purposes</div>
           </div>
           <div class="mb-3">
+            <label for="add-full-name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="add-full-name" name="full_name">
+            <div class="form-text">Administrator's full name</div>
+          </div>
+          <div class="mb-3">
+            <label for="add-phone" class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="add-phone" name="phone_number">
+            <div class="form-text">Contact phone number</div>
+          </div>
+          <div class="mb-3">
             <label for="add-password" class="form-label">Password <span class="text-danger">*</span></label>
             <div class="input-group">
               <input type="password" class="form-control" id="add-password" name="password" required>

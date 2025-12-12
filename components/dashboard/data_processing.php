@@ -373,18 +373,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       exit;
     }
 
-    // PROCESS DISCOUNT APPLICATION
+    // PROCESS DISCOUNT APPLICATION - DEPRECATED (Auto-approval enabled)
+    // Discounts are now automatically approved when ID proof is uploaded
+    // This code is kept for backward compatibility but should not be used
     if ($action === "process_discount" && isset($_POST['discount_id']) && isset($_POST['discount_action'])) {
-      // Front Desk and above may process discount applications
-      require_once __DIR__ . '/../../database/role_check.php';
-      page_require_roles(['admin','manager','super_admin'], 'dashboard.php#bookings', 'You do not have permission to process discounts');
-      $discount_id = intval($_POST['discount_id']);
-      $discount_action = $_POST['discount_action'];
-      
-      $stmt = $conn->prepare("UPDATE discount_applications SET status=? WHERE id=?");
-      $stmt->bind_param("si", $discount_action, $discount_id);
-      $stmt->execute();
-      $stmt->close();
+      error_log("WARNING: Manual discount processing attempted but discounts are now auto-approved");
       header("Location: dashboard.php#bookings");
       exit;
     }
@@ -745,25 +738,8 @@ while ($row = $recent_activity_result->fetch_assoc()) {
   $recent_activities[] = $row;
 }
 
-// Feedback Statistics
-$feedback_stats_result = $conn->query("SELECT 
-    COUNT(*) as total_feedback,
-    COALESCE(AVG(rating), 0) as avg_rating,
-    COUNT(CASE WHEN rating = 5 THEN 1 END) as five_star,
-    COUNT(CASE WHEN rating = 4 THEN 1 END) as four_star,
-    COUNT(CASE WHEN rating = 3 THEN 1 END) as three_star,
-    COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
-    COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
-    FROM feedback");
-$feedback_stats = $feedback_stats_result ? $feedback_stats_result->fetch_assoc() : [
-  'total_feedback' => 0,
-  'avg_rating' => 0,
-  'five_star' => 0,
-  'four_star' => 0,
-  'three_star' => 0,
-  'two_star' => 0,
-  'one_star' => 0
-];
+// Feedback Statistics - REMOVED (Guest Satisfaction section removed from overview)
+// Calculations removed to improve performance since they're no longer displayed
 
 // Calendar Events for JavaScript
 $events = [];

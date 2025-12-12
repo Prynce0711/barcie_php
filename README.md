@@ -103,106 +103,14 @@ http://localhost/barcie_php/test_booking_email.php?email=YOUR_EMAIL@example.com
 - **Color Coding**: Status-specific colors (Green, Red, Yellow, Cyan, Purple, Orange)
 - **Compatibility**: Works in Gmail, Outlook, Apple Mail, Yahoo, and all major email clients
 
-## �💬 Chat API Endpoints
-
-The system includes a comprehensive chat API integrated into the `user_auth.php` endpoint for real-time communication between guests and administrators.
-
-### Initialize Chat System
-```http
-GET /database/user_auth.php?action=init_chat
-```
-**Response**: Initializes chat tables in the database
-```json
-{
-  "success": true,
-  "message": "Chat tables initialized successfully"
-}
-```
-
-### Send Message
-```http
-POST /database/user_auth.php
-Content-Type: application/x-www-form-urlencoded
-
-action=send_chat_message
-&sender_id=1
-&sender_type=guest
-&receiver_id=1
-&receiver_type=admin
-&message=Hello, I need assistance
-```
-**Response**:
-```json
-{
-  "success": true,
-  "message": "Message sent successfully"
-}
-```
-
-### Get Messages
-```http
-GET /database/user_auth.php?action=get_chat_messages&user_id=1&user_type=guest&other_user_id=1&other_user_type=admin
-```
-**Response**: Returns message history between two users
-```json
-{
-  "success": true,
-  "messages": [
-    {
-      "id": 1,
-      "sender_id": 1,
-      "sender_type": "guest",
-      "message": "Hello, I need assistance",
-      "created_at": "2025-10-06 14:30:00",
-      "is_read": false
-    }
-  ]
-}
-```
-
-### Get Conversations
-```http
-GET /database/user_auth.php?action=get_chat_conversations&user_id=1&user_type=guest
-```
-**Response**: Returns all conversations for a user
-```json
-{
-  "success": true,
-  "conversations": [
-    {
-      "other_user_id": 1,
-      "other_user_type": "admin",
-      "other_username": "admin",
-      "last_message": "Hello, I need assistance",
-      "last_message_time": "2025-10-06 14:30:00",
-      "unread_count": 0
-    }
-  ]
-}
-```
-
-### Get Unread Count
-```http
-GET /database/user_auth.php?action=get_unread_count&user_id=1&user_type=guest
-```
-**Response**: Returns total unread message count
-```json
-{
-  "success": true,
-  "unread_count": 3
-}
-```
-```
-
-## 🔧 Configurationine hotel operations including room management, booking reservations, guest services, and administrative tasks. Built specifically for educational purposes and real-world hotel management scenarios.
+## 🔧 Configuration
 
 ## ✨ Features
 
 ### 🔐 Authentication System
-- **Dual Authentication**: Separate login systems for guests and administrators
-- **Secure Registration**: Email validation with domain restrictions (@gmail.com)
+- **Admin Authentication**: Secure login system for administrators
 - **Password Security**: Real-time validation and secure hashing
-- **Session Management**: Persistent user sessions with role-based access
+- **Session Management**: Persistent admin sessions with role-based access
 
 ### 👨‍💼 Admin Dashboard
 - **Interactive Calendar**: FullCalendar integration with booking visualization
@@ -220,12 +128,6 @@ GET /database/user_auth.php?action=get_unread_count&user_id=1&user_type=guest
 - **User Management**: Complete user administration interface
 - **Real-time Statistics**: Active bookings, pending approvals, occupancy rates
 - **Dark Mode**: Toggle between light and dark themes
-- **Professional Customer Support Chat**: 
-  - Real-time messaging with guests
-  - Quick response templates (Tab key activation)
-  - Professional support-themed interface
-  - Conversation management and status tracking
-  - Enhanced UI with gradient styling and animations
 
 ### 👤 Guest Portal
 - **Room Browsing**: Filter and view available rooms and facilities
@@ -242,8 +144,6 @@ GET /database/user_auth.php?action=get_unread_count&user_id=1&user_type=guest
 - **Payment Integration**: Multiple payment method support
 - **Feedback System**: Submit and track feedback
 - **Responsive Design**: Mobile-friendly interface
-- **Live Chat Support**: Direct communication with hotel administrators
-- **Real-time Messaging**: Instant messaging capabilities with support staff
 
 ### 🏢 Room & Facility Management
 - **Dynamic Content**: Real-time loading of rooms and facilities
@@ -265,15 +165,7 @@ GET /database/user_auth.php?action=get_unread_count&user_id=1&user_type=guest
 - **Date Validation**: Prevent double bookings and conflicts
 - **Email Notifications**: Automated professional emails for all status changes
 
-### 💬 Communication System
-- **Real-time Chat**: Instant messaging between guests and administrators
-- **Professional Support Interface**: Customer service focused chat design
-- **Quick Response Templates**: Pre-defined responses for efficient support
-- **Conversation Management**: Track and manage multiple guest conversations
-- **Message History**: Persistent chat history and conversation tracking
-- **Authentication Integration**: Secure messaging with user verification
-- **Enhanced UI/UX**: Modern gradient design with smooth animations
-- **Professional Email System**:
+### 📧 Professional Email System
   - 8 different email templates for booking lifecycle
   - Beautiful HTML design with blue gradient header
   - BarCIE logo embedded in emails (base64)
@@ -322,11 +214,8 @@ barcie_php/
 ├── 📄 README_DOCKER.md       # Docker deployment guide
 ├── 📄 Dockerfile             # Docker container configuration
 ├── 📄 docker-compose.yml     # Multi-container orchestration
-├── 📄 test_chat_endpoints.php # Chat system testing script
 ├── 📄 test_email.php         # Email configuration testing
 ├── 📄 test_booking_email.php # Booking email testing
-├── 📄 ADMIN_CHAT_ENHANCEMENT.md # Chat enhancement documentation
-├── 📄 CHAT_FIXES.md          # Chat integration fixes documentation
 ├── 📄 EMAIL_TROUBLESHOOTING.md # Email system troubleshooting guide
 ├── 📄 EMAIL_BLUE_THEME_UPDATE.md # Blue email theme documentation
 ├── 📄 DASHBOARD_DISCOUNT_UPDATE.md # Discount system documentation
@@ -340,19 +229,17 @@ barcie_php/
 │
 ├── 📂 database/
 │   ├── 📄 db_connect.php     # Database connection with env support
-│   ├── 📄 user_auth.php      # Authentication & user management + Chat API + Email System
+│   ├── 📄 user_auth.php      # Booking management + Email System
 │   ├── 📄 admin_login.php    # Admin authentication
 │   ├── 📄 fetch_items.php    # Room/facility data API
-│   ├── 📄 mail_config.php    # SMTP email configuration
-│   ├── 📄 init_chat.php      # Chat system initialization script
-│   └── 📄 chat_setup.sql     # Chat database schema
+│   └── 📄 mail_config.php    # SMTP email configuration
 │
 ├── 📂 assets/
 │   ├── 📂 css/
 │   │   ├── 📄 dashboard.css  # Admin dashboard styles
-│   │   ├── 📄 dashboard-enhanced.css # Enhanced admin UI with chat styling
+│   │   ├── 📄 dashboard-enhanced.css # Enhanced admin UI
 │   │   ├── 📄 guest.css      # Guest portal styles
-│   │   └── 📄 guest-enhanced.css # Enhanced guest UI with chat styling
+│   │   └── 📄 guest-enhanced.css # Enhanced guest UI
 │   ├── 📂 js/
 │   │   ├── 📄 dashboard-bootstrap.js # Admin dashboard scripts
 │   │   └── 📄 guest-bootstrap.js     # Guest portal scripts
@@ -404,9 +291,6 @@ barcie_php/
    ```bash
    # Import your SQL dump
    docker exec -i $(docker-compose ps -q db) mysql -u root -p barcie_db < your_dump.sql
-   
-   # Initialize chat system tables
-   docker exec -i $(docker-compose ps -q web) php database/init_chat.php
    ```
 
 6. **Access the Application**
@@ -459,9 +343,6 @@ barcie_php/
    CREATE DATABASE barcie_db;
    
    # Import the SQL schema (create tables as shown above)
-   
-   # Initialize chat system
-   php database/init_chat.php
    ```
 
 
@@ -493,17 +374,12 @@ barcie_php/
 2. **Dashboard**: View statistics, calendar, and recent activities
 3. **Room Management**: Add, edit, or delete rooms and facilities
 4. **Booking Management**: Process reservations and manage check-ins/check-outs
-5. **User Management**: View and manage registered users
-6. **Communication**: Use chat and video calling features
 
 ### For Guests
 
-1. **Registration**: Create account with valid email (@gmail.com)
-2. **Login**: Access guest portal with credentials
-3. **Browse Rooms**: Filter and view available accommodations
-4. **Make Reservations**: Book rooms or function halls
-5. **Manage Profile**: Update personal information
-6. **Submit Feedback**: Provide service feedback
+1. **Browse Rooms**: View available accommodations
+2. **Make Reservations**: Book rooms or function halls directly (no account required)
+3. **Submit Feedback**: Provide service feedback
 
 ## 🔧 Configuration
 
@@ -644,22 +520,7 @@ services:
    ports: ["8081:80"]  # Use port 8081 instead
    ```
 
-7. **Chat System Issues**
-   ```
-   Solution: Initialize chat tables using database/init_chat.php
-   Test chat endpoints using test_chat_endpoints.php
-   Verify session authentication for message sending
-   Check database for chat_messages and chat_conversations tables
-   ```
-
-8. **Authentication Errors in Chat**
-   ```
-   Solution: Ensure $_SESSION['user_logged_in'] is set during login
-   Verify user_id and username are properly stored in session
-   Check admin_logged_in flag for admin users
-   ```
-
-9. **Email Not Sending**
+7. **Email Not Sending**
    ```
    Problem: Booking confirmation or status emails not received
    Solution: 
@@ -672,7 +533,7 @@ services:
    - Verify port 587 is not blocked by firewall
    ```
 
-10. **Discount and Booking Status Confusion**
+8. **Discount and Booking Status Confusion**
    ```
    Problem: Discount rejection also rejects the booking
    Solution: Use separate buttons - "Approve/Reject" for booking, separate "Approve Discount/Reject Discount" buttons
@@ -719,12 +580,6 @@ For support or inquiries, please open an issue on the repository or contact the 
 - ✅ **Docker Containerization**
 - ✅ **CI/CD Pipeline (GitHub Actions)**
 - ✅ **Environment Configuration**
-- ✅ **Real-time Chat System**
-- ✅ **Professional Customer Support Interface**
-- ✅ **Chat API Integration**
-- ✅ **Enhanced UI/UX with Animations**
-- ✅ **Quick Response Templates**
-- ✅ **Message History & Conversation Management**
 - ✅ **Composer Dependency Management**
 - ✅ **PHPMailer Integration (Fixed)**
 - ✅ **Admin Booking Management (Fixed)**
@@ -837,18 +692,6 @@ See the repository contributors list and commit history for contributor names. D
   - **Composer Integration**: Properly configured dependency management for PHPMailer and PSR-3 logging
   - **Code Quality Improvements**: Fixed linting issues and added proper code formatting
   - **Documentation Updates**: Enhanced troubleshooting section with vendor-specific solutions
-
-- **v2.1.0** - Professional Chat System Integration (October 2025)
-  - Implemented real-time chat system between guests and administrators
-  - Added professional customer support interface with modern UI
-  - Created comprehensive chat API with RESTful endpoints
-  - Enhanced database schema with chat_messages and chat_conversations tables
-  - Added quick response templates for efficient customer support
-  - Integrated chat authentication with existing user system
-  - Enhanced CSS with gradient styling and smooth animations
-  - Removed WebRTC complexity in favor of focused chat experience
-  - Added chat system initialization and testing scripts
-  - Professional support-themed interface design
 
 - **v2.0.0** - Docker deployment and CI/CD integration
   - Added Docker containerization with PHP 8.2-Apache

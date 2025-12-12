@@ -20,6 +20,14 @@
             <input type="email" class="form-control" id="edit-email" name="email">
           </div>
           <div class="mb-3">
+            <label for="edit-full-name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="edit-full-name" name="full_name">
+          </div>
+          <div class="mb-3">
+            <label for="edit-phone" class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="edit-phone" name="phone_number">
+          </div>
+          <div class="mb-3">
             <label for="edit-password" class="form-label">New Password</label>
             <div class="input-group">
               <input type="password" class="form-control" id="edit-password" name="password">
@@ -143,6 +151,8 @@
           document.getElementById('edit-admin-id').value = data.admin.id;
           document.getElementById('edit-username').value = data.admin.username;
           document.getElementById('edit-email').value = data.admin.email || '';
+          document.getElementById('edit-full-name').value = data.admin.full_name || '';
+          document.getElementById('edit-phone').value = data.admin.phone_number || '';
           document.getElementById('edit-password').value = '';
           // Set role in modal if available
           try {

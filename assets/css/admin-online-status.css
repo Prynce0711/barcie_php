@@ -1,0 +1,153 @@
+/* Enhanced Admin Management - Online Status Styles */
+
+/* Pulsing animation for online status indicator */
+@keyframes pulse-icon {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+.pulse-icon {
+  animation: pulse-icon 2s ease-in-out infinite;
+  color: #28a745;
+}
+
+/* Green glow effect for online status badge */
+@keyframes glow-green {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.8);
+  }
+}
+
+.status-online {
+  animation: glow-green 2s ease-in-out infinite;
+}
+
+/* Online indicator in table */
+.admin-online-indicator {
+  position: relative;
+}
+
+.admin-online-indicator::before {
+  content: '';
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background-color: #28a745;
+  border-radius: 50%;
+  animation: pulse-icon 2s ease-in-out infinite;
+}
+
+/* Offline status */
+.admin-offline-indicator {
+  opacity: 0.7;
+}
+
+/* Last seen text styling */
+.last-seen-text {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.last-seen-online {
+  color: #28a745 !important;
+  font-weight: 600;
+}
+
+/* Table row highlighting for online users */
+.admin-row-online {
+  background-color: rgba(40, 167, 69, 0.05);
+  border-left: 3px solid #28a745;
+}
+
+.admin-row-online:hover {
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+/* Online count badge in statistics */
+.online-count-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.online-count-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
+}
+
+/* Tooltip for last seen */
+[data-last-seen]:hover::after {
+  content: attr(data-last-seen);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  border-radius: 4px;
+  z-index: 1000;
+  margin-bottom: 5px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .status-online {
+    font-size: 0.75rem;
+  }
+  
+  .pulse-icon {
+    font-size: 0.5em !important;
+  }
+  
+  .admin-online-indicator::before {
+    width: 6px;
+    height: 6px;
+    left: -10px;
+  }
+}
+
+/* Activity indicator for recently active users */
+.recently-active {
+  border-left: 2px solid #ffc107;
+  padding-left: 8px;
+}
+
+/* Fade in animation for status changes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.status-badge-enter {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* Smooth transition for status changes */
+.badge {
+  transition: all 0.3s ease;
+}
