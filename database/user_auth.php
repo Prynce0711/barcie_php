@@ -1116,53 +1116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         exit;
     }
 
-    // Get chat messages
-    if ($_GET['action'] === 'get_chat_messages') {
-        header('Content-Type: application/json');
-        
-        // Temporarily disabled to fix feedback system
-        echo json_encode(['success' => false, 'error' => 'Chat system temporarily disabled']);
-        exit;
-    }
-
-    // Get chat conversations
-    if ($_GET['action'] === 'get_chat_conversations') {
-        header('Content-Type: application/json');
-        
-        // Temporarily disabled to fix feedback system
-        echo json_encode(['success' => false, 'error' => 'Chat system temporarily disabled']);
-        exit;
-    }
-
-    // Get unread count
-    if ($_GET['action'] === 'get_unread_count') {
-        header('Content-Type: application/json');
-        
-        // Temporarily disabled to fix feedback system
-        echo json_encode(['success' => true, 'unread_count' => 0]);
-        exit;
-    }
-
-    // Initialize chat system tables
-    if ($_GET['action'] === 'init_chat') {
-        header('Content-Type: application/json');
-        
-        try {
-            initializeChatTables($conn);
-            echo json_encode([
-                'success' => true, 
-                'message' => 'Chat system database initialization completed!'
-            ]);
-        } catch (Exception $e) {
-            echo json_encode([
-                'success' => false, 
-                'error' => 'Error initializing chat system: ' . $e->getMessage()
-            ]);
-        }
-        exit;
-    }
-
-    // Initialize feedback table
+    // Get chat conversations tables
     if ($_GET['action'] === 'init_feedback_table') {
         header('Content-Type: application/json');
         
@@ -1531,13 +1485,39 @@ if ($action === 'create_booking') {
         }
 
         // Add discount info to details and set discount_status
+        // AUTO-APPROVE: When discount proof is uploaded, automatically approve the discount
         $discount_info = '';
         $discount_status = 'none';
+        $discount_amount = 0;
+        $discount_percentage = 0;
+        
         // Use id_upload_path for proof_of_id column, fallback to discount proof if ID not uploaded
         $proof_of_id = !empty($id_upload_path) ? $id_upload_path : (!empty($discount_proof_path) ? $discount_proof_path : null);
-        if (!empty($discount_type)) {
-            $discount_info = " | Discount: $discount_type | Discount Details: $discount_details | Proof: $discount_proof_path";
-            $discount_status = 'pending'; // Set discount status to pending for admin review
+        
+        if (!empty($discount_type) && !empty($proof_of_id)) {
+            // Automatically approve discount when proof is uploaded
+            $discount_status = 'approved';
+            
+            // Calculate discount percentage based on discount type
+            if ($discount_type === 'pwd_senior') {
+                $discount_percentage = 20; // 20% for PWD/Senior
+            } elseif ($discount_type === 'lcuppersonnel') {
+                $discount_percentage = 10; // 10% for LCUP Personnel
+            } elseif ($discount_type === 'lcupstudent') {
+                $discount_percentage = 7; // 7% for LCUP Student/Alumni
+            }
+            
+            // Calculate discount amount
+            $discount_amount = ($amount * $discount_percentage) / 100;
+            $amount = $amount - $discount_amount; // Apply discount to total amount
+            
+            $discount_info = " | Discount: $discount_type ($discount_percentage%) | Discount Amount: ₱" . number_format($discount_amount, 2) . " | Discount Details: $discount_details | Proof: $discount_proof_path";
+            
+            error_log("Auto-approved discount: Type=$discount_type, Percentage=$discount_percentage%, Amount=₱$discount_amount, New Total=₱$amount");
+        } elseif (!empty($discount_type) && empty($proof_of_id)) {
+            // If discount type is selected but no proof uploaded, don't apply discount
+            $discount_status = 'none';
+            error_log("Discount not applied: No proof uploaded for discount type $discount_type");
         }
 
         $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Email: $email | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
@@ -1661,16 +1641,17 @@ if ($action === 'create_booking') {
                                             </td>
                                         </tr>';
                     
-                    if (!empty($discount_type)) {
+                    if (!empty($discount_type) && $discount_status === 'approved') {
                         $emailContent .= '
                                         <tr>
                                             <td colspan="2" style="padding-top: 15px;">
-                                                <div style="background-color: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px 15px; border-radius: 4px;">
-                                                    <p style="margin: 0 0 5px 0; color: #0c5460; font-size: 14px; font-weight: 600;">
-                                                        &#127991; Discount Applied: ' . htmlspecialchars($discount_type) . '
+                                                <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 12px 15px; border-radius: 4px;">
+                                                    <p style="margin: 0 0 5px 0; color: #155724; font-size: 14px; font-weight: 600;">
+                                                        &#127991; Discount Applied: ' . htmlspecialchars($discount_type) . ' (' . $discount_percentage . '%)
                                                     </p>
-                                                    <p style="margin: 0; color: #0c5460; font-size: 13px;">
-                                                        Status: <strong>Pending Review</strong> - Our team will verify your discount eligibility.
+                                                    <p style="margin: 0; color: #155724; font-size: 13px;">
+                                                        Status: <strong>✓ Automatically Approved</strong><br>
+                                                        Discount Amount: <strong>₱' . number_format($discount_amount, 2) . '</strong>
                                                     </p>
                                                 </div>
                                             </td>
@@ -1952,10 +1933,11 @@ if ($action === 'create_booking') {
         $base_price = $room_data['price'];
         $total_price = $base_price;
         
-        // Handle discount application
+        // Handle discount application - AUTO-APPROVE when proof is uploaded
         $discount_code = $_POST['discount_type'] ?? '';
         $discount_amount = 0;
         $discount_proof_path = null;
+        $discount_percentage = 0;
         
         if (!empty($discount_code) && isset($_FILES['discount_proof']) && $_FILES['discount_proof']['error'] === UPLOAD_ERR_OK) {
             $upload_dir = __DIR__ . '/../uploads/discount_proofs/';
@@ -1968,7 +1950,22 @@ if ($action === 'create_booking') {
             $target_path = $upload_dir . $file_name;
             if (move_uploaded_file($file_tmp, $target_path)) {
                 $discount_proof_path = 'uploads/discount_proofs/' . $file_name;
+                
+                // Calculate discount percentage based on discount type
+                if ($discount_code === 'pwd_senior') {
+                    $discount_percentage = 20; // 20% for PWD/Senior
+                } elseif ($discount_code === 'lcuppersonnel') {
+                    $discount_percentage = 10; // 10% for LCUP Personnel
+                } elseif ($discount_code === 'lcupstudent') {
+                    $discount_percentage = 7; // 7% for LCUP Student/Alumni
+                }
+                
+                // Calculate discount amount automatically
+                $discount_amount = ($base_price * $discount_percentage) / 100;
+                $total_price = $base_price - $discount_amount;
+                
                 error_log("Pencil booking discount proof uploaded to: " . $discount_proof_path);
+                error_log("Auto-calculated discount: Type=$discount_code, Percentage=$discount_percentage%, Amount=₱$discount_amount, New Total=₱$total_price");
             }
         }
         
@@ -3129,201 +3126,23 @@ if ($action === 'admin_update_booking') {
 }
 
 /* ---------------------------
-   ADMIN: update discount status (SEPARATE ACTION)
+   ADMIN: update discount status (DEPRECATED - Auto-approval enabled)
    --------------------------- */
 if ($action === 'admin_update_discount') {
-    // Only Front Desk (admin), managers and super_admin can process discounts - staff CANNOT
-    require_once __DIR__ . '/role_check.php';
-    if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-        // Return JSON for AJAX clients; for normal requests redirect with session message
-        handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
-    }
-    $role = $_SESSION['admin_role'] ?? 'staff';
-    if (!in_array($role, ['admin','manager','super_admin'], true)) {
-        handleResponse('You do not have permission to process discount applications.', false, '../dashboard.php');
-    }
-
-    $bookingId = (int)($_POST['booking_id'] ?? 0);
-    $discountAction = $_POST['discount_action'] ?? ''; // 'approve' or 'reject'
-
-    if (!in_array($discountAction, ['approve', 'reject'])) {
-        $_SESSION['msg'] = "Unknown discount action.";
-        redirect('../dashboard.php');
-    }
-
-    $newDiscountStatus = $discountAction === 'approve' ? 'approved' : 'rejected';
+    error_log("WARNING: admin_update_discount action called but discounts are now automatically approved on upload");
     
-    // Get booking details first
-    $booking_stmt = $conn->prepare("SELECT details, discount_status FROM bookings WHERE id = ?");
-    $booking_stmt->bind_param("i", $bookingId);
-    $booking_stmt->execute();
-    $booking_result = $booking_stmt->get_result();
-    $booking_data = $booking_result->fetch_assoc();
-    $booking_stmt->close();
-
-    // Update discount status only
-    $stmt = $conn->prepare("UPDATE bookings SET discount_status = ? WHERE id = ?");
-    $stmt->bind_param("si", $newDiscountStatus, $bookingId);
-    $success = $stmt->execute();
-    $stmt->close();
-
-    if ($success && $booking_data) {
-        // Extract guest info from details
-        $details = $booking_data['details'];
-        $guest_email = '';
-        $guest_name = 'Guest';
-        $discount_type = '';
-        
-        if (preg_match('/Email:\s*([^|]+)/', $details, $matches)) {
-            $guest_email = trim($matches[1]);
-        }
-        if (preg_match('/Guest:\s*([^|]+)/', $details, $matches)) {
-            $guest_name = trim($matches[1]);
-        }
-        if (preg_match('/Discount:\s*([^|]+)/', $details, $matches)) {
-            $discount_type = trim($matches[1]);
-        }
-
-        // Send email notification about discount decision
-        if (!empty($guest_email) && !empty($discount_type)) {
-            error_log("========================================");
-            error_log("DISCOUNT UPDATE EMAIL - Booking ID: $bookingId");
-            error_log("Action: $discountAction");
-            error_log("Discount Type: $discount_type");
-            error_log("Guest: $guest_name");
-            error_log("Email: $guest_email");
-            error_log("========================================");
-            
-            $emailSubject = '';
-            $emailContent = '';
-            
-            if ($discountAction === 'approve') {
-                $emailSubject = 'Discount Application Approved - BarCIE';
-                $emailContent = '
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <div style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
-                            ✓ DISCOUNT APPROVED
-                        </div>
-                    </div>
-                    
-                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Your Discount Has Been Approved!</h2>
-                    
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
-                        Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
-                    </p>
-                    
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                        Great news! After reviewing your application, we are pleased to approve your discount request.
-                    </p>
-                    
-                    <!-- Discount Details Card -->
-                    <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #28a745;" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="padding: 25px;">
-                                <h3 style="margin: 0 0 15px 0; color: #155724; font-size: 18px; text-align: center;">Approved Discount</h3>
-                                <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td style="padding: 12px 0; text-align: center;">
-                                            <div style="display: inline-block; background-color: #28a745; color: white; padding: 15px 30px; border-radius: 8px; font-size: 18px; font-weight: 700;">
-                                                ' . htmlspecialchars($discount_type) . '
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <div style="background-color: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
-                        <p style="margin: 0; color: #0c5460; font-size: 14px; line-height: 1.6;">
-                            <strong>💡 Important:</strong> The discounted rate will be applied to your booking. Please note that your booking itself still requires separate approval if it hasn\'t been approved yet.
-                        </p>
-                    </div>
-                    
-                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6; text-align: center;">
-                        Thank you for choosing BarCIE International Center!
-                    </p>';
-            } else {
-                $emailSubject = 'Discount Application Update - BarCIE';
-                $emailContent = '
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <div style="display: inline-block; background-color: #dc3545; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
-                            ✗ DISCOUNT NOT APPROVED
-                        </div>
-                    </div>
-                    
-                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Discount Application Update</h2>
-                    
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">
-                        Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
-                    </p>
-                    
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                        Thank you for submitting your discount application. After careful review, we are unable to approve your discount request at this time.
-                    </p>
-                    
-                    <!-- Discount Details Card -->
-                    <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-radius: 8px; margin-bottom: 25px; border: 2px solid #dc3545;" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="padding: 25px;">
-                                <h3 style="margin: 0 0 15px 0; color: #721c24; font-size: 18px; text-align: center;">Discount Application</h3>
-                                <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td style="padding: 12px 0; text-align: center;">
-                                            <div style="display: inline-block; background-color: rgba(0,0,0,0.1); color: #721c24; padding: 15px 30px; border-radius: 8px; font-size: 18px; font-weight: 700;">
-                                                ' . htmlspecialchars($discount_type) . '
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
-                        <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
-                            <strong>💡 Note:</strong> The standard rate will apply to your booking. Your booking can still be approved separately and is not affected by this discount decision.
-                        </p>
-                    </div>
-                    
-                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                        If you have questions about this decision or would like to discuss alternative options, please feel free to contact us.
-                    </p>';
-            }
-            
-            if ($emailSubject && $emailContent) {
-                error_log("DISCOUNT UPDATE EMAIL - Sending email...");
-                error_log("Subject: $emailSubject");
-                $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
-                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
-                error_log("DISCOUNT UPDATE EMAIL - Result: " . ($email_sent ? "SUCCESS" : "FAILED"));
-            }
-        }
-    }
-
-    // Check if this is an AJAX request
-    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
-    
-    if ($isAjax) {
+    // Return appropriate response
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
         header('Content-Type: application/json');
-        if ($success) {
-            echo json_encode([
-                'success' => true, 
-                'message' => "Discount " . ($discountAction === 'approve' ? 'approved' : 'rejected') . " successfully.",
-                'discount_status' => $newDiscountStatus
-            ]);
-        } else {
-            echo json_encode([
-                'success' => false, 
-                'error' => "Error updating discount status."
-            ]);
-        }
+        echo json_encode([
+            'success' => false,
+            'message' => 'Manual discount approval is no longer available. Discounts are automatically approved when ID proof is uploaded.'
+        ]);
         exit;
-    } else {
-        $_SESSION['msg'] = $success ? "Discount " . ($discountAction === 'approve' ? 'approved' : 'rejected') . " successfully." : "Error updating discount.";
-        redirect('../dashboard.php');
     }
+    
+    $_SESSION['msg'] = "Discount approvals are now automatic. No manual action needed.";
+    redirect('../dashboard.php');
 }
 
 /* ---------------------------
@@ -3583,70 +3402,6 @@ if ($action === 'admin_delete_user') {
     $stmt->close();
     $_SESSION['msg'] = "User deleted.";
     redirect('../dashboard.php');
-}
-
-/* ---------------------------
-   CHAT SYSTEM FUNCTIONS
-   --------------------------- */
-
-// Initialize chat tables if they don't exist
-function initializeChatTables($conn) {
-    try {
-        // Create chat_messages table
-        $sql1 = "CREATE TABLE IF NOT EXISTS chat_messages (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            sender_id INT NOT NULL,
-            sender_type ENUM('admin', 'guest') NOT NULL,
-            receiver_id INT NOT NULL,
-            receiver_type ENUM('admin', 'guest') NOT NULL,
-            message TEXT NOT NULL,
-            is_read BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            
-            INDEX idx_sender (sender_id, sender_type),
-            INDEX idx_receiver (receiver_id, receiver_type),
-            INDEX idx_conversation (sender_id, sender_type, receiver_id, receiver_type),
-            INDEX idx_created_at (created_at),
-            INDEX idx_unread (is_read, receiver_id, receiver_type)
-        )";
-
-        if ($conn->query($sql1) !== TRUE) {
-            throw new Exception("Error creating chat_messages table: " . $conn->error);
-        }
-
-        // Create chat_conversations table
-        $sql2 = "CREATE TABLE IF NOT EXISTS chat_conversations (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            admin_id INT NOT NULL,
-            guest_id INT NOT NULL,
-            last_message_id INT NULL,
-            last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            admin_unread_count INT DEFAULT 0,
-            guest_unread_count INT DEFAULT 0,
-            
-            UNIQUE KEY unique_conversation (admin_id, guest_id),
-            INDEX idx_last_activity (last_activity),
-            INDEX idx_admin_id (admin_id),
-            INDEX idx_guest_id (guest_id)
-        )";
-
-        if ($conn->query($sql2) !== TRUE) {
-            throw new Exception("Error creating chat_conversations table: " . $conn->error);
-        }
-        
-    } catch (Exception $e) {
-        throw new Exception("Chat table initialization failed: " . $e->getMessage());
-    }
-}
-
-// Send chat message
-if ($action === 'send_chat_message') {
-    header('Content-Type: application/json');
-    
-    // Temporarily disabled to fix feedback system
-    echo json_encode(['success' => false, 'error' => 'Chat system temporarily disabled']);
-    exit;
 }
 
 /* ---------------------------

@@ -1,8 +1,12 @@
 <div class="card mb-3" id="discountApplicationCard">
-  <div class="card-header bg-warning text-dark">
-    <strong><i class="fas fa-percent me-2"></i>Apply for Discount</strong>
+  <div class="card-header bg-success text-white">
+    <strong><i class="fas fa-percent me-2"></i>Apply for Discount - Automatic Approval</strong>
   </div>
   <div class="card-body">
+    <div class="alert alert-success mb-3">
+      <i class="fas fa-check-circle me-2"></i>
+      <strong>Automatic Discount Approval:</strong> When you upload a valid ID proof, your discount will be automatically approved and applied to your booking. No waiting for manual review!
+    </div>
     <div class="mb-3">
       <label for="discount_type" class="form-label">Discount Type</label>
       <select name="discount_type" id="discount_type" class="form-select">
@@ -18,7 +22,7 @@
   <span id="discount_proof_alert" style="display:inline-block; margin-left:6px;"></span>
       <input type="file" name="discount_proof" id="discount_proof" class="form-control" accept="image/*,application/pdf">
       <input type="hidden" name="discount_proof_cropped" id="discount_proof_cropped">
-      <small class="form-text text-muted">Accepted: ID, certificate, or other proof (image or PDF)</small>
+      <small class="form-text text-muted">Accepted: ID, certificate, or other proof (image or PDF). Discount will be automatically approved upon upload.</small>
 
       <!-- Preview, loading and validation status -->
       <div id="discount_proof_preview" style="margin-top:10px;display:none;">
@@ -76,12 +80,12 @@
       info.style.display = 'block';
       proofInput.required = true; // Make proof required when a discount is selected
 
-      // Helpful messages per type
+      // Helpful messages per type with automatic approval info
       let msg = '';
-      if (v === 'pwd_senior') msg = 'Upload a government-issued ID showing PWD/senior status. Discount is 20%.';
-      else if (v === 'lcuppersonnel') msg = 'Upload your LCUP personnel ID or certificate. Discount is 10%.';
-      else if (v === 'lcupstudent') msg = 'Upload your student ID or alumni certificate. Discount is 7%.';
-      else msg = 'Please upload proof for the selected discount.';
+      if (v === 'pwd_senior') msg = '✓ Upload a government-issued ID showing PWD/senior status. Discount of 20% will be automatically applied.';
+      else if (v === 'lcuppersonnel') msg = '✓ Upload your LCUP personnel ID or certificate. Discount of 10% will be automatically applied.';
+      else if (v === 'lcupstudent') msg = '✓ Upload your student ID or alumni certificate. Discount of 7% will be automatically applied.';
+      else msg = '✓ Please upload proof for the selected discount. It will be automatically approved.';
 
       info.textContent = msg;
     }

@@ -20,7 +20,7 @@ This script will safely update your database schema without destroying existing 
 ### View Current Structure
 
 ```
-http://localhost/barcie_php/database/check_structure.php
+http://localhost/barcie_php/database/check_structure.php  
 ```
 
 ---

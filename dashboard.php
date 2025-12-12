@@ -29,6 +29,8 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
   <link rel="stylesheet" href="assets/css/news.css">
+  <!-- Enhanced Admin Management Styles -->
+  <link rel="stylesheet" href="assets/css/admin-online-status.css">
 </head>
 
 
@@ -196,7 +198,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <section id="feedback-section" class="content-section">
         <?php include 'components/dashboard/sections/feedback_section.php'; ?>
       </section>
-
+ 
       <!-- News & Updates Section -->
       <section id="news-section" class="content-section">
         <?php include 'components/dashboard/sections/news_section.php'; ?>
@@ -209,7 +211,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
       <!-- Admin Management Section (Manage Roles) -->
       <section id="admin-management-section" class="content-section">
-        <?php include 'components/dashboard/sections/admin_management_section.php'; ?>
+        <?php include 'components/dashboard/sections/admin_management_enhanced.php'; ?>
       </section>
 
 
@@ -457,7 +459,8 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         window.toggleDarkMode = toggleDarkMode;
       </script>
 
-
+      <!-- Enhanced Admin Management JavaScript -->
+      <script src="assets/js/admin-management-enhanced.js"></script>
 
 </body>
 
