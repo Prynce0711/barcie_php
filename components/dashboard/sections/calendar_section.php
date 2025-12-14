@@ -410,11 +410,21 @@
 
         // Populate booking details pane with comprehensive information
         function showBookingDetailsInPane(event) {
+          console.log('showBookingDetailsInPane called with event:', event);
+          
           const container = document.getElementById('roomBookingDetailsContent');
-          if (!container) return;
+          const wrapper = document.getElementById('roomBookingDetails');
+          
+          if (!container) {
+            console.error('roomBookingDetailsContent container not found!');
+            return;
+          }
+          
           const p = event.extendedProps || {};
           const bookingId = (event.id || '').toString();
           const bookingNumericId = bookingId.replace('booking-', '').replace('pencil-', '');
+          
+          console.log('Building booking details for:', bookingId, 'Status:', p.status);
           
           // map status to badge class
           const status = (p.status || '').toLowerCase();
@@ -479,21 +489,26 @@
             html.push(`<hr class="my-3">`);
             html.push(`<div class="small text-muted"><i class="fas fa-sticky-note me-2"></i>${p.details}</div>`);
           }
-
-          // Action buttons
-          html.push(`<hr class="my-3">`);
-          html.push(`<div class="booking-actions d-grid gap-2">`);
-          html.push(`<button class="btn btn-sm btn-primary booking-action-btn" data-action="view" data-booking-id="${bookingId}"><i class="fas fa-eye me-2"></i>View Full Details</button>`);
-          html.push(`<div class="d-flex gap-2">`);
-          html.push(`<button class="btn btn-sm btn-outline-secondary flex-fill booking-action-btn" data-action="edit" data-booking-id="${bookingId}"><i class="fas fa-edit me-2"></i>Edit</button>`);
-          html.push(`<button class="btn btn-sm btn-outline-danger flex-fill booking-action-btn" data-action="cancel" data-booking-id="${bookingId}"><i class="fas fa-times-circle me-2"></i>Cancel</button>`);
-          html.push(`</div>`);
-          html.push(`</div>`);
           
           html.push(`</div>`); // card-body
           html.push(`</div>`); // card
 
           container.innerHTML = html.join('\n');
+          
+          // Show the booking details wrapper
+          if (wrapper) {
+            wrapper.style.display = 'block';
+            console.log('Booking details displayed successfully');
+          } else {
+            console.warn('roomBookingDetails wrapper not found');
+          }
+          
+          // Scroll to the details
+          setTimeout(() => {
+            if (wrapper) {
+              wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 100);
         }
         
         // Helper function to format dates nicely
@@ -622,9 +637,8 @@
           // show modal spinner while building calendar
           try { showSpinnerById('roomModalSpinner'); } catch (e) {}
 
-          // read selected range (days)
-          const rangeSelect = document.getElementById('roomCalendarRange');
-          const rangeDays = parseInt(rangeSelect ? rangeSelect.value : 90, 10) || 90;
+          // Use fixed 90-day range
+          const rangeDays = 90;
           console.log('Using range:', rangeDays, 'days');
 
           // destroy previous instance if exists
@@ -718,9 +732,15 @@
             },
             eventClick: function (info) {
               console.log('Event clicked:', info.event.id, info.event.title);
-              // show details for booking events
-              if (info.event && info.event.id && info.event.id.startsWith('booking-')) {
+              console.log('Event details:', info.event);
+              console.log('Extended props:', info.event.extendedProps);
+              
+              // show details for booking events (skip background events)
+              if (info.event && info.event.id && !info.event.id.toString().startsWith('reserved-bg-') && !info.event.id.toString().startsWith('free-range-')) {
+                console.log('Calling showBookingDetailsInPane...');
                 showBookingDetailsInPane(info.event);
+              } else {
+                console.log('Event is a background event, skipping details display');
               }
             },
             eventDidMount: function(info) {
@@ -739,15 +759,7 @@
           try { hideSpinnerById('roomModalSpinner'); } catch (e) {}
         }
 
-        // re-render modal calendar when range selector changes (if modal open)
-        document.addEventListener('DOMContentLoaded', function () {
-          const rangeSelect = document.getElementById('roomCalendarRange');
-          if (rangeSelect) {
-            rangeSelect.addEventListener('change', function () {
-              if (window.currentModalRoomId) initializeRoomModalCalendar(window.currentModalRoomId);
-            });
-          }
-        });
+
 
         // Fetch latest room list from API and refresh DOM + window.roomList
         async function fetchAndRefreshRoomList() {

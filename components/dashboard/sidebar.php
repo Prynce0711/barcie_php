@@ -38,6 +38,11 @@
       <span>News & Updates</span>
     </a>
 
+    <a href="#reports-section" class="nav-link nav-link-custom" data-section="reports-section">
+      <i class="fas fa-chart-bar"></i>
+      <span>Reports & Analytics</span>
+    </a>
+
     <a href="#admin-management-section" class="nav-link nav-link-custom manage-roles-link" data-section="admin-management-section">
       <i class="fas fa-user-shield"></i>
       <span>Manage Roles</span>
