@@ -2,7 +2,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="user-id" content="<?php echo $user_id; ?>">
-  <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="shortcut icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="apple-touch-icon" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Guest Portal</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">

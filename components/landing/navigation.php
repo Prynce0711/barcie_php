@@ -1,9 +1,7 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top" id="mainNavbar">
   <div class="container">
-    <a class="navbar-brand d-flex align-items-center" href="#home">
-      <span class="fw-bold">BarCIE</span>
-    </a>
+
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
