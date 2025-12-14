@@ -8,11 +8,12 @@
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Custom Landing Page CSS -->
-  <link rel="stylesheet" href="assets/css/landing-page.css">
+  <?php $css_version = time() . '_' . rand(1000, 9999); ?>
+  <link rel="stylesheet" href="assets/css/landing-page.css?v=<?php echo $css_version; ?>">
   <!-- Caterings / Event Stylists CSS -->
-  <link rel="stylesheet" href="assets/css/caterings.css">
+  <link rel="stylesheet" href="assets/css/caterings.css?v=<?php echo $css_version; ?>">
   <!-- News Section CSS -->
-  <link rel="stylesheet" href="assets/css/news.css">
+  <link rel="stylesheet" href="assets/css/news.css?v=<?php echo $css_version; ?>">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Bootstrap JavaScript -->
