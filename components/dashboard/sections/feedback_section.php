@@ -5,7 +5,7 @@
 <div class="row mb-4" id="feedback-section">
 	<div class="col-12">
 		<div class="card">
-			<div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+			<div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
 				<div>
 					<h5 class="mb-0"><i class="fas fa-comments me-2"></i>Feedback</h5>
 					<small class="opacity-75">Comprehensive admin feedback review</small>
