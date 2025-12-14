@@ -2,9 +2,6 @@
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top" id="mainNavbar">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center" href="#home">
-      <img src="/assets/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo" 
-        style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;"
-        class="me-2">
       <span class="fw-bold">BarCIE</span>
     </a>
 
@@ -15,7 +12,7 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav mx-auto">
         <li class="nav-item">
-          <a class="nav-link" href="#home">Home</a>
+          <a class="nav-link" href="index.php">Home</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#about">About</a>
@@ -25,9 +22,6 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#news">News & Updates</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#services">Services</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#event-stylists">Event Stylists</a>

@@ -28,6 +28,11 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // CORS and content type
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');

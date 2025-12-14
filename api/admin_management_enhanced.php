@@ -452,10 +452,6 @@ try {
 
         case 'stats':
             // Get dashboard statistics
-            if (!$permissions->hasPermission($current_admin_id, 'reports.view')) {
-                $response = ['success' => false, 'message' => 'Access denied'];
-                break;
-            }
             
             $stats = [
                 'total_admins' => 0,
