@@ -85,6 +85,45 @@
             </div>
           </div>
 
+          <div class="col-xl-3 col-lg-6">
+            <div class="card h-100 border-0 shadow-sm hover-lift" style="border-left: 4px solid #28a745 !important; transition: all 0.3s ease;">
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="grow">
+                    <p class="text-muted text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px; font-weight: 600;">Total Bookings</p>
+                    <h2 class="mb-0 fw-bold" style="color: #28a745; font-size: 2.5rem;"><?php echo $total_bookings; ?></h2>
+                  </div>
+                  <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 56px; height: 56px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
+                    <i class="fas fa-clipboard-list fa-lg text-white"></i>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center text-muted small">
+                  <i class="fas fa-check-circle me-2" style="color: #28a745;"></i>All time
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-lg-6">
+            <div class="card h-100 border-0 shadow-sm hover-lift" style="border-left: 4px solid #ffc107 !important; transition: all 0.3s ease;">
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="grow">
+                    <p class="text-muted text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px; font-weight: 600;">Pending</p>
+                    <h2 class="mb-0 fw-bold" style="color: #ffc107; font-size: 2.5rem;"><?php echo isset($status_distribution['pending']) ? $status_distribution['pending'] : 0; ?></h2>
+                  </div>
+                  <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 56px; height: 56px; background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);">
+                    <i class="fas fa-hourglass-half fa-lg text-white"></i>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center text-muted small">
+                  <i class="fas fa-clock me-2" style="color: #ffc107;"></i>Awaiting action
+                </div>
+              </div>
+            </div>
+          </div>
 
         </div>
 
@@ -120,7 +159,7 @@
             </div>
           </div>
 
-          <!-- Status Distribution -->
+          <!-- Booking Status Chart -->
           <div class="col-xl-4">
             <div class="card border-0 shadow-sm h-100">
               <div class="card-header bg-white py-3" style="border-bottom: 2px solid #e9ecef;">
@@ -130,45 +169,8 @@
                 <small class="text-muted">Current distribution</small>
               </div>
               <div class="card-body p-4">
-                <div style="height: 200px;" class="mb-3">
-                  <canvas id="statusChart" width="100%" height="200"></canvas>
-                </div>
-                <div class="status-legend">
-                  <?php
-                  $total_for_percentage = $total_bookings > 0 ? $total_bookings : 1;
-                  $status_colors = [
-                    'pending' => 'warning',     // Yellow
-                    'approved' => 'success',    // Green
-                    'confirmed' => 'info',      // Cyan
-                    'checked_in' => 'primary',  // Blue
-                    'checked_out' => 'secondary', // Gray
-                    'cancelled' => 'warning',   // Orange-Yellow (distinct from pending)
-                    'rejected' => 'danger'      // Red
-                  ];
-
-                  foreach ($status_distribution as $status => $count):
-                    if ($count > 0):
-                      $percentage = round(($count / $total_for_percentage) * 100, 1);
-                      $color_class = $status_colors[$status] ?? 'secondary';
-                      $display_name = ucfirst(str_replace('_', ' ', $status));
-                      ?>
-                      <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="d-flex align-items-center">
-                          <div class="legend-dot bg-<?php echo $color_class; ?> me-2"></div>
-                          <small><?php echo $display_name; ?></small>
-                        </div>
-                        <small class="text-muted fw-bold"><?php echo $percentage; ?>%</small>
-                      </div>
-                      <?php
-                    endif;
-                  endforeach;
-
-                  if ($total_bookings == 0):
-                    ?>
-                    <div class="text-center text-muted">
-                      <small>No bookings data</small>
-                    </div>
-                  <?php endif; ?>
+                <div style="height: 300px;">
+                  <canvas id="statusChart" width="100%" height="300"></canvas>
                 </div>
               </div>
             </div>

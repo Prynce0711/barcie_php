@@ -21,6 +21,8 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <!-- FullCalendar CSS & JS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <!-- Custom CSS -->
@@ -213,8 +215,6 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <section id="admin-management-section" class="content-section">
         <?php include 'components/dashboard/sections/admin_management_enhanced.php'; ?>
       </section>
-
-
 
       
 

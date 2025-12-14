@@ -391,62 +391,72 @@
     [container, topContainer].forEach(c => { if (c) c.innerHTML = ''; });
     if (state.totalPages <= 1) return;
 
-    const nav = document.createElement('nav');
-    const ul = document.createElement('ul');
-    ul.className = 'pagination justify-content-center mb-0';
+    // Helper to create pagination for a specific container
+    const createPaginationFor = (targetContainer) => {
+      if (!targetContainer) return;
+      
+      const nav = document.createElement('nav');
+      const ul = document.createElement('ul');
+      ul.className = 'pagination justify-content-center mb-0';
 
-    const createPageItem = (label, page, disabled, active) => {
-      const li = document.createElement('li');
-      li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-      const btn = document.createElement('button');
-      btn.className = 'page-link';
-      btn.type = 'button';
-      btn.textContent = label;
-      btn.addEventListener('click', e => { e.preventDefault(); if (disabled) return; state.currentPage = page; recalcPagination(); });
-      li.appendChild(btn);
-      return li;
+      const createPageItem = (label, page, disabled, active) => {
+        const li = document.createElement('li');
+        li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+        const btn = document.createElement('button');
+        btn.className = 'page-link';
+        btn.type = 'button';
+        btn.textContent = label;
+        btn.addEventListener('click', e => { e.preventDefault(); if (disabled) return; state.currentPage = page; recalcPagination(); });
+        li.appendChild(btn);
+        return li;
+      };
+
+      ul.appendChild(createPageItem('«', Math.max(1, state.currentPage - 1), state.currentPage === 1, false));
+
+      const maxButtons = 7;
+      let start = Math.max(1, state.currentPage - 3);
+      let end = Math.min(state.totalPages, start + maxButtons - 1);
+      if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
+
+      if (start > 1) {
+        ul.appendChild(createPageItem('1', 1, false, state.currentPage === 1));
+        if (start > 2) {
+          const gap = document.createElement('li');
+          gap.className = 'page-item disabled';
+          gap.innerHTML = '<span class="page-link">…</span>';
+          ul.appendChild(gap);
+        }
+      }
+
+      for (let p = start; p <= end; p++) {
+        ul.appendChild(createPageItem(String(p), p, false, p === state.currentPage));
+      }
+
+      if (end < state.totalPages) {
+        if (end < state.totalPages - 1) {
+          const gap = document.createElement('li');
+          gap.className = 'page-item disabled';
+          gap.innerHTML = '<span class="page-link">…</span>';
+          ul.appendChild(gap);
+        }
+        ul.appendChild(createPageItem(String(state.totalPages), state.totalPages, false, state.currentPage === state.totalPages));
+      }
+
+      ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
+
+      nav.appendChild(ul);
+      targetContainer.appendChild(nav);
+      
+      // animate pagination controls into view
+      requestAnimationFrame(() => {
+        const p = targetContainer.querySelector('.pagination'); 
+        if (p) p.classList.add('show');
+      });
     };
 
-    ul.appendChild(createPageItem('«', Math.max(1, state.currentPage - 1), state.currentPage === 1, false));
-
-    const maxButtons = 7;
-    let start = Math.max(1, state.currentPage - 3);
-    let end = Math.min(state.totalPages, start + maxButtons - 1);
-    if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
-
-    if (start > 1) {
-      ul.appendChild(createPageItem('1', 1, false, state.currentPage === 1));
-      if (start > 2) {
-        const gap = document.createElement('li');
-        gap.className = 'page-item disabled';
-        gap.innerHTML = '<span class="page-link">…</span>';
-        ul.appendChild(gap);
-      }
-    }
-
-    for (let p = start; p <= end; p++) {
-      ul.appendChild(createPageItem(String(p), p, false, p === state.currentPage));
-    }
-
-    if (end < state.totalPages) {
-      if (end < state.totalPages - 1) {
-        const gap = document.createElement('li');
-        gap.className = 'page-item disabled';
-        gap.innerHTML = '<span class="page-link">…</span>';
-        ul.appendChild(gap);
-      }
-      ul.appendChild(createPageItem(String(state.totalPages), state.totalPages, false, state.currentPage === state.totalPages));
-    }
-
-    ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
-
-    nav.appendChild(ul);
-    if (container) container.appendChild(nav.cloneNode(true));
-    if (topContainer) topContainer.appendChild(nav.cloneNode(true));
-    requestAnimationFrame(() => {
-      const p1 = container && container.querySelector('.pagination'); if (p1) p1.classList.add('show');
-      const p2 = topContainer && topContainer.querySelector('.pagination'); if (p2) p2.classList.add('show');
-    });
+    // Create pagination for both containers
+    createPaginationFor(container);
+    createPaginationFor(topContainer);
   }
 
   document.addEventListener('DOMContentLoaded', function(){

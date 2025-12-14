@@ -1264,108 +1264,90 @@ function initializeCharts() {
     }
   }
 
-  // Status Distribution Chart (Doughnut Chart)
+  // Status Distribution Chart - Clean version with percentages on slices
   const statusChartElement = document.getElementById("statusChart");
   if (statusChartElement) {
+    // Destroy any existing chart instance properly
+    const existingChart = Chart.getChart(statusChartElement);
+    if (existingChart) {
+      existingChart.destroy();
+    }
+    
     const ctx = statusChartElement.getContext("2d");
-
-    // Check if data exists and has content
     const statusData = window.statusDistributionData || {};
 
-    // Destroy existing chart if it exists
-    if (window.statusChartInstance) {
-      window.statusChartInstance.destroy();
-    }
-
     const statusLabels = Object.keys(statusData);
-    const statusValues = Object.values(statusData).map(
-      (val) => parseInt(val) || 0
-    );
-    const hasData = statusValues.some((value) => value > 0);
+    const statusValues = Object.values(statusData).map(val => parseInt(val) || 0);
+    const hasData = statusValues.some(value => value > 0);
 
     if (hasData) {
-      try {
-        window.statusChartInstance = new Chart(ctx, {
-          type: "doughnut",
-          data: {
-            labels: statusLabels.map(
-              (label) => label.charAt(0).toUpperCase() + label.slice(1)
-            ),
-            datasets: [
-              {
-                data: statusValues,
-                backgroundColor: [
-                  "#ffc107", // pending - yellow
-                  "#28a745", // approved - green
-                  "#17a2b8", // confirmed - cyan
-                  "#0d6efd", // checked_in - blue
-                  "#6c757d", // checked_out - gray
-                  "#f39c12", // cancelled - orange-yellow
-                  "#dc3545", // rejected - red
-                ],
-                borderWidth: 2,
-                borderColor: "#ffffff",
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: "bottom",
-                labels: {
-                  boxWidth: 12,
-                  padding: 15,
-                },
-              },
-              title: {
-                display: true,
-                text: "Booking Status Distribution",
-              },
+      window.statusChartInstance = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels: statusLabels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
+          datasets: [{
+            data: statusValues,
+            backgroundColor: ["#ffc107", "#28a745", "#17a2b8", "#0d6efd", "#6c757d", "#f39c12", "#dc3545"],
+            borderWidth: 2,
+            borderColor: "#ffffff"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
+              labels: { 
+                boxWidth: 15, 
+                padding: 15, 
+                font: { size: 13 },
+                generateLabels: function(chart) {
+                  const data = chart.data;
+                  if (data.labels.length && data.datasets.length) {
+                    const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    return data.labels.map((label, i) => {
+                      const value = data.datasets[0].data[i];
+                      const percentage = ((value / total) * 100).toFixed(0);
+                      return {
+                        text: `${label} (${percentage}%)`,
+                        fillStyle: data.datasets[0].backgroundColor[i],
+                        hidden: false,
+                        index: i
+                      };
+                    });
+                  }
+                  return [];
+                }
+              }
             },
-            cutout: "60%",
-          },
-        });
-      } catch (error) {
-        console.error("Error creating status chart:", error);
-      }
-    } else {
-      // Display "No data" message
-      ctx.clearRect(0, 0, statusChartElement.width, statusChartElement.height);
-      ctx.fillStyle = "#6c757d";
-      ctx.font = "16px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        "No status data available",
-        statusChartElement.width / 2,
-        statusChartElement.height / 2
-      );
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ${value} (${percentage}%)`;
+                }
+              }
+            },
+            datalabels: {
+              color: '#fff',
+              font: { weight: 'bold', size: 14 },
+              formatter: function(value, context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(0);
+                return percentage + '%';
+              }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
     }
   }
 
-  // Legacy chart for backward compatibility
-  const legacyChartElement = document.getElementById("reportChart");
-  if (legacyChartElement && typeof Chart !== "undefined") {
-    const ctx = legacyChartElement.getContext("2d");
-    new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May"],
-        datasets: [
-          {
-            label: "Bookings",
-            data: [12, 19, 7, 15, 20],
-            backgroundColor: "#1abc9c",
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
-  }
+  // Chart initialization completed
 }
 
 // Dashboard Data Management

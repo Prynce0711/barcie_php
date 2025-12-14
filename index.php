@@ -15,8 +15,6 @@
 
   <?php include 'components/landing/sections/news.php'; ?>
 
-  <?php include 'components/landing/sections/services.php'; ?>
-
   <?php include 'components/landing/modals/admin_login_modal.php'; ?>
 
   <?php include 'components/landing/sections/event_stylists.php'; ?>

@@ -222,7 +222,7 @@ if ($stmt) {
 						}, 500);
 					}, 2000);
 				}
-				notify(json.message || 'Payment updated', 'success');
+					notify(json.message || 'Payment updated', 'success');
 			} else {
 				notify((json && (json.error || json.message)) || 'Failed to update payment', 'error');
 				btn.disabled = false;
