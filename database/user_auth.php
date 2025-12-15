@@ -2470,9 +2470,25 @@ if ($action === 'admin_update_booking') {
     $booking_data = $booking_result->fetch_assoc();
     $booking_stmt->close();
 
-    // Update booking status (also update timestamp so activity feed detects changes)
-    $stmt = $conn->prepare("UPDATE bookings SET status = ?, updated_at = NOW() WHERE id = ?");
-    $stmt->bind_param("si", $newStatus, $bookingId);
+    // Get admin ID from session
+    $admin_id = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null;
+
+    // Update booking status and set timestamps where appropriate
+    if ($adminAction === 'approve' && $admin_id) {
+        $stmt = $conn->prepare("UPDATE bookings SET status = ?, approved_by = ?, approved_at = NOW(), updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("sii", $newStatus, $admin_id, $bookingId);
+    } elseif ($adminAction === 'checkout') {
+        // when checking out, record checked_out_at
+        $stmt = $conn->prepare("UPDATE bookings SET status = ?, checked_out_at = NOW(), updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("si", $newStatus, $bookingId);
+    } elseif ($adminAction === 'checkin') {
+        // when checking in, record checked_in_at
+        $stmt = $conn->prepare("UPDATE bookings SET status = ?, checked_in_at = NOW(), updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("si", $newStatus, $bookingId);
+    } else {
+        $stmt = $conn->prepare("UPDATE bookings SET status = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("si", $newStatus, $bookingId);
+    }
     $success = $stmt->execute();
     $stmt->close();
 
@@ -3539,11 +3555,18 @@ if ($action === 'update_pencil_booking_status') {
             exit;
         }
         
+        // Get admin ID from session
+        $admin_id = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null;
+        
         // Update the status
         if ($new_status === 'confirmed') {
             // When confirmed, set confirmed_at timestamp
             $update_stmt = $conn->prepare("UPDATE pencil_bookings SET status = ?, confirmed_at = NOW() WHERE id = ?");
             $update_stmt->bind_param("si", $new_status, $booking_id);
+        } elseif ($new_status === 'approved' && $admin_id) {
+            // When approved, set approved_by and approved_at
+            $update_stmt = $conn->prepare("UPDATE pencil_bookings SET status = ?, approved_by = ?, approved_at = NOW() WHERE id = ?");
+            $update_stmt->bind_param("sii", $new_status, $admin_id, $booking_id);
         } else {
             $update_stmt = $conn->prepare("UPDATE pencil_bookings SET status = ? WHERE id = ?");
             $update_stmt->bind_param("si", $new_status, $booking_id);

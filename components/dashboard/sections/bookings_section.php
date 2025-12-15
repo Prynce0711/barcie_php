@@ -132,7 +132,7 @@
                   <th style="width: 12%;">Schedule</th>
                   <th style="width: 9%;">Booking Status</th>
                   <th style="width: 9%;">Discount Status</th>
-                  <th style="width: 8%;">Created</th>
+                  <th style="width: 8%;">Approved</th>
                   <th style="width: 9%;">Actions</th>
                 </tr>
               </thead>

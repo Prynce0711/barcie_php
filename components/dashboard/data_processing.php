@@ -729,15 +729,6 @@ $active_bookings_count = $status_distribution['approved'] + $status_distribution
 $pending_bookings_count = $status_distribution['pending'];
 $completed_bookings_count = $status_distribution['checked_out'];
 
-// Recent Activities (no user join needed since we removed user_id)
-$recent_activity_result = $conn->query("SELECT b.type, b.details, b.created_at 
-    FROM bookings b 
-    ORDER BY b.created_at DESC LIMIT 8");
-$recent_activities = [];
-while ($row = $recent_activity_result->fetch_assoc()) {
-  $recent_activities[] = $row;
-}
-
 // Feedback Statistics - REMOVED (Guest Satisfaction section removed from overview)
 // Calculations removed to improve performance since they're no longer displayed
 
