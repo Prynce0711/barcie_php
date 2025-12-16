@@ -30,12 +30,28 @@
         <strong><i class="fas fa-id-card me-2"></i>Valid ID Upload</strong>
       </div>
       <div class="card-body">
+        <div class="mb-3">
+          <label for="reservation_id_type" class="form-label">ID Type <span class="text-danger">*</span></label>
+          <select name="id_type" id="reservation_id_type" class="form-control" required>
+            <option value="">-- Select ID Type --</option>
+            <option value="national_id">National ID (PhilSys ID / ePhilID)</option>
+            <option value="passport">Passport (Philippine or foreign, if applicable)</option>
+            <option value="drivers_license">Driver's License (LTO)</option>
+            <option value="umid">UMID Card (SSS / GSIS)</option>
+            <option value="prc_id">PRC ID (Professional Regulation Commission)</option>
+            <option value="voters_id">Voter's ID/Certification (COMELEC)</option>
+            <option value="postal_id">Postal ID</option>
+            <option value="philhealth_id">PhilHealth ID</option>
+            <option value="tin_id">TIN ID (BIR)</option>
+          </select>
+          <small class="form-text text-muted">Select the type of valid ID you will upload.</small>
+        </div>
         <div class="mb-2">
           <label for="reservation_id_upload" class="form-label">Upload Valid ID <span class="text-danger" id="reservation_id_required">*</span></label>
-          <input type="file" name="id_upload" id="reservation_id_upload" class="form-control" accept="image/*,application/pdf">
+          <input type="file" name="id_upload" id="reservation_id_upload" class="form-control" accept="image/*" disabled>
           <input type="hidden" name="id_upload_cropped" id="reservation_id_upload_cropped">
           <input type="hidden" name="id_upload_validated" id="reservation_id_upload_validated" value="0">
-          <small class="form-text text-muted">Required: Government-issued ID (image or PDF). Not needed if discount with ID is applied.</small>
+          <small class="form-text text-muted">Required: Clear photo of your government-issued ID. Not needed if discount with ID is applied.</small>
           
           <!-- Validation status -->
           <div id="reservation_id_validation" style="margin-top:8px;display:none;"></div>
@@ -79,7 +95,8 @@
             if ($current_type !== $room['item_type']) {
               if ($current_type !== '') echo "</optgroup>";
               $current_type = $room['item_type'];
-              echo "<optgroup label='" . ucfirst($current_type) . "s'>";
+              $label = ($current_type === 'facility') ? 'Facilities' : ucfirst($current_type) . 's';
+              echo "<optgroup label='$label'>";
             }
 
             $room_display = $room['name'];
@@ -102,7 +119,7 @@
 
       <label>
         <span class="label-text">Guest Name *</span>
-        <input type="text" name="guest_name" required minlength="2" placeholder="Enter your full name">
+        <input type="text" name="guest_name" id="reservation_guest_name" required minlength="2" placeholder="Enter your full name">
       </label>
 
       <label>
@@ -112,13 +129,12 @@
 
       <label>
         <span class="label-text">Email Address *</span>
-        <input type="email" name="email" required autocomplete="email" title="Only Gmail Address are accepted (@gmail.com)" placeholder="your.email@gmail.com">
+        <input type="email" name="email" required autocomplete="email" title="Accepted email domains: @gmail.com, @email.lcup.edu.ph, @yahoo.com, @icloud.com" placeholder="your.email@example.com">
       </label>
 
       <label>
         <span class="label-text">Age *</span>
-        <input type="number" name="age" id="reservation_age" required min="18" max="120" placeholder="Enter your age">
-        <small class="form-text text-danger" id="reservation_age_error" style="display:none;">You must be at least 18 years old to make a booking.</small>
+        <input type="number" name="age" required min="18" max="120" placeholder="Enter your age">
       </label>
 
       <!-- Booking Time Notice -->
@@ -194,7 +210,7 @@ input[type="datetime-local"].date-available {
 .availability-info.occupied {
   background-color: #ffe5e5;
   color: #dc3545;
-  border: 1px solid #dc3545;
+  border: 1px solid #dc3  545;
   display: block;
 }
 .availability-info.available {
@@ -436,12 +452,13 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Check if either discount proof OR ID upload is provided AND validated
     const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
-    const hasDiscountProof = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
+    const hasDiscountProofFile = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
+    const isDiscountProofValid = hasDiscountProofFile && discountProof.dataset.validProof === '1';
     const hasIdUpload = idUpload && idUpload.files && idUpload.files.length > 0;
     const isIdValidated = idValidated && idValidated.value === '1';
     
-    // Form is unlocked only if: discount proof exists OR (ID uploaded AND validated)
-    const hasValidId = hasDiscountProof || (hasIdUpload && isIdValidated);
+    // Form is unlocked only if: (discount proof uploaded AND validated) OR (ID uploaded AND validated)
+    const hasValidId = isDiscountProofValid || (hasIdUpload && isIdValidated);
     
     // Get all input, select, and button elements within the form fields
     const allInputs = formFields.querySelectorAll('input:not([type=\"hidden\"]):not([readonly]), select, textarea, button');
@@ -513,39 +530,124 @@ document.addEventListener('DOMContentLoaded', function () {
     checkAndEnableFormFields('pencil');
   }
   
-  // ID Validation Functions
-  async function validateIDDocument(file, validationElement, validatedInput) {
+  // Extract name from OCR text
+  function extractNameFromOCR(text, ocrData) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    let extractedName = '';
+    
+    console.log('OCR Full Text for Extraction:', text);
+    
+    // Name extraction patterns
+    const namePatterns = [
+      /(?:full\s*)?name[:\s]*([a-z][a-z\s,.'-]+)/i,
+      /surname[:\s]*([a-z][a-z\s,.'-]+)/i,
+      /(?:given|first)\s*name[:\s]*([a-z][a-z\s,.'-]+)/i,
+      /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})$/m
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        let name = match[1].trim();
+        name = name.replace(/\s+/g, ' ').trim();
+        name = name.replace(/[,.:;\d]+$/, '').trim();
+        if (name.length >= 3 && name.length <= 50) {
+          extractedName = name;
+          console.log('Name extracted:', name);
+          break;
+        }
+      }
+    }
+    
+    return { name: extractedName };
+  }
+  
+  // ID Validation Functions with OCR for Philippine IDs
+  async function validateIDDocument(file, validationElement, validatedInput, idType) {
     if (!file) return false;
+    
+    // Get ID type name for display
+    let idTypeName = 'government-issued ID';
+    let expectedTexts = [];
+    
+    if (idType) {
+      const idTypeMap = {
+        'national_id': {
+          name: 'National ID (PhilSys ID / ePhilID)',
+          keywords: ['IDENTIFICATION', 'PHILSYS', 'PSA', 'PAMBANSANG', 'PAGKAKAKILANLAN',  'PCN']
+        },
+        'passport': {
+          name: 'Passport',
+          keywords: ['PASSPORT', 'FOREIGN AFFAIRS', 'DFA', 'REPUBLIC', 'PHILIPPINES']
+        },
+        'drivers_license': {
+          name: 'Driver\'s License (LTO)',
+          keywords: ['DRIVER', 'LICENSE', 'LTO', 'LAND', 'TRANSPORTATION', 'REPUBLIC']
+        },
+        'umid': {
+          name: 'UMID Card (SSS / GSIS)',
+          keywords: ['UMID', 'SSS', 'GSIS', 'UNIFIED', 'MULTI', 'PURPOSE', 'SECURITY']
+        },
+        'prc_id': {
+          name: 'PRC ID (Professional Regulation Commission)',
+          keywords: ['PRC', 'PROFESSIONAL', 'REGULATION', 'COMMISSION', 'LICENSE']
+        },
+        'voters_id': {
+          name: 'Voter\'s ID/Certification (COMELEC)',
+          keywords: ['VOTER', 'COMELEC', 'COMMISSION', 'ELECTIONS']
+        },
+        'postal_id': {
+          name: 'Postal ID',
+          keywords: ['POSTAL', 'PHILPOST', 'POST', 'CORPORATION']
+        },
+        'philhealth_id': {
+          name: 'PhilHealth ID',
+          keywords: ['PHILHEALTH', 'HEALTH', 'INSURANCE', 'CORPORATION', 'MEMBER']
+        },
+        'tin_id': {
+          name: 'TIN ID (BIR)',
+          keywords: ['TIN', 'TAXPAYER', 'IDENTIFICATION', 'NUMBER', 'BIR', 'INTERNAL', 'REVENUE', 'FINANCE']
+        }
+      };
+      
+      if (idTypeMap[idType]) {
+        idTypeName = idTypeMap[idType].name;
+        expectedTexts = idTypeMap[idType].keywords;
+      }
+    }
     
     // Show validating message
     if (validationElement) {
       validationElement.style.display = 'block';
-      validationElement.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin me-2"></i>Validating ID document...</span>';
+      validationElement.innerHTML = `<span class="text-info"><i class="fas fa-spinner fa-spin me-2"></i>Reading and validating ${idTypeName}... This may take 10-20 seconds.</span>`;
     }
     
-    // PDF files - basic validation only
-    if (file.type === 'application/pdf') {
-      if (validationElement) {
-        validationElement.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-2"></i>PDF accepted. Please ensure it contains a valid government-issued ID.</span>';
-      }
-      if (validatedInput) validatedInput.value = '1';
-      return true;
-    }
-    
-    // Image files - perform visual validation
+    // Only accept image files - perform OCR validation
     if (file.type.startsWith('image/')) {
       try {
-        const result = await analyzeIDImage(file);
+        // First do basic image quality checks
+        const imageCheck = await performBasicImageChecks(file);
         
-        if (result.isValid) {
+        if (!imageCheck.isValid) {
           if (validationElement) {
-            validationElement.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-2"></i>Valid ID detected</span>';
+            validationElement.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle me-2"></i>${imageCheck.reason}</span>`;
+          }
+          if (validatedInput) validatedInput.value = '0';
+          return false;
+        }
+        
+        // Perform OCR text extraction
+        const ocrResult = await performOCRValidation(file, expectedTexts, idTypeName);
+        
+        if (ocrResult.isValid) {
+          if (validationElement) {
+            validationElement.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-2"></i>${ocrResult.message}</span>`;
           }
           if (validatedInput) validatedInput.value = '1';
           return true;
         } else {
           if (validationElement) {
-            validationElement.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle me-2"></i>Invalid ID: ${result.reason}. Please upload a clear photo of a government-issued ID.</span>`;
+            validationElement.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle me-2"></i>${ocrResult.message}</span>`;
           }
           if (validatedInput) validatedInput.value = '0';
           return false;
@@ -553,125 +655,197 @@ document.addEventListener('DOMContentLoaded', function () {
       } catch (error) {
         console.error('ID validation error:', error);
         if (validationElement) {
-          validationElement.innerHTML = '<span class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Could not validate ID. Please ensure image is clear and try again.</span>';
+          validationElement.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Could not validate ${idTypeName}. Please ensure image is clear. Admin will verify. Fake IDs will result in cancellation.</span>`;
         }
-        if (validatedInput) validatedInput.value = '0';
-        return false;
+        if (validatedInput) validatedInput.value = '1';
+        return true; // Allow submission but admin will verify
       }
     }
     
     return false;
   }
   
-  // Analyze ID image for validation
-  async function analyzeIDImage(file) {
+  // Perform OCR validation on ID image
+  async function performOCRValidation(file, expectedTexts, idTypeName) {
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
+      reader.onload = async function(e) {
+        try {
+          // Use Tesseract.js to extract text
+          const result = await Tesseract.recognize(
+            e.target.result,
+            'eng',
+            {
+              logger: m => {
+                if (m.status === 'recognizing text') {
+                  console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+                }
+              }
+            }
+          );
           
-          // Get image data
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imageData.data;
+          const extractedText = result.data.text.toUpperCase();
+          console.log('Extracted text:', extractedText);
           
-          // Check 1: Image dimensions (IDs are typically rectangular)
-          const aspectRatio = img.width / img.height;
-          const isRectangular = (aspectRatio >= 1.4 && aspectRatio <= 1.8) || (aspectRatio >= 0.55 && aspectRatio <= 0.72);
+          // Remove extra spaces and normalize text for better matching
+          const normalizedText = extractedText.replace(/\s+/g, ' ').trim();
           
-          // Check 2: File size (too small might be a screenshot or low quality)
-          const fileSizeKB = file.size / 1024;
-          const hasReasonableSize = fileSizeKB >= 50 && fileSizeKB <= 10000;
-          
-          // Check 3: Color variance (IDs have text, photos, and varied colors)
-          let colorVariance = 0;
-          const sampleSize = Math.min(1000, data.length / 4);
-          const step = Math.floor((data.length / 4) / sampleSize);
-          let prevR = data[0], prevG = data[1], prevB = data[2];
-          
-          for (let i = 0; i < data.length; i += step * 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            colorVariance += Math.abs(r - prevR) + Math.abs(g - prevG) + Math.abs(b - prevB);
-            prevR = r; prevG = g; prevB = b;
+          // Check if extracted text is sufficient (more lenient)
+          if (normalizedText.length < 10) {
+            resolve({
+              isValid: false,
+              message: `Cannot read enough text from image (found ${normalizedText.length} characters). Please upload a clearer, well-lit photo of your ${idTypeName}. Try rotating or improving lighting.`
+            });
+            return;
           }
-          colorVariance = colorVariance / sampleSize;
           
-          // Check 4: Edge detection (IDs have defined borders and text)
-          let edgeCount = 0;
-          const edgeThreshold = 30;
-          for (let i = 0; i < data.length - img.width * 4; i += 4) {
-            const currentPixel = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            const bottomPixel = (data[i + img.width * 4] + data[i + img.width * 4 + 1] + data[i + img.width * 4 + 2]) / 3;
-            if (Math.abs(currentPixel - bottomPixel) > edgeThreshold) {
-              edgeCount++;
+          // Check for expected keywords with VERY flexible matching
+          let matchedKeywords = 0;
+          let matchedTexts = [];
+          
+          for (const keyword of expectedTexts) {
+            const keywordUpper = keyword.toUpperCase();
+            // Check if the keyword appears anywhere in the text (case-insensitive)
+            if (normalizedText.includes(keywordUpper)) {
+              matchedKeywords++;
+              matchedTexts.push(keyword);
             }
           }
-          const edgeDensity = (edgeCount / (data.length / 4)) * 100;
           
-          // Check 5: Brightness (not too dark, not overexposed)
-          let totalBrightness = 0;
-          for (let i = 0; i < data.length; i += 4) {
-            totalBrightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+          // Show what was extracted for debugging
+          const textPreview = normalizedText.substring(0, 150) + (normalizedText.length > 150 ? '...' : '');
+          console.log(`Matched ${matchedKeywords} keywords:`, matchedTexts);
+          console.log('Text preview:', textPreview);
+          
+          // VERY LENIENT Validation: Must match at least 1 keyword from the selected ID type
+          // This reduces false rejections while still validating it's likely the correct ID type
+          if (matchedKeywords >= 2) {
+            resolve({
+              isValid: true,
+              message: `✓ Valid ${idTypeName} detected and verified.`
+            });
+          } else if (matchedKeywords === 1) {
+            // If only 1 keyword matched, still accept
+            resolve({
+              isValid: true,
+              message: `✓ Valid ${idTypeName} detected and verified.`
+            });
+          } else {
+            resolve({
+              isValid: false,
+              message: `✗ Cannot verify this as ${idTypeName}. Please upload a clearer, well-lit photo of your ID.`
+            });
           }
-          const avgBrightness = totalBrightness / (data.length / 4);
-          const hasGoodBrightness = avgBrightness >= 40 && avgBrightness <= 220;
-          
-          // Calculate confidence score
-          let confidence = 0;
-          let failReasons = [];
-          
-          if (isRectangular) confidence += 25;
-          else failReasons.push('Image is not ID-shaped');
-          
-          if (hasReasonableSize) confidence += 20;
-          else failReasons.push('File size is too small or too large');
-          
-          if (colorVariance > 15) confidence += 20;
-          else failReasons.push('Insufficient color variation for an ID');
-          
-          if (edgeDensity >= 2 && edgeDensity <= 20) confidence += 20;
-          else failReasons.push('Missing text or border patterns');
-          
-          if (hasGoodBrightness) confidence += 15;
-          else failReasons.push('Image is too dark or overexposed');
-          
-          // Determine if valid
-          const isValid = confidence >= 60;
-          
+        } catch (error) {
+          console.error('OCR error:', error);
           resolve({
-            isValid: isValid,
-            confidence: Math.min(confidence, 95),
-            reason: isValid ? 'Valid ID detected' : failReasons.join('; '),
-            details: {
-              aspectRatio: aspectRatio.toFixed(2),
-              fileSizeKB: fileSizeKB.toFixed(0),
-              colorVariance: colorVariance.toFixed(1),
-              edgeDensity: edgeDensity.toFixed(1),
-              avgBrightness: avgBrightness.toFixed(0)
-            }
+            isValid: false,
+            message: `Could not read text from image. Error: ${error.message}. Please upload a clearer photo.`
           });
-        };
-        img.onerror = function() {
-          resolve({ isValid: false, confidence: 0, reason: 'Could not load image' });
-        };
-        img.src = e.target.result;
+        }
       };
       reader.onerror = function() {
-        resolve({ isValid: false, confidence: 0, reason: 'Could not read file' });
+        resolve({
+          isValid: false,
+          message: 'Could not read file. Please try again.'
+        });
       };
       reader.readAsDataURL(file);
     });
   }
   
-  // Handle ID upload preview for reservation form
+  // Basic image quality checks before OCR
+  async function performBasicImageChecks(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          // Minimum resolution check (relaxed)
+          if (img.width < 300 || img.height < 200) {
+            resolve({ 
+              isValid: false, 
+              reason: `Image resolution too low (${img.width}x${img.height}). Minimum 300x200 required. Take a clear photo.`
+            });
+            return;
+          }
+          
+          // File size check (relaxed)
+          const fileSizeKB = file.size / 1024;
+          if (fileSizeKB < 20) {
+            resolve({ 
+              isValid: false, 
+              reason: `File too small (${fileSizeKB.toFixed(0)}KB). Upload original photo, not a thumbnail.`
+            });
+            return;
+          }
+          
+          if (fileSizeKB > 20000) {
+            resolve({ 
+              isValid: false, 
+              reason: `File too large (${(fileSizeKB/1024).toFixed(1)}MB). Maximum 20MB.`
+            });
+            return;
+          }
+          
+          // All basic checks passed - OCR will do the real validation
+          resolve({ isValid: true });
+        };
+        img.onerror = function() {
+          resolve({ isValid: false, reason: 'Could not load image. File may be corrupted.' });
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = function() {
+        resolve({ isValid: false, reason: 'Could not read file.' });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  // Handle ID Type selection for Reservation form
+  const reservationIdTypeSelect = document.getElementById('reservation_id_type');
   const reservationIdUpload = document.getElementById('reservation_id_upload');
+  
+  if (reservationIdTypeSelect && reservationIdUpload) {
+    reservationIdTypeSelect.addEventListener('change', function() {
+      if (this.value) {
+        // Enable file upload when ID type is selected
+        reservationIdUpload.removeAttribute('disabled');
+        reservationIdUpload.style.opacity = '1';
+        reservationIdUpload.style.cursor = 'pointer';
+        
+        // Update help text based on ID type
+        const idTypeText = this.options[this.selectedIndex].text;
+        const helpText = reservationIdUpload.parentElement.querySelector('.form-text');
+        if (helpText) {
+          helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
+        }
+      } else {
+        // Disable file upload if no ID type selected
+        reservationIdUpload.setAttribute('disabled', 'disabled');
+        reservationIdUpload.style.opacity = '0.5';
+        reservationIdUpload.style.cursor = 'not-allowed';
+        reservationIdUpload.value = '';
+        
+        // Reset validation
+        const validatedInput = document.getElementById('reservation_id_upload_validated');
+        if (validatedInput) validatedInput.value = '0';
+        
+        // Hide preview
+        const preview = document.getElementById('reservation_id_preview');
+        if (preview) preview.style.display = 'none';
+        
+        // Hide validation message
+        const validationElement = document.getElementById('reservation_id_validation');
+        if (validationElement) validationElement.style.display = 'none';
+        
+        checkAndEnableFormFields('reservation');
+      }
+    });
+  }
+  
+  // Handle ID upload preview for reservation form
   if (reservationIdUpload) {
     reservationIdUpload.addEventListener('change', async function(e) {
       const file = e.target.files[0];
@@ -679,6 +853,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const thumb = document.getElementById('reservation_id_thumb');
       const validationElement = document.getElementById('reservation_id_validation');
       const validatedInput = document.getElementById('reservation_id_upload_validated');
+      const idTypeSelect = document.getElementById('reservation_id_type');
       
       if (!file) {
         if (validatedInput) validatedInput.value = '0';
@@ -686,11 +861,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
       
-      // Validate the ID
-      const isValid = await validateIDDocument(file, validationElement, validatedInput);
+      // Get selected ID type
+      const idType = idTypeSelect ? idTypeSelect.value : null;
       
-      if (!file || !preview || !thumb) return;
+      if (!preview || !thumb) return;
       
+      // Display preview first
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -702,6 +878,9 @@ document.addEventListener('DOMContentLoaded', function () {
         thumb.innerHTML = '<div style="padding: 10px; background: #f0f0f0; border-radius: 4px;"><i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545;"></i><br><small>' + file.name + '</small></div>';
         preview.style.display = 'block';
       }
+      
+      // Validate the ID with the selected type
+      const isValid = await validateIDDocument(file, validationElement, validatedInput, idType);
       
       // Enable form fields only if validation passed
       if (isValid) {
@@ -723,8 +902,49 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   
-  // Handle ID upload preview for pencil form
+  // Handle ID Type selection for Pencil form
+  const pencilIdTypeSelect = document.getElementById('pencil_id_type');
   const pencilIdUpload = document.getElementById('pencil_id_upload');
+  
+  if (pencilIdTypeSelect && pencilIdUpload) {
+    pencilIdTypeSelect.addEventListener('change', function() {
+      if (this.value) {
+        // Enable file upload when ID type is selected
+        pencilIdUpload.removeAttribute('disabled');
+        pencilIdUpload.style.opacity = '1';
+        pencilIdUpload.style.cursor = 'pointer';
+        
+        // Update help text based on ID type
+        const idTypeText = this.options[this.selectedIndex].text;
+        const helpText = pencilIdUpload.parentElement.querySelector('.form-text');
+        if (helpText) {
+          helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
+        }
+      } else {
+        // Disable file upload if no ID type selected
+        pencilIdUpload.setAttribute('disabled', 'disabled');
+        pencilIdUpload.style.opacity = '0.5';
+        pencilIdUpload.style.cursor = 'not-allowed';
+        pencilIdUpload.value = '';
+        
+        // Reset validation
+        const validatedInput = document.getElementById('pencil_id_upload_validated');
+        if (validatedInput) validatedInput.value = '0';
+        
+        // Hide preview
+        const preview = document.getElementById('pencil_id_preview');
+        if (preview) preview.style.display = 'none';
+        
+        // Hide validation message
+        const validationElement = document.getElementById('pencil_id_validation');
+        if (validationElement) validationElement.style.display = 'none';
+        
+        checkAndEnableFormFields('pencil');
+      }
+    });
+  }
+  
+  // Handle ID upload preview for pencil form
   if (pencilIdUpload) {
     pencilIdUpload.addEventListener('change', async function(e) {
       const file = e.target.files[0];
@@ -732,6 +952,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const thumb = document.getElementById('pencil_id_thumb');
       const validationElement = document.getElementById('pencil_id_validation');
       const validatedInput = document.getElementById('pencil_id_upload_validated');
+      const idTypeSelect = document.getElementById('pencil_id_type');
       
       if (!file) {
         if (validatedInput) validatedInput.value = '0';
@@ -739,11 +960,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
       
-      // Validate the ID
-      const isValid = await validateIDDocument(file, validationElement, validatedInput);
+      // Get selected ID type
+      const idType = idTypeSelect ? idTypeSelect.value : null;
       
-      if (!file || !preview || !thumb) return;
+      if (!preview || !thumb) return;
       
+      // Display preview first
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -755,6 +977,9 @@ document.addEventListener('DOMContentLoaded', function () {
         thumb.innerHTML = '<div style="padding: 10px; background: #f0f0f0; border-radius: 4px;"><i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545;"></i><br><small>' + file.name + '</small></div>';
         preview.style.display = 'block';
       }
+      
+      // Validate the ID with the selected type
+      const isValid = await validateIDDocument(file, validationElement, validatedInput, idType);
       
       // Enable form fields only if validation passed
       if (isValid) {
@@ -772,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         // Clear the file input
         this.value = '';
-      }
+      } 
     });
   }
   

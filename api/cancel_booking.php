@@ -18,13 +18,34 @@ if (empty($receipt) || empty($email)) {
 
 // Verify the booking exists and belongs to this email
 $table = ($type === 'pencil') ? 'pencil_bookings' : 'bookings';
-$query = "SELECT * FROM {$table} WHERE receipt_number = ? AND guest_email = ?";
+
+if ($type === 'pencil') {
+    // For pencil_bookings: has 'email' column and 'receipt_no' column
+    $query = "SELECT * FROM {$table} WHERE receipt_no = ? AND email = ?";
+} else {
+    // For bookings: email is stored in 'details' field, use 'receipt_no' column
+    $query = "SELECT * FROM {$table} WHERE receipt_no = ? AND details LIKE ?";
+}
+
 $stmt = $pdo->prepare($query);
-$stmt->execute([$receipt, $email]);
+if ($type === 'pencil') {
+    $stmt->execute([$receipt, $email]);
+} else {
+    // For regular bookings, search for email in details field
+    $stmt->execute([$receipt, "%Email: $email%"]);
+}
 $booking = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$booking) {
     die('Booking not found or email does not match.');
+}
+
+// Extract guest name from details field or use column for display
+$guest_name = 'Guest';
+if ($type === 'pencil' && !empty($booking['guest_name'])) {
+    $guest_name = $booking['guest_name'];
+} elseif (!empty($booking['details']) && preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
+    $guest_name = trim($matches[1]);
 }
 
 // Check if booking is already cancelled
@@ -33,7 +54,7 @@ if (stripos($booking['status'], 'cancelled') !== false) {
 }
 
 // Check if it's too late to cancel (less than 48 hours before check-in)
-$checkin_field = ($type === 'pencil') ? 'checkin' : 'check_in_date';
+$checkin_field = 'checkin'; // Both tables use 'checkin' column
 $checkin_time = strtotime($booking[$checkin_field]);
 $now = time();
 $hours_until_checkin = ($checkin_time - $now) / 3600;
@@ -50,7 +71,7 @@ if ($hours_until_checkin < 48 && $confirm !== 'yes') {
 if ($confirm === 'yes') {
     try {
         // Update booking status to cancelled
-        $update_query = "UPDATE {$table} SET status = 'cancelled', updated_at = NOW() WHERE receipt_number = ?";
+        $update_query = "UPDATE {$table} SET status = 'cancelled', updated_at = NOW() WHERE receipt_no = ?";
         $update_stmt = $pdo->prepare($update_query);
         $update_stmt->execute([$receipt]);
         
@@ -66,6 +87,14 @@ if ($confirm === 'yes') {
             $subject = "Booking Cancellation Confirmation - BarCIE International Center";
             $booking_type = ($type === 'pencil') ? 'Pencil Booking' : 'Booking';
             
+            // Extract guest name from details field or use column
+            $guest_name = 'Guest';
+            if ($type === 'pencil' && !empty($booking['guest_name'])) {
+                $guest_name = $booking['guest_name'];
+            } elseif (!empty($booking['details']) && preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
+                $guest_name = trim($matches[1]);
+            }
+            
             $emailContent = '
                 <div style="text-align: center; margin-bottom: 30px;">
                     <div style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border-radius: 50px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);">
@@ -79,7 +108,7 @@ if ($confirm === 'yes') {
                 </p>
                 
                 <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
-                    Dear <strong style="color: #1e3c72;">' . htmlspecialchars($booking['guest_name']) . '</strong>,
+                    Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
                 </p>
                 <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
                     Your ' . $booking_type . ' has been successfully cancelled as per your request.
@@ -91,7 +120,7 @@ if ($confirm === 'yes') {
                     </h4>
                     <ul style="margin: 0; padding-left: 20px; color: #721c24; font-size: 14px; line-height: 1.8;">
                         <li><strong>Receipt Number:</strong> ' . htmlspecialchars($receipt) . '</li>
-                        <li><strong>Guest Name:</strong> ' . htmlspecialchars($booking['guest_name']) . '</li>
+                        <li><strong>Guest Name:</strong> ' . htmlspecialchars($guest_name) . '</li>
                         <li><strong>Cancellation Date:</strong> ' . date('F j, Y g:i A') . '</li>
                     </ul>
                 </div>
@@ -227,7 +256,7 @@ if ($confirm === 'yes') {
                     </tr>
                     <tr>
                         <td class="text-muted">Guest Name:</td>
-                        <td class="fw-bold"><?= htmlspecialchars($booking['guest_name']) ?></td>
+                        <td class="fw-bold"><?= htmlspecialchars($guest_name) ?></td>
                     </tr>
                     <tr>
                         <td class="text-muted">Email:</td>
