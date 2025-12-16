@@ -1554,11 +1554,8 @@ if ($action === 'create_booking') {
             }
 
             if ($success) {
-                // Update room status to reserved
-                $update_status = $conn->prepare("UPDATE items SET room_status = 'reserved' WHERE id = ?");
-                $update_status->bind_param("i", $room_id);
-                $update_status->execute();
-                $update_status->close();
+                // DO NOT update room status here - room is only marked as taken when payment is verified
+                // This allows the room to show as available until admin approves payment
 
                 // Always send confirmation email to guest
                 if (!empty($email)) {
@@ -1594,7 +1591,7 @@ if ($action === 'create_booking') {
                             Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
                         </p>
                         <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
-                            Thank you for choosing BarCIE International Center! We have successfully received your reservation request and our team will review it shortly.
+                            Thank you for choosing BarCIE International Center! We have successfully received your reservation request. Our admin team will now verify your payment and approve your booking shortly.
                         </p>
                         
                         <!-- Booking Details Card -->
@@ -1673,14 +1670,14 @@ if ($action === 'create_booking') {
                                 &#128221; What Happens Next?
                             </h4>
                             <ol style="margin: 0; padding-left: 20px; color: #1565c0; font-size: 14px; line-height: 1.8;">
-                                <li><strong>Upload Payment Proof:</strong> Submit your payment proof/receipt through the guest portal</li>
-                                <li><strong>Payment Verification:</strong> Our admin team will verify your payment (usually within 24 hours)</li>
-                                <li><strong>Booking Approval:</strong> Once payment is verified, your booking will be approved and confirmed</li>
-                                <li><strong>Confirmation Email:</strong> You will receive a final confirmation email once approved</li>
+                                <li><strong>Payment Verification:</strong> Our admin team will verify your submitted payment proof (usually within 24 hours)</li>
+                                <li><strong>Booking Approval:</strong> Once payment is verified, your booking will be officially approved and confirmed</li>
+                                <li><strong>Confirmation Email:</strong> You will receive a final confirmation email once your booking is approved</li>
+                                <li><strong>Prepare for Check-in:</strong> Bring a valid government-issued ID on your check-in date</li>
                             </ol>
                             <div style="margin-top: 15px; padding: 12px; background-color: #fff3cd; border-radius: 6px;">
                                 <p style="margin: 0; color: #856404; font-size: 13px; font-weight: 600; text-align: center;">
-                                    ⚠️ Your booking will appear in the admin booking section only after payment verification
+                                    ⏳ Please wait for admin approval - Your reservation will be confirmed once payment is verified
                                 </p>
                             </div>
                         </div>
@@ -1702,12 +1699,12 @@ if ($action === 'create_booking') {
                             For questions or modifications to your booking, please contact us with your receipt number <strong style="color: #2a5298;">' . htmlspecialchars($receipt_no) . '</strong>
                         </p>
                         
-                        <!-- Cancel Booking Section -->
+                        <!-- Cancel Booking Section - Only shown for pending bookings -->
                         <div style="text-align: center; margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
                             <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
                                 Need to cancel your booking?
                             </p>
-                            <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                            <a href="https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
                                 Cancel Booking
                             </a>
                             <p style="margin: 15px 0 0 0; color: #6c757d; font-size: 12px; font-style: italic;">
@@ -1830,11 +1827,8 @@ if ($action === 'create_booking') {
             $success = $stmt->execute();
             
             if ($success) {
-                // Update facility status to reserved
-                $update_status = $conn->prepare("UPDATE items SET room_status = 'reserved' WHERE id = ?");
-                $update_status->bind_param("i", $room_id);
-                $update_status->execute();
-                $update_status->close();
+                // DO NOT update room status for pencil bookings
+                // Pencil bookings are tentative and should not block availability
                 
                 // Send confirmation email to guest
                 if (!empty($contact_number) && preg_match('/@gmail\.com$/i', $contact_number)) {
@@ -2041,7 +2035,7 @@ if ($action === 'create_booking') {
                             Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
                         </p>
                         <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Thank you for your draft reservation (pencil booking) request! This is a <strong>temporary hold</strong> on your selected room/facility.
+                            Thank you for submitting your draft reservation (pencil booking)! This is a <strong>temporary hold</strong> on your selected room/facility while you finalize your plans.
                         </p>
                         
                         <!-- Important Notice -->
@@ -2050,8 +2044,8 @@ if ($action === 'create_booking') {
                                 ⚠️ Important: This is a DRAFT reservation only
                             </p>
                             <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
-                                To fully secure your reservation, you must confirm and complete payment within <strong>14 days (by ' . $expiresAt . ')</strong>. 
-                                If we do not receive confirmation and payment within this timeframe, your reservation slot may be released.
+                                To secure your reservation, you must confirm and complete payment within <strong>14 days (by ' . $expiresAt . ')</strong>. 
+                                Once you complete payment, our admin team will verify and approve your booking. If we do not receive confirmation and payment within this timeframe, your reservation slot may be released to other guests.
                             </p>
                         </div>
                         
@@ -2115,9 +2109,11 @@ if ($action === 'create_booking') {
                                 📋 Next Steps to Confirm Your Reservation:
                             </p>
                             <ol style="margin: 0; padding-left: 20px; color: #1976D2; font-size: 14px; line-height: 1.8;">
-                                <li>Contact us to confirm your booking intent</li>
-                                <li>Complete the payment process via bank transfer</li>
-                                <li>Receive your final booking confirmation</li>
+                                <li>Click the button above to convert your draft to a full reservation</li>
+                                <li>Complete the payment process via bank transfer or GCash</li>
+                                <li>Upload your payment receipt/proof</li>
+                                <li>Wait for admin verification and approval (usually within 24 hours)</li>
+                                <li>Receive your final booking confirmation email</li>
                             </ol>
                         </div>
                         
@@ -2167,7 +2163,7 @@ if ($action === 'create_booking') {
                             <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
                                 Need to cancel your pencil booking?
                             </p>
-                            <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '&type=pencil" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                            <a href="https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '&type=pencil" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
                                 Cancel Pencil Booking
                             </a>
                         </div>
@@ -3208,7 +3204,17 @@ if ($action === 'admin_update_payment') {
     $success = $stmt->execute();
     $stmt->close();
     
-    // If payment is rejected, release the room/facility (make it available again)
+    // If payment is verified, mark room as occupied
+    if ($success && $paymentAction === 'verify' && !empty($booking_data['room_id'])) {
+        $room_id = (int)$booking_data['room_id'];
+        $update_room = $conn->prepare("UPDATE items SET room_status = 'occupied' WHERE id = ?");
+        $update_room->bind_param("i", $room_id);
+        $update_room->execute();
+        $update_room->close();
+        error_log("Room/Facility ID $room_id set to occupied after payment verification for booking ID $bookingId");
+    }
+    
+    // If payment is rejected, ensure room stays available
     if ($success && $paymentAction === 'reject' && !empty($booking_data['room_id'])) {
         $room_id = (int)$booking_data['room_id'];
         

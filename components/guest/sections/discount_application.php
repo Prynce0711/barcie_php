@@ -17,9 +17,9 @@
       </select>
     </div>
     <div class="mb-3" id="discount_proof_section" style="display:none;">
-  <label for="discount_proof" class="form-label">Upload Valid ID/Proof <span class="text-danger">*</span></label>
-  <!-- Inline alert placeholder immediately after the asterisk -->
-  <span id="discount_proof_alert" style="display:inline-block; margin-left:6px;"></span>
+      <label for="discount_proof" class="form-label">Upload Valid ID/Proof <span class="text-danger">*</span></label>
+      <!-- Inline alert placeholder immediately after the asterisk -->
+      <span id="discount_proof_alert" style="display:inline-block; margin-left:6px;"></span>
       <input type="file" name="discount_proof" id="discount_proof" class="form-control" accept="image/*,application/pdf">
       <input type="hidden" name="discount_proof_cropped" id="discount_proof_cropped">
       <small class="form-text text-muted">Accepted: ID, certificate, or other proof (image or PDF). Discount will be automatically approved upon upload.</small>
@@ -50,11 +50,11 @@
 </div>
 
 <!-- Image Crop/Edit Modal -->
-  <?php include __DIR__ . '/../modals/image_crop_modal.php'; ?>
+<?php include __DIR__ . '/../modals/image_crop_modal.php'; ?>
 
 <script>
   // Discount card behaviour: show proof/details when a discount type selected
-  (function(){
+  (function() {
     function onDiscountChange() {
       const sel = document.getElementById('discount_type');
       const proof = document.getElementById('discount_proof_section');
@@ -90,7 +90,7 @@
       info.textContent = msg;
     }
 
-    document.addEventListener('DOMContentLoaded', function(){
+    document.addEventListener('DOMContentLoaded', function() {
       const sel = document.getElementById('discount_type');
       if (!sel) return;
       sel.addEventListener('change', onDiscountChange);
@@ -100,8 +100,8 @@
   })();
 </script>
 <script>
-  (function(){
-    // Client-side ID scanning using Canvas API - works entirely in browser
+  (function() {
+    // Discount ID Validation
     const proofInput = document.getElementById('discount_proof');
     const proofPreview = document.getElementById('discount_proof_preview');
     const proofLoading = document.getElementById('discount_proof_loading');
@@ -111,16 +111,15 @@
 
     if (!proofInput) return;
 
-    function escapeHtml(s){ return String(s||'').replace(/[&<>'\"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c])); }
-
-    /**
-     * Extract text from image using Tesseract.js OCR
-     */
+    // ============================================
+    // OCR: Extract text from ID image
+    // ============================================
     async function extractTextFromImage(imageDataUrl) {
-      // Check if Tesseract is available (we'll load it dynamically)
+      console.log('extractTextFromImage called');
+      
       if (typeof Tesseract === 'undefined') {
+        console.log('Tesseract not loaded, loading now...');
         try {
-          // Load Tesseract.js from CDN
           await new Promise((resolve, reject) => {
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
@@ -128,794 +127,541 @@
             script.onerror = reject;
             document.head.appendChild(script);
           });
+          console.log('Tesseract loaded successfully');
         } catch (error) {
-          console.warn('Failed to load Tesseract.js:', error);
-          return '';
+          console.error('Failed to load OCR library:', error);
+          return { text: '', fullData: null };
         }
       }
 
       try {
-        const worker = await Tesseract.createWorker('eng', 1, {
-          workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
-          langPath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
-          corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd.wasm.js',
-        });
+        console.log('Creating Tesseract worker...');
+        const worker = await Tesseract.createWorker('eng');
+        console.log('Recognizing text from image...');
         const result = await worker.recognize(imageDataUrl);
         await worker.terminate();
-        return result.data.text.toLowerCase();
+        
+        console.log('OCR Result:', result.data);
+        console.log('OCR Text (original):', result.data.text);
+        
+        // Return both lowercase for validation and original case for extraction
+        return { 
+          text: result.data.text.toLowerCase(), 
+          originalText: result.data.text,
+          fullData: result.data 
+        };
       } catch (error) {
         console.error('OCR failed:', error);
-        return '';
+        return { text: '', originalText: '', fullData: null };
       }
     }
 
-    /**
-     * Check if text contains LCUP keywords (flexible matching for OCR variations)
-     */
-    function checkTextForLCUP(text) {
-      // Normalize text: lowercase, remove extra spaces, remove special chars
-      const normalized = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
+    // ============================================
+    // Extract name and birthdate from OCR text
+    // ============================================
+    function extractNameAndBirthdate(ocrData) {
+      console.log('extractNameAndBirthdate called with:', ocrData);
       
-      // Primary keywords - check for partial matches to handle OCR errors
-      const primaryPatterns = [
-        // Full matches (best)
-        'la consolacion university philippines',
-        'la consolacion university',
-        'consolacion university philippines',
-        'consolacion university',
-        // Partial matches (good for OCR errors)
-        'la consolacion',
-        'consolacion',
-        'lcup',
-        'lcup malolos',
-        'malolos bulacan',
-        // Common OCR variations
-        'la consola cion', // OCR might split it
-        'consola cion',
-        'consolac ion'
+      if (!ocrData) {
+        console.error('No ocrData provided');
+        return { name: '', birthdate: '' };
+      }
+      
+      if (!ocrData.fullData) {
+        console.error('No fullData in ocrData');
+        return { name: '', birthdate: '' };
+      }
+      
+      // Use original text (not lowercase) for extraction
+      const text = ocrData.originalText || ocrData.fullData.text || '';
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      let extractedName = '';
+      let extractedBirthdate = '';
+      
+      console.log('OCR Full Text for Extraction (original case):', text);
+      console.log('OCR Lines:', lines);
+      
+      // Extract name with more flexible patterns
+      const namePatterns = [
+        // Matches "NAME: Juan Dela Cruz" or "NAME Juan Dela Cruz"
+        /(?:full\s*)?name[:\s]*([a-z][a-z\s,.'-]+)/i,
+        // Matches "SURNAME: Dela Cruz, GIVEN NAME: Juan"
+        /surname[:\s]*([a-z][a-z\s,.'-]+)/i,
+        // Matches "GIVEN NAME: Juan" or "FIRST NAME: Juan"
+        /(?:given|first)\s*name[:\s]*([a-z][a-z\s,.'-]+)/i,
+        // Matches lines that look like names (2-4 words, each starting with capital)
+        /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})$/m
       ];
-
-      // Secondary keywords - only valid if combined with primary
-      const secondaryKeywords = [
-        'college of information technology',
-        'information technology',
-        'student',
-        'estudyante',
-        'employee',
-        'personnel',
-        'cit', // College of IT abbreviation
-        'id no',
-        'student no'
-      ];
-
-      const foundPrimary = [];
-      const foundSecondary = [];
-
-      // Check primary patterns
-      for (const pattern of primaryPatterns) {
-        if (normalized.includes(pattern)) {
-          foundPrimary.push(pattern);
+      
+      for (const pattern of namePatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          let name = match[1].trim();
+          // Clean up the name: remove multiple spaces, trim
+          name = name.replace(/\s+/g, ' ').trim();
+          // Remove any trailing punctuation or numbers
+          name = name.replace(/[,.:;\d]+$/, '').trim();
+          // Must be at least 3 characters and not too long
+          if (name.length >= 3 && name.length <= 50) {
+            extractedName = name;
+            console.log('Name extracted with pattern:', pattern, '→', name);
+            break;
+          }
         }
       }
-
-      // Check secondary keywords
-      for (const keyword of secondaryKeywords) {
-        if (normalized.includes(keyword)) {
-          foundSecondary.push(keyword);
+      
+      // Extract birthdate with multiple patterns
+      const datePatterns = [
+        // Matches "BIRTH DATE: 01/15/1990" or "DATE OF BIRTH: 01/15/1990"
+        /(?:birth|birth[\s]?date|date[\s]?of[\s]?birth)[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i,
+        // Matches "DOB: 01/15/1990" or "D.O.B: 01/15/1990"
+        /d\.?o\.?b\.?[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i,
+        // Matches "BORN: 01/15/1990"
+        /born[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i,
+        // Matches any date format with year 1900-2099
+        /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.](?:19|20)\d{2})/,
+        // Matches dates like "Jan 15, 1990" or "January 15, 1990"
+        /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+(?:19|20)\d{2})/i
+      ];
+      
+      for (const pattern of datePatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          extractedBirthdate = match[1];
+          console.log('Birthdate extracted with pattern:', pattern, '→', extractedBirthdate);
+          break;
         }
       }
-
-      // Must have at least one primary keyword to be valid
-      const isValid = foundPrimary.length > 0;
-      const confidence = isValid ? Math.min(100, (foundPrimary.length * 50) + (foundSecondary.length * 15)) : 0;
-
-      return {
-        found: isValid,
-        keywords: foundPrimary.concat(foundSecondary),
-        confidence: confidence
-      };
+      
+      console.log('Final extraction → Name:', extractedName, 'Birthdate:', extractedBirthdate);
+      return { name: extractedName, birthdate: extractedBirthdate };
     }
 
-    /**
-     * Scan ID image using Canvas API to detect colors and patterns
-     */
-    async function scanIDImage(file, discountType) {
-      if (!discountType || !file.type.startsWith('image/')) {
-        return { detected: false };
+    // ============================================
+    // Helper: Convert date format to YYYY-MM-DD
+    // ============================================
+    function convertToDateFormat(dateStr) {
+      if (!dateStr) return null;
+      
+      // Handle month name formats like "Jan 15, 1990" or "January 15, 1990"
+      const monthNames = {
+        jan: '01', january: '01',
+        feb: '02', february: '02',
+        mar: '03', march: '03',
+        apr: '04', april: '04',
+        may: '05',
+        jun: '06', june: '06',
+        jul: '07', july: '07',
+        aug: '08', august: '08',
+        sep: '09', september: '09',
+        oct: '10', october: '10',
+        nov: '11', november: '11',
+        dec: '12', december: '12'
+      };
+      
+      // Try to parse "Month DD, YYYY" format
+      const monthNameMatch = dateStr.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2}),?\s+((?:19|20)\d{2})/i);
+      if (monthNameMatch) {
+        const month = monthNames[monthNameMatch[1].toLowerCase()];
+        const day = monthNameMatch[2].padStart(2, '0');
+        const year = monthNameMatch[3];
+        return `${year}-${month}-${day}`;
+      }
+      
+      // Try numeric date formats
+      const parts = dateStr.split(/[\/\-\.]/);
+      if (parts.length !== 3) return null;
+      
+      let year, month, day;
+      
+      // Check if format is YYYY-MM-DD
+      if (parts[0].length === 4) {
+        year = parts[0];
+        month = parts[1];
+        day = parts[2];
+      }
+      // Otherwise assume DD/MM/YYYY or MM/DD/YYYY
+      else {
+        year = parts[2];
+        // Try both formats
+        if (parseInt(parts[0]) > 12) {
+          // Must be DD/MM/YYYY (common in Philippines)
+          day = parts[0];
+          month = parts[1];
+        } else if (parseInt(parts[1]) > 12) {
+          // Must be MM/DD/YYYY
+          month = parts[0];
+          day = parts[1];
+        } else {
+          // Ambiguous, assume DD/MM/YYYY (Philippine format)
+          day = parts[0];
+          month = parts[1];
+        }
+      }
+      
+      // Pad with zeros
+      month = String(month).padStart(2, '0');
+      day = String(day).padStart(2, '0');
+      
+      // Basic validation
+      if (year.length === 4 && month.length === 2 && day.length === 2) {
+        const monthNum = parseInt(month);
+        const dayNum = parseInt(day);
+        if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
+          return `${year}-${month}-${day}`;
+        }
+      }
+      
+      return null;
+    }
+
+    // ============================================
+    // KEYWORD MAPPING - Edit keywords here
+    // ============================================
+    const DISCOUNT_KEYWORDS = {
+      // LCUP Student/Alumni Keywords
+      lcupstudent: [
+        'course',
+        'year',
+        'student',
+        'alumni',
+        'graduate',
+        'batch'
+      ],
+
+      // LCUP Personnel/Faculty Keywords
+      lcuppersonnel: [
+        'personnel',
+        'faculty',
+        'staff',
+        'employee',
+        'official'
+      ],
+
+      // PWD/Senior Citizen Keywords
+      pwd_senior: [
+        'pwd',
+        'senior citizen',
+        'senior',
+        'affairs',
+        'osca',
+        'disability',
+        'disabled',
+        'elderly',
+        'person with disability',
+        'persons with disability',
+        'pensioner',
+        'retiree'
+      ]
+    };
+
+    // ============================================
+    // Validation: Check keywords in text
+    // ============================================
+    function checkKeywordsInText(text, discountType) {
+      const normalized = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
+
+      // Get keywords for this discount type
+      const keywords = DISCOUNT_KEYWORDS[discountType] || [];
+
+      // Count how many keywords found
+      let matches = 0;
+      for (const keyword of keywords) {
+        if (normalized.includes(keyword)) matches++;
+      }
+
+      // Valid if at least 1 keyword found
+      return matches > 0;
+    }
+
+    // ============================================
+    // Color Detection: Check for LCUP blue color
+    // ============================================
+    function hasLCUPBlueColor(imageData) {
+      const pixels = imageData.data;
+      let bluePixels = 0;
+      let totalSamples = 0;
+
+      // Sample every 10th pixel for speed
+      for (let i = 0; i < pixels.length; i += 40) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+
+        totalSamples++;
+
+        // Check if pixel is blue-ish
+        if (b > 80 && b > r && b > g) {
+          bluePixels++;
+        }
+      }
+
+      const bluePercent = (bluePixels / totalSamples) * 100;
+      console.log('Blue color detected:', bluePercent.toFixed(1) + '%');
+
+      // LCUP IDs have at least 3% blue
+      return bluePercent > 3;
+    }
+
+    // ============================================
+    // Main Validation: Scan and validate ID
+    // ============================================
+    async function validateDiscountID(file, discountType) {
+      // Only validate images (reject PDFs)
+      if (!file.type.startsWith('image/')) {
+        return {
+          valid: false
+        };
       }
 
       return new Promise(async (resolve) => {
-        const img = new Image();
         const reader = new FileReader();
 
         reader.onload = async function(e) {
           const imageDataUrl = e.target.result;
-          
+          const img = new Image();
+
           img.onload = async function() {
             try {
+              // Prepare canvas for analysis
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
-              
-              // Resize for faster processing
               const maxWidth = 800;
               const scale = Math.min(1, maxWidth / img.width);
               canvas.width = img.width * scale;
               canvas.height = img.height * scale;
-              
               ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
               const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              const pixels = imageData.data;
+
+              // Extract text with OCR
+              const ocrData = await extractTextFromImage(imageDataUrl);
+              const extractedText = ocrData.text;
+              console.log('OCR Text:', extractedText.substring(0, 200));
               
-              // Analyze different regions
-              const top = analyzeRegion(pixels, canvas.width, canvas.height, 0, 0.33);
-              const middle = analyzeRegion(pixels, canvas.width, canvas.height, 0.33, 0.67);
-              const bottom = analyzeRegion(pixels, canvas.width, canvas.height, 0.67, 1);
+              // Extract name and birthdate for auto-fill
+              const { name, birthdate } = extractNameAndBirthdate(ocrData);
+              console.log('=== AUTO-FILL DEBUG ===');
+              console.log('Extracted Name:', name);
+              console.log('Extracted Birthdate:', birthdate);
               
-              const aspectRatio = canvas.width / canvas.height;
-              const isLandscape = aspectRatio > 1.3 && aspectRatio < 2;
-              
-              const result = { detected: false };
-              
-              // For LCUP IDs, accept if color OR text matches (not both required)
-              if (discountType === 'lcuppersonnel' || discountType === 'lcupstudent') {
-                try {
-                  // Run OCR in parallel with color analysis
-                  const ocrPromise = extractTextFromImage(imageDataUrl);
-                  const hasColorMatch = detectLCUPID(top, middle, bottom, isLandscape);
-                  
-                  console.log('LCUP Validation - Color Match:', hasColorMatch);
-                  
-                  // Wait for OCR result
-                  const extractedText = await ocrPromise;
-                  let hasTextMatch = false;
-                  
-                  console.log('LCUP Validation - Extracted Text:', extractedText ? extractedText.substring(0, 200) : 'none');
-                  
-                  if (extractedText && extractedText.trim().length > 0) {
-                    const textCheck = checkTextForLCUP(extractedText.toLowerCase());
-                    console.log('LCUP Validation - Text Check Result:', textCheck);
-                    if (textCheck.found) {
-                      hasTextMatch = true;
-                    }
-                  }
-                  
-                  // LENIENT: Accept if EITHER color pattern OR university text is found
-                  if (hasColorMatch || hasTextMatch) {
-                    result.detected = true;
-                    if (hasColorMatch && hasTextMatch) {
-                      console.log('LCUP ID ACCEPTED - both color and text match');
-                    } else if (hasColorMatch) {
-                      console.log('LCUP ID ACCEPTED - color match only');
-                      result.manualReview = true;
-                    } else {
-                      console.log('LCUP ID ACCEPTED - text match only');
-                      result.manualReview = true;
-                    }
+              if (name) {
+                // Capitalize name properly (Title Case)
+                const capitalizedName = name.split(' ')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                  .join(' ');
+                
+                console.log('Capitalized Name:', capitalizedName);
+                
+                // Auto-fill guest name fields
+                const reservationName = document.getElementById('reservation_guest_name');
+                const pencilName = document.querySelector('#pencilForm input[name="guest_name"]');
+                
+                console.log('Reservation Name Field:', reservationName);
+                console.log('Current Value:', reservationName ? reservationName.value : 'N/A');
+                console.log('Pencil Name Field:', pencilName);
+                
+                if (reservationName) {
+                  if (!reservationName.value) {
+                    reservationName.value = capitalizedName;
+                    console.log('✓ Filled reservation_guest_name with:', capitalizedName);
                   } else {
-                    // Neither color nor text match - accept with manual review
-                    result.detected = true;
-                    result.manualReview = true;
-                    console.log('LCUP ID ACCEPTED - manual review (no clear match)');
+                    console.log('⚠ Skipped: field already has value:', reservationName.value);
                   }
-                } catch (error) {
-                  // Error during detection - accept with manual review
-                  console.error('LCUP ID detection error:', error);
-                  result.detected = true;
-                  result.manualReview = true;
-                  console.log('LCUP ID ACCEPTED - manual review (detection failed)');
                 }
-              } else if (discountType === 'pwd_senior') {
-                // For PWD/Senior, try text detection but accept with manual review if OCR fails
-                try {
-                  const ocrPromise = extractTextFromImage(imageDataUrl);
-                  const extractedText = await ocrPromise;
-                  
-                  console.log('OCR extracted text for PWD/Senior:', extractedText);
-                  
-                  if (extractedText && extractedText.trim().length > 0) {
-                    const textLower = extractedText.toLowerCase().replace(/\s+/g, ' ');
-                    console.log('Normalized text:', textLower);
-                    
-                    // Check for PWD or Senior Citizen keywords
-                    const hasPwd = textLower.includes('pwd');
-                    const hasSenior = textLower.includes('senior');
-                    const hasCitizen = textLower.includes('citizen');
-                    const hasOsca = textLower.includes('osca');
-                    const hasDisability = textLower.includes('disability') || textLower.includes('disabled');
-                    const hasOffice = textLower.includes('office');
-                    const hasAffairs = textLower.includes('affairs');
-                    const hasGovernment = textLower.includes('government') || textLower.includes('republic');
-                    const hasPhilippines = textLower.includes('philippines') || textLower.includes('pilipinas');
-                    
-                    console.log('Keywords found:', { hasPwd, hasSenior, hasCitizen, hasOsca, hasDisability, hasOffice, hasAffairs, hasGovernment, hasPhilippines });
-                    
-                    if (hasPwd || 
-                        hasOsca ||
-                        (hasSenior && hasCitizen) ||
-                        (hasOffice && hasSenior) ||
-                        (hasOffice && hasCitizen) ||
-                        (hasSenior && hasAffairs) ||
-                        hasDisability ||
-                        textLower.includes('person with disability') ||
-                        textLower.includes('persons with disability') ||
-                        textLower.includes('elderly') ||
-                        textLower.includes('pensioner') ||
-                        textLower.includes('retiree') ||
-                        textLower.includes('senior id') ||
-                        textLower.includes('pwd id') ||
-                        textLower.includes('senior citizens')) {
-                      result.detected = true;
-                      console.log('PWD/Senior ID ACCEPTED - keywords found');
-                    } else {
-                      // OCR extracted text but no clear keywords - accept with manual review
-                      result.detected = true;
-                      result.manualReview = true;
-                      console.log('PWD/Senior ID ACCEPTED - manual review (OCR unclear)');
-                    }
+                if (pencilName) {
+                  if (!pencilName.value) {
+                    pencilName.value = capitalizedName;
+                    console.log('✓ Filled pencil guest_name with:', capitalizedName);
                   } else {
-                    // OCR failed or returned empty - accept with manual review instead of rejecting
-                    result.detected = true;
-                    result.manualReview = true;
-                    console.log('PWD/Senior ID ACCEPTED - manual review (no OCR text)');
+                    console.log('⚠ Skipped: pencil field already has value');
                   }
-                } catch (error) {
-                  // OCR error - accept with manual review instead of rejecting
-                  console.error('OCR error for PWD/Senior:', error);
-                  result.detected = true;
-                  result.manualReview = true;
-                  console.log('PWD/Senior ID ACCEPTED - manual review (OCR failed)');
                 }
+              } else {
+                console.log('⚠ No name extracted from OCR');
               }
               
-              resolve(result);
+              if (birthdate) {
+                console.log('Converting birthdate:', birthdate);
+                // Convert and auto-fill birthdate
+                const formattedDate = convertToDateFormat(birthdate);
+                console.log('Formatted Date:', formattedDate);
+                
+                if (formattedDate) {
+                  const reservationBirthdate = document.getElementById('reservation_birthdate');
+                  const pencilBirthdate = document.getElementById('pencil_birthdate');
+                  
+                  console.log('Reservation Birthdate Field:', reservationBirthdate);
+                  console.log('Pencil Birthdate Field:', pencilBirthdate);
+                  
+                  if (reservationBirthdate && !reservationBirthdate.value) {
+                    reservationBirthdate.value = formattedDate;
+                    reservationBirthdate.dispatchEvent(new Event('change'));
+                    console.log('✓ Filled reservation_birthdate with:', formattedDate);
+                  }
+                  if (pencilBirthdate && !pencilBirthdate.value) {
+                    pencilBirthdate.value = formattedDate;
+                    pencilBirthdate.dispatchEvent(new Event('change'));
+                    console.log('✓ Filled pencil_birthdate with:', formattedDate);
+                  }
+                } else {
+                  console.log('⚠ Failed to convert date format');
+                }
+              } else {
+                console.log('⚠ No birthdate extracted from OCR');
+              }
+              console.log('=== END AUTO-FILL DEBUG ===');
+
+              // Validate based on discount type (keywords only)
+              let isValid = false;
+
+              if (discountType === 'lcuppersonnel' || discountType === 'lcupstudent' || discountType === 'pwd_senior') {
+                // Check keywords for all discount types
+                const hasKeywords = checkKeywordsInText(extractedText, discountType);
+
+                console.log('Validation Check - Keywords found:', hasKeywords);
+
+                // Accept only if keywords are found
+                if (hasKeywords) {
+                  isValid = true;
+                } else {
+                  // Reject if no keywords found
+                  isValid = false;
+                }
+              } else {
+                // Unknown type - reject
+                isValid = false;
+              }
+
+              resolve({
+                valid: isValid
+              });
+
             } catch (error) {
-              // On any error, accept with manual review instead of rejecting
-              console.error('scanIDImage error:', error);
-              resolve({ detected: true, manualReview: true });
+              console.error('Validation error:', error);
+              // On error, reject
+              resolve({
+                valid: false
+              });
             }
           };
-          
-          img.onerror = () => resolve({ detected: false });
+
+          img.onerror = () => resolve({
+            valid: false
+          });
           img.src = imageDataUrl;
         };
-        
-        reader.onerror = () => resolve({ detected: false });
+
+        reader.onerror = () => resolve({
+          valid: false
+        });
         reader.readAsDataURL(file);
       });
     }
 
-    function analyzeRegion(pixels, width, height, startY, endY) {
-      const colors = { blue: 0, orange: 0, red: 0, yellow: 0, white: 0, samples: 0 };
-      const startRow = Math.floor(height * startY);
-      const endRow = Math.floor(height * endY);
-      
-      for (let y = startRow; y < endRow; y += 10) {
-        for (let x = 0; x < width; x += 10) {
-          const i = (y * width + x) * 4;
-          const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
-          colors.samples++;
-          
-          // More lenient blue detection - handles various shades and lighting conditions
-          // Blue should be dominant or at least equal to other channels
-          const isBluish = b > 80 && (b >= r || b >= g) && (b - r > 20 || b - g > 20);
-          const isStrongBlue = b > 100 && b > r && b > g;
-          
-          if (isBluish || isStrongBlue) colors.blue++;
-          if (r > 150 && g > 80 && g < 150 && b < 100) colors.orange++;
-          if (r > 150 && g < 100 && b < 100) colors.red++;
-          if (r > 180 && g > 150 && b < 100) colors.yellow++;
-          if (r > 200 && g > 200 && b > 200) colors.white++;
-        }
-      }
-      
-      if (colors.samples > 0) {
-        colors.bluePercent = (colors.blue / colors.samples) * 100;
-        colors.orangePercent = (colors.orange / colors.samples) * 100;
-        colors.redPercent = (colors.red / colors.samples) * 100;
-        colors.yellowPercent = (colors.yellow / colors.samples) * 100;
-        colors.whitePercent = (colors.white / colors.samples) * 100;
-      }
-      
-      return colors;
-    }
-
-    function detectLCUPID(top, middle, bottom, isLandscape) {
-      // LCUP IDs have a distinctive blue color scheme
-      // Log the percentages for debugging
-      console.log('LCUP Color Detection:', {
-        topBlue: top.bluePercent?.toFixed(2),
-        middleBlue: middle.bluePercent?.toFixed(2),
-        bottomBlue: bottom.bluePercent?.toFixed(2)
-      });
-      
-      // Check for blue in any region (lowered threshold for real photos)
-      if (top.bluePercent > 5 || middle.bluePercent > 5 || bottom.bluePercent > 5) {
-        console.log('LCUP ID detected by blue color in region');
-        return true;
-      }
-      
-      // Check overall blue presence (LCUP IDs are predominantly blue)
-      const totalBlue = (top.bluePercent + middle.bluePercent + bottom.bluePercent) / 3;
-      if (totalBlue > 3) {
-        console.log('LCUP ID detected by average blue color:', totalBlue.toFixed(2) + '%');
-        return true;
-      }
-      
-      console.log('No sufficient blue color detected');
-      return false;
-    }
-
-
-
-    function showScanResults(file, scanResult, discountType) {
+    // ============================================
+    // Display: Show validation results
+    // ============================================
+    function showValidationResults(file, result, discountType) {
       proofPreview.style.display = 'block';
       proofStatus.innerHTML = '';
-      
-      // Show thumbnail
+
+      // Show file thumbnail
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          proofThumb.innerHTML = `<img src="${e.target.result}" style="max-width:160px;border-radius:6px;object-fit:cover;">`;
+          proofThumb.innerHTML = `<img src="${e.target.result}" style="max-width:160px;border-radius:6px;">`;
         };
         reader.readAsDataURL(file);
       } else {
-        proofThumb.innerHTML = `<div class="p-2 border" style="border-radius:6px;">
-          <i class="far fa-file-pdf fa-2x"></i>
-          <div style="font-size:0.9rem;">${escapeHtml(file.name)}</div>
-        </div>`;
+        proofThumb.innerHTML = `<div class="p-2 border rounded"><i class="far fa-file-pdf fa-2x"></i><div class="small mt-1">${file.name}</div></div>`;
       }
 
-      // Display scan results
+      // Show validation status
       const statusEl = document.createElement('div');
-      
-      // VALIDATION: Accept if ID features are detected
-      if (scanResult.detected) {
+
+      if (result.valid) {
         statusEl.className = 'text-success fw-bold';
-        let msg = '';
-        
-        // Check if manual review is flagged
-        if (scanResult.manualReview) {
-          switch(discountType) {
-            case 'lcuppersonnel': msg = '✓ Accepted: LCUP Personnel ID uploaded (admin will verify)'; break;
-            case 'lcupstudent': msg = '✓ Accepted: LCUP Student/Alumni ID uploaded (admin will verify)'; break;
-            case 'pwd_senior': msg = '✓ Accepted: Senior/PWD ID uploaded (admin will verify)'; break;
-            default: msg = '✓ Accepted: Valid ID uploaded (admin will verify)';
-          }
-        } else {
-          switch(discountType) {
-            case 'lcuppersonnel': msg = '✓ Approved: LCUP Personnel ID verified'; break;
-            case 'lcupstudent': msg = '✓ Approved: LCUP Student/Alumni ID verified'; break;
-            case 'pwd_senior': msg = '✓ Approved: Senior/PWD ID verified'; break;
-            default: msg = '✓ Approved: Valid ID verified';
-          }
-        }
-        
-        statusEl.innerHTML = '<i class="fas fa-check-circle me-1"></i>' + msg;
+        statusEl.innerHTML = '<i class="fas fa-check-circle me-1"></i>✓ Discount ID accepted';
         proofInput.dataset.validProof = '1';
       } else {
-        // REJECT: No valid ID features detected
         statusEl.className = 'text-danger fw-bold';
-        let msg = '';
-        
-        // Use the rejection reason from scan result if available
-        if (scanResult.reason) {
-          msg = '✗ Not Approved: ' + scanResult.reason;
-        } else {
-          switch(discountType) {
-            case 'lcuppersonnel':
-              msg = '✗ Not Approved: This does not appear to be a LCUP Personnel/Faculty ID. Please upload a valid LCUP employee ID.';
-              break;
-            case 'lcupstudent':
-              msg = '✗ Not Approved: This does not appear to be a LCUP Student/Alumni ID. Please upload a valid LCUP student ID.';
-              break;
-            case 'pwd_senior':
-              msg = '✗ Not Approved: This does not appear to be a Senior/PWD ID. Please upload a valid government-issued senior citizen or PWD ID.';
-              break;
-            default:
-              msg = '✗ Not Approved: Could not verify ID. Please upload a clear photo of your ID.';
-          }
-        }
-        
-        statusEl.innerHTML = '<i class="fas fa-times-circle me-1"></i>' + msg;
+        statusEl.innerHTML = '<i class="fas fa-times-circle me-1"></i>✗ Please upload a valid ID for the selected discount type';
         proofInput.dataset.validProof = '0';
-        
-        // Show what was checked
-        const hintEl = document.createElement('div');
-        hintEl.className = 'text-muted small mt-2';
-        hintEl.innerHTML = '<strong>Tips for better validation:</strong><br>• Ensure good lighting and clear image<br>• ID should fill most of the frame<br>• Avoid shadows and glare<br>• Take photo on a plain background';
-        proofStatus.appendChild(hintEl);
       }
-      
+
       proofStatus.appendChild(statusEl);
     }
 
-    let currentFile = null;
-    let cropper = null;
-
-    // Load Cropper.js library dynamically
-    function loadCropperJS() {
-      return new Promise((resolve, reject) => {
-        if (typeof Cropper !== 'undefined') {
-          resolve();
-          return; 
-        }
-        
-        // Load CSS
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css';
-        document.head.appendChild(link);
-        
-        // Load JS
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }
-
-    // Open crop modal
-    async function openCropModal(file) {
-      try {
-        await loadCropperJS();
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const cropImage = document.getElementById('cropImage');
-          const imgSrc = e.target.result;
-
-          // Determine image orientation first so we can set correct aspect ratio
-          const probe = new Image();
-          probe.onload = function() {
-            // LCUP ID is portrait (height > width) — use portrait aspect ratio
-            const idLandscapeRatio = 1.586; // width/height for landscape IDs
-            const idPortraitRatio = 1 / idLandscapeRatio; // width/height for portrait IDs
-            const usePortrait = probe.naturalHeight > probe.naturalWidth;
-            const aspectForCropper = usePortrait ? idPortraitRatio : idLandscapeRatio;
-
-            cropImage.src = imgSrc;
-
-            // Initialize Cropper
-            if (cropper) {
-              cropper.destroy();
-            }
-
-            let cropInitialZoom = 1;
-            // Always enforce ID aspect ratio, but we'll set the crop box to contain the whole image
-            cropper = new Cropper(cropImage, {
-              aspectRatio: aspectForCropper,
-              viewMode: 1, // Restrict to canvas
-              dragMode: 'move',
-              autoCropArea: 1,
-              restore: false,
-              guides: true,
-              center: true,
-              highlight: true,
-              cropBoxMovable: true,
-              cropBoxResizable: true,
-              toggleDragModeOnDblclick: false,
-              responsive: true,
-              checkCrossOrigin: false,
-              background: false,
-              minContainerWidth: 700,
-              minContainerHeight: 500,
-              ready() {
-                // Fit the image fully inside the container initially (avoid cropping portrait images)
-                try {
-                  const containerData = cropper.getContainerData();
-                  const imgData = cropper.getImageData();
-
-                  // Calculate a zoom level that fits the whole image inside container
-                  const fitZoomX = containerData.width / (imgData.naturalWidth || imgData.width || 1);
-                  const fitZoomY = containerData.height / (imgData.naturalHeight || imgData.height || 1);
-                  const fitZoom = Math.min(fitZoomX, fitZoomY, 1);
-
-                  // Apply the zoom to show the entire image (so portrait images are not cropped)
-                  try { cropper.zoomTo(fitZoom); } catch (e) { /* ignore */ }
-
-                  // Configure zoom slider around the fitZoom
-                  const zr = document.getElementById('zoomRange');
-                  if (zr) {
-                    const min = Math.max(0.2, fitZoom * 0.5);
-                    const max = Math.max(fitZoom * 3, min + 0.5);
-                    zr.min = min; zr.max = max; zr.step = 0.01; zr.value = fitZoom; zr.dataset.base = fitZoom;
-                  }
-                  // Expand crop box to contain the displayed image while keeping the enforced aspect ratio
-                  try {
-                    const updatedImg = cropper.getImageData();
-                    const canvasData = cropper.getCanvasData();
-                    const dispW = updatedImg.width;
-                    const dispH = updatedImg.height;
-                    const targetAspect = aspectForCropper;
-
-                    // Compute minimal crop box that contains the displayed image while matching aspect ratio
-                    let cropW = dispW;
-                    let cropH = cropW / targetAspect;
-                    if (cropH < dispH) {
-                      cropH = dispH;
-                      cropW = cropH * targetAspect;
-                    }
-
-                    // Center crop box over the image display area
-                    const left = canvasData.left + (canvasData.width - cropW) / 2;
-                    const top = canvasData.top + (canvasData.height - cropH) / 2;
-
-                    cropper.setCropBoxData({ left: Math.max(0, left), top: Math.max(0, top), width: Math.min(cropW, canvasData.width), height: Math.min(cropH, canvasData.height) });
-                  } catch (e) { /* ignore */ }
-                } catch (e) {
-                  console.warn('Cropper fit failed', e);
-                }
-              }
-            });            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('imageCropModal'));
-            modal.show();
-            try { bindModalControls(); } catch (e) { /* ignore */ }
-          };
-          probe.src = imgSrc;
-        };
-        reader.readAsDataURL(file);
-      } catch (error) {
-        console.error('Failed to load cropper:', error);
-        showToast('Failed to load image editor. Processing original image...', 'warning');
-        processImage(file);
-      }
-    }
-
-    // Crop controls
-    document.getElementById('rotateLeft')?.addEventListener('click', () => {
-      if (cropper) cropper.rotate(-90);
-    });
-    
-    document.getElementById('rotateRight')?.addEventListener('click', () => {
-      if (cropper) cropper.rotate(90);
-    });
-    
-    document.getElementById('flipHorizontal')?.addEventListener('click', () => {
-      if (cropper) cropper.scaleX(-cropper.getData().scaleX || -1);
-    });
-    
-    document.getElementById('flipVertical')?.addEventListener('click', () => {
-      if (cropper) cropper.scaleY(-cropper.getData().scaleY || -1);
-    });
-    
-    document.getElementById('zoomRange')?.addEventListener('input', function() {
-      if (cropper) {
-        const v = parseFloat(this.value);
-        if (!isNaN(v)) {
-          try { cropper.zoomTo(v); } catch(e) { /* ignore */ }
-        }
-      }
-    });
-    
-    // Reset button removed; keep function available if needed elsewhere
-    
-    document.getElementById('applyCrop')?.addEventListener('click', async () => {
-      if (!cropper) return;
-      
-      // Get cropped canvas
-      const canvas = cropper.getCroppedCanvas({
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageSmoothingEnabled: true,
-        imageSmoothingQuality: 'high',
-      });
-      
-      // Convert to blob
-      canvas.toBlob(async (blob) => {
-        const croppedFile = new File([blob], currentFile.name, {
-          type: currentFile.type,
-          lastModified: Date.now()
-        });
-        
-        // Close modal
-        bootstrap.Modal.getInstance(document.getElementById('imageCropModal')).hide();
-        
-        // Process cropped image
-        await processImage(croppedFile);
-        
-        // Store cropped data URL for submission
-        document.getElementById('discount_proof_cropped').value = canvas.toDataURL(currentFile.type);
-      }, currentFile.type, 0.95);
-    });
-
-    // Detect current crop without closing modal
-    async function detectCurrentCrop() {
-      const statusEl = document.getElementById('modal_detect_status');
-      statusEl.innerHTML = '<small class="text-muted">Running quick detection on current crop...</small>';
-      try {
-        if (!cropper) {
-          statusEl.innerHTML = '<span class="text-danger">No image loaded</span>';
-          return;
-        }
-        const canvas = cropper.getCroppedCanvas({ maxWidth: 1600, maxHeight: 1600 });
-        if (!canvas) {
-          statusEl.innerHTML = '<span class="text-danger">Unable to get crop</span>';
-          return;
-        }
-        // Convert to blob and create File to reuse scanIDImage
-        await new Promise((res) => setTimeout(res, 50));
-        canvas.toBlob(async (blob) => {
-          const tmpFile = new File([blob], (currentFile && currentFile.name) ? currentFile.name : 'crop.jpg', { type: 'image/jpeg', lastModified: Date.now() });
-          const discountType = discountTypeSel ? discountTypeSel.value : '';
-          const scanResult = await scanIDImage(tmpFile, discountType);
-            // Show quick result
-            if (scanResult.detected) {
-              statusEl.innerHTML = '<span class="text-success fw-bold"><i class="fas fa-check-circle me-2"></i>Valid discount proof detected</span>';
-            } else {
-              statusEl.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-2"></i>Discount proof not detected</span>';
-            }
-            // Show OCR preview for user feedback
-            try {
-              const ocrPreview = document.getElementById('modalOcrPreview');
-              if (ocrPreview) {
-                ocrPreview.style.display = 'block';
-                if (scanResult.ocrText && scanResult.ocrText.trim().length > 0) {
-                  ocrPreview.textContent = 'OCR: ' + scanResult.ocrText.trim();
-                } else {
-                  ocrPreview.textContent = 'OCR: (no readable text detected)';
-                }
-              }
-            } catch (e) { /* ignore */ }
-        }, 'image/jpeg', 0.95);
-      } catch (e) {
-        console.error(e);
-        statusEl.innerHTML = '<span class="text-danger">Detection failed</span>';
-      }
-    }
-
-    // Detect Now button removed per request
-
-    // Bind modal upload/camera controls
-    function bindModalControls() {
-      const modalUploadBtn = document.getElementById('modalUploadBtn');
-      const modalUploadInput = document.getElementById('modalUploadInput');
-      const modalCameraBtn = document.getElementById('modalCameraBtn');
-      const modalCameraCloseBtn = document.getElementById('modalCameraCloseBtn');
-      const cameraWrapper = document.getElementById('cameraWrapper');
-      const modalVideo = document.getElementById('modalCameraVideo');
-      const modalCaptureBtn = document.getElementById('modalCaptureBtn');
-
-      if (modalUploadBtn && modalUploadInput) {
-        modalUploadBtn.onclick = () => modalUploadInput.click();
-        modalUploadInput.onchange = async (ev) => {
-          const f = ev.target.files && ev.target.files[0];
-          if (f) {
-            currentFile = f;
-            // Replace image src and re-init cropper: reopen modal with file
-            await openCropModal(f);
-          }
-        };
-      }
-
-      let streamRef = null;
-      async function startCamera() {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-          streamRef = stream;
-          if (modalVideo) modalVideo.srcObject = stream;
-          if (cameraWrapper) cameraWrapper.style.display = 'flex';
-          const imgEl = document.getElementById('cropImage');
-          if (imgEl) imgEl.style.display = 'none';
-          if (cropper) { cropper.destroy(); cropper = null; }
-        } catch (err) {
-          showToast('Camera access denied or not available', 'error');
-        }
-      }
-
-      function stopCamera() {
-        try {
-          if (streamRef) {
-            streamRef.getTracks().forEach(t => t.stop());
-            streamRef = null;
-          }
-        } catch (e) {}
-        if (cameraWrapper) cameraWrapper.style.display = 'none';
-        const imgEl = document.getElementById('cropImage');
-        if (imgEl) imgEl.style.display = 'block';
-      }
-
-      modalCameraBtn?.addEventListener('click', () => startCamera());
-      modalCameraCloseBtn?.addEventListener('click', () => stopCamera());
-
-      modalCaptureBtn?.addEventListener('click', async () => {
-        try {
-          const video = modalVideo;
-          const w = video.videoWidth || 1280;
-          const h = video.videoHeight || 720;
-          const cv = document.createElement('canvas');
-          cv.width = w; cv.height = h;
-          const ctx = cv.getContext('2d');
-          ctx.drawImage(video, 0, 0, w, h);
-          const dataUrl = cv.toDataURL('image/jpeg', 0.95);
-          stopCamera();
-          const blob = await (await fetch(dataUrl)).blob();
-          const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
-          currentFile = file;
-          // Re-open modal with the captured file so openCropModal handles orientation and fitting
-          await openCropModal(file);
-        } catch (e) {
-          console.error('capture failed', e);
-        }
-      });
-    }
-
-    // Keyboard shortcuts while modal is open
-    (function(){
-      const modalEl = document.getElementById('imageCropModal');
-      if (!modalEl) return;
-
-      modalEl.addEventListener('shown.bs.modal', () => {
-        window._cropModalKeyHandler = function(e) {
-          if (!cropper) return;
-          const zr = document.getElementById('zoomRange');
-          if (e.key === 'r' || e.key === 'R') { try { cropper.rotate(90); } catch(e){} e.preventDefault(); }
-          if (e.key === 'l' || e.key === 'L') { try { cropper.rotate(-90); } catch(e){} e.preventDefault(); }
-          if (e.key === '+' || e.key === '=') { try { if (zr) { let v = parseFloat(zr.value||1); v = Math.min(parseFloat(zr.max||4), v + 0.1); zr.value = v; cropper.zoomTo(v); } } catch(e){} e.preventDefault(); }
-          if (e.key === '-') { try { if (zr) { let v = parseFloat(zr.value||1); v = Math.max(parseFloat(zr.min||0.2), v - 0.1); zr.value = v; cropper.zoomTo(v); } } catch(e){} e.preventDefault(); }
-          if (e.key === 'Enter') { const apply = document.getElementById('applyCrop'); if (apply) apply.click(); }
-          if (e.key === 'Escape') { try { bootstrap.Modal.getInstance(modalEl).hide(); } catch(e){} }
-        };
-        window.addEventListener('keydown', window._cropModalKeyHandler);
-      });
-
-      modalEl.addEventListener('hidden.bs.modal', () => {
-        if (window._cropModalKeyHandler) {
-          window.removeEventListener('keydown', window._cropModalKeyHandler);
-          window._cropModalKeyHandler = null;
-        }
-      });
-    })();
-
-    // Process and validate image
-    async function processImage(file) {
+    // ============================================
+    // Main: Process uploaded file
+    // ============================================
+    async function processUploadedFile(file) {
       proofLoading.style.display = 'inline-block';
-      proofStatus.innerHTML = '<small class="text-muted">Scanning ID...</small>';
+      proofStatus.innerHTML = '<small class="text-muted">Validating ID...</small>';
       proofThumb.innerHTML = '';
       proofInput.dataset.validProof = '0';
       proofPreview.style.display = 'block';
 
       const discountType = discountTypeSel ? discountTypeSel.value : '';
-      
-      // Scan the ID image
-      const scanResult = await scanIDImage(file, discountType);
-      
+
+      // Validate the ID
+      const result = await validateDiscountID(file, discountType);
+
       proofLoading.style.display = 'none';
-      showScanResults(file, scanResult, discountType);
+      showValidationResults(file, result, discountType);
+      
+      // Trigger form lock check if the function exists (in booking.php)
+      if (typeof window.checkAndEnableFormFields === 'function') {
+        window.checkAndEnableFormFields('reservation');
+        window.checkAndEnableFormFields('pencil');
+      }
     }
 
-    proofInput.addEventListener('change', async function(){
-      const f = this.files && this.files[0];
-      if (!f) {
+    // ============================================
+    // Event: File input changed
+    // ============================================
+    proofInput.addEventListener('change', async function() {
+      const file = this.files && this.files[0];
+      if (!file) {
         proofPreview.style.display = 'none';
         proofInput.dataset.validProof = '';
         return;
       }
 
-      // Only allow cropping for images
-      if (f.type.startsWith('image/')) {
-        currentFile = f;
-        await openCropModal(f);
-      } else {
-        // PDF or other files - process directly
-        await processImage(f);
-      }
+      // Process file directly without cropping
+      await processUploadedFile(file);
     });
 
-    // Re-scan when discount type changes
-    if (discountTypeSel){
-      discountTypeSel.addEventListener('change', async function(){
-        const f = proofInput.files && proofInput.files[0];
-        if (!f || !f.type.startsWith('image/')) return;
-        
+    // ============================================
+    // Event: Discount type changed - re-validate
+    // ============================================
+    if (discountTypeSel) {
+      discountTypeSel.addEventListener('change', async function() {
+        const file = proofInput.files && proofInput.files[0];
+        if (!file || !file.type.startsWith('image/')) {
+          // Trigger form lock check when discount type changes
+          if (typeof window.checkAndEnableFormFields === 'function') {
+            window.checkAndEnableFormFields('reservation');
+            window.checkAndEnableFormFields('pencil');
+          }
+          return;
+        }
+
         proofLoading.style.display = 'inline-block';
-        proofStatus.innerHTML = '<small class="text-muted">Re-scanning ID...</small>';
-        
-        const scanResult = await scanIDImage(f, discountTypeSel.value);
-        
+        proofStatus.innerHTML = '<small class="text-muted">Re-validating ID...</small>';
+
+        const result = await validateDiscountID(file, discountTypeSel.value);
+
         proofLoading.style.display = 'none';
-        showScanResults(f, scanResult, discountTypeSel.value);
+        showValidationResults(file, result, discountTypeSel.value);
+        
+        // Trigger form lock check after re-validation
+        if (typeof window.checkAndEnableFormFields === 'function') {
+          window.checkAndEnableFormFields('reservation');
+          window.checkAndEnableFormFields('pencil');
+        }
       });
     }
+
   })();
 </script>

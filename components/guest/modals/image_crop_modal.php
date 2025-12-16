@@ -1060,55 +1060,9 @@ async function extractTextFromImage(imageDataUrl) {
       });
     })();
 
-    // Process and validate image
-    async function processImage(file) {
-      proofLoading.style.display = 'inline-block';
-      proofStatus.innerHTML = '<small class="text-muted">Scanning ID...</small>';
-      proofThumb.innerHTML = '';
-      proofInput.dataset.validProof = '0';
-      proofPreview.style.display = 'block';
-
-      const discountType = discountTypeSel ? discountTypeSel.value : '';
-      
-      // Scan the ID image
-      const scanResult = await scanIDImage(file, discountType);
-      
-      proofLoading.style.display = 'none';
-      showScanResults(file, scanResult, discountType);
-    }
-
-    proofInput.addEventListener('change', async function(){
-      const f = this.files && this.files[0];
-      if (!f) {
-        proofPreview.style.display = 'none';
-        proofInput.dataset.validProof = '';
-        return;
-      }
-
-      // Only allow cropping for images
-      if (f.type.startsWith('image/')) {
-        currentFile = f;
-        await openCropModal(f);
-      } else {
-        // PDF or other files - process directly
-        await processImage(f);
-      }
-    });
-
-    // Re-scan when discount type changes
-    if (discountTypeSel){
-      discountTypeSel.addEventListener('change', async function(){
-        const f = proofInput.files && proofInput.files[0];
-        if (!f || !f.type.startsWith('image/')) return;
-        
-        proofLoading.style.display = 'inline-block';
-        proofStatus.innerHTML = '<small class="text-muted">Re-scanning ID...</small>';
-        
-        const scanResult = await scanIDImage(f, discountTypeSel.value);
-        
-        proofLoading.style.display = 'none';
-        showScanResults(f, scanResult, discountTypeSel.value);
-      });
-    }
+    // ============================================
+    // DUPLICATE EVENT LISTENERS REMOVED
+    // File handling is done in discount_application.php
+    // ============================================
   })();
 </script>

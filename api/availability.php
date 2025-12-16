@@ -1,6 +1,11 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
+// Prevent caching
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 try {
     if (!table_exists($conn, 'bookings') || !table_exists($conn, 'items')) {
         json_error('Required tables missing', 500);
@@ -55,19 +60,27 @@ try {
         }
 
         $start = $row['checkin'] ?: date('Y-m-d');
-        $end = $row['checkout'] ?: date('Y-m-d', strtotime($start . ' +1 day'));
+        // If checkout is null/empty, default to same day (1 day event)
+        $end = $row['checkout'] ?: $start;
+        // Calendar end is always +1 day for FullCalendar's exclusive end date
         $calendar_end = date('Y-m-d', strtotime($end . ' +1 day'));
         $duration_days = ceil((strtotime($end) - strtotime($start)) / 86400);
+        // Ensure at least 1 day
+        if ($duration_days < 1) $duration_days = 1;
 
         $color = '#dc3545';
         $status_text = 'Booked';
         if ($row['status'] === 'pending') { $color = '#ffc107'; $status_text = 'Pending'; }
         elseif ($row['status'] === 'checked_in') { $color = '#17a2b8'; $status_text = 'Occupied'; }
 
-        $duration_text = $duration_days > 1 ? "({$duration_days} days)" : '(1 day)';
+        // Format title with date range if multi-day
+        $title = $room_facility . ' - ' . $status_text;
+        if ($duration_days > 1) {
+            $title .= ' (' . date('j', strtotime($start)) . '-' . date('j', strtotime($end)) . ')';
+        }
 
         $events[] = [
-            'title' => $room_facility . ' - ' . $status_text . ' ' . $duration_text,
+            'title' => $title,
             'start' => $start,
             'end' => $calendar_end,
             'backgroundColor' => $color,
@@ -114,15 +127,23 @@ try {
                 }
 
                 $start = $prow['checkin'] ?: date('Y-m-d');
-                $end = $prow['checkout'] ?: date('Y-m-d', strtotime($start . ' +1 day'));
+                // If checkout is null/empty, default to same day (1 day event)
+                $end = $prow['checkout'] ?: $start;
+                // Calendar end is always +1 day for FullCalendar's exclusive end date
                 $calendar_end = date('Y-m-d', strtotime($end . ' +1 day'));
                 $duration_days = ceil((strtotime($end) - strtotime($start)) / 86400);
+                // Ensure at least 1 day
+                if ($duration_days < 1) $duration_days = 1;
 
-                $duration_text = $duration_days > 1 ? "({$duration_days} days)" : '(1 day)';
+                // Format title with date range if multi-day
+                $title = $room_facility . ' - Pencil';
+                if ($duration_days > 1) {
+                    $title .= ' (' . date('j', strtotime($start)) . '-' . date('j', strtotime($end)) . ')';
+                }
                 
                 // Pencil bookings shown in orange/amber color
                 $events[] = [
-                    'title' => $room_facility . ' - Pencil Booking ' . $duration_text,
+                    'title' => $title,
                     'start' => $start,
                     'end' => $calendar_end,
                     'backgroundColor' => '#fd7e14',

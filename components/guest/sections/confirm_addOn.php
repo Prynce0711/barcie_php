@@ -109,7 +109,7 @@
       <div class="modal-header bg-warning bg-opacity-10">
         <h5 class="modal-title">
           <i class="fas fa-file-contract me-2"></i>
-          Full Payment & Refund Policy
+          Terms and Conditions - House Rules & Regulations
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closePolicyModal"></button>
       </div>
@@ -118,98 +118,129 @@
           <div class="policy-header-image mb-3">
             <img src="assets/images/imageBg/barcie-logo.png" alt="BarCIE Logo" class="img-fluid" style="max-width: 200px; height: auto;" onerror="this.style.display='none'">
           </div>
-          <h4 class="text-warning fw-bold">
+          <h4 class="text-primary fw-bold">
             <i class="fas fa-building me-2"></i>
-            BarCIE International Center
+            Welcome to BarCIE International Center!
           </h4>
-          <p class="text-muted mb-1">Full Payment & Refund Policy</p>
-          <span class="badge bg-warning text-dark">Version 1.0</span>
           <hr class="my-3">
         </div>
 
         <div class="policy-section mb-4">
-          <h5 class="text-danger">
-            <i class="fas fa-ban me-2"></i>
-            1. NON-REFUNDABLE POLICY
-          </h5>
-          <p class="ms-4">
-            All payments made to BarCIE International Center are <strong>strictly non-refundable</strong> under any circumstances.
+          <p class="text-justify" style="line-height: 1.8;">
+            The BarCIE International Center was built in 2000 as a training center for the Hotel and Restaurant Management students of the La Consolacion University Philippines in Malolos City. As Part of the LCUP, it promotes the Vision, Mission, Goals and Core Values of the University. It upholds a Catholic-Augustinian-Filipino education and promotes gender consciousness, patriotism, creation spirituality, justice and peace.
+          </p>
+          <p class="text-justify" style="line-height: 1.8;">
+            The Center has become a conducive place for conventions, seminars and conferences, recollections and retreats, as well as a pleasant place for wedding celebrations, birthday parties and the like. It is our desire to provide quality service and to keep the center safe, clean and a convenient place for you to stay.
           </p>
         </div>
 
-        <div class="policy-section mb-4">
-          <h5 class="text-danger">
-            <i class="fas fa-calendar-times me-2"></i>
-            2. CANCELLATION POLICY
+        <div class="alert alert-primary mb-4">
+          <h5 class="fw-bold mb-3">
+            <i class="fas fa-clipboard-list me-2"></i>
+            For the pleasure of all our guests, kindly observe the Center's House Rules and Regulations:
           </h5>
-          <p class="ms-4">
-            Booking cancellations will <strong>not result in refunds, credits, or transfers</strong> to future bookings.
-          </p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>1.</strong> Check out time is 12:00 noon, regardless of the number of hours of stay within the day prior to check-out. If the guest intend to stay beyond the reservation period, kindly notify the Front Desk at least a day before the intended extension.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>2.</strong> Remember to turn off lights and air-conditioning units whenever leaving the Center for a long period of time.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>3.</strong> Observe silence at all times. Unattended children are not allowed to play or loiter around the lobby, function areas, pool side, staircases and parking lot for safety reasons.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>4.</strong> Report breakage or damage inside the room.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>5.</strong> Turn off faucets, shower and electrical appliances/devices after use.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>6.</strong> Breakfast and lunch are available on personal account at the Café Barcelo from Monday till Saturday.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>7.</strong> Cooking and bringing of food inside the room is not allowed.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>8.</strong> Drinking alcoholic liquor or any intoxicating materials/drugs inside the room is strictly prohibited.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>9.</strong> Bringing in firearms, deadly weapons and gambling devices is not allowed in the Center.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>10.</strong> Keeping of inflammable materials and any kind of explosive inside the room is prohibited.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>11.</strong> Unauthorized/Unregistered guests are not allowed to sleep/stay in the room. Entertainment of unregistered guests may be done in the ground floor lobby.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>12.</strong> Guests should deposit room key to the Front Desk Receptionist when leaving the Center's premises. In case of lost key, kindly report it to the Receptionist for replacement.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>13.</strong> Pets are not allowed inside the Center.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>14.</strong> Windows and doors should be closed anytime while the air-conditioning unit is on.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>15.</strong> Laundry services are provided. Washing of clothes inside the room is not allowed.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>16.</strong> Do not leave valuables such as cash, jewelries, cell phone, camera, passport, ticket, etc., for safety reasons. The management will not be responsible for the loss of personal/valuable items unless surrendered for safekeeping.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>17.</strong> A clinic is available within the campus, hence; should our guests feel sick, kindly notify the Front Desk for assistance.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>18.</strong> Settle bills one (1) hour before departure at the Front Desk in order to get assistance during check-out.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>19.</strong> Please wear proper attire suited for in different areas of the Center's facilities.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>20.</strong> Pool users are requested not to go through the lobby when going up the rooms. Kindly use the back door near the shower area.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>21.</strong> All items inside the room are inventoried. We will let our guests sign the checklist upon check-in.</p>
         </div>
 
         <div class="policy-section mb-4">
-          <h5 class="text-danger">
-            <i class="fas fa-user-slash me-2"></i>
-            3. NO-SHOW POLICY
-          </h5>
-          <p class="ms-4">
-            Failure to arrive for a confirmed booking will result in <strong>forfeiture of all payments made</strong>.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-primary">
-            <i class="fas fa-lock me-2"></i>
-            4. PAYMENT FINALITY
-          </h5>
-          <p class="ms-4">
-            Once payment is received and processed, it is considered <strong>final and cannot be reversed</strong>.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-primary">
-            <i class="fas fa-edit me-2"></i>
-            5. MODIFICATIONS
-          </h5>
-          <p class="ms-4">
-            Booking modifications may be possible subject to availability and additional fees, but <strong>original payments remain non-refundable</strong>.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-warning">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            6. FORCE MAJEURE
-          </h5>
-          <p class="ms-4">
-            BarCIE is <strong>not liable for refunds</strong> due to circumstances beyond our control (natural disasters, government restrictions, etc.).
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-info">
-            <i class="fas fa-user-check me-2"></i>
-            7. GUEST RESPONSIBILITY
-          </h5>
-          <p class="ms-4">
-            Guests are responsible for ensuring their booking details are correct before confirming payment.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-success">
-            <i class="fas fa-phone me-2"></i>
-            8. CONTACT
-          </h5>
-          <p class="ms-4">
-            For questions about this policy, please contact us at <strong>info@barcie.edu.ph</strong> or call our front desk.
-          </p>
+          <p class="ms-3"><strong>22.</strong> The Center has the right to inspect guests' luggage if the Center deems it necessary due to missing items inside the room.</p>
         </div>
 
         <div class="alert alert-warning mt-4">
-          <i class="fas fa-info-circle me-2"></i>
-          <strong>Important:</strong> By checking the agreement boxes in the booking confirmation, you acknowledge that you have read, understood, and agree to these terms.
+          <p class="mb-2"><strong>Any violation of the above House Rules and Regulations, a fine will be charged to your account.</strong></p>
+          <p class="mb-0 small text-muted">(Please seek information from the Front Desk Officers)</p>
+        </div>
+
+        <div class="alert alert-info mt-3">
+          <p class="mb-2"><strong>Thank you for having chosen BarCIE International Center as your home away from home.</strong></p>
+          <p class="mb-0 small"><strong>N.B.</strong> The Center is aspiring to improve its services and upgrade its facilities for the convenience of our clients. Help us meet the standard service by writing down your comments and suggestions. Thank you very much!</p>
+        </div>
+
+        <div class="text-end mt-3">
+          <p class="text-muted mb-0"><em>BarCIE Management</em></p>
         </div>
       </div>
       <div class="modal-footer">
@@ -235,8 +266,8 @@
         <div class="success-icon mb-3">
           <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
         </div>
-        <h4 class="text-success mb-3">Your booking has been successfully confirmed!</h4>
-        <p class="text-muted mb-4" id="successMessage">Thank you for choosing BarCIE International Center.</p>
+        <h4 class="text-success mb-3">Your reservation has been successfully submitted!</h4>
+        <p class="text-muted mb-3" id="successMessage">Thank you for choosing BarCIE International Center.</p>
         
         <!-- Booking Details for Print -->
         <div id="bookingDetailsForPrint" class="text-start border rounded p-3 mb-3" style="display: none;">
@@ -244,9 +275,15 @@
           <div id="printBookingDetails"></div>
         </div>
         
-        <div class="alert alert-info">
-          <i class="fas fa-info-circle me-2"></i>
-          <small>Please check your email for the booking confirmation.</small>
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-clock me-2"></i>
+          <strong>⏳ Awaiting Payment Verification</strong>
+          <p class="mb-0 mt-2 small">Your reservation is currently pending admin approval. Please wait while our team verifies your payment. You will receive a confirmation email once approved (usually within 24 hours).</p>
+        </div>
+        
+        <div class="alert alert-info mb-0">
+          <i class="fas fa-envelope me-2"></i>
+          <small>A confirmation email has been sent with detailed instructions.</small>
         </div>
       </div>
       <div class="modal-footer justify-content-center print-buttons-container">
@@ -832,9 +869,11 @@
       if (val && !/[@].+/.test(val)) {
         return { field: email, message: 'Please enter a valid email address.' };
       }
-      // enforce gmail domain if user intends (title suggests gmail)
-      if (val && !val.toLowerCase().endsWith('@gmail.com')) {
-        return { field: email, message: 'Please use a Gmail address (example@gmail.com).' };
+      // Enforce allowed email domains
+      const allowedDomains = ['@gmail.com', '@email.lcup.edu.ph', '@yahoo.com', '@icloud.com'];
+      const hasAllowedDomain = allowedDomains.some(domain => val.toLowerCase().endsWith(domain));
+      if (val && !hasAllowedDomain) {
+        return { field: email, message: 'Please use an accepted email domain: @gmail.com, @email.lcup.edu.ph, @yahoo.com, or @icloud.com' };
       }
     }
     

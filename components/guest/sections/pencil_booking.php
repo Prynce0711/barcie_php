@@ -12,12 +12,28 @@
       <strong><i class="fas fa-id-card me-2"></i>Valid ID Upload</strong>
     </div>
     <div class="card-body">
+      <div class="mb-3">
+        <label for="pencil_id_type" class="form-label">ID Type <span class="text-danger">*</span></label>
+        <select name="id_type" id="pencil_id_type" class="form-control" required>
+          <option value="">-- Select ID Type --</option>
+          <option value="national_id">National ID (PhilSys ID / ePhilID)</option>
+          <option value="passport">Passport (Philippine or foreign, if applicable)</option>
+          <option value="drivers_license">Driver's License (LTO)</option>
+          <option value="umid">UMID Card (SSS / GSIS)</option>
+          <option value="prc_id">PRC ID (Professional Regulation Commission)</option>
+          <option value="voters_id">Voter's ID/Certification (COMELEC)</option>
+          <option value="postal_id">Postal ID</option>
+          <option value="philhealth_id">PhilHealth ID</option>
+          <option value="tin_id">TIN ID (BIR)</option>
+        </select>
+        <small class="form-text text-muted">Select the type of valid ID you will upload.</small>
+      </div>
       <div class="mb-2">
         <label for="pencil_id_upload" class="form-label">Upload Valid ID <span class="text-danger" id="pencil_id_required">*</span></label>
-        <input type="file" name="id_upload" id="pencil_id_upload" class="form-control" accept="image/*,application/pdf">
+        <input type="file" name="id_upload" id="pencil_id_upload" class="form-control" accept="image/*" disabled>
         <input type="hidden" name="id_upload_cropped" id="pencil_id_upload_cropped">
         <input type="hidden" name="id_upload_validated" id="pencil_id_upload_validated" value="0">
-        <small class="form-text text-muted">Required: Government-issued ID (image or PDF). Not needed if discount with ID is applied.</small>
+        <small class="form-text text-muted">Required: Clear photo of your government-issued ID. Not needed if discount with ID is applied.</small>
         
         <!-- Validation status -->
         <div id="pencil_id_validation" style="margin-top:8px;display:none;"></div>
@@ -61,7 +77,8 @@
           if ($pencil_current_type !== $pencil_room['item_type']) {
             if ($pencil_current_type !== '') echo "</optgroup>";
             $pencil_current_type = $pencil_room['item_type'];
-            echo "<optgroup label='" . ucfirst($pencil_current_type) . "s'>";
+            $pencil_label = ($pencil_current_type === 'facility') ? 'Facilities' : ucfirst($pencil_current_type) . 's';
+            echo "<optgroup label='$pencil_label'>";
           }
 
           $pencil_room_display = $pencil_room['name'];
@@ -94,7 +111,7 @@
 
     <label>
       <span class="label-text">Email Address *</span>
-      <input type="email" name="email" required autocomplete="email" title="Only Gmail Address are accepted (@gmail.com)" placeholder="your.email@gmail.com">
+      <input type="email" name="email" required autocomplete="email" title="Accepted email domains: @gmail.com, @email.lcup.edu.ph, @yahoo.com, @icloud.com" placeholder="your.email@example.com">
     </label>
 
     <label>
@@ -314,10 +331,14 @@ window.showPencilSuccessModal = function(message, receiptNumber = null) {
             </div>
             <div class="modal-body text-center py-4">
               <div class="mb-3"><i class="fas fa-check-circle text-success" style="font-size: 3.5rem;"></i></div>
-              <h4 class="text-success mb-2">Success!</h4>
+              <h4 class="text-success mb-2">Draft Reservation Submitted!</h4>
               <p class="mb-3">${(typeof escapeHtml === 'function') ? escapeHtml(message) : String(message)}</p>
               ${receiptNumber ? `<p class="receipt-number text-muted small">Receipt: <strong>${receiptNumber}</strong></p>` : ''}
-              <p class="small text-muted">Click <strong>Done</strong> to refresh the guest view (soft refresh). Close will keep the page as-is.</p>
+              <div class="alert alert-warning mt-3 mb-3 text-start">
+                <p class="mb-2"><strong>⚠️ Important:</strong> This is a <strong>draft reservation</strong> only.</p>
+                <p class="mb-0 small">To secure your booking, you must confirm and complete payment within <strong>14 days</strong>. Check your email for the conversion link and payment instructions.</p>
+              </div>
+              <p class="small text-muted">Click <strong>Done</strong> to refresh the page.</p>
             </div>
             <div class="modal-footer justify-content-center pencil-buttons-container">
               <button type="button" class="btn btn-primary" onclick="printPencilSimple()" title="Download your receipt">
