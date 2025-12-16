@@ -335,6 +335,15 @@ function toggleBookingForm() {
   if (type === "reservation") {
     generateReceiptNumber();
   }
+  
+  // Trigger field lock check when switching forms (if function exists)
+  if (typeof checkAndEnableFormFields === 'function') {
+    if (type === "reservation") {
+      checkAndEnableFormFields('reservation');
+    } else if (type === "pencil") {
+      checkAndEnableFormFields('pencil');
+    }
+  }
 }
 
 // Setup Booking Forms
@@ -957,7 +966,9 @@ function prefillBookingForm(item) {
   
   // Wait a moment for form to be visible, then set the room/facility selection
   setTimeout(() => {
-    const roomSelect = document.querySelector('#room_select, [name="room_id"]');
+    // Prefer the actual select by id. If not found, fall back to a select with name="room_id".
+    // Avoid matching hidden inputs (e.g. feedbackRoomId) that also use name="room_id".
+    const roomSelect = document.getElementById('room_select') || document.querySelector('select[name="room_id"]');
     if (roomSelect) {
       // Set the selected room/facility
       roomSelect.value = item.id;
@@ -1008,7 +1019,7 @@ function pencilReminder() {
   if (typeof showToast === "function") {
     showToast(message, "warning");
   } else {
-    alert(message);
+    showToast(message, "warning");
   }
   return true;
 }
@@ -1020,7 +1031,7 @@ function reservationReminder() {
   if (typeof showToast === "function") {
     showToast(message, "warning");
   } else {
-    alert(message);
+    showToast(message, "warning");
   }
   return true;
 }
@@ -1237,19 +1248,52 @@ function showDetailedToast(message, type = "info", title = "Room/Facility Inform
 // Global Sidebar Toggle Function
 function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar-guest");
+  const overlay = document.querySelector(".sidebar-overlay");
   const toggleBtn = document.querySelector(".mobile-menu-toggle");
 
   if (sidebar) {
-    sidebar.classList.toggle("open");
+    const isOpen = sidebar.classList.toggle("open");
+    
+    // Toggle overlay
+    if (overlay) {
+      overlay.classList.toggle("show", isOpen);
+    }
+    
+    // Prevent body scroll when sidebar is open
+    document.body.style.overflow = isOpen ? 'hidden' : '';
 
+    // Change icon
     if (toggleBtn) {
       const icon = toggleBtn.querySelector("i");
-      if (sidebar.classList.contains("open")) {
+      if (isOpen) {
         icon.className = "fas fa-times";
       } else {
         icon.className = "fas fa-bars";
       }
     }
+  }
+}
+
+// Close Sidebar Function
+function closeSidebar() {
+  const sidebar = document.querySelector(".sidebar-guest");
+  const overlay = document.querySelector(".sidebar-overlay");
+  const toggleBtn = document.querySelector(".mobile-menu-toggle");
+  
+  if (sidebar) {
+    sidebar.classList.remove("open");
+  }
+  if (overlay) {
+    overlay.classList.remove("show");
+  }
+  
+  // Restore body scroll
+  document.body.style.overflow = '';
+  
+  // Reset icon
+  if (toggleBtn) {
+    const icon = toggleBtn.querySelector("i");
+    icon.className = "fas fa-bars";
   }
 }
 
@@ -1261,6 +1305,7 @@ window.pencilReminder = pencilReminder;
 window.reservationReminder = reservationReminder;
 window.showToast = showToast;
 window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
 window.loadItems = loadItems;
 window.loadRooms = loadItems; // Alias for room feedback system
 window.filterItems = filterItems;
@@ -1656,7 +1701,7 @@ function initializeStarRating() {
     feedbackForm.addEventListener('submit', (e) => {
       if (currentRating === 0) {
         e.preventDefault();
-        alert('Please select a star rating before submitting your feedback.');
+        showToast('Please select a star rating before submitting your feedback.', 'warning');
         return false;
       }
       

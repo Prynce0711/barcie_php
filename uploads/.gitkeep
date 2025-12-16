@@ -1,0 +1,2 @@
+# This file ensures the uploads folder exists in Git
+# All uploaded files should be ignored by .gitignore

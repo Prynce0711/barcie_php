@@ -1,10 +1,33 @@
 <?php
-// Discount Applications Section
-// This section displays discount applications management
+// Discount Applications Section - DEPRECATED
+// Discounts are now automatically approved when ID proof is uploaded
+// This section is hidden but kept for reference
 ?>
 
-<!-- Discount Applications Section -->
-<div class="row mb-4">
+<!-- Discount Applications Section - HIDDEN (Auto-approval enabled) -->
+<div class="row mb-4" style="display: none;">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-info text-white">
+        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Discount Applications</h6>
+        <small class="opacity-75">Discounts are now automatically approved when valid ID proof is uploaded. No manual approval needed.</small>
+      </div>
+      <div class="card-body text-center py-5">
+        <div class="mb-3">
+          <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="text-muted">Automatic Discount Approval Enabled</h5>
+        <p class="text-muted mb-0">
+          When guests upload valid ID proof with their booking, discounts are automatically calculated and applied.<br>
+          No manual review is required.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Original discount applications table (kept for reference, hidden) -->
+<div class="row mb-4" style="display: none;">
   <div class="col-12">
     <div class="card">
       <div class="card-header bg-secondary text-white">
@@ -12,19 +35,72 @@
         <small class="opacity-75">Review uploaded ID proofs and approve or reject discounts.</small>
       </div>
       <div class="card-body">
-        <!-- Type Filter Buttons (hidden select will drive the filter logic) -->
-        <div class="mb-3">
-          <label class="form-label">Filter by Type:</label>
-          <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-secondary type-filter-btn active" data-type="">All</button>
-            <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="room">Rooms</button>
-            <button type="button" class="btn btn-outline-secondary type-filter-btn" data-type="facility">Facilities</button>
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-end mb-2 gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadDiscountsExcel()">
+            <i class="fas fa-file-excel me-1"></i>Export to Excel
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="downloadDiscountsPDF()">
+            <i class="fas fa-file-alt me-1"></i>Export to Text
+          </button>
+        </div>
+        
+        <!-- Filters Section -->
+        <div class="card mb-3 border-0 bg-light">
+          <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+              <!-- Date Filter -->
+              <div class="col-md-3">
+                <label for="discountDateFilter" class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-calendar-alt me-1"></i>Date
+                </label>
+                <input type="date" id="discountDateFilter" class="form-control" onchange="filterDiscounts()">
+              </div>
+              
+              <!-- Quick Date Actions -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="setDiscountDateToday()">
+                    <i class="fas fa-calendar-day me-1"></i>Today
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearDiscountDate()">
+                    <i class="fas fa-calendar me-1"></i>All
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Type Filter -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-tag me-1"></i>Type
+                </label>
+                <div class="btn-group w-100" role="group">
+                  <button type="button" class="btn btn-outline-secondary btn-sm type-filter-btn active" data-type="">
+                    <i class="fas fa-list me-1"></i>All
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm type-filter-btn" data-type="room">
+                    <i class="fas fa-bed me-1"></i>Rooms
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm type-filter-btn" data-type="facility">
+                    <i class="fas fa-building me-1"></i>Facilities
+                  </button>
+                </div>
+                <select id="discountTypeFilter" class="form-select d-none">
+                  <option value="">All</option>
+                  <option value="room">Rooms</option>
+                  <option value="facility">Facilities</option>
+                </select>
+              </div>
+              
+              <!-- Reset Button -->
+              <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetDiscountFilters()">
+                  <i class="fas fa-redo me-1"></i>Reset
+                </button>
+              </div>
+            </div>
           </div>
-          <select id="discountTypeFilter" class="form-select d-none">
-            <option value="">All</option>
-            <option value="room">Rooms</option>
-            <option value="facility">Facilities</option>
-          </select>
         </div>
 
         <div class="table-responsive">
@@ -70,8 +146,11 @@
 
                     // Use dedicated proof_of_id column
                     $proofPath = $row['proof_of_id'] ?: '';
+                    
+                    // Extract date from created_at for filtering (format: YYYY-MM-DD)
+                    $booking_date = date('Y-m-d', strtotime($created));
 
-                    echo '<tr id="discount-row-' . $bookingId . '" data-type="' . htmlspecialchars($row_type) . '">';
+                    echo '<tr id="discount-row-' . $bookingId . '" data-type="' . htmlspecialchars($row_type) . '" data-date="' . htmlspecialchars($booking_date) . '">';
                     echo '<td><strong>' . htmlspecialchars($receipt) . '</strong></td>';
                     echo '<td>' . htmlspecialchars($guest) . '</td>';
                     echo '<td>' . htmlspecialchars($room) . '</td>';
@@ -88,7 +167,7 @@
                     }
                     echo '</td>';
                     echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($created))) . '</td>';
-                    echo '<td>';
+                    echo '<td class="discount-action-buttons">';
                     echo '<button class="btn btn-success btn-sm discount-action" data-booking-id="' . $bookingId . '" data-action="approve">Approve</button> ';
                     echo '<button class="btn btn-danger btn-sm discount-action" data-booking-id="' . $bookingId . '" data-action="reject">Reject</button>';
                     echo '</td>';
@@ -114,19 +193,34 @@
 
 <script>
 (function(){
+  // Hide discount action buttons for staff
+  function hideStaffDiscountActions() {
+    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    if (role === 'staff') {
+      document.querySelectorAll('.discount-action-buttons').forEach(td => {
+        td.innerHTML = '<span class="badge bg-secondary">View Only</span>';
+      });
+    }
+  }
+  
+  // Run on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideStaffDiscountActions);
+  } else {
+    hideStaffDiscountActions();
+  }
+
   // Sync type filter buttons with hidden select
   function setTypeFilter(type, trigger){
     const sel = document.getElementById('discountTypeFilter');
     if (!sel) return;
     sel.value = type;
     document.querySelectorAll('.type-filter-btn').forEach(b=>{
-      b.classList.remove('active', 'btn-secondary');
-      b.classList.add('btn-outline-secondary');
+      b.classList.remove('active');
     });
     const btn = document.querySelector('.type-filter-btn[data-type="' + type + '"]');
     if (btn) {
-      btn.classList.remove('btn-outline-secondary');
-      btn.classList.add('btn-secondary', 'active');
+      btn.classList.add('active');
     }
     if (trigger !== false) {
       if (typeof window.filterDiscounts === 'function') window.filterDiscounts();
@@ -156,11 +250,15 @@
 
   function dGetAllRows(){
     const typeFilter = (document.getElementById('discountTypeFilter')?.value || '').toLowerCase();
+    const dateFilter = document.getElementById('discountDateFilter')?.value || '';
     return Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(r => {
       if (r.id === 'discounts-no-results') return false;
       const rtype = (r.dataset.type || '').toLowerCase();
-      if (!typeFilter || typeFilter === 'all') return true;
-      return rtype === typeFilter;
+      const rdate = r.dataset.date || '';
+      
+      if (typeFilter && typeFilter !== 'all' && rtype !== typeFilter) return false;
+      if (dateFilter && rdate !== dateFilter) return false;
+      return true;
     });
   }
 
@@ -271,6 +369,32 @@
       dRecalc();
     } catch (err) { console.error('filterDiscounts error', err); }
   };
+  
+  // Helper functions for date filter
+  window.setDiscountDateToday = function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('discountDateFilter');
+    if (dateInput) {
+      dateInput.value = today;
+      filterDiscounts();
+    }
+  };
+  
+  window.clearDiscountDate = function() {
+    const dateInput = document.getElementById('discountDateFilter');
+    if (dateInput) {
+      dateInput.value = '';
+      filterDiscounts();
+    }
+  };
+  
+  window.resetDiscountFilters = function() {
+    document.getElementById('discountDateFilter').value = '';
+    document.querySelectorAll('.type-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.type-filter-btn[data-type=""]').classList.add('active');
+    document.getElementById('discountTypeFilter').value = '';
+    filterDiscounts();
+  };
 })();
 
 // Delegated handler for approve/reject buttons
@@ -281,8 +405,8 @@ document.addEventListener('click', function(e){
   const action = btn.dataset.action; // approve|reject
   if (!bookingId || !action) return;
 
-  const confirmFn = window.showConfirmModal || function(msg){ return Promise.resolve(confirm(msg)); };
-  const alertFn = window.showAdminAlert || function(msg, type){ try { alert(msg); } catch(e){ console.log(msg); } };
+  const confirmFn = window.showConfirm || window.showConfirmModal || function(msg){ return showConfirm(msg); };
+  const alertFn = window.showAdminAlert || function(msg, type){ try { showToast(msg, type || 'info'); } catch(e){ console.log(msg); } };
 
   confirmFn('Are you sure you want to ' + action + ' this discount application?').then(function(confirmed){
     if (!confirmed) return;
@@ -388,6 +512,113 @@ document.addEventListener('click', function(e){
     window.open(proof, '_blank');
   }
 });
+
+// Download discount applications as text backup
+function downloadDiscountsPDF() {
+  const rows = Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No discount applications to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('discountDateFilter')?.value || 'All Dates';
+  const typeFilter = document.getElementById('discountTypeFilter')?.value || 'All Types';
+  
+  let content = `BARCIE INTERNATIONAL CENTER - DISCOUNT APPLICATIONS BACKUP
+Generated: ${new Date().toLocaleString()}
+Total Records: ${rows.length}
+
+FILTERS APPLIED:
+- Date: ${dateFilter}
+- Type: ${typeFilter}
+
+${'='.repeat(80)}
+
+`;
+
+  rows.forEach((row, index) => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 6) {
+      const booking = cells[0].textContent.trim();
+      const type = cells[1].textContent.trim();
+      const guest = cells[2].textContent.trim().replace(/\n/g, ' ');
+      const discountType = cells[3].textContent.trim();
+      const status = cells[4].textContent.trim();
+      const created = cells[5].textContent.trim().replace(/\n/g, ' ');
+      
+      content += `${index + 1}. Booking: ${booking}
+   Type: ${type}
+   Guest: ${guest}
+   Discount Type: ${discountType}
+   Status: ${status}
+   Created: ${created}
+${'-'.repeat(80)}
+
+`;
+    }
+  });
+  
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `discount_applications_backup_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('Discount applications backup downloaded successfully', 'success');
+}
+
+// Download discount applications as Excel
+function downloadDiscountsExcel() {
+  const rows = Array.from(document.querySelectorAll('#discountsTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No discount applications to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('discountDateFilter')?.value || 'All Dates';
+  const typeFilter = document.getElementById('discountTypeFilter')?.value || 'All Types';
+  
+  let csv = 'Booking ID,Type,Guest Name,Guest Contact,Discount Type,Status,Created\n';
+  
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 6) {
+      const booking = cells[0].textContent.trim().replace(/,/g, ';');
+      const type = cells[1].textContent.trim().replace(/,/g, ';');
+      const guestText = cells[2].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      const guestParts = guestText.split(/[📞✉]/);
+      const guestName = guestParts[0].trim();
+      const guestContact = guestParts.slice(1).join(' | ').trim();
+      const discountType = cells[3].textContent.trim().replace(/,/g, ';');
+      const status = cells[4].textContent.trim().replace(/,/g, ';');
+      const created = cells[5].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      
+      csv += `"${booking}","${type}","${guestName}","${guestContact}","${discountType}","${status}","${created}"\n`;
+    }
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `discount_applications_${dateFilter.replace(/[^0-9-]/g, '') || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast(`Exported ${rows.length} discount applications to Excel (Filters: Date=${dateFilter}, Type=${typeFilter})`, 'success');
+}
 </script>
 
 <style>

@@ -15,7 +15,7 @@
   
   #addItemModal .modal-header {
     flex-shrink: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
@@ -49,12 +49,12 @@
   }
   
   #addItemModal .modal-body::-webkit-scrollbar-thumb {
-    background: #667eea;
+    background: #3b82f6;
     border-radius: 4px;
   }
   
   #addItemModal .modal-body::-webkit-scrollbar-thumb:hover {
-    background: #764ba2;
+    background: #2563eb;
   }
   
   /* Ensure modal is centered and accessible */
@@ -248,7 +248,7 @@
                     const files = e.target.files;
                     
                     if (files.length > 10) {
-                      alert('Maximum 10 images allowed');
+                      showToast('Maximum 10 images allowed', 'warning');
                       imageInput.value = '';
                       return;
                     }

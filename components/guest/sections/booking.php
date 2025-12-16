@@ -24,10 +24,58 @@
 
     <?php include __DIR__ . '/discount_application.php'; ?>
 
+    <!-- ID Upload Section -->
+    <div class="card mb-3" id="reservationIdUploadCard">
+      <div class="card-header bg-info text-white">
+        <strong><i class="fas fa-id-card me-2"></i>Valid ID Upload</strong>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="reservation_id_type" class="form-label">ID Type <span class="text-danger">*</span></label>
+          <select name="id_type" id="reservation_id_type" class="form-control" required>
+            <option value="">-- Select ID Type --</option>
+            <option value="national_id">National ID (PhilSys ID / ePhilID)</option>
+            <option value="passport">Passport (Philippine or foreign, if applicable)</option>
+            <option value="drivers_license">Driver's License (LTO)</option>
+            <option value="umid">UMID Card (SSS / GSIS)</option>
+            <option value="prc_id">PRC ID (Professional Regulation Commission)</option>
+            <option value="voters_id">Voter's ID/Certification (COMELEC)</option>
+            <option value="postal_id">Postal ID</option>
+            <option value="philhealth_id">PhilHealth ID</option>
+            <option value="tin_id">TIN ID (BIR)</option>
+          </select>
+          <small class="form-text text-muted">Select the type of valid ID you will upload.</small>
+        </div>
+        <div class="mb-2">
+          <label for="reservation_id_upload" class="form-label">Upload Valid ID <span class="text-danger" id="reservation_id_required">*</span></label>
+          <input type="file" name="id_upload" id="reservation_id_upload" class="form-control" accept="image/*" disabled>
+          <input type="hidden" name="id_upload_cropped" id="reservation_id_upload_cropped">
+          <input type="hidden" name="id_upload_validated" id="reservation_id_upload_validated" value="0">
+          <small class="form-text text-muted">Required: Clear photo of your government-issued ID. Not needed if discount with ID is applied.</small>
+          
+          <!-- Validation status -->
+          <div id="reservation_id_validation" style="margin-top:8px;display:none;"></div>
+          
+          <!-- Preview area -->
+          <div id="reservation_id_preview" style="margin-top:10px;display:none;">
+            <div id="reservation_id_thumb" style="margin-top:8px;max-width:160px;"></div>
+          </div>
+        </div>
+        <div class="alert alert-info mb-0" style="font-size: 0.9rem;">
+          <i class="fas fa-info-circle me-2"></i>If you apply for a discount above, the discount ID proof will be used and this upload becomes optional.
+        </div>
+      </div>
+    </div>
+
     <!-- Inline alert area for form-level validation messages -->
     <div class="form-alert mb-2" id="reservation_form_alert" style="display:none;"></div>
 
-    <div class="form-grid">
+    <!-- ID Required Notice -->
+    <div class="alert alert-warning" id="reservation_id_notice" style="display:block;">
+      <i class="fas fa-lock me-2"></i><strong>ID Upload Required:</strong> Please upload a valid ID above to unlock and fill out the booking form.
+    </div>
+
+    <div class="form-grid" id="reservation_form_fields">
       <label class="full-width">
         <span class="label-text">Reservation no:</span>
         <input type="text" name="receipt_no" id="receipt_no" readonly>
@@ -47,7 +95,8 @@
             if ($current_type !== $room['item_type']) {
               if ($current_type !== '') echo "</optgroup>";
               $current_type = $room['item_type'];
-              echo "<optgroup label='" . ucfirst($current_type) . "s'>";
+              $label = ($current_type === 'facility') ? 'Facilities' : ucfirst($current_type) . 's';
+              echo "<optgroup label='$label'>";
             }
 
             $room_display = $room['name'];
@@ -70,7 +119,7 @@
 
       <label>
         <span class="label-text">Guest Name *</span>
-        <input type="text" name="guest_name" required minlength="2" placeholder="Enter your full name">
+        <input type="text" name="guest_name" id="reservation_guest_name" required minlength="2" placeholder="Enter your full name">
       </label>
 
       <label>
@@ -80,17 +129,35 @@
 
       <label>
         <span class="label-text">Email Address *</span>
-        <input type="email" name="email" required autocomplete="email" title="Only Gmail Address are accepted (@gmail.com)" placeholder="your.email@gmail.com">
+        <input type="email" name="email" required autocomplete="email" title="Accepted email domains: @gmail.com, @email.lcup.edu.ph, @yahoo.com, @icloud.com" placeholder="your.email@example.com">
       </label>
 
       <label>
-        <span class="label-text">Check-in Date & Time *</span>
-        <input type="datetime-local" name="checkin" required>
+        <span class="label-text">Age *</span>
+        <input type="number" name="age" required min="18" max="120" placeholder="Enter your age">
+      </label>
+
+      <!-- Booking Time Notice -->
+      <div class="full-width" style="margin: 0.5rem 0; padding: 0.75rem; background-color: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+        <div style="display: flex; align-items: center;">
+          <i class="fas fa-clock" style="color: #2196F3; font-size: 1.2rem; margin-right: 10px;"></i>
+          <div>
+            <strong style="color: #1976D2;">Standard Booking Hours:</strong>
+            <div style="font-size: 0.9rem; color: #424242; margin-top: 2px;">
+              Check-in: <strong>2:00 PM</strong> | Check-out: <strong>12:00 Noon</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <label>
+        <span class="label-text">Check-in Date *</span>
+        <input type="date" name="checkin" required>
       </label>
 
       <label>
-        <span class="label-text">Check-out Date & Time *</span>
-        <input type="datetime-local" name="checkout" required>
+        <span class="label-text">Check-out Date *</span>
+        <input type="date" name="checkout" required>
       </label>
 
       <label>
@@ -143,7 +210,7 @@ input[type="datetime-local"].date-available {
 .availability-info.occupied {
   background-color: #ffe5e5;
   color: #dc3545;
-  border: 1px solid #dc3545;
+  border: 1px solid #dc3  545;
   display: block;
 }
 .availability-info.available {
@@ -157,6 +224,10 @@ input[type="datetime-local"].date-available {
 <script>
 // Room availability checker
 let occupiedDatesCache = {};
+
+// Make form lock functions globally accessible for form toggle functionality
+window.checkAndEnableFormFields = null;
+window.updateIdUploadRequirement = null;
 
 async function checkRoomAvailability(roomId, dateInput, infoElement) {
   if (!roomId || !dateInput) return;
@@ -333,5 +404,683 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+  
+  // ID Upload Management - Update requirement based on discount selection
+  function updateIdUploadRequirement(formType) {
+    const isReservation = formType === 'reservation';
+    const discountTypeSelect = document.getElementById('discount_type');
+    const discountProof = document.getElementById('discount_proof');
+    const idUpload = document.getElementById(isReservation ? 'reservation_id_upload' : 'pencil_id_upload');
+    const idRequired = document.getElementById(isReservation ? 'reservation_id_required' : 'pencil_id_required');
+    
+    if (!discountTypeSelect || !idUpload || !idRequired) return;
+    
+    // If discount is selected, ID upload becomes optional (discount proof is used)
+    const hasDiscount = discountTypeSelect.value && discountTypeSelect.value !== '';
+    
+    if (hasDiscount) {
+      // Discount selected - ID upload is optional
+      idUpload.removeAttribute('required');
+      idRequired.style.display = 'none';
+      idRequired.textContent = '';
+    } else {
+      // No discount - ID upload is required
+      idUpload.setAttribute('required', 'required');
+      idRequired.style.display = 'inline';
+      idRequired.textContent = '*';
+    }
+    
+    // Check if form fields should be enabled
+    checkAndEnableFormFields(formType);
+  }
+  
+  // Make globally accessible
+  window.updateIdUploadRequirement = updateIdUploadRequirement;
+  
+  // Enable or disable form fields based on ID upload status
+  function checkAndEnableFormFields(formType) {
+    const isReservation = formType === 'reservation';
+    const discountTypeSelect = document.getElementById('discount_type');
+    const discountProof = document.getElementById('discount_proof');
+    const idUpload = document.getElementById(isReservation ? 'reservation_id_upload' : 'pencil_id_upload');
+    const idValidated = document.getElementById(isReservation ? 'reservation_id_upload_validated' : 'pencil_id_upload_validated');
+    const formFields = document.getElementById(isReservation ? 'reservation_form_fields' : 'pencil_form_fields');
+    const idNotice = document.getElementById(isReservation ? 'reservation_id_notice' : 'pencil_id_notice');
+    const submitBtn = document.getElementById(isReservation ? 'reservationSubmitBtn' : 'pencilSubmitBtn');
+    
+    if (!formFields) return;
+    
+    // Check if either discount proof OR ID upload is provided AND validated
+    const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
+    const hasDiscountProofFile = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
+    const isDiscountProofValid = hasDiscountProofFile && discountProof.dataset.validProof === '1';
+    const hasIdUpload = idUpload && idUpload.files && idUpload.files.length > 0;
+    const isIdValidated = idValidated && idValidated.value === '1';
+    
+    // Form is unlocked only if: (discount proof uploaded AND validated) OR (ID uploaded AND validated)
+    const hasValidId = isDiscountProofValid || (hasIdUpload && isIdValidated);
+    
+    // Get all input, select, and button elements within the form fields
+    const allInputs = formFields.querySelectorAll('input:not([type=\"hidden\"]):not([readonly]), select, textarea, button');
+    
+    if (hasValidId) {
+      // Enable all fields
+      allInputs.forEach(field => {
+        field.removeAttribute('disabled');
+        field.style.opacity = '1';
+        field.style.cursor = 'auto';
+        if (field.tagName === 'SELECT') {
+          field.style.cursor = 'pointer';
+        }
+        if (field.tagName === 'BUTTON') {
+          field.style.cursor = 'pointer';
+        }
+      });
+      
+      // Hide notice
+      if (idNotice) idNotice.style.display = 'none';
+      
+      // Enable submit button (for reservation) or check terms for pencil
+      if (submitBtn) {
+        if (isReservation) {
+          submitBtn.removeAttribute('disabled');
+          submitBtn.style.opacity = '1';
+          submitBtn.style.cursor = 'pointer';
+        } else {
+          // For pencil, check terms checkbox requirement
+          const termsCheckbox = document.getElementById('pencil_terms_checkbox');
+          if (termsCheckbox && termsCheckbox.checked) {
+            submitBtn.removeAttribute('disabled');
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+          } else {
+            // Keep button disabled until terms are checked
+            submitBtn.setAttribute('disabled', 'disabled');
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.cursor = 'not-allowed';
+          }
+        }
+      }
+    } else {
+      // Disable all fields (including terms checkbox for pencil)
+      allInputs.forEach(field => {
+        field.setAttribute('disabled', 'disabled');
+        field.style.opacity = '0.5';
+        field.style.cursor = 'not-allowed';
+      });
+      
+      // Show notice
+      if (idNotice) idNotice.style.display = 'block';
+      
+      // Disable submit button
+      if (submitBtn) {
+        submitBtn.setAttribute('disabled', 'disabled');
+        submitBtn.style.opacity = '0.6';
+        submitBtn.style.cursor = 'not-allowed';
+      }
+    }
+  }
+  
+  // Make globally accessible
+  window.checkAndEnableFormFields = checkAndEnableFormFields;
+  
+  // Initialize form fields as disabled on page load
+  function initializeFormLock() {
+    checkAndEnableFormFields('reservation');
+    checkAndEnableFormFields('pencil');
+  }
+  
+  // Extract name from OCR text
+  function extractNameFromOCR(text, ocrData) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    let extractedName = '';
+    
+    console.log('OCR Full Text for Extraction:', text);
+    
+    // Name extraction patterns
+    const namePatterns = [
+      /(?:full\s*)?name[:\s]*([a-z][a-z\s,.'-]+)/i,
+      /surname[:\s]*([a-z][a-z\s,.'-]+)/i,
+      /(?:given|first)\s*name[:\s]*([a-z][a-z\s,.'-]+)/i,
+      /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})$/m
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        let name = match[1].trim();
+        name = name.replace(/\s+/g, ' ').trim();
+        name = name.replace(/[,.:;\d]+$/, '').trim();
+        if (name.length >= 3 && name.length <= 50) {
+          extractedName = name;
+          console.log('Name extracted:', name);
+          break;
+        }
+      }
+    }
+    
+    return { name: extractedName };
+  }
+  
+  // ID Validation Functions with OCR for Philippine IDs
+  async function validateIDDocument(file, validationElement, validatedInput, idType) {
+    if (!file) return false;
+    
+    // Get ID type name for display
+    let idTypeName = 'government-issued ID';
+    let expectedTexts = [];
+    
+    if (idType) {
+      const idTypeMap = {
+        'national_id': {
+          name: 'National ID (PhilSys ID / ePhilID)',
+          keywords: ['IDENTIFICATION', 'PHILSYS', 'PSA', 'PAMBANSANG', 'PAGKAKAKILANLAN',  'PCN']
+        },
+        'passport': {
+          name: 'Passport',
+          keywords: ['PASSPORT', 'FOREIGN AFFAIRS', 'DFA', 'REPUBLIC', 'PHILIPPINES']
+        },
+        'drivers_license': {
+          name: 'Driver\'s License (LTO)',
+          keywords: ['DRIVER', 'LICENSE', 'LTO', 'LAND', 'TRANSPORTATION', 'REPUBLIC']
+        },
+        'umid': {
+          name: 'UMID Card (SSS / GSIS)',
+          keywords: ['UMID', 'SSS', 'GSIS', 'UNIFIED', 'MULTI', 'PURPOSE', 'SECURITY']
+        },
+        'prc_id': {
+          name: 'PRC ID (Professional Regulation Commission)',
+          keywords: ['PRC', 'PROFESSIONAL', 'REGULATION', 'COMMISSION', 'LICENSE']
+        },
+        'voters_id': {
+          name: 'Voter\'s ID/Certification (COMELEC)',
+          keywords: ['VOTER', 'COMELEC', 'COMMISSION', 'ELECTIONS']
+        },
+        'postal_id': {
+          name: 'Postal ID',
+          keywords: ['POSTAL', 'PHILPOST', 'POST', 'CORPORATION']
+        },
+        'philhealth_id': {
+          name: 'PhilHealth ID',
+          keywords: ['PHILHEALTH', 'HEALTH', 'INSURANCE', 'CORPORATION', 'MEMBER']
+        },
+        'tin_id': {
+          name: 'TIN ID (BIR)',
+          keywords: ['TIN', 'TAXPAYER', 'IDENTIFICATION', 'NUMBER', 'BIR', 'INTERNAL', 'REVENUE', 'FINANCE']
+        }
+      };
+      
+      if (idTypeMap[idType]) {
+        idTypeName = idTypeMap[idType].name;
+        expectedTexts = idTypeMap[idType].keywords;
+      }
+    }
+    
+    // Show validating message
+    if (validationElement) {
+      validationElement.style.display = 'block';
+      validationElement.innerHTML = `<span class="text-info"><i class="fas fa-spinner fa-spin me-2"></i>Reading and validating ${idTypeName}... This may take 10-20 seconds.</span>`;
+    }
+    
+    // Only accept image files - perform OCR validation
+    if (file.type.startsWith('image/')) {
+      try {
+        // First do basic image quality checks
+        const imageCheck = await performBasicImageChecks(file);
+        
+        if (!imageCheck.isValid) {
+          if (validationElement) {
+            validationElement.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle me-2"></i>${imageCheck.reason}</span>`;
+          }
+          if (validatedInput) validatedInput.value = '0';
+          return false;
+        }
+        
+        // Perform OCR text extraction
+        const ocrResult = await performOCRValidation(file, expectedTexts, idTypeName);
+        
+        if (ocrResult.isValid) {
+          if (validationElement) {
+            validationElement.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-2"></i>${ocrResult.message}</span>`;
+          }
+          if (validatedInput) validatedInput.value = '1';
+          return true;
+        } else {
+          if (validationElement) {
+            validationElement.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle me-2"></i>${ocrResult.message}</span>`;
+          }
+          if (validatedInput) validatedInput.value = '0';
+          return false;
+        }
+      } catch (error) {
+        console.error('ID validation error:', error);
+        if (validationElement) {
+          validationElement.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Could not validate ${idTypeName}. Please ensure image is clear. Admin will verify. Fake IDs will result in cancellation.</span>`;
+        }
+        if (validatedInput) validatedInput.value = '1';
+        return true; // Allow submission but admin will verify
+      }
+    }
+    
+    return false;
+  }
+  
+  // Perform OCR validation on ID image
+  async function performOCRValidation(file, expectedTexts, idTypeName) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          // Use Tesseract.js to extract text
+          const result = await Tesseract.recognize(
+            e.target.result,
+            'eng',
+            {
+              logger: m => {
+                if (m.status === 'recognizing text') {
+                  console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+                }
+              }
+            }
+          );
+          
+          const extractedText = result.data.text.toUpperCase();
+          console.log('Extracted text:', extractedText);
+          
+          // Remove extra spaces and normalize text for better matching
+          const normalizedText = extractedText.replace(/\s+/g, ' ').trim();
+          
+          // Check if extracted text is sufficient (more lenient)
+          if (normalizedText.length < 10) {
+            resolve({
+              isValid: false,
+              message: `Cannot read enough text from image (found ${normalizedText.length} characters). Please upload a clearer, well-lit photo of your ${idTypeName}. Try rotating or improving lighting.`
+            });
+            return;
+          }
+          
+          // Check for expected keywords with VERY flexible matching
+          let matchedKeywords = 0;
+          let matchedTexts = [];
+          
+          for (const keyword of expectedTexts) {
+            const keywordUpper = keyword.toUpperCase();
+            // Check if the keyword appears anywhere in the text (case-insensitive)
+            if (normalizedText.includes(keywordUpper)) {
+              matchedKeywords++;
+              matchedTexts.push(keyword);
+            }
+          }
+          
+          // Show what was extracted for debugging
+          const textPreview = normalizedText.substring(0, 150) + (normalizedText.length > 150 ? '...' : '');
+          console.log(`Matched ${matchedKeywords} keywords:`, matchedTexts);
+          console.log('Text preview:', textPreview);
+          
+          // VERY LENIENT Validation: Must match at least 1 keyword from the selected ID type
+          // This reduces false rejections while still validating it's likely the correct ID type
+          if (matchedKeywords >= 2) {
+            resolve({
+              isValid: true,
+              message: `✓ Valid ${idTypeName} detected and verified.`
+            });
+          } else if (matchedKeywords === 1) {
+            // If only 1 keyword matched, still accept
+            resolve({
+              isValid: true,
+              message: `✓ Valid ${idTypeName} detected and verified.`
+            });
+          } else {
+            resolve({
+              isValid: false,
+              message: `✗ Cannot verify this as ${idTypeName}. Please upload a clearer, well-lit photo of your ID.`
+            });
+          }
+        } catch (error) {
+          console.error('OCR error:', error);
+          resolve({
+            isValid: false,
+            message: `Could not read text from image. Error: ${error.message}. Please upload a clearer photo.`
+          });
+        }
+      };
+      reader.onerror = function() {
+        resolve({
+          isValid: false,
+          message: 'Could not read file. Please try again.'
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  // Basic image quality checks before OCR
+  async function performBasicImageChecks(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          // Minimum resolution check (relaxed)
+          if (img.width < 300 || img.height < 200) {
+            resolve({ 
+              isValid: false, 
+              reason: `Image resolution too low (${img.width}x${img.height}). Minimum 300x200 required. Take a clear photo.`
+            });
+            return;
+          }
+          
+          // File size check (relaxed)
+          const fileSizeKB = file.size / 1024;
+          if (fileSizeKB < 20) {
+            resolve({ 
+              isValid: false, 
+              reason: `File too small (${fileSizeKB.toFixed(0)}KB). Upload original photo, not a thumbnail.`
+            });
+            return;
+          }
+          
+          if (fileSizeKB > 20000) {
+            resolve({ 
+              isValid: false, 
+              reason: `File too large (${(fileSizeKB/1024).toFixed(1)}MB). Maximum 20MB.`
+            });
+            return;
+          }
+          
+          // All basic checks passed - OCR will do the real validation
+          resolve({ isValid: true });
+        };
+        img.onerror = function() {
+          resolve({ isValid: false, reason: 'Could not load image. File may be corrupted.' });
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = function() {
+        resolve({ isValid: false, reason: 'Could not read file.' });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  // Handle ID Type selection for Reservation form
+  const reservationIdTypeSelect = document.getElementById('reservation_id_type');
+  const reservationIdUpload = document.getElementById('reservation_id_upload');
+  
+  if (reservationIdTypeSelect && reservationIdUpload) {
+    reservationIdTypeSelect.addEventListener('change', function() {
+      if (this.value) {
+        // Enable file upload when ID type is selected
+        reservationIdUpload.removeAttribute('disabled');
+        reservationIdUpload.style.opacity = '1';
+        reservationIdUpload.style.cursor = 'pointer';
+        
+        // Update help text based on ID type
+        const idTypeText = this.options[this.selectedIndex].text;
+        const helpText = reservationIdUpload.parentElement.querySelector('.form-text');
+        if (helpText) {
+          helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
+        }
+      } else {
+        // Disable file upload if no ID type selected
+        reservationIdUpload.setAttribute('disabled', 'disabled');
+        reservationIdUpload.style.opacity = '0.5';
+        reservationIdUpload.style.cursor = 'not-allowed';
+        reservationIdUpload.value = '';
+        
+        // Reset validation
+        const validatedInput = document.getElementById('reservation_id_upload_validated');
+        if (validatedInput) validatedInput.value = '0';
+        
+        // Hide preview
+        const preview = document.getElementById('reservation_id_preview');
+        if (preview) preview.style.display = 'none';
+        
+        // Hide validation message
+        const validationElement = document.getElementById('reservation_id_validation');
+        if (validationElement) validationElement.style.display = 'none';
+        
+        checkAndEnableFormFields('reservation');
+      }
+    });
+  }
+  
+  // Handle ID upload preview for reservation form
+  if (reservationIdUpload) {
+    reservationIdUpload.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      const preview = document.getElementById('reservation_id_preview');
+      const thumb = document.getElementById('reservation_id_thumb');
+      const validationElement = document.getElementById('reservation_id_validation');
+      const validatedInput = document.getElementById('reservation_id_upload_validated');
+      const idTypeSelect = document.getElementById('reservation_id_type');
+      
+      if (!file) {
+        if (validatedInput) validatedInput.value = '0';
+        checkAndEnableFormFields('reservation');
+        return;
+      }
+      
+      // Get selected ID type
+      const idType = idTypeSelect ? idTypeSelect.value : null;
+      
+      if (!preview || !thumb) return;
+      
+      // Display preview first
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          thumb.innerHTML = '<img src="' + e.target.result + '" style="max-width: 100%; border-radius: 4px; border: 1px solid #ddd;">';
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        thumb.innerHTML = '<div style="padding: 10px; background: #f0f0f0; border-radius: 4px;"><i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545;"></i><br><small>' + file.name + '</small></div>';
+        preview.style.display = 'block';
+      }
+      
+      // Validate the ID with the selected type
+      const isValid = await validateIDDocument(file, validationElement, validatedInput, idType);
+      
+      // Enable form fields only if validation passed
+      if (isValid) {
+        checkAndEnableFormFields('reservation');
+      } else {
+        // Keep form locked if ID is invalid
+        const formFields = document.getElementById('reservation_form_fields');
+        if (formFields) {
+          const allInputs = formFields.querySelectorAll('input:not([type="hidden"]):not([readonly]), select, textarea, button');
+          allInputs.forEach(field => {
+            field.setAttribute('disabled', 'disabled');
+            field.style.opacity = '0.5';
+            field.style.cursor = 'not-allowed';
+          });
+        }
+        // Clear the file input
+        this.value = '';
+      }
+    });
+  }
+  
+  // Handle ID Type selection for Pencil form
+  const pencilIdTypeSelect = document.getElementById('pencil_id_type');
+  const pencilIdUpload = document.getElementById('pencil_id_upload');
+  
+  if (pencilIdTypeSelect && pencilIdUpload) {
+    pencilIdTypeSelect.addEventListener('change', function() {
+      if (this.value) {
+        // Enable file upload when ID type is selected
+        pencilIdUpload.removeAttribute('disabled');
+        pencilIdUpload.style.opacity = '1';
+        pencilIdUpload.style.cursor = 'pointer';
+        
+        // Update help text based on ID type
+        const idTypeText = this.options[this.selectedIndex].text;
+        const helpText = pencilIdUpload.parentElement.querySelector('.form-text');
+        if (helpText) {
+          helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
+        }
+      } else {
+        // Disable file upload if no ID type selected
+        pencilIdUpload.setAttribute('disabled', 'disabled');
+        pencilIdUpload.style.opacity = '0.5';
+        pencilIdUpload.style.cursor = 'not-allowed';
+        pencilIdUpload.value = '';
+        
+        // Reset validation
+        const validatedInput = document.getElementById('pencil_id_upload_validated');
+        if (validatedInput) validatedInput.value = '0';
+        
+        // Hide preview
+        const preview = document.getElementById('pencil_id_preview');
+        if (preview) preview.style.display = 'none';
+        
+        // Hide validation message
+        const validationElement = document.getElementById('pencil_id_validation');
+        if (validationElement) validationElement.style.display = 'none';
+        
+        checkAndEnableFormFields('pencil');
+      }
+    });
+  }
+  
+  // Handle ID upload preview for pencil form
+  if (pencilIdUpload) {
+    pencilIdUpload.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      const preview = document.getElementById('pencil_id_preview');
+      const thumb = document.getElementById('pencil_id_thumb');
+      const validationElement = document.getElementById('pencil_id_validation');
+      const validatedInput = document.getElementById('pencil_id_upload_validated');
+      const idTypeSelect = document.getElementById('pencil_id_type');
+      
+      if (!file) {
+        if (validatedInput) validatedInput.value = '0';
+        checkAndEnableFormFields('pencil');
+        return;
+      }
+      
+      // Get selected ID type
+      const idType = idTypeSelect ? idTypeSelect.value : null;
+      
+      if (!preview || !thumb) return;
+      
+      // Display preview first
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          thumb.innerHTML = '<img src="' + e.target.result + '" style="max-width: 100%; border-radius: 4px; border: 1px solid #ddd;">';
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        thumb.innerHTML = '<div style="padding: 10px; background: #f0f0f0; border-radius: 4px;"><i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545;"></i><br><small>' + file.name + '</small></div>';
+        preview.style.display = 'block';
+      }
+      
+      // Validate the ID with the selected type
+      const isValid = await validateIDDocument(file, validationElement, validatedInput, idType);
+      
+      // Enable form fields only if validation passed
+      if (isValid) {
+        checkAndEnableFormFields('pencil');
+      } else {
+        // Keep form locked if ID is invalid
+        const formFields = document.getElementById('pencil_form_fields');
+        if (formFields) {
+          const allInputs = formFields.querySelectorAll('input:not([type="hidden"]):not([readonly]), select, textarea, button');
+          allInputs.forEach(field => {
+            field.setAttribute('disabled', 'disabled');
+            field.style.opacity = '0.5';
+            field.style.cursor = 'not-allowed';
+          });
+        }
+        // Clear the file input
+        this.value = '';
+      } 
+    });
+  }
+  
+  // Watch for discount proof upload to enable form
+  const discountProofUpload = document.getElementById('discount_proof');
+  if (discountProofUpload) {
+    discountProofUpload.addEventListener('change', function() {
+      // Update both forms in case they're affected
+      checkAndEnableFormFields('reservation');
+      checkAndEnableFormFields('pencil');
+    });
+  }
+  
+  // Watch for discount type changes to update ID requirement
+  const discountTypeSelect = document.getElementById('discount_type');
+  if (discountTypeSelect) {
+    discountTypeSelect.addEventListener('change', function() {
+      // Update for currently visible form
+      const reservationForm = document.getElementById('reservationForm');
+      const pencilForm = document.getElementById('pencilForm');
+      
+      if (reservationForm && reservationForm.style.display !== 'none') {
+        updateIdUploadRequirement('reservation');
+      }
+      if (pencilForm && pencilForm.style.display !== 'none') {
+        updateIdUploadRequirement('pencil');
+      }
+    });
+    
+    // Initialize on page load
+    updateIdUploadRequirement('reservation');
+    updateIdUploadRequirement('pencil');
+  }
+  
+  // Age validation for 18+ requirement
+  function validateAge(ageInput, errorElement) {
+    const age = parseInt(ageInput.value);
+    if (age && age < 18) {
+      ageInput.setCustomValidity('You must be at least 18 years old to make a booking.');
+      if (errorElement) {
+        errorElement.style.display = 'block';
+      }
+      return false;
+    } else {
+      ageInput.setCustomValidity('');
+      if (errorElement) {
+        errorElement.style.display = 'none';
+      }
+      return true;
+    }
+  }
+  
+  // Add age validation listeners for reservation form
+  const reservationAgeInput = document.getElementById('reservation_age');
+  const reservationAgeError = document.getElementById('reservation_age_error');
+  if (reservationAgeInput) {
+    reservationAgeInput.addEventListener('input', function() {
+      validateAge(this, reservationAgeError);
+    });
+    reservationAgeInput.addEventListener('change', function() {
+      validateAge(this, reservationAgeError);
+    });
+    reservationAgeInput.addEventListener('blur', function() {
+      validateAge(this, reservationAgeError);
+    });
+  }
+  
+  // Add age validation listeners for pencil form
+  const pencilAgeInput = document.getElementById('pencil_age');
+  const pencilAgeError = document.getElementById('pencil_age_error');
+  if (pencilAgeInput) {
+    pencilAgeInput.addEventListener('input', function() {
+      validateAge(this, pencilAgeError);
+    });
+    pencilAgeInput.addEventListener('change', function() {
+      validateAge(this, pencilAgeError);
+    });
+    pencilAgeInput.addEventListener('blur', function() {
+      validateAge(this, pencilAgeError);
+    });
+  }
+  
+  // Initialize form lock on page load
+  initializeFormLock();
 });
 </script>

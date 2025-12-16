@@ -12,6 +12,7 @@
         <div class="modal-body">
           <input type="hidden" name="action" value="update">
           <input type="hidden" name="id" id="editItemId">
+          <input type="hidden" name="existing_images" id="editExistingImages">
           
           <!-- Basic Information -->
           <div class="card mb-4">
@@ -61,7 +62,12 @@
           <div class="card mb-4">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="fas fa-images me-2"></i>Image Gallery</h6>
-              <span class="badge bg-primary" id="imageCountBadge">0 / 10 images</span>
+              <div>
+                <button type="button" class="btn btn-sm btn-outline-danger me-2" id="selectAllImagesBtn">
+                  <i class="fas fa-check-double me-1"></i>Select All
+                </button>
+                <span class="badge bg-primary" id="imageCountBadge">0 / 10 images</span>
+              </div>
             </div>
             <div class="card-body">
               <!-- Current Images Gallery -->
@@ -72,7 +78,7 @@
               <!-- Add New Images -->
               <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                <strong>Tips:</strong> Click on an image to select/deselect for deletion. You can add up to 10 images total.
+                <strong>Tips:</strong> Click on an image or use the remove button to select/deselect for deletion. Use "Select All" to select all images at once.
               </div>
               
               <div class="mb-3">
@@ -174,13 +180,23 @@
 .zoom-icon {
   position: absolute;
   top: 8px;
+  right: 40px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.remove-icon {
+  position: absolute;
+  top: 8px;
   right: 8px;
   z-index: 10;
   opacity: 0;
   transition: opacity 0.3s;
 }
 
-.gallery-image-item:hover .zoom-icon {
+.gallery-image-item:hover .zoom-icon,
+.gallery-image-item:hover .remove-icon {
   opacity: 1;
 }
 
@@ -269,6 +285,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function loadImageGallery(itemId) {
     imageGallery.innerHTML = '';
     currentImages = [];
+    removedImages = [];
+    removedImagesInput.value = '';
     
     // Method 1: Try to get images from the data attribute on the item card
     const itemCard = document.querySelector(`.item-card[data-item-id="${itemId}"]`);
@@ -333,6 +351,9 @@ document.addEventListener('DOMContentLoaded', function() {
       imageGallery.innerHTML = '<div class="col-12 text-center text-muted py-4"><i class="fas fa-images fa-3x mb-2 d-block"></i><p>No images found. Add new images below.</p></div>';
     }
     
+    // Store existing images in hidden field for backend preservation
+    document.getElementById('editExistingImages').value = JSON.stringify(currentImages);
+    
     updateImageCount();
   }
   
@@ -350,6 +371,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <button type="button" class="btn btn-light btn-sm zoom-icon" onclick="viewImageFullscreen('${escapedSrc}')">
           <i class="fas fa-search-plus"></i>
         </button>
+        <button type="button" class="btn btn-danger btn-sm remove-icon">
+          <i class="fas fa-times"></i>
+        </button>
         <img src="${imgSrc}" alt="Image ${index + 1}" onerror="this.src='/assets/images/imageBg/barcie_logo.jpg'">
         <div class="gallery-image-overlay">
           <i class="fas fa-trash-alt fa-2x text-white"></i>
@@ -360,8 +384,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add click handler for selection
     const galleryItem = col.querySelector('.gallery-image-item');
     galleryItem.addEventListener('click', function(e) {
-      if (e.target.closest('.zoom-icon')) return;
+      if (e.target.closest('.zoom-icon') || e.target.closest('.remove-icon')) return;
       toggleImageSelection(this);
+    });
+    
+    // Add click handler for remove button
+    const removeBtn = col.querySelector('.remove-icon');
+    removeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleImageSelection(galleryItem);
     });
     
     imageGallery.appendChild(col);
@@ -377,20 +408,57 @@ document.addEventListener('DOMContentLoaded', function() {
       galleryItem.classList.remove('selected');
       removedImages = removedImages.filter(path => path !== imgPath);
     } else {
-      // Check if at least one image will remain
-      const totalAfterRemoval = currentImages.length - removedImages.length - 1;
-      if (totalAfterRemoval < 1) {
-        alert('You must keep at least one image.');
-        return;
-      }
-      
       // Select
       galleryItem.classList.add('selected');
-      removedImages.push(imgPath);
+      if (!removedImages.includes(imgPath)) {
+        removedImages.push(imgPath);
+      }
     }
     
     removedImagesInput.value = removedImages.join(',');
     updateImageCount();
+    updateSelectAllButton();
+  }
+
+  // Select All Images functionality
+  const selectAllBtn = document.getElementById('selectAllImagesBtn');
+  selectAllBtn.addEventListener('click', function() {
+    const galleryItems = imageGallery.querySelectorAll('.gallery-image-item');
+    const allSelected = Array.from(galleryItems).every(item => item.classList.contains('selected'));
+    
+    if (allSelected) {
+      // Deselect all
+      galleryItems.forEach(item => {
+        item.classList.remove('selected');
+      });
+      removedImages = [];
+      this.innerHTML = '<i class="fas fa-check-double me-1"></i>Select All';
+    } else {
+      // Select all
+      galleryItems.forEach(item => {
+        const imgPath = item.getAttribute('data-image-path');
+        item.classList.add('selected');
+        if (!removedImages.includes(imgPath)) {
+          removedImages.push(imgPath);
+        }
+      });
+      this.innerHTML = '<i class="fas fa-times me-1"></i>Deselect All';
+    }
+    
+    removedImagesInput.value = removedImages.join(',');
+    updateImageCount();
+  });
+
+  // Update Select All button text
+  function updateSelectAllButton() {
+    const galleryItems = imageGallery.querySelectorAll('.gallery-image-item');
+    const allSelected = Array.from(galleryItems).every(item => item.classList.contains('selected'));
+    
+    if (allSelected && galleryItems.length > 0) {
+      selectAllBtn.innerHTML = '<i class="fas fa-times me-1"></i>Deselect All';
+    } else {
+      selectAllBtn.innerHTML = '<i class="fas fa-check-double me-1"></i>Select All';
+    }
   }
 
   // View image in fullscreen
@@ -411,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const totalImages = currentImages.length - removedImages.length + files.length;
     if (totalImages > MAX_IMAGES) {
-      alert(`Maximum ${MAX_IMAGES} images allowed. You can upload ${MAX_IMAGES - (currentImages.length - removedImages.length)} more images.`);
+      showToast(`Maximum ${MAX_IMAGES} images allowed. You can upload ${MAX_IMAGES - (currentImages.length - removedImages.length)} more images.`, 'warning');
       this.value = '';
       return;
     }
@@ -480,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add addon card
   addAddonBtn.addEventListener('click', function() {
     if (addonsContainer.children.length >= 10) {
-      alert('Maximum 10 add-ons allowed.');
+      showToast('Maximum 10 add-ons allowed.', 'warning');
       return;
     }
     addAddonCard();
@@ -555,13 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (totalCount > MAX_IMAGES) {
       e.preventDefault();
-      alert(`Maximum ${MAX_IMAGES} images allowed.`);
-      return;
-    }
-    
-    if (totalCount < 1) {
-      e.preventDefault();
-      alert('At least one image is required.');
+      showToast(`Maximum ${MAX_IMAGES} images allowed.`, 'error');
       return;
     }
     
@@ -569,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const addonCards = addonsContainer.querySelectorAll('.addon-card');
     if (addonCards.length > 10) {
       e.preventDefault();
-      alert('Maximum 10 add-ons allowed.');
+      showToast('Maximum 10 add-ons allowed.', 'error');
       return;
     }
   });

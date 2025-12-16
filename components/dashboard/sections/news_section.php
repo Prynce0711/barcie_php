@@ -190,3 +190,74 @@ if ($news_result && $news_result->num_rows > 0) {
         </div>
     </div>
 </div>
+
+            <!-- Success Modal for news operations -->
+            <div class="modal fade" id="newsSuccessModal" tabindex="-1" aria-labelledby="newsSuccessModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-sm modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="newsSuccessModalLabel">Success</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="newsSuccessMessage">
+                            <!-- message will be injected -->
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+<script>
+// Role-based access control for News & Updates
+// Staff: CANNOT edit/delete content (❌)
+// Admin/Manager/Super Admin: Full access (✓)
+(function() {
+  function applyNewsRoleRestrictions() {
+    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    console.log('Applying news restrictions for role:', role);
+    
+    if (role === 'staff') {
+      // Hide Add News button
+      const addBtn = document.querySelector('[onclick="openAddNewsModal()"]');
+      if (addBtn) addBtn.style.display = 'none';
+      
+      // Hide edit and delete buttons on news cards
+      document.querySelectorAll('.btn-outline-warning, .btn-outline-danger').forEach(btn => {
+        const onclick = btn.getAttribute('onclick');
+        const isEditOrDelete = onclick && (onclick.includes('editNews') || onclick.includes('deleteNews'));
+        if (isEditOrDelete) {
+          btn.style.display = 'none';
+        }
+      });
+      
+      // Add read-only notice
+      const header = document.querySelector('.section-header');
+      if (header && !document.getElementById('news-readonly-notice')) {
+        const notice = document.createElement('div');
+        notice.id = 'news-readonly-notice';
+        notice.className = 'alert alert-info mb-3';
+        notice.innerHTML = '<i class="fas fa-info-circle me-2"></i>You have view-only access to news and updates.';
+        header.insertAdjacentElement('afterend', notice);
+      }
+      
+      console.log('News: Staff restricted to view-only');
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyNewsRoleRestrictions);
+  } else {
+    applyNewsRoleRestrictions();
+  }
+  
+  const observer = new MutationObserver(applyNewsRoleRestrictions);
+  const newsGrid = document.getElementById('newsGrid');
+  if (newsGrid) {
+    observer.observe(newsGrid, { childList: true, subtree: true });
+  }
+  
+  setTimeout(applyNewsRoleRestrictions, 200);
+})();
+</script>

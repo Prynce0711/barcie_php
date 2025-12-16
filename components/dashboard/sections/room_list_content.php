@@ -214,43 +214,9 @@ if ($items_result && $items_result->num_rows > 0) {
             <small class="text-success">₱<?= number_format($item['price']) ?><?= $price_label ?></small>
           </div>
         </div>
-        <div class="col-md-2">
-          <?php if ($status !== 'no-reservation'): ?>
-            <span class="badge bg-<?= $status_class ?> px-3 py-2">
-              <i class="fas fa-<?= $status_icon ?> me-1"></i><?= $status_text ?>
-            </span>
-          <?php endif; ?>
-        </div>
-        <div class="col-md-5 d-flex flex-column align-items-end">
-          <div class="booking-info w-100">
-          <?php if ($current_booking): ?>
-            <div class="current-booking mb-2">
-              <strong class="text-<?= $status_class ?>">Current <?= $item_type == 'room' ? 'Guest' : 'User' ?>:</strong>
-              <div class="small">
-                Guest
-                <span class="text-muted">
-                  • <?= date('M j', strtotime($current_booking['checkin'])) ?> - <?= date('M j', strtotime($current_booking['checkout'])) ?>
-                </span>
-              </div>
-            </div>
-          <?php endif; ?>
-
-          <?php if ($next_booking): ?>
-            <div class="next-booking">
-              <strong class="text-primary">Next Reservation:</strong>
-              <div class="small">
-                Guest
-                <span class="text-muted">
-                  • <?= date('M j', strtotime($next_booking['checkin'])) ?> - <?= date('M j', strtotime($next_booking['checkout'])) ?>
-                </span>
-              </div>
-            </div>
-          <?php endif; ?>
-          
-          </div>
-
+        <div class="col-md-7 d-flex flex-column align-items-end justify-content-center">
           <!-- View Calendar Button (aligned right) -->
-          <div class="view-actions mt-2">
+          <div class="view-actions">
             <button type="button" class="btn btn-sm btn-outline-primary view-calendar-btn" 
                     onclick="event.stopPropagation(); showRoomCalendar(<?= $item_id ?>, '<?= htmlspecialchars(addslashes($item_name . ($room_number !== 'N/A' ? ' #' . $room_number : ''))) ?>')">
               <i class="fas fa-calendar-alt me-1"></i>View Calendar
