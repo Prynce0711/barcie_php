@@ -4,6 +4,9 @@
  * Fetches recent system activities for dashboard display
  */
 
+// Set timezone first to ensure consistent time calculations
+date_default_timezone_set('Asia/Manila');
+
 header('Content-Type: application/json');
 require_once __DIR__ . '/../database/db_connect.php';
 
@@ -282,9 +285,13 @@ try {
     }
     $stmt->close();
     
-    // Sort all activities by date
+    // Sort all activities by date (handle null/invalid dates)
     usort($activities, function($a, $b) {
-        return strtotime($b['activity_date']) - strtotime($a['activity_date']);
+        $timeA = strtotime($a['activity_date'] ?? '1970-01-01');
+        $timeB = strtotime($b['activity_date'] ?? '1970-01-01');
+        if ($timeA === false) $timeA = 0;
+        if ($timeB === false) $timeB = 0;
+        return $timeB - $timeA;
     });
     
     // Limit to requested number

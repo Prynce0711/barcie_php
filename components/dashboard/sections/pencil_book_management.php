@@ -1,6 +1,9 @@
 <?php
 // Pencil Book Management Section
 // This section displays pencil bookings management specifically
+
+// Set timezone to ensure consistent time display
+date_default_timezone_set('Asia/Manila');
 ?>
 
 <!-- Pencil Book Management -->

@@ -1,6 +1,10 @@
 <?php
 // Bookings Table Content
 // Only show bookings where payment has been verified (payment_status = 'verified')
+
+// Set timezone to ensure consistent time display
+date_default_timezone_set('Asia/Manila');
+
 $bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number,
                           IFNULL(b.discount_status, 'none') as discount_status
                           FROM bookings b 

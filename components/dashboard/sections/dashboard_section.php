@@ -124,7 +124,7 @@ if (isset($conn) && $conn instanceof mysqli) {
                         <i class="fas fa-tachometer-alt fa-2x text-white"></i>
                       </div>
                       <div>
-                        <h3 class="text-white mb-1 fw-bold">Admin Dashboard testttt</h3>
+                        <h3 class="text-white mb-1 fw-bold">Admin Dashboard </h3>
                         <p class="text-white-50 mb-0 small">BarCIE International Center Management</p>
                       </div>
                     </div>

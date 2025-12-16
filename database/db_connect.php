@@ -48,6 +48,9 @@ mysqli_report(MYSQLI_REPORT_OFF);
 try {
     $conn = new mysqli($host, $user, $pass, $dbname);
     $conn->set_charset("utf8mb4");
+    
+    // Set MySQL timezone to match PHP timezone (Asia/Manila)
+    $conn->query("SET time_zone = '+08:00'");
 } catch (Exception $e) {
     // Log the error for debugging
     error_log("Database connection failed: " . $e->getMessage());

@@ -1,3 +1,14 @@
+# Set PHP timezone for consistent time handling
+<IfModule mod_php.c>
+    php_value date.timezone "Asia/Manila"
+</IfModule>
+<IfModule mod_php7.c>
+    php_value date.timezone "Asia/Manila"
+</IfModule>
+<IfModule mod_php8.c>
+    php_value date.timezone "Asia/Manila"
+</IfModule>
+
 # Prevent aggressive caching of JavaScript and CSS during development
 <IfModule mod_headers.c>
     <FilesMatch "\.(js|css)$">
