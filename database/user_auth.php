@@ -1,4 +1,7 @@
 <?php
+// Set timezone first to ensure consistent time across all operations
+date_default_timezone_set('Asia/Manila');
+
 // Catch all errors and convert to JSON for API endpoints
 function handleFatalError() {
     $error = error_get_last();

@@ -1,6 +1,9 @@
 <?php
 // Payment Verification Section for Dashboard
 // This displays bookings where payment_status = 'pending' or proof_of_payment is present
+
+// Set timezone to ensure consistent time display
+date_default_timezone_set('Asia/Manila');
 ?>
 
 <div class="row mb-4">
@@ -101,8 +104,9 @@ if ($stmt) {
 			echo '<td>';
 			echo '<button class="btn btn-info btn-sm" onclick="viewPaymentDetails(' . $id . ')" title="View Details"><i class="fas fa-eye me-1"></i>View Details</button>';
 			echo '</td>';
-			echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($payment_date))) . '</td>';
-			echo '<td>';
+			// Format date/time with proper timezone handling
+			$display_date = $payment_date ? date('M j, Y H:i', strtotime($payment_date)) : 'N/A';
+			echo '<td>' . htmlspecialchars($display_date) . '</td>';
 			echo '<td class="payment-action-buttons">';
 			echo '<button class="btn btn-success btn-sm payment-action me-1 mb-1" data-booking-id="' . $id . '" data-action="verify"><i class="fas fa-check me-1"></i>Verify</button> ';
 			echo '<button class="btn btn-danger btn-sm payment-action me-1 mb-1" data-booking-id="' . $id . '" data-action="reject"><i class="fas fa-times me-1"></i>Reject</button>';
