@@ -1,7 +1,7 @@
 <!-- Image Crop/Edit Modal (moved out from discount_application.php) -->
 <div class="modal fade" id="imageCropModal">
 
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 640px;">
+  <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 900px;">
     <div class="modal-content">
       <div class="modal-header" style="padding: 16px 20px; border-bottom: 2px solid #e9ecef;">
         <div class="d-flex align-items-center gap-2">
@@ -12,7 +12,7 @@
       </div>
       <div class="modal-body" style="padding: 0; background: #f8f9fa;">
         <!-- Main Image Area -->
-        <div id="cropImageContainer" style="width: 100%; height: 360px; overflow: hidden; background: #2c3e50; position: relative; display:flex; align-items:center; justify-content:center;">
+        <div id="cropImageContainer" style="width: 100%; height: 500px; overflow: hidden; background: #2c3e50; position: relative; display:flex; align-items:center; justify-content:center;">
           <div id="cameraWrapper" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; background: #000;">
             <video id="modalCameraVideo" autoplay playsinline style="max-width:100%; max-height:100%; display:block;"></video>
             <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); display:flex; gap:12px;">
@@ -139,10 +139,11 @@ async function extractTextFromImage(imageDataUrl) {
 
     try {
       // Proper worker lifecycle for Tesseract.js v5+
-      const worker = Tesseract.createWorker({ logger: () => {} });
-      await worker.load();
-      await worker.loadLanguage('eng');
-      await worker.initialize('eng');
+      const worker = await Tesseract.createWorker('eng', 1, {
+        workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+        langPath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
+        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd.wasm.js',
+      });
 
       // Create simple image-processing variants to improve OCR robustness
       async function makeVariants(dataUrl) {
@@ -359,10 +360,7 @@ async function extractTextFromImage(imageDataUrl) {
               if (discountType === 'lcuppersonnel' || discountType === 'lcupstudent') {
                 // Run OCR in parallel with color analysis
                 const ocrPromise = extractTextFromImage(imageDataUrl);
-                detectLCUPID(top, middle, bottom, isLandscape, result);
-                
-                const colorScore = result.confidence;
-                const hasColorMatch = colorScore > 25; // Must have some blue color
+                const hasColorMatch = detectLCUPID(top, middle, bottom, isLandscape);
                 
                 // Wait for OCR result
                 const extractedText = await ocrPromise;
@@ -372,108 +370,75 @@ async function extractTextFromImage(imageDataUrl) {
                   const textCheck = checkTextForLCUP(extractedText);
                   if (textCheck.found) {
                     hasTextMatch = true;
-                    result.features.unshift('✓ Text: "' + (textCheck.keywords[0] || 'la consolacion') + '" detected');
-                    result.ocrText = extractedText;
-                  } else if (extractedText.includes('consolacion') || extractedText.includes('la consolacion')) {
-                    // Fallback: partial match (not caught by patterns due to OCR noise)
-                    hasTextMatch = true;
-                    result.features.unshift('✓ Partial text match: "consolacion"');
-                    result.ocrText = extractedText;
-                  } else {
-                    result.ocrText = extractedText;
                   }
                 }
-
-                // More forgiving acceptance: prefer color+text, but allow good color score
-                // with partial/low-confidence text matches. Also accept strong text
-                // matches even if color score is modest.
-                const textScore = (result.ocrText && result.ocrText.length > 0) ? ( (hasTextMatch) ? 40 : 0 ) : 0;
-
+                
+                // STRICT: Require BOTH color pattern AND university text
                 if (hasColorMatch && hasTextMatch) {
                   result.detected = true;
-                  result.confidence = Math.min(100, colorScore + 50 + textScore);
-                } else if (hasColorMatch && !hasTextMatch) {
-                  // If color score is strong, allow a generous fallback (user photos can lose text readability)
-                  if (colorScore >= 40) {
-                    result.detected = true;
-                    result.confidence = Math.min(100, colorScore + 15);
-                    result.features.push('⚠️ Text unclear, accepting based on color pattern');
-                  } else {
-                    result.detected = false;
-                    result.confidence = Math.min(30, colorScore);
-                    result.features.push('⚠️ Text not detected (partial OCR may be present)');
-                  }
-                } else if (!hasColorMatch && hasTextMatch) {
-                  // Accept if text is clearly present even without strong color cues
-                  result.detected = true;
-                  result.confidence = Math.min(80, 30 + (textScore));
-                  result.features.push('⚠️ Color pattern weak, accepting based on text match');
                 } else {
                   result.detected = false;
-                  result.confidence = 10;
-                  result.features.push('⚠️ Not an LCUP ID');
                 }
               } else if (discountType === 'pwd_senior') {
-                // For Senior/PWD IDs, run OCR as well and combine text+color signals.
-                const ocrPromisePwd = extractTextFromImage(imageDataUrl);
-                detectSeniorPWDID(top, middle, bottom, isLandscape, result);
-
-                const extractedPwdText = await ocrPromisePwd;
-                let hasPwdText = false;
-                let textCheckPwd = null;
-                if (extractedPwdText) {
-                  textCheckPwd = checkTextForPWD(extractedPwdText);
-                  if (textCheckPwd.found) {
-                    hasPwdText = true;
-                    result.features.unshift('✓ Text: "' + (textCheckPwd.keywords[0] || 'senior/pwd') + '" detected');
-                    result.ocrText = extractedPwdText;
-                  } else if (extractedPwdText.toLowerCase().includes('senior') || extractedPwdText.toLowerCase().includes('pwd') || extractedPwdText.toLowerCase().includes('person with')) {
-                    // partial fallback
-                    hasPwdText = true;
-                    result.features.unshift('✓ Partial text match: "senior/pwd"');
-                    result.ocrText = extractedPwdText;
+                // For PWD/Senior, require text detection
+                const ocrPromise = extractTextFromImage(imageDataUrl);
+                const extractedText = await ocrPromise;
+                
+                console.log('OCR extracted text for PWD/Senior:', extractedText);
+                
+                if (extractedText) {
+                  const textLower = extractedText.toLowerCase().replace(/\s+/g, ' ');
+                  console.log('Normalized text:', textLower);
+                  
+                  // Check for PWD or Senior Citizen keywords
+                  const hasPwd = textLower.includes('pwd');
+                  const hasSenior = textLower.includes('senior');
+                  const hasCitizen = textLower.includes('citizen');
+                  const hasOsca = textLower.includes('osca');
+                  const hasDisability = textLower.includes('disability') || textLower.includes('disabled');
+                  const hasOffice = textLower.includes('office');
+                  const hasAffairs = textLower.includes('affairs');
+                  
+                  console.log('Keywords found:', { hasPwd, hasSenior, hasCitizen, hasOsca, hasDisability, hasOffice, hasAffairs });
+                  
+                  if (hasPwd || 
+                      hasOsca ||
+                      (hasSenior && hasCitizen) ||
+                      (hasOffice && hasSenior) ||
+                      (hasOffice && hasCitizen) ||
+                      (hasSenior && hasAffairs) ||
+                      hasDisability ||
+                      textLower.includes('person with disability') ||
+                      textLower.includes('persons with disability') ||
+                      textLower.includes('elderly') ||
+                      textLower.includes('pensioner') ||
+                      textLower.includes('retiree') ||
+                      textLower.includes('senior id') ||
+                      textLower.includes('pwd id') ||
+                      textLower.includes('senior citizens')) {
+                    result.detected = true;
+                    console.log('PWD/Senior ID ACCEPTED');
                   } else {
-                    result.ocrText = extractedPwdText;
+                    result.detected = false;
+                    console.log('PWD/Senior ID REJECTED - no matching keywords');
                   }
-                }
-
-                // Decision rules: prefer combined signals, but accept strong text or strong color alone.
-                const colorScorePwd = result.confidence || 0;
-                if (hasPwdText && colorScorePwd >= 10) {
-                  result.detected = true;
-                  result.confidence = Math.min(100, colorScorePwd + 40);
-                } else if (hasPwdText && colorScorePwd < 10) {
-                  // Accept if text is clear even if color clues are weak
-                  result.detected = true;
-                  const pwdTextConf = (textCheckPwd && textCheckPwd.confidence) ? textCheckPwd.confidence : 30;
-                  result.confidence = Math.min(90, 30 + pwdTextConf);
-                } else if (!hasPwdText && colorScorePwd >= 35) {
-                  // Strong color pattern (e.g., yellow/gov colors) may be enough
-                  result.detected = true;
-                  result.confidence = Math.min(80, colorScorePwd + 10);
                 } else {
                   result.detected = false;
-                  result.confidence = Math.max(10, colorScorePwd);
-                  if (!hasPwdText) result.features.push('⚠️ No clear "Senior" or "PWD" text detected');
+                  console.log('PWD/Senior ID REJECTED - no text extracted');
                 }
-              }
-              
-              if (isLandscape && result.detected) {
-                result.features.push('Standard ID format');
-                result.confidence = Math.min(100, result.confidence + 10);
               }
               
               resolve(result);
             } catch (error) {
-              resolve({ detected: false, confidence: 30, features: ['Upload complete'], error: error.message });
+              resolve({ detected: false });
             }
           };
           
-          img.onerror = () => resolve({ detected: false, confidence: 30, features: ['Upload complete'] });
+          img.onerror = () => resolve({ detected: false });
           img.src = imageDataUrl;
         };
         
-        reader.onerror = () => resolve({ detected: false, confidence: 30, features: ['Upload complete'] });
+        reader.onerror = () => resolve({ detected: false });
         reader.readAsDataURL(file);
       });
     }
@@ -508,82 +473,22 @@ async function extractTextFromImage(imageDataUrl) {
       return colors;
     }
 
-    function detectLCUPID(top, middle, bottom, isLandscape, result) {
-      // Relaxed color scoring to accept partial crops and IDs not filling frame.
-      // We reduce the strict dependence on a large white content area and make
-      // blue/header detection more permissive. The goal is to allow valid
-      // ID photos even when users don't perfectly frame the card.
-      let colorScore = 0;
-
-      // Blue header / strong blue region: lower thresholds to detect small headers
-      const topBlue = top.bluePercent || 0;
-      const midBlue = middle.bluePercent || 0;
-      const botBlue = bottom.bluePercent || 0;
-
-      if (topBlue > 5 || midBlue > 5) {
-        result.features.push('✓ Blue ID background');
-        const blueConfidence = Math.min(40, Math.max(topBlue, midBlue) * 2);
-        colorScore += blueConfidence;
+    function detectLCUPID(top, middle, bottom, isLandscape) {
+      // Check for blue header (lowered threshold for real photos)
+      if (top.bluePercent > 8 || middle.bluePercent > 8) {
+        return true;
       }
-
-      // Overall blue presence across the card. Accept smaller percentages as signal
-      const totalBlue = (topBlue + midBlue + botBlue) / 3;
-      if (totalBlue > 3 && colorScore === 0) {
-        result.features.push('✓ Blue color pattern');
-        colorScore += Math.min(30, totalBlue * 4);
+      
+      // Check overall blue presence (LCUP IDs are predominantly blue)
+      const totalBlue = (top.bluePercent + middle.bluePercent + bottom.bluePercent) / 3;
+      if (totalBlue > 5) {
+        return true;
       }
-
-      // Orange accent detection (CIT accent) remains useful but lowered thresholds
-      const totalOrange = (top.orangePercent + middle.orangePercent + bottom.orangePercent) / 3;
-      if (totalOrange > 2) {
-        result.features.push('✓ Orange CIT accent');
-        colorScore += Math.min(20, totalOrange * 3);
-      }
-
-      // White content area (photo/text) is informative but not required - lower weight
-      const whiteScore = Math.max(middle.whitePercent || 0, bottom.whitePercent || 0);
-      if (whiteScore > 8) {
-        result.features.push('✓ Visible ID content area');
-        colorScore += 8;
-      }
-
-      // If the card is small in the frame (high overall whitePercent) we should
-      // not penalize it: prefer color/text matches over occupying the frame.
-      // (No negative adjustments here)
-
-      // Store color score but don't set detected flag yet. Text/OCR will be combined
-      // later to determine final detection.
-      result.confidence = Math.round(colorScore);
-      result.detected = false;
+      
+      return false;
     }
 
-    function detectSeniorPWDID(top, middle, bottom, isLandscape, result) {
-      let hasGovColors = false;
-      let hasIdStructure = false;
-      
-      const totalYellow = (top.yellowPercent + middle.yellowPercent + bottom.yellowPercent) / 3;
-      if (totalYellow > 10 || top.yellowPercent > 15) {
-        result.features.push('Government ID yellow/gold (' + Math.round(totalYellow) + '%)');
-        result.confidence += Math.min(40, totalYellow * 2);
-        hasGovColors = true;
-      }
-      
-      const totalRed = (top.redPercent + middle.redPercent + bottom.redPercent) / 3;
-      if (totalRed > 8) {
-        result.features.push('Red accent color');
-        result.confidence += Math.min(30, totalRed * 2);
-        hasGovColors = true;
-      }
-      
-      if (middle.whitePercent > 30 || bottom.whitePercent > 30) {
-        result.features.push('ID format detected');
-        result.confidence += 15;
-        hasIdStructure = true;
-      }
-      
-      // Must have government colors to be considered valid
-      result.detected = hasGovColors && (hasIdStructure || result.confidence >= 40);
-    }
+
 
     function showScanResults(file, scanResult, discountType) {
       proofPreview.style.display = 'block';
@@ -607,20 +512,19 @@ async function extractTextFromImage(imageDataUrl) {
       const statusEl = document.createElement('div');
       
       // VALIDATION: Accept if ID features are detected with minimum 30% confidence
-      if (scanResult.detected && scanResult.confidence >= 30) {
-        statusEl.className = scanResult.confidence >= 60 ? 'text-success fw-bold' : 'text-success';
+      if (scanResult.detected) {
+        statusEl.className = 'text-success fw-bold';
         let msg = '';
         
         switch(discountType) {
-          case 'lcuppersonnel': msg = 'LCUP Personnel ID detected'; break;
-          case 'lcupstudent': msg = 'LCUP Student/Alumni ID detected'; break;
-          case 'pwd_senior': msg = 'Senior/PWD ID detected'; break;
-          default: msg = 'Valid ID detected';
+          case 'lcuppersonnel': msg = '✓ Approved: LCUP Personnel ID verified'; break;
+          case 'lcupstudent': msg = '✓ Approved: LCUP Student/Alumni ID verified'; break;
+          case 'pwd_senior': msg = '✓ Approved: Senior/PWD ID verified'; break;
+          default: msg = '✓ Approved: Valid ID verified';
         }
         
-        statusEl.innerHTML = '<i class="fas fa-check-circle me-1"></i>' + msg + ' (Confidence: ' + scanResult.confidence + '%)';
+        statusEl.innerHTML = '<i class="fas fa-check-circle me-1"></i>' + msg;
         proofInput.dataset.validProof = '1';
-        proofInput.dataset.confidence = scanResult.confidence;
       } else {
         // REJECT: No valid ID features detected
         statusEl.className = 'text-danger fw-bold';
@@ -628,40 +532,29 @@ async function extractTextFromImage(imageDataUrl) {
         
         switch(discountType) {
           case 'lcuppersonnel':
-            msg = 'This does not appear to be a LCUP Personnel ID. Please upload a valid LCUP employee ID with the blue header.';
+            msg = '✗ Not Approved: This does not appear to be a LCUP Personnel ID. Please upload a valid LCUP employee ID.';
             break;
           case 'lcupstudent':
-            msg = 'This does not appear to be a LCUP Student/Alumni ID. Please upload a valid LCUP student ID with the blue header.';
+            msg = '✗ Not Approved: This does not appear to be a LCUP Student/Alumni ID. Please upload a valid LCUP student ID.';
             break;
           case 'pwd_senior':
-            msg = 'This does not appear to be a Senior/PWD ID. Please upload a valid government-issued senior citizen or PWD ID.';
+            msg = '✗ Not Approved: This does not appear to be a Senior/PWD ID. Please upload a valid government-issued senior citizen or PWD ID.';
             break;
           default:
-            msg = 'Could not detect valid ID features. Please upload a clear photo of your ID.';
+            msg = '✗ Not Approved: Could not verify ID. Please upload a clear photo of your ID.';
         }
         
         statusEl.innerHTML = '<i class="fas fa-times-circle me-1"></i>' + msg;
         proofInput.dataset.validProof = '0';
-        proofInput.dataset.confidence = scanResult.confidence || 0;
         
         // Show what was checked
         const hintEl = document.createElement('div');
         hintEl.className = 'text-muted small mt-2';
-        hintEl.innerHTML = '<strong>Tips:</strong><br>• Ensure good lighting and clear image<br>• ID should fill most of the frame<br>• Avoid shadows and glare<br>• Take photo on a plain background';
+        hintEl.innerHTML = '<strong>Tips for better validation:</strong><br>• Ensure good lighting and clear image<br>• ID should fill most of the frame<br>• Avoid shadows and glare<br>• Take photo on a plain background';
         proofStatus.appendChild(hintEl);
       }
       
       proofStatus.appendChild(statusEl);
-      
-      // Show detected features
-      if (scanResult.features && scanResult.features.length > 0) {
-        const featuresEl = document.createElement('div');
-        featuresEl.className = 'text-muted small mt-1';
-        featuresEl.innerHTML = '<i class="fas fa-check me-1"></i>' + scanResult.features.join(' • ');
-        proofStatus.appendChild(featuresEl);
-      }
-      
-      proofInput.dataset.validReason = scanResult.features.join(', ') || 'ID validation failed';
     }
 
     let currentFile = null;
@@ -777,12 +670,18 @@ async function extractTextFromImage(imageDataUrl) {
             const usePortrait = probe.naturalHeight > probe.naturalWidth;
             const aspectForCropper = usePortrait ? idPortraitRatio : idLandscapeRatio;
 
+            // Ensure previous cropper removed and any leftover containers cleared
+            if (cropper) {
+              try { cropper.destroy(); } catch (e) { /* ignore */ }
+              cropper = null;
+            }
+            
             // Replace the image element with a fresh clone to ensure no previous
             // Cropper data or attached elements remain. This prevents visual
             // duplication when creating a new Cropper instance.
             try {
               const existing = document.getElementById('cropImage');
-              if (existing) {
+              if (existing && existing.parentNode) {
                 const fresh = existing.cloneNode(false);
                 // preserve inline styles/attributes we rely on
                 fresh.id = existing.id;
@@ -791,13 +690,10 @@ async function extractTextFromImage(imageDataUrl) {
                 existing.parentNode.replaceChild(fresh, existing);
                 cropImage = fresh;
               }
-            } catch (e) { /* ignore */ }
-
-            // Ensure previous cropper removed and any leftover containers cleared
-            if (cropper) {
-              try { cropper.destroy(); } catch (e) { /* ignore */ }
-              cropper = null;
+            } catch (e) { 
+              console.error('Error replacing image element:', e);
             }
+            
             try { removeScopedCropperContainers(document.getElementById('cropImage')); } catch (e) { /* ignore */ }
 
             cropImage.src = imgSrc;
@@ -828,7 +724,7 @@ async function extractTextFromImage(imageDataUrl) {
                   responsive: true,
                   checkCrossOrigin: false,
                   background: false,
-                  minContainerWidth: 700,
+                  minContainerWidth: 850,
                   minContainerHeight: 500,
                   ready() {
                     try {
@@ -880,7 +776,7 @@ async function extractTextFromImage(imageDataUrl) {
         reader.readAsDataURL(file);
       } catch (error) {
         console.error('Failed to load cropper:', error);
-        alert('Failed to load image editor. Processing original image...');
+        showToast('Failed to load image editor. Processing original image...', 'warning');
         processImage(file);
       }
     }
@@ -914,7 +810,10 @@ async function extractTextFromImage(imageDataUrl) {
     // Reset button removed; keep function available if needed elsewhere
     
     document.getElementById('applyCrop')?.addEventListener('click', async () => {
-      if (!cropper) return;
+      if (!cropper) {
+        console.error('Cropper not initialized');
+        return;
+      }
       
       // Get cropped canvas
       const canvas = cropper.getCroppedCanvas({
@@ -924,8 +823,17 @@ async function extractTextFromImage(imageDataUrl) {
         imageSmoothingQuality: 'high',
       });
       
+      if (!canvas) {
+        console.error('Failed to get cropped canvas');
+        return;
+      }
+      
       // Convert to blob
       canvas.toBlob(async (blob) => {
+        if (!blob) {
+          console.error('Failed to convert canvas to blob');
+          return;
+        }
         const croppedFile = new File([blob], currentFile.name, {
           type: currentFile.type,
           lastModified: Date.now()
@@ -969,10 +877,10 @@ async function extractTextFromImage(imageDataUrl) {
           const discountType = discountTypeSel ? discountTypeSel.value : '';
           const scanResult = await scanIDImage(tmpFile, discountType);
             // Show quick result
-            if (scanResult.detected && scanResult.confidence >= 30) {
-              statusEl.innerHTML = '<span class="text-success fw-bold">Detected: ' + (scanResult.confidence || 0) + '%</span>';
+            if (scanResult.detected) {
+              statusEl.innerHTML = '<span class="text-success fw-bold"><i class="fas fa-check-circle me-2"></i>Valid discount proof detected</span>';
             } else {
-              statusEl.innerHTML = '<span class="text-danger">Not detected (Confidence: ' + (scanResult.confidence || 0) + '%)</span>';
+              statusEl.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-2"></i>Discount proof not detected</span>';
             }
             // Show OCR preview for user feedback
             try {
@@ -1032,7 +940,7 @@ async function extractTextFromImage(imageDataUrl) {
           if (imgEl) imgEl.style.display = 'none';
           if (cropper) { cropper.destroy(); cropper = null; }
         } catch (err) {
-          alert('Camera access denied or not available');
+          showToast('Camera access denied or not available', 'error');
         }
       }
 
@@ -1152,55 +1060,9 @@ async function extractTextFromImage(imageDataUrl) {
       });
     })();
 
-    // Process and validate image
-    async function processImage(file) {
-      proofLoading.style.display = 'inline-block';
-      proofStatus.innerHTML = '<small class="text-muted">Scanning ID...</small>';
-      proofThumb.innerHTML = '';
-      proofInput.dataset.validProof = '0';
-      proofPreview.style.display = 'block';
-
-      const discountType = discountTypeSel ? discountTypeSel.value : '';
-      
-      // Scan the ID image
-      const scanResult = await scanIDImage(file, discountType);
-      
-      proofLoading.style.display = 'none';
-      showScanResults(file, scanResult, discountType);
-    }
-
-    proofInput.addEventListener('change', async function(){
-      const f = this.files && this.files[0];
-      if (!f) {
-        proofPreview.style.display = 'none';
-        proofInput.dataset.validProof = '';
-        return;
-      }
-
-      // Only allow cropping for images
-      if (f.type.startsWith('image/')) {
-        currentFile = f;
-        await openCropModal(f);
-      } else {
-        // PDF or other files - process directly
-        await processImage(f);
-      }
-    });
-
-    // Re-scan when discount type changes
-    if (discountTypeSel){
-      discountTypeSel.addEventListener('change', async function(){
-        const f = proofInput.files && proofInput.files[0];
-        if (!f || !f.type.startsWith('image/')) return;
-        
-        proofLoading.style.display = 'inline-block';
-        proofStatus.innerHTML = '<small class="text-muted">Re-scanning ID...</small>';
-        
-        const scanResult = await scanIDImage(f, discountTypeSel.value);
-        
-        proofLoading.style.display = 'none';
-        showScanResults(f, scanResult, discountTypeSel.value);
-      });
-    }
+    // ============================================
+    // DUPLICATE EVENT LISTENERS REMOVED
+    // File handling is done in discount_application.php
+    // ============================================
   })();
 </script>

@@ -10,8 +10,11 @@ require __DIR__ . '/../../database/db_connect.php';
 
 // ✅ Auth check: only admins can access
 if (!isset($_SESSION['admin_id'])) {
+  error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access denied. Session ID: " . session_id() . ". Session data: " . print_r($_SESSION, true));
   header("Location: index.php");
   exit;
+} else {
+  error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access granted for admin ID: " . $_SESSION['admin_id'] . " (Username: " . ($_SESSION['admin_username'] ?? 'unknown') . ")");
 }
 
 /**
@@ -50,6 +53,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // DELETE ITEM
     if ($action === "delete" && isset($_POST['id'])) {
+      // Only managers and super_admin can delete rooms/facilities
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to delete rooms or facilities');
+      
       $id = intval($_POST['id']);
       
       // Get the image path before deleting
@@ -88,6 +95,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // UPDATE ITEM
     if ($action === "update" && isset($_POST['id'])) {
+      // Only managers and super_admin can edit rooms/facilities
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to edit rooms or facilities');
+      
       $id = intval($_POST['id']);
       $name = trim($_POST['name']);
   // Normalize item type server-side to canonical values
@@ -333,6 +344,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // UPDATE BOOKING STATUS
     if ($action === "update_booking_status" && isset($_POST['booking_id']) && isset($_POST['new_status'])) {
+      // Only Front Desk (admin), managers and super_admin can modify booking status - staff CANNOT
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['admin','manager','super_admin'], 'dashboard.php#bookings', 'You do not have permission to modify bookings');
       $booking_id = intval($_POST['booking_id']);
       $new_status = $_POST['new_status'];
       
@@ -346,6 +360,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // DELETE BOOKING
     if ($action === "delete_booking" && isset($_POST['booking_id'])) {
+      // Only managers or super_admin can delete bookings (prevent staff/front desk from deleting)
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager','super_admin'], 'dashboard.php#bookings', 'You do not have permission to delete bookings');
       $booking_id = intval($_POST['booking_id']);
       
       $stmt = $conn->prepare("DELETE FROM bookings WHERE id=?");
@@ -356,15 +373,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       exit;
     }
 
-    // PROCESS DISCOUNT APPLICATION
+    // PROCESS DISCOUNT APPLICATION - DEPRECATED (Auto-approval enabled)
+    // Discounts are now automatically approved when ID proof is uploaded
+    // This code is kept for backward compatibility but should not be used
     if ($action === "process_discount" && isset($_POST['discount_id']) && isset($_POST['discount_action'])) {
-      $discount_id = intval($_POST['discount_id']);
-      $discount_action = $_POST['discount_action'];
-      
-      $stmt = $conn->prepare("UPDATE discount_applications SET status=? WHERE id=?");
-      $stmt->bind_param("si", $discount_action, $discount_id);
-      $stmt->execute();
-      $stmt->close();
+      error_log("WARNING: Manual discount processing attempted but discounts are now auto-approved");
       header("Location: dashboard.php#bookings");
       exit;
     }
@@ -372,6 +385,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   // ADD ITEM
   if (isset($_POST['add_item'])) {
+    // Only managers and super_admin can add rooms/facilities
+    require_once __DIR__ . '/../../database/role_check.php';
+    page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to add rooms or facilities');
+    
     // --- Preflight: ensure PHP ini limits allow our desired 20MB uploads ---
     /**
      * Convert php.ini shorthand (e.g. '2M', '512K') to bytes
@@ -675,8 +692,8 @@ $active_bookings = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE st
 // Pending Approvals
 $pending_approvals = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='pending'")->fetch_assoc()['count'];
 
-// Total Revenue (assuming you have a price/payment system)
-$total_revenue_result = $conn->query("SELECT SUM(CAST(SUBSTRING_INDEX(details, 'Price: P', -1) AS DECIMAL(10,2))) as revenue FROM bookings WHERE status='approved'");
+// Total Revenue (only verified payments, excluding cancelled/rejected bookings)
+$total_revenue_result = $conn->query("SELECT COALESCE(SUM(COALESCE(amount, 0)), 0) as revenue FROM bookings WHERE payment_status = 'verified' AND status NOT IN ('cancelled', 'rejected')");
 $total_revenue = $total_revenue_result->fetch_assoc()['revenue'] ?? 0;
 
 // Monthly bookings for chart (last 12 months)
@@ -712,34 +729,8 @@ $active_bookings_count = $status_distribution['approved'] + $status_distribution
 $pending_bookings_count = $status_distribution['pending'];
 $completed_bookings_count = $status_distribution['checked_out'];
 
-// Recent Activities (no user join needed since we removed user_id)
-$recent_activity_result = $conn->query("SELECT b.type, b.details, b.created_at 
-    FROM bookings b 
-    ORDER BY b.created_at DESC LIMIT 8");
-$recent_activities = [];
-while ($row = $recent_activity_result->fetch_assoc()) {
-  $recent_activities[] = $row;
-}
-
-// Feedback Statistics
-$feedback_stats_result = $conn->query("SELECT 
-    COUNT(*) as total_feedback,
-    COALESCE(AVG(rating), 0) as avg_rating,
-    COUNT(CASE WHEN rating = 5 THEN 1 END) as five_star,
-    COUNT(CASE WHEN rating = 4 THEN 1 END) as four_star,
-    COUNT(CASE WHEN rating = 3 THEN 1 END) as three_star,
-    COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
-    COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
-    FROM feedback");
-$feedback_stats = $feedback_stats_result ? $feedback_stats_result->fetch_assoc() : [
-  'total_feedback' => 0,
-  'avg_rating' => 0,
-  'five_star' => 0,
-  'four_star' => 0,
-  'three_star' => 0,
-  'two_star' => 0,
-  'one_star' => 0
-];
+// Feedback Statistics - REMOVED (Guest Satisfaction section removed from overview)
+// Calculations removed to improve performance since they're no longer displayed
 
 // Calendar Events for JavaScript
 $events = [];

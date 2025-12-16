@@ -109,7 +109,7 @@
       <div class="modal-header bg-warning bg-opacity-10">
         <h5 class="modal-title">
           <i class="fas fa-file-contract me-2"></i>
-          Full Payment & Refund Policy
+          Terms and Conditions - House Rules & Regulations
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closePolicyModal"></button>
       </div>
@@ -118,98 +118,129 @@
           <div class="policy-header-image mb-3">
             <img src="assets/images/imageBg/barcie-logo.png" alt="BarCIE Logo" class="img-fluid" style="max-width: 200px; height: auto;" onerror="this.style.display='none'">
           </div>
-          <h4 class="text-warning fw-bold">
+          <h4 class="text-primary fw-bold">
             <i class="fas fa-building me-2"></i>
-            BarCIE International Center
+            Welcome to BarCIE International Center!
           </h4>
-          <p class="text-muted mb-1">Full Payment & Refund Policy</p>
-          <span class="badge bg-warning text-dark">Version 1.0</span>
           <hr class="my-3">
         </div>
 
         <div class="policy-section mb-4">
-          <h5 class="text-danger">
-            <i class="fas fa-ban me-2"></i>
-            1. NON-REFUNDABLE POLICY
-          </h5>
-          <p class="ms-4">
-            All payments made to BarCIE International Center are <strong>strictly non-refundable</strong> under any circumstances.
+          <p class="text-justify" style="line-height: 1.8;">
+            The BarCIE International Center was built in 2000 as a training center for the Hotel and Restaurant Management students of the La Consolacion University Philippines in Malolos City. As Part of the LCUP, it promotes the Vision, Mission, Goals and Core Values of the University. It upholds a Catholic-Augustinian-Filipino education and promotes gender consciousness, patriotism, creation spirituality, justice and peace.
+          </p>
+          <p class="text-justify" style="line-height: 1.8;">
+            The Center has become a conducive place for conventions, seminars and conferences, recollections and retreats, as well as a pleasant place for wedding celebrations, birthday parties and the like. It is our desire to provide quality service and to keep the center safe, clean and a convenient place for you to stay.
           </p>
         </div>
 
-        <div class="policy-section mb-4">
-          <h5 class="text-danger">
-            <i class="fas fa-calendar-times me-2"></i>
-            2. CANCELLATION POLICY
+        <div class="alert alert-primary mb-4">
+          <h5 class="fw-bold mb-3">
+            <i class="fas fa-clipboard-list me-2"></i>
+            For the pleasure of all our guests, kindly observe the Center's House Rules and Regulations:
           </h5>
-          <p class="ms-4">
-            Booking cancellations will <strong>not result in refunds, credits, or transfers</strong> to future bookings.
-          </p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>1.</strong> Check out time is 12:00 noon, regardless of the number of hours of stay within the day prior to check-out. If the guest intend to stay beyond the reservation period, kindly notify the Front Desk at least a day before the intended extension.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>2.</strong> Remember to turn off lights and air-conditioning units whenever leaving the Center for a long period of time.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>3.</strong> Observe silence at all times. Unattended children are not allowed to play or loiter around the lobby, function areas, pool side, staircases and parking lot for safety reasons.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>4.</strong> Report breakage or damage inside the room.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>5.</strong> Turn off faucets, shower and electrical appliances/devices after use.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>6.</strong> Breakfast and lunch are available on personal account at the Café Barcelo from Monday till Saturday.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>7.</strong> Cooking and bringing of food inside the room is not allowed.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>8.</strong> Drinking alcoholic liquor or any intoxicating materials/drugs inside the room is strictly prohibited.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>9.</strong> Bringing in firearms, deadly weapons and gambling devices is not allowed in the Center.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>10.</strong> Keeping of inflammable materials and any kind of explosive inside the room is prohibited.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>11.</strong> Unauthorized/Unregistered guests are not allowed to sleep/stay in the room. Entertainment of unregistered guests may be done in the ground floor lobby.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>12.</strong> Guests should deposit room key to the Front Desk Receptionist when leaving the Center's premises. In case of lost key, kindly report it to the Receptionist for replacement.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>13.</strong> Pets are not allowed inside the Center.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>14.</strong> Windows and doors should be closed anytime while the air-conditioning unit is on.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>15.</strong> Laundry services are provided. Washing of clothes inside the room is not allowed.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>16.</strong> Do not leave valuables such as cash, jewelries, cell phone, camera, passport, ticket, etc., for safety reasons. The management will not be responsible for the loss of personal/valuable items unless surrendered for safekeeping.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>17.</strong> A clinic is available within the campus, hence; should our guests feel sick, kindly notify the Front Desk for assistance.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>18.</strong> Settle bills one (1) hour before departure at the Front Desk in order to get assistance during check-out.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>19.</strong> Please wear proper attire suited for in different areas of the Center's facilities.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>20.</strong> Pool users are requested not to go through the lobby when going up the rooms. Kindly use the back door near the shower area.</p>
+        </div>
+
+        <div class="policy-section mb-3">
+          <p class="ms-3"><strong>21.</strong> All items inside the room are inventoried. We will let our guests sign the checklist upon check-in.</p>
         </div>
 
         <div class="policy-section mb-4">
-          <h5 class="text-danger">
-            <i class="fas fa-user-slash me-2"></i>
-            3. NO-SHOW POLICY
-          </h5>
-          <p class="ms-4">
-            Failure to arrive for a confirmed booking will result in <strong>forfeiture of all payments made</strong>.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-primary">
-            <i class="fas fa-lock me-2"></i>
-            4. PAYMENT FINALITY
-          </h5>
-          <p class="ms-4">
-            Once payment is received and processed, it is considered <strong>final and cannot be reversed</strong>.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-primary">
-            <i class="fas fa-edit me-2"></i>
-            5. MODIFICATIONS
-          </h5>
-          <p class="ms-4">
-            Booking modifications may be possible subject to availability and additional fees, but <strong>original payments remain non-refundable</strong>.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-warning">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            6. FORCE MAJEURE
-          </h5>
-          <p class="ms-4">
-            BarCIE is <strong>not liable for refunds</strong> due to circumstances beyond our control (natural disasters, government restrictions, etc.).
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-info">
-            <i class="fas fa-user-check me-2"></i>
-            7. GUEST RESPONSIBILITY
-          </h5>
-          <p class="ms-4">
-            Guests are responsible for ensuring their booking details are correct before confirming payment.
-          </p>
-        </div>
-
-        <div class="policy-section mb-4">
-          <h5 class="text-success">
-            <i class="fas fa-phone me-2"></i>
-            8. CONTACT
-          </h5>
-          <p class="ms-4">
-            For questions about this policy, please contact us at <strong>info@barcie.edu.ph</strong> or call our front desk.
-          </p>
+          <p class="ms-3"><strong>22.</strong> The Center has the right to inspect guests' luggage if the Center deems it necessary due to missing items inside the room.</p>
         </div>
 
         <div class="alert alert-warning mt-4">
-          <i class="fas fa-info-circle me-2"></i>
-          <strong>Important:</strong> By checking the agreement boxes in the booking confirmation, you acknowledge that you have read, understood, and agree to these terms.
+          <p class="mb-2"><strong>Any violation of the above House Rules and Regulations, a fine will be charged to your account.</strong></p>
+          <p class="mb-0 small text-muted">(Please seek information from the Front Desk Officers)</p>
+        </div>
+
+        <div class="alert alert-info mt-3">
+          <p class="mb-2"><strong>Thank you for having chosen BarCIE International Center as your home away from home.</strong></p>
+          <p class="mb-0 small"><strong>N.B.</strong> The Center is aspiring to improve its services and upgrade its facilities for the convenience of our clients. Help us meet the standard service by writing down your comments and suggestions. Thank you very much!</p>
+        </div>
+
+        <div class="text-end mt-3">
+          <p class="text-muted mb-0"><em>BarCIE Management</em></p>
         </div>
       </div>
       <div class="modal-footer">
@@ -235,8 +266,8 @@
         <div class="success-icon mb-3">
           <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
         </div>
-        <h4 class="text-success mb-3">Your booking has been successfully confirmed!</h4>
-        <p class="text-muted mb-4" id="successMessage">Thank you for choosing BarCIE International Center.</p>
+        <h4 class="text-success mb-3">Your reservation has been successfully submitted!</h4>
+        <p class="text-muted mb-3" id="successMessage">Thank you for choosing BarCIE International Center.</p>
         
         <!-- Booking Details for Print -->
         <div id="bookingDetailsForPrint" class="text-start border rounded p-3 mb-3" style="display: none;">
@@ -244,18 +275,24 @@
           <div id="printBookingDetails"></div>
         </div>
         
-        <div class="alert alert-info">
-          <i class="fas fa-info-circle me-2"></i>
-          <small>Please check your email for the booking confirmation.</small>
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-clock me-2"></i>
+          <strong>⏳ Awaiting Payment Verification</strong>
+          <p class="mb-0 mt-2 small">Your reservation is currently pending admin approval. Please wait while our team verifies your payment. You will receive a confirmation email once approved (usually within 24 hours).</p>
+        </div>
+        
+        <div class="alert alert-info mb-0">
+          <i class="fas fa-envelope me-2"></i>
+          <small>A confirmation email has been sent with detailed instructions.</small>
         </div>
       </div>
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-outline-primary" id="printBookingBtn" onclick="printBookingDetails()">
-          <i class="fas fa-print me-2"></i>Print Booking
+      <div class="modal-footer justify-content-center print-buttons-container">
+        <button type="button" class="btn btn-primary" onclick="printBookingSimple()" title="Download your receipt">
+          <i class="fas fa-download me-2"></i>Download Your Receipt
         </button>
         <button type="button" class="btn btn-success" id="doneBookingBtn" disabled>
           <i class="fas fa-spinner fa-spin me-2" id="doneSpinner"></i>
-          <span id="doneButtonText">Done (<span id="doneTimer">15</span>s)</span>
+          <span id="doneButtonText">Done (<span id="doneTimer">15</span>)</span>
         </button>
       </div>
     </div>
@@ -270,12 +307,22 @@
  * - On confirm, appends add-on fields to the original form and submits
  */
 (function () {
+  // Get the base path dynamically from current page URL to handle any case/environment
+  const getBasePath = () => {
+    const path = window.location.pathname;
+    const match = path.match(/^(\/[^\/]+)\//); // Extract /folder_name/ from path
+    return match ? match[1] : '';
+  };
+  const BASE_PATH = getBasePath();
+  const MAX_UPLOAD_MB = 10;
+  const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+  
   // Notification helper: prefer showToast if available, fallback to alert
   function notify(message, type = 'info') {
     try {
       if (typeof showToast === 'function') return showToast(message, type);
     } catch (e) {}
-    try { alert(message); } catch (e) { /* ignore */ }
+    try { showToast(message, 'info'); } catch (e) { /* ignore */ }
   }
 
   // Clear all form data
@@ -325,28 +372,182 @@
     }
   }
   
-  // Print booking details
+  // Print booking details with elegant PDF
   window.printBookingDetails = function() {
     try {
-      const printContent = document.getElementById('bookingDetailsForPrint').innerHTML;
-      const originalContent = document.body.innerHTML;
+      let receiptNumber = '';
+      let bookingType = 'reservation';
       
-      // Create print window content
+      // First, try to get from stored global variables (most reliable)
+      if (window.lastBookingReceiptNumber) {
+        receiptNumber = window.lastBookingReceiptNumber;
+        bookingType = window.lastBookingType || 'reservation';
+      }
+      
+      // Fallback: try to extract from DOM elements
+      if (!receiptNumber) {
+        const receiptElement = document.querySelector('#printBookingDetails .receipt-number, [data-receipt]');
+        if (receiptElement) {
+          receiptNumber = receiptElement.textContent || receiptElement.getAttribute('data-receipt') || '';
+          receiptNumber = receiptNumber.replace(/[^A-Z0-9\-]/g, ''); // Clean receipt number
+        }
+      }
+      
+      // Another fallback: try to get from form inputs
+      if (!receiptNumber) {
+        const regularReceiptInput = document.getElementById('receipt_no');
+        const pencilReceiptInput = document.getElementById('pencil_receipt_no');
+        
+        if (regularReceiptInput && regularReceiptInput.value) {
+          receiptNumber = regularReceiptInput.value;
+          bookingType = 'reservation';
+        } else if (pencilReceiptInput && pencilReceiptInput.value) {
+          receiptNumber = pencilReceiptInput.value;
+          bookingType = 'pencil_booking';
+        }
+      }
+      
+      // Determine booking type if not already set
+      if (receiptNumber && !window.lastBookingType) {
+        if (receiptNumber.includes('PENCIL') || 
+            document.querySelector('#pencilForm:not([style*="display: none"])') ||
+            document.querySelector('.pencil-booking-indicator')) {
+          bookingType = 'pencil_booking';
+        }
+      }
+      
+      if (!receiptNumber) {
+        showToast('❌ Unable to identify booking receipt number for PDF generation. Please ensure your booking was submitted successfully.', 'error');
+        return;
+      }
+      
+      // Show loading notification
+      const loadingToast = showToast(`
+        <div class="d-flex align-items-center">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <div>
+            <strong>🎨 Generating Elegant PDF Receipt</strong><br>
+            <small>Creating professional document with BarCIE logo watermark...</small>
+          </div>
+        </div>
+      `, 'info', 0);
+      
+      // Generate PDF URL
+      const pdfUrl = `api/generate_booking_pdf.php?receipt_number=${encodeURIComponent(receiptNumber)}&type=${encodeURIComponent(bookingType)}`;
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.target = '_blank';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      
+      // Trigger download
+      link.click();
+      
+      // Remove loading toast and show success
+      setTimeout(() => {
+        if (loadingToast && loadingToast.remove) {
+          loadingToast.remove();
+        }
+        
+        const successHTML = `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-file-pdf text-primary me-2 fs-4"></i>
+            <div>
+              <strong>🎊 PDF Receipt Generated Successfully!</strong><br>
+              <small>✨ Professional booking confirmation with BarCIE logo watermark</small>
+            </div>
+          </div>
+        `;
+        showToast(successHTML, 'success', 5000);
+        
+        // Clean up
+        document.body.removeChild(link);
+      }, 2000);
+      
+    } catch (e) {
+      console.error('PDF generation error:', e);
+      showToast('❌ Unable to generate PDF. Please try the simple print option.', 'error');
+      
+      // Fallback to simple print
+      try {
+        const printContent = document.getElementById('bookingDetailsForPrint').innerHTML;
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Booking Confirmation</title>');
+        printWindow.document.write('<style>');
+        printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }');
+        printWindow.document.write('h6 { color: #333; margin-bottom: 15px; font-size: 16px; }');
+        printWindow.document.write('p { margin: 8px 0; }');
+        printWindow.document.write('.text-muted { color: #666; }');
+        printWindow.document.write('strong { color: #000; font-weight: 600; }');
+        printWindow.document.write('@media print { body { padding: 10px; } }');
+        printWindow.document.write('</style></head><body>');
+        printWindow.document.write('<div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">');
+        printWindow.document.write('<h1 style="color: #1e3a8a; margin: 0;">BarCIE International Center</h1>');
+        printWindow.document.write('<h2 style="color: #666; margin: 5px 0;">Booking Confirmation</h2>');
+        printWindow.document.write('<p style="font-style: italic; color: #888; margin: 0;">Tempora Mutantur, Nos Et Mutamur In Illis</p>');
+        printWindow.document.write('</div>');
+        printWindow.document.write(printContent);
+        printWindow.document.write('<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">');
+        printWindow.document.write('<p>BarCIE International Center - Barangay Center for Innovative Education © 2000</p>');
+        printWindow.document.write('<p>Generated on ' + new Date().toLocaleString() + '</p>');
+        printWindow.document.write('</div>');
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+        
+        showToast('📄 Simple print version opened as fallback', 'info');
+      } catch (fallbackError) {
+        console.error('Fallback print error:', fallbackError);
+        showToast('❌ Both PDF and print options failed. Please contact support.', 'error');
+      }
+    }
+  };
+  
+  // Simple print function (fallback)
+  window.printBookingSimple = function() {
+    try {
+      const printContent = document.getElementById('bookingDetailsForPrint').innerHTML;
       const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Booking Confirmation</title>');
+      
+      printWindow.document.write('<html><head><title>Booking Confirmation - BarCIE</title>');
       printWindow.document.write('<style>');
-      printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; }');
-      printWindow.document.write('h6 { color: #333; margin-bottom: 15px; }');
-      printWindow.document.write('p { margin: 8px 0; line-height: 1.6; }');
+      printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; max-width: 800px; margin: 0 auto; }');
+      printWindow.document.write('.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; }');
+      printWindow.document.write('.header h1 { color: #1e3a8a; margin: 0; font-size: 28px; }');
+      printWindow.document.write('.header h2 { color: #666; margin: 5px 0 10px 0; font-size: 18px; }');
+      printWindow.document.write('.header .subtitle { font-style: italic; color: #888; margin: 0; }');
+      printWindow.document.write('h6 { color: #333; margin: 20px 0 10px 0; font-size: 16px; padding-bottom: 5px; border-bottom: 1px solid #ddd; }');
+      printWindow.document.write('p { margin: 8px 0; }');
       printWindow.document.write('.text-muted { color: #666; }');
-      printWindow.document.write('strong { color: #000; }');
-      printWindow.document.write('@media print { body { padding: 10px; } }');
+      printWindow.document.write('strong { color: #000; font-weight: 600; }');
+      printWindow.document.write('.footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; color: #666; font-size: 12px; }');
+      printWindow.document.write('@media print { body { padding: 15px; } .no-print { display: none; } }');
       printWindow.document.write('</style></head><body>');
-      printWindow.document.write('<div style="text-align: center; margin-bottom: 20px;">');
-      printWindow.document.write('<h2>BarCIE International Center</h2>');
-      printWindow.document.write('<p>Booking Confirmation</p>');
+      
+      printWindow.document.write('<div class="header">');
+      printWindow.document.write('<h1>BarCIE International Center</h1>');
+      printWindow.document.write('<h2>Booking Confirmation</h2>');
+      printWindow.document.write('<p class="subtitle">Tempora Mutantur, Nos Et Mutamur In Illis</p>');
       printWindow.document.write('</div>');
+      
       printWindow.document.write(printContent);
+      
+      printWindow.document.write('<div class="footer">');
+      printWindow.document.write('<p><strong>BarCIE International Center</strong></p>');
+      printWindow.document.write('<p>Barangay Center for Innovative Education © 2000</p>');
+      printWindow.document.write('<p>Generated on ' + new Date().toLocaleString() + '</p>');
+      printWindow.document.write('<p style="margin-top: 15px; font-size: 11px;">For inquiries and assistance, please contact our front desk.</p>');
+      printWindow.document.write('</div>');
+      
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.focus();
@@ -355,9 +556,12 @@
         printWindow.print();
         printWindow.close();
       }, 250);
+      
+      showToast('🖨️ Simple print dialog opened', 'success');
+      
     } catch (e) {
-      console.error('Print error:', e);
-      alert('Unable to print. Please try again.');
+      console.error('Simple print error:', e);
+      showToast('❌ Unable to open print dialog. Please try again.', 'error');
     }
   };
   
@@ -405,18 +609,17 @@
           successModal.hide();
           clearFormData();
           
-          // Scroll to booking section
-          try {
-            const bookingSection = document.getElementById('booking') || document.querySelector('[name="booking"]');
-            if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          } catch (e) {}
+          // Auto-reload the page to refresh data
+          setTimeout(() => {
+            window.location.reload();
+          }, 300);
         };
       }
       
     } catch (e) {
       console.error('Error showing success modal:', e);
       // Fallback to alert
-      alert('Booking successful! ' + (message || ''));
+      showToast('Booking successful! ' + (message || ''), 'success');
       clearFormData();
     }
   }
@@ -599,11 +802,55 @@
   function validateFormInline(form) {
     if (!form) return null;
     clearInlineAlerts(form);
+    
+    // Check ID upload requirement first
+    const formId = form.id;
+    const isReservation = formId === 'reservationForm';
+    const isPencil = formId === 'pencilForm';
+    
+    if (isReservation || isPencil) {
+      const discountTypeSelect = document.getElementById('discount_type');
+      const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
+      const discountProof = document.getElementById('discount_proof');
+      const idUpload = document.getElementById(isReservation ? 'reservation_id_upload' : 'pencil_id_upload');
+      const idValidated = document.getElementById(isReservation ? 'reservation_id_upload_validated' : 'pencil_id_upload_validated');
+      
+      // Check if either discount proof OR ID upload is provided
+      const hasDiscountProof = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
+      const hasIdUpload = idUpload && idUpload.files && idUpload.files.length > 0;
+      const isIdValidated = idValidated && idValidated.value === '1';
+      
+      if (!hasDiscountProof && !hasIdUpload) {
+        return { 
+          field: idUpload || discountProof, 
+          message: 'Please upload a valid ID. If you have a discount with ID proof, that can be used instead.' 
+        };
+      }
+      
+      // Check if ID was uploaded but not validated
+      if (hasIdUpload && !hasDiscountProof && !isIdValidated) {
+        return {
+          field: idUpload,
+          message: 'The uploaded file does not appear to be a valid ID document. Please upload a clear photo of a government-issued ID.'
+        };
+      }
+    }
+    
     // HTML5 validation first: find required fields missing or pattern mismatch
     const requiredFields = Array.from(form.querySelectorAll('[required]'));
     for (const f of requiredFields) {
-      // skip hidden inputs
-      if (f.type === 'hidden' || f.offsetParent === null && f.type !== 'datetime-local') continue;
+      // skip hidden inputs and ID upload if discount is selected
+      if (f.type === 'hidden' || f.offsetParent === null && f.type !== 'date') continue;
+      
+      // Skip ID upload validation if discount with proof exists
+      if ((f.id === 'reservation_id_upload' || f.id === 'pencil_id_upload')) {
+        const discountTypeSelect = document.getElementById('discount_type');
+        const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
+        const discountProof = document.getElementById('discount_proof');
+        const hasDiscountProof = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
+        if (hasDiscountProof) continue; // Skip ID validation, discount proof is sufficient
+      }
+      
       if (!f.checkValidity()) {
         // Build friendly message
         let msg = '';
@@ -622,9 +869,23 @@
       if (val && !/[@].+/.test(val)) {
         return { field: email, message: 'Please enter a valid email address.' };
       }
-      // enforce gmail domain if user intends (title suggests gmail)
-      if (val && !val.toLowerCase().endsWith('@gmail.com')) {
-        return { field: email, message: 'Please use a Gmail address (example@gmail.com).' };
+      // Enforce allowed email domains
+      const allowedDomains = ['@gmail.com', '@email.lcup.edu.ph', '@yahoo.com', '@icloud.com'];
+      const hasAllowedDomain = allowedDomains.some(domain => val.toLowerCase().endsWith(domain));
+      if (val && !hasAllowedDomain) {
+        return { field: email, message: 'Please use an accepted email domain: @gmail.com, @email.lcup.edu.ph, @yahoo.com, or @icloud.com' };
+      }
+    }
+    
+    // Age validation - must be 18 or older
+    const age = form.querySelector('[name="age"]');
+    if (age) {
+      const ageValue = parseInt(age.value);
+      if (ageValue && ageValue < 18) {
+        return { field: age, message: 'You must be at least 18 years old to make a booking.' };
+      }
+      if (ageValue && (ageValue < 1 || ageValue > 120)) {
+        return { field: age, message: 'Please enter a valid age.' };
       }
     }
 
@@ -666,7 +927,7 @@
     });
   }
 
-  // Calculate nights between two datetime-local inputs (reservation)
+  // Calculate nights between two date inputs (reservation)
   function calcNights(checkin, checkout) {
     try {
       const diff = Math.max(0, new Date(checkout) - new Date(checkin));
@@ -805,6 +1066,10 @@
     if (!currentBooking || !currentItem) return '';
     
     let html = '';
+    // Add receipt number at the top for PDF generation reference
+    if (window.lastBookingReceiptNumber) {
+      html += `<p class="receipt-number" data-receipt="${escapeHtml(window.lastBookingReceiptNumber)}"><strong>Receipt Number:</strong> ${escapeHtml(window.lastBookingReceiptNumber)}</p>`;
+    }
     html += `<p><strong>Room/Facility:</strong> ${escapeHtml(currentItem.name)}`;
     if (currentItem.room_number) html += ` (Room #${escapeHtml(currentItem.room_number)})`;
     html += '</p>';
@@ -1073,8 +1338,8 @@
         try {
           const formData = new FormData(form);
           
-          // Send the form data directly
-          const response = await fetch('database/user_auth.php', {
+          // Send the form data directly - use dynamic base path
+          const response = await fetch(BASE_PATH + '/database/user_auth.php', {
             method: 'POST',
             body: formData,
             credentials: 'same-origin',
@@ -1087,11 +1352,30 @@
           const result = await response.json();
           
           if (result.success) {
-            // Show success modal
-            showPencilSuccessModal(result.message || 'Draft reservation submitted successfully!');
+            // Store receipt number for PDF generation
+            if (result.receipt_no) {
+              window.lastBookingReceiptNumber = result.receipt_no;
+              window.lastBookingType = 'pencil_booking';
+              
+              // Update the form input with actual receipt number
+              const pencilReceiptInput = document.getElementById('pencil_receipt_no');
+              if (pencilReceiptInput) {
+                pencilReceiptInput.value = result.receipt_no;
+              }
+            }
             
-            // Clear the form
+            // Show success modal with receipt number
+            showPencilSuccessModal(result.message || 'Draft reservation submitted successfully!', result.receipt_no);
+            
+            // Clear the form but preserve receipt number
+            const currentReceiptNo = result.receipt_no;
             form.reset();
+            if (currentReceiptNo) {
+              const pencilReceiptInput = document.getElementById('pencil_receipt_no');
+              if (pencilReceiptInput) {
+                pencilReceiptInput.value = currentReceiptNo;
+              }
+            }
             
             // Hide the form and show reservation form
             setTimeout(() => {
@@ -1251,25 +1535,18 @@
       }
     } catch (err) { /* ignore */ }
 
-    // Close modal and submit
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    
-    // IMPORTANT: Remove focus from any element inside the modal before hiding
-    // to prevent aria-hidden warning on focused elements
+    // CRITICAL: Remove focus from modal elements BEFORE closing to prevent aria-hidden warning
     try {
       const active = document.activeElement;
       if (active && modalEl.contains(active)) {
-        active.blur(); // Remove focus first
-        // Then optionally move focus to a safe element outside the modal
-        const fallback = currentForm?.querySelector('#reservationSubmitBtn') 
-                      || currentForm?.querySelector('#pencilSubmitBtn') 
-                      || document.body;
-        try { fallback.focus(); } catch (e) { /* ignore */ }
+        active.blur();
+        // Move focus to safe element outside modal
+        document.body.focus();
       }
-    } catch (err) {
-      /* ignore focus errors */
-    }
+    } catch (err) { /* ignore */ }
 
+    // Close modal and submit
+    const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();
 
     // Submit via fetch so we can control post-submit behavior and redirect back to booking
@@ -1325,17 +1602,52 @@
           }
         } catch (e) { /* ignore */ }
         
+        // Collect selected add-ons data and append as JSON
+        try {
+          const selectedAddons = [];
+          document.querySelectorAll('.addon-checkbox:checked').forEach(cb => {
+            const label = document.querySelector(`label[for="${cb.id}"]`);
+            const priceElement = cb.closest('.form-check')?.querySelector('.text-success, .fw-bold');
+            if (label) {
+              const addonName = label.textContent.trim();
+              const priceMatch = priceElement?.textContent.match(/[\d,]+(?:\.\d{2})?/);
+              const price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : 0;
+              selectedAddons.push({ name: addonName, price: price });
+            }
+          });
+          if (selectedAddons.length > 0) {
+            fd.append('add_ons', JSON.stringify(selectedAddons));
+          }
+        } catch (e) { console.error('Error collecting add-ons:', e); }
+        
         // CRITICAL: Add the action field if not present (required by user_auth.php)
         if (!fd.has('action')) {
           fd.append('action', 'create_booking');
         }
 
-        // Get the form action URL properly - use relative path to avoid environment-specific issues
+        // Get the form action URL properly - use dynamic base path
         const actionAttr = currentForm.getAttribute('action');
-        // Use form action if specified, otherwise default to user_auth.php
-        const targetUrl = actionAttr || 'database/user_auth.php';
+        // Use form action if specified, otherwise default to dynamic path
+        const targetUrl = actionAttr || (BASE_PATH + '/database/user_auth.php');
         
         console.debug('Submitting booking to', targetUrl);
+        
+        // DEBUG: Log FormData to see what's being sent
+        console.group('📝 Booking Submission Debug');
+        console.log('Form ID:', currentForm.id);
+        console.log('Target URL:', targetUrl);
+        console.log('FormData contents:');
+        for (let [key, value] of fd.entries()) {
+          if (value instanceof File) {
+            console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+          } else {
+            console.log(`  ${key}:`, value);
+          }
+        }
+        const roomIdElement = currentForm.querySelector('[name="room_id"]');
+        console.log('room_id element:', roomIdElement);
+        console.log('room_id value:', roomIdElement?.value);
+        console.groupEnd();
 
         // If the form includes an uploaded discount proof file, prefer XHR so we can show upload progress
         const proofInput = currentForm.querySelector('#discount_proof');
@@ -1420,6 +1732,13 @@
               }
 
               if (xhr.status >= 200 && xhr.status < 300 && jsonResponse && jsonResponse.success) {
+                // Extract receipt number from response message
+                const receiptMatch = (jsonResponse.message || '').match(/receipt number:?\s*([A-Z0-9\-]+)/i);
+                if (receiptMatch) {
+                  window.lastBookingReceiptNumber = receiptMatch[1];
+                  window.lastBookingType = currentBooking.type || 'reservation';
+                }
+                
                 // Build booking details HTML for print
                 let bookingDetailsHtml = buildPrintableBookingDetails();
                 
@@ -1768,5 +2087,103 @@
   #doneBookingBtn:not(:disabled):hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  /* Enhanced Print Buttons Styling */
+  .print-buttons-container {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .elegant-pdf-btn {
+    position: relative;
+    background: linear-gradient(135deg, #1e40af, #3730a3);
+    border-color: #1e40af;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .elegant-pdf-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+  }
+  
+  .elegant-pdf-btn:hover {
+    background: linear-gradient(135deg, #1e3a8a, #312e81);
+    border-color: #1e3a8a;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(30, 64, 175, 0.4);
+  }
+  
+  .elegant-pdf-btn:hover::before {
+    left: 100%;
+  }
+  
+  .elegant-pdf-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 15px rgba(30, 64, 175, 0.3);
+  }
+  
+  .simple-print-btn {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    border-width: 2px;
+  }
+  
+  .simple-print-btn:hover {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(107, 114, 128, 0.3);
+  }
+  
+  .simple-print-btn:active {
+    transform: translateY(-1px);
+  }
+  
+  /* Loading state for PDF button */
+  .elegant-pdf-btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+  }
+  
+  .elegant-pdf-btn.loading i {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+    .print-buttons-container {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .elegant-pdf-btn,
+    .simple-print-btn {
+      width: 100%;
+      max-width: 250px;
+      justify-content: center;
+    }
   }
 </style>

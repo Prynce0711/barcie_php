@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 header('Content-Type: application/json; charset=utf-8');
 
 $raw = file_get_contents('php://input');
@@ -51,38 +51,54 @@ if ($package) $sources[] = 'package.json';
 
 $answer = null;
 
-// Check for OpenAI API key (server environment or .env)
-$openai_key = getenv('OPENAI_API_KEY') ?: null;
-// If there's a .env in project root, attempt to read it for OPENAI_API_KEY (simple parse)
-if (!$openai_key) {
+// Check for Google Gemini API key (OPENAIAPI_KEY in .env is actually a Google key)
+$gemini_key = getenv('GEMINI_API_KEY') ?: getenv('OPENAIAPI_KEY') ?: null;
+// If there's a .env in project root, attempt to read it for API key
+if (!$gemini_key) {
     $envPath = $base . DIRECTORY_SEPARATOR . '.env';
     if (file_exists($envPath)) {
         $envContent = file_get_contents($envPath);
         if ($envContent !== false) {
-            if (preg_match('/^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$/m', $envContent, $m)) {
-                $openai_key = trim($m[1], " \t\"'\r\n");
+            // Try OPENAIAPI_KEY first (current .env key name)
+            if (preg_match('/^\s*OPENAIAPI_KEY\s*=\s*(.+)\s*$/m', $envContent, $m)) {
+                $gemini_key = trim($m[1], " \t\"'\r\n");
+            }
+            // Also try GEMINI_API_KEY
+            if (!$gemini_key && preg_match('/^\s*GEMINI_API_KEY\s*=\s*(.+)\s*$/m', $envContent, $m)) {
+                $gemini_key = trim($m[1], " \t\"'\r\n");
             }
         }
     }
 }
 
-// helper: call OpenAI Chat Completions
-function call_openai_chat($apiKey, $messages, $model = 'gpt-3.5-turbo', $max_tokens = 800) {
+// helper: call Google Gemini API
+function call_gemini_api($apiKey, $prompt, $max_tokens = 800) {
+    // Use Gemini 2.5 Flash for responses (stable, fast and efficient model)
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey;
+    
     $payload = json_encode([
-        'model' => $model,
-        'messages' => $messages,
-        'max_tokens' => $max_tokens,
-        'temperature' => 0.2,
+        'contents' => [[
+            'parts' => [['text' => $prompt]]
+        ]],
+        'generationConfig' => [
+            'temperature' => 0.3,
+            'maxOutputTokens' => $max_tokens,
+            'topP' => 0.8,
+            'topK' => 40
+        ],
+        'safetySettings' => [
+            ['category' => 'HARM_CATEGORY_HARASSMENT', 'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'],
+            ['category' => 'HARM_CATEGORY_HATE_SPEECH', 'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'],
+            ['category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'],
+            ['category' => 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold' => 'BLOCK_MEDIUM_AND_ABOVE']
+        ]
     ]);
 
-    $ch = curl_init('https://api.openai.com/v1/chat/completions');
+    $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $apiKey,
-    ]);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     $resp = curl_exec($ch);
     $err = curl_error($ch);
@@ -93,7 +109,7 @@ function call_openai_chat($apiKey, $messages, $model = 'gpt-3.5-turbo', $max_tok
         return ['error' => $err ?: 'HTTP ' . $code, 'raw' => $resp];
     }
     $j = json_decode($resp, true);
-    if (!is_array($j)) return ['error' => 'Invalid JSON from OpenAI', 'raw' => $resp];
+    if (!is_array($j)) return ['error' => 'Invalid JSON from Gemini', 'raw' => $resp];
     return $j;
 }
 
@@ -149,8 +165,8 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
 
     $local_summary = implode("\n\n", $parts);
 
-    // If OpenAI key available, ask the model to produce a short project overview using the files
-    if (!empty($openai_key)) {
+    // If Gemini key available, ask the model to produce a short project overview using the files
+    if (!empty($gemini_key)) {
         // --- Build smarter context by indexing project files and extracting relevant snippets ---
         $allowed_exts = ['php','md','js','json','css','html','txt'];
         $exclude_dirs = ['vendor', 'node_modules', '.git', 'uploads', 'storage', 'tailscale-nginx'];
@@ -236,34 +252,53 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
             if ($package) $context_items[] = "PACKAGE.JSON:\n" . substr($package, 0, 2000);
         }
 
-        // Add a small listing of top-level files (names only)
-        $files = @scandir($base);
-        $topFiles = [];
-        if (is_array($files)) {
-            foreach ($files as $f) {
-                if ($f[0] === '.') continue;
-                $topFiles[] = $f;
-                if (count($topFiles) >= 40) break;
-            }
+        // Add comprehensive BarCIE website context
+        $barcie_context = "\n\n=== BARCIE INTERNATIONAL CENTER WEBSITE INFORMATION ===\n\n";
+        $barcie_context .= "ABOUT: BarCIE International Center is a hotel and event venue located at La Consolacion University Philippines (LCUP). We provide comfortable accommodations and function halls for guests, students, alumni, and event organizers.\n\n";
+        $barcie_context .= "ROOMS & FACILITIES:\n- Standard Rooms: â‚±1,500+/night with AC, WiFi, cable TV, private bathroom\n- Deluxe Rooms: â‚±2,500+/night with premium amenities\n- Function Halls: Small (50pax), Medium (100pax), Large (200pax) - â‚±3,000-â‚±8,000\n- All rooms: Air conditioning, free WiFi, clean linens, 24/7 security, parking\n\n";
+        $barcie_context .= "BOOKING PROCESS:\n1. Visit Guest Portal â†’ Booking & Reservation\n2. Choose Reservation (rooms) or Pencil Booking (function halls)\n3. Fill in details: name, contact, dates, room type\n4. Upload ID if claiming discount\n5. Submit - receive email confirmation with payment details\n6. No account needed - direct booking system\n\n";
+        $barcie_context .= "DISCOUNTS AVAILABLE:\n- PWD/Senior Citizens: 20% off\n- LCUP Personnel: 10% off\n- LCUP Students/Alumni: 7% off\n- Upload valid ID (School ID, PWD card, Company ID) during booking\n\n";
+        $barcie_context .= "CHECK-IN/OUT:\n- Check-in: 2:00 PM onwards (early check-in if available)\n- Check-out: 12:00 PM (late checkout on request + charges)\n- 24/7 front desk for late arrivals\n- Bring valid ID and booking confirmation\n\n";
+        $barcie_context .= "PAYMENT: Bank transfer, GCash, on-site payment. QR code provided after booking approval. Deposit may be required.\n\n";
+        $barcie_context .= "CONTACT:\n- Email: barcieinternationalcenter.web@gmail.com\n- Location: LCUP Campus\n- Available for inquiries 24/7\n\n";
+        $barcie_context .= "WEBSITE FEATURES:\n- Real-time availability calendar\n- Online booking system (rooms + function halls)\n- Discount application with ID upload\n- Guest feedback system\n- AI chatbot assistance\n- Email confirmations and notifications\n\n";
+        $barcie_context .= "SECTIONS:\n1. Overview: Dashboard with quick stats\n2. Availability Calendar: Real-time room/hall status\n3. Rooms & Facilities: Browse all options with photos\n4. Booking & Reservation: Direct booking forms\n5. Feedback: Guest reviews and ratings\n\n";
+
+        // Build comprehensive prompt for Gemini
+        $prompt = "You are the BarCIE International Center AI Assistant. Answer the guest's question using the information provided.\n\n";
+        $prompt .= $barcie_context;
+        
+        if (!empty($context_items)) {
+            $prompt .= "\n=== PROJECT CODE SNIPPETS ===\n" . implode("\n\n---\n\n", array_slice($context_items, 0, 8)) . "\n\n";
         }
+        
+        $prompt .= "\n=== GUEST QUESTION ===\n" . $message . "\n\n";
+        $prompt .= "INSTRUCTIONS:\n";
+        $prompt .= "- Answer naturally and conversationally as a helpful hotel assistant\n";
+        $prompt .= "- Use the BarCIE information provided above\n";
+        $prompt .= "- Include relevant details (prices, times, requirements)\n";
+        $prompt .= "- Be friendly, professional, and concise\n";
+        $prompt .= "- If asked about technical/code details, use the project snippets\n";
+        $prompt .= "- Format with line breaks for readability\n";
+        $prompt .= "- Keep response under 500 words\n\n";
+        $prompt .= "ANSWER:";
 
-        $system = "You are an assistant that explains a PHP/HTML web project to a developer or non-technical guest. Use the provided project snippets (clearly marked with filenames) to answer concisely. If asked about how to run, include short instructions. Always include a 'Sources:' section listing the files used. Do not invent secrets or credentials. If the snippet is ambiguous, say so and suggest which file to inspect. Keep answer under 800 words.";
-
-        $user_text = "User question: " . $message . "\n\nProject snippets (truncated and labeled):\n" . implode("\n\n#####\n\n", $context_items) . "\n\nTop-level files: " . implode(', ', $topFiles) . "\n\nProvide a helpful summary and short answers to the user's question.\n";
-
-        $messages = [
-            ['role' => 'system', 'content' => $system],
-            ['role' => 'user', 'content' => $user_text]
-        ];
-
-        $res = call_openai_chat($openai_key, $messages, 'gpt-3.5-turbo', 800);
-        if (isset($res['choices'][0]['message']['content'])) {
-            $model_answer = $res['choices'][0]['message']['content'];
-            // return model answer and indicate sources we provided
-            echo json_encode(['answer' => trim($model_answer), 'sourceFiles' => $sources]);
+        $res = call_gemini_api($gemini_key, $prompt, 1000);
+        if (isset($res['candidates'][0]['content']['parts'][0]['text'])) {
+            $model_answer = $res['candidates'][0]['content']['parts'][0]['text'];
+            // Extract relevant quick replies based on content
+            $qr = [];
+            if (stripos($model_answer, 'book') !== false || stripos($message, 'book') !== false) $qr[] = 'booking process';
+            if (stripos($model_answer, 'room') !== false || stripos($message, 'room') !== false) $qr[] = 'room availability';
+            if (stripos($model_answer, 'price') !== false || stripos($model_answer, 'cost') !== false) $qr[] = 'pricing';
+            if (stripos($model_answer, 'discount') !== false) $qr[] = 'discount';
+            if (stripos($model_answer, 'contact') !== false || stripos($model_answer, 'email') !== false) $qr[] = 'contact';
+            if (stripos($model_answer, 'payment') !== false) $qr[] = 'payment';
+            if (empty($qr)) $qr = ['booking process', 'room availability', 'facilities'];
+            echo json_encode(['answer' => trim($model_answer), 'quickReplies' => array_slice(array_unique($qr), 0, 3), 'sourceFiles' => $sources]);
             exit;
         }
-        // If OpenAI call failed, fall back to local summary below
+        // If Gemini call failed, fall back to local summary below
     }
 
     $answer = $local_summary;
@@ -271,8 +306,62 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
     exit;
 }
 
-// For non-project queries, we don't attempt deep NLP here. Indicate no project-level answer.
+// For general queries (not specifically about project code), use Gemini with BarCIE context
+error_log("CHATBOT DEBUG - Gemini key available: " . (!empty($gemini_key) ? 'YES' : 'NO'));
+error_log("CHATBOT DEBUG - Message: " . $message);
+
+if (!empty($gemini_key)) {
+    error_log("CHATBOT DEBUG - Calling Gemini API...");
+    $barcie_context = "You are the BarCIE International Center AI Assistant, a helpful chatbot for our hotel and event venue website.\n\n";
+    $barcie_context .= "=== ABOUT BARCIE ===\n";
+    $barcie_context .= "BarCIE International Center is located at La Consolacion University Philippines (LCUP). We offer:\n";
+    $barcie_context .= "- Comfortable hotel rooms (Standard ₱1,500+, Deluxe ₱2,500+/night)\n";
+    $barcie_context .= "- Function halls for events (50-200 capacity, ₱3,000-₱8,000)\n";
+    $barcie_context .= "- Amenities: AC, WiFi, cable TV, parking, 24/7 security\n";
+    $barcie_context .= "- Discounts: PWD/Senior 20%, LCUP Personnel 10%, Students/Alumni 7%\n";
+    $barcie_context .= "- Check-in 2PM, Check-out 12PM\n";
+    $barcie_context .= "- Contact: barcieinternationalcenter.web@gmail.com\n";
+    $barcie_context .= "- Easy online booking - no account needed!\n\n";
+    
+    $barcie_context .= "=== WEBSITE FEATURES ===\n";
+    $barcie_context .= "1. Real-time Availability Calendar\n";
+    $barcie_context .= "2. Direct booking system (rooms & function halls)\n";
+    $barcie_context .= "3. Discount application with ID upload\n";
+    $barcie_context .= "4. Email confirmations\n";
+    $barcie_context .= "5. Guest feedback system\n";
+    $barcie_context .= "6. AI chatbot (that's me!)\n\n";
+    
+    $prompt = $barcie_context;
+    $prompt .= "GUEST QUESTION: " . $message . "\n\n";
+    $prompt .= "Provide a helpful, friendly answer. Include relevant details about BarCIE if applicable. ";
+    $prompt .= "If asked about bookings/rooms/prices, provide the information above. ";
+    $prompt .= "If asked general questions, answer naturally. ";
+    $prompt .= "Keep response conversational and under 400 words.\n\n";
+    $prompt .= "ANSWER:";
+    
+    $res = call_gemini_api($gemini_key, $prompt, 800);
+    error_log("CHATBOT DEBUG - Gemini response: " . json_encode($res));
+    
+    // Check if we got a valid response
+    if (isset($res['candidates'][0]['content']['parts'][0]['text'])) {
+        $model_answer = $res['candidates'][0]['content']['parts'][0]['text'];
+        error_log("CHATBOT DEBUG - Got answer: " . substr($model_answer, 0, 100));
+        // Suggest relevant quick replies
+        $qr = [];
+        if (stripos($message, 'book') !== false) $qr[] = 'booking process';
+        if (stripos($message, 'room') !== false) $qr[] = 'room availability';
+        if (stripos($message, 'price') !== false || stripos($message, 'cost') !== false) $qr[] = 'pricing';
+        if (stripos($message, 'discount') !== false) $qr[] = 'discount';
+        if (empty($qr)) $qr = ['booking process', 'facilities', 'pricing'];
+        echo json_encode(['answer' => trim($model_answer), 'quickReplies' => array_slice(array_unique($qr), 0, 3)]);
+        exit;
+    } else if (isset($res['error'])) {
+        // Log the error but continue to fallback
+        error_log("CHATBOT ERROR - Gemini API failed: " . $res['error'] . " - Falling back to local KB");
+    }
+}
+
+// Final fallback - return null to use frontend local knowledge base
 echo json_encode(['answer' => null, 'sourceFiles' => $sources]);
 exit;
-
 ?>

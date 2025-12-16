@@ -17,18 +17,21 @@ if (file_exists($autoload)) {
 }
 
 // Helper function to read environment variables with fallback
-function env($key, $default = null) {
-    $value = getenv($key);
-    if ($value === false) {
-        $value = $_ENV[$key] ?? $default;
+// Helper function to read environment variables with fallback
+if (!function_exists('env')) {
+    function env($key, $default = null) {
+        $value = getenv($key);
+        if ($value === false) {
+            $value = $_ENV[$key] ?? $default;
+        }
+        return $value;
     }
-    return $value;
 }
 
 // Normalize accepted environment variable names to be forgiving
 $smtp_host = env('SMTP_HOST', env('MAIL_HOST', 'smtp.gmail.com'));
-$smtp_username = env('SMTP_USERNAME', env('MAIL_USER', ''));
-$smtp_password = env('SMTP_PASSWORD', env('MAIL_PASS', ''));
+$smtp_username = env('SMTP_USERNAME', env('SMTP_USER', env('MAIL_USER', '')));
+$smtp_password = env('SMTP_PASSWORD', env('SMTP_PASS', env('MAIL_PASS', '')));
 $smtp_secure = strtolower(env('SMTP_SECURE', env('MAIL_SECURE', 'tls')));
 $smtp_port = (int) env('SMTP_PORT', env('MAIL_PORT', 587));
 $from_email = env('FROM_EMAIL', env('MAIL_USER', 'barcieinternationalcenter@gmail.com'));

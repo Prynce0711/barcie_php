@@ -95,18 +95,27 @@
             $item_type = $booking['item_type'] ?: 'room';
             $guest = 'Guest';
             $status = $booking['status'];
-            $display_title = $item_name . $room_number . ' - ' . $guest;
-            $color = '#28a745';
-            if ($status == 'checked_in') $color = '#0d6efd';
-            if ($status == 'checked_out') $color = '#6f42c1';
-            if ($status == 'pending') $color = '#fd7e14';
+            $checkin = $booking['checkin'];
+            $checkout = $booking['checkout'];
+            $duration_days = ceil((strtotime($checkout) - strtotime($checkin)) / 86400);
+            $duration_text = $duration_days > 1 ? "({$duration_days} days)" : '(1 day)';
+            $display_title = $item_name . $room_number . ' - Booked ' . $duration_text;
+            // Unique colors for each status
+            $color = '#dc3545';  // Red for default/booked
+            if ($status == 'pending') $color = '#ffc107';      // Yellow
+            if ($status == 'approved') $color = '#28a745';     // Green
+            if ($status == 'confirmed') $color = '#17a2b8';    // Cyan
+            if ($status == 'checked_in') $color = '#0d6efd';   // Blue
+            if ($status == 'checked_out') $color = '#6c757d';  // Gray
+            if ($status == 'cancelled') $color = '#f39c12';    // Orange-Yellow
+            if ($status == 'rejected') $color = '#dc3545';     // Red
 
             // Emit booking as an event
             echo "window.roomEvents.push({\n";
             echo "  id: 'booking-{$booking['id']}',\n";
             echo "  title: '{$display_title}',\n";
-            echo "  start: '{$booking['checkin']}',\n";
-            echo "  end: '" . date('Y-m-d', strtotime($booking['checkout'] . ' +1 day')) . "',\n";
+            echo "  start: '{$checkin}',\n";
+            echo "  end: '" . date('Y-m-d', strtotime($checkout . ' +1 day')) . "',\n";
             echo "  backgroundColor: '{$color}',\n";
             echo "  borderColor: '{$color}',\n";
             echo "  textColor: '#ffffff',\n";
@@ -116,11 +125,64 @@
             echo "    itemType: '{$item_type}',\n";
             echo "    guest: '{$guest}',\n";
             echo "    status: '{$status}',\n";
-            echo "    checkin: '{$booking['checkin']}',\n";
-            echo "    checkout: '{$booking['checkout']}',\n";
+            echo "    bookingType: 'regular',\n";
+            echo "    checkin: '{$checkin}',\n";
+            echo "    checkout: '{$checkout}',\n";
+            echo "    durationDays: {$duration_days},\n";
             echo "    roomId: " . ($booking['room_id'] ?: 'null') . "\n";
             echo "  }\n";
             echo "});\n";
+          }
+        }
+
+        // Fetch pencil bookings if table exists
+        $table_check = $conn->query("SHOW TABLES LIKE 'pencil_bookings'");
+        if ($table_check && $table_check->num_rows > 0) {
+          $pencil_query = "SELECT pb.*, i.name as item_name, i.item_type, i.room_number
+                           FROM pencil_bookings pb
+                           LEFT JOIN items i ON pb.room_id = i.id
+                           WHERE pb.status IN ('approved', 'pending', 'confirmed')
+                           AND pb.token_expires_at >= NOW()
+                           AND pb.checkin >= CURDATE() - INTERVAL 7 DAY
+                           AND pb.checkin <= CURDATE() + INTERVAL 30 DAY
+                           ORDER BY pb.checkin ASC";
+          $pencil_result = $conn->query($pencil_query);
+
+          if ($pencil_result && $pencil_result->num_rows > 0) {
+            while ($pencil = $pencil_result->fetch_assoc()) {
+              $item_name = $pencil['item_name'] ? addslashes($pencil['item_name']) : 'Unassigned Room/Facility';
+              $room_number = $pencil['room_number'] ? '#' . $pencil['room_number'] : '';
+              $item_type = $pencil['item_type'] ?: 'room';
+              $guest = $pencil['guest_name'] ? addslashes($pencil['guest_name']) : 'Guest';
+              $checkin = $pencil['checkin'];
+              $checkout = $pencil['checkout'];
+              $duration_days = ceil((strtotime($checkout) - strtotime($checkin)) / 86400);
+              $duration_text = $duration_days > 1 ? "({$duration_days} days)" : '(1 day)';
+              $display_title = $item_name . $room_number . ' - Pencil ' . $duration_text;
+              $color = '#fd7e14'; // Orange for pencil bookings
+
+              echo "window.roomEvents.push({\n";
+              echo "  id: 'pencil-{$pencil['id']}',\n";
+              echo "  title: '{$display_title}',\n";
+              echo "  start: '{$checkin}',\n";
+              echo "  end: '" . date('Y-m-d', strtotime($checkout . ' +1 day')) . "',\n";
+              echo "  backgroundColor: '{$color}',\n";
+              echo "  borderColor: '{$color}',\n";
+              echo "  textColor: '#ffffff',\n";
+              echo "  extendedProps: {\n";
+              echo "    itemName: '{$item_name}',\n";
+              echo "    roomNumber: '" . ($pencil['room_number'] ?: '') . "',\n";
+              echo "    itemType: '{$item_type}',\n";
+              echo "    guest: '{$guest}',\n";
+              echo "    status: 'pencil',\n";
+              echo "    bookingType: 'pencil',\n";
+              echo "    checkin: '{$checkin}',\n";
+              echo "    checkout: '{$checkout}',\n";
+              echo "    durationDays: {$duration_days},\n";
+              echo "    roomId: " . ($pencil['room_id'] ?: 'null') . "\n";
+              echo "  }\n";
+              echo "});\n";
+            }
           }
         }
 
@@ -346,12 +408,24 @@
           });
         }
 
-        // Populate booking details pane
+        // Populate booking details pane with comprehensive information
         function showBookingDetailsInPane(event) {
+          console.log('showBookingDetailsInPane called with event:', event);
+          
           const container = document.getElementById('roomBookingDetailsContent');
-          if (!container) return;
+          const wrapper = document.getElementById('roomBookingDetails');
+          
+          if (!container) {
+            console.error('roomBookingDetailsContent container not found!');
+            return;
+          }
+          
           const p = event.extendedProps || {};
           const bookingId = (event.id || '').toString();
+          const bookingNumericId = bookingId.replace('booking-', '').replace('pencil-', '');
+          
+          console.log('Building booking details for:', bookingId, 'Status:', p.status);
+          
           // map status to badge class
           const status = (p.status || '').toLowerCase();
           let badgeClass = 'badge-pending';
@@ -360,19 +434,89 @@
           if (status === 'checked_out') badgeClass = 'badge-checkedout';
           if (status === 'pending') badgeClass = 'badge-pending';
           if (status === 'cancelled') badgeClass = 'badge-cancelled';
+          if (status === 'pencil') badgeClass = 'badge-warning';
 
           const html = [];
-          html.push(`<div class="fw-bold mb-2">${(p.itemName || event.title || 'Booking')} <span class="booking-badge ${badgeClass} ms-2">${(p.status || 'Unknown')}</span></div>`);
-          if (p.roomNumber) html.push(`<div class="detail-row"><span class="detail-key">Room:</span> ${p.roomNumber}</div>`);
-          if (p.guest) html.push(`<div class="detail-row"><span class="detail-key">Guest:</span> ${p.guest}</div>`);
-          if (p.checkin) html.push(`<div class="detail-row"><span class="detail-key">Check-in:</span> ${p.checkin}</div>`);
-          if (p.checkout) html.push(`<div class="detail-row"><span class="detail-key">Check-out:</span> ${p.checkout}</div>`);
-          if (p.details) html.push(`<div class="mt-2 small text-muted">${p.details}</div>`);
-
-          // action buttons
-          html.push(`<div class="booking-actions"><button class="btn btn-sm btn-outline-primary booking-action-btn" data-action="view" data-booking-id="${bookingId}">View</button><button class="btn btn-sm btn-outline-secondary booking-action-btn" data-action="edit" data-booking-id="${bookingId}">Edit</button><button class="btn btn-sm btn-outline-danger booking-action-btn" data-action="cancel" data-booking-id="${bookingId}">Cancel</button></div>`);
+          
+          // Header
+          html.push(`<div class="card border-0 shadow-sm">`);
+          html.push(`<div class="card-header bg-primary text-white">`);
+          html.push(`<h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Booking Details</h6>`);
+          html.push(`</div>`);
+          html.push(`<div class="card-body">`);
+          
+          // Booking Title and Status
+          html.push(`<div class="d-flex justify-content-between align-items-start mb-3">`);
+          html.push(`<div class="fw-bold fs-5">${(p.itemName || event.title || 'Booking')}</div>`);
+          html.push(`<span class="booking-badge ${badgeClass} ms-2">${(p.status || 'Unknown').toUpperCase()}</span>`);
+          html.push(`</div>`);
+          
+          // Booking Type
+          if (p.bookingType) {
+            const typeIcon = p.bookingType === 'pencil' ? 'fa-pencil-alt' : 'fa-calendar-check';
+            const typeClass = p.bookingType === 'pencil' ? 'text-warning' : 'text-primary';
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas ${typeIcon} ${typeClass} me-2"></i>Type:</span> <strong>${p.bookingType === 'pencil' ? 'Pencil Booking (Draft)' : 'Confirmed Booking'}</strong></div>`);
+          }
+          
+          // Room/Facility Details
+          if (p.roomNumber) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-door-open text-info me-2"></i>Room:</span> <strong>#${p.roomNumber}</strong></div>`);
+          }
+          if (p.itemType) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-building text-secondary me-2"></i>Type:</span> ${p.itemType.charAt(0).toUpperCase() + p.itemType.slice(1)}</div>`);
+          }
+          
+          // Guest Information
+          if (p.guest) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-user text-success me-2"></i>Guest:</span> <strong>${p.guest}</strong></div>`);
+          }
+          
+          // Date Information
+          html.push(`<hr class="my-3">`);
+          html.push(`<h6 class="mb-2"><i class="fas fa-calendar-alt text-primary me-2"></i>Stay Duration</h6>`);
+          if (p.checkin) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-sign-in-alt text-success me-1"></i>Check-in:</span> <strong>${formatDate(p.checkin)}</strong></div>`);
+          }
+          if (p.checkout) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-sign-out-alt text-danger me-1"></i>Check-out:</span> <strong>${formatDate(p.checkout)}</strong></div>`);
+          }
+          if (p.durationDays) {
+            html.push(`<div class="detail-row mb-2"><span class="detail-key"><i class="fas fa-clock text-info me-1"></i>Duration:</span> <strong>${p.durationDays} ${p.durationDays === 1 ? 'day' : 'days'}</strong></div>`);
+          }
+          
+          // Additional Details
+          if (p.details) {
+            html.push(`<hr class="my-3">`);
+            html.push(`<div class="small text-muted"><i class="fas fa-sticky-note me-2"></i>${p.details}</div>`);
+          }
+          
+          html.push(`</div>`); // card-body
+          html.push(`</div>`); // card
 
           container.innerHTML = html.join('\n');
+          
+          // Show the booking details wrapper
+          if (wrapper) {
+            wrapper.style.display = 'block';
+            console.log('Booking details displayed successfully');
+          } else {
+            console.warn('roomBookingDetails wrapper not found');
+          }
+          
+          // Scroll to the details
+          setTimeout(() => {
+            if (wrapper) {
+              wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 100);
+        }
+        
+        // Helper function to format dates nicely
+        function formatDate(dateStr) {
+          if (!dateStr) return '';
+          const date = new Date(dateStr);
+          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+          return date.toLocaleDateString('en-US', options);
         }
 
         // Handle action buttons in booking details pane
@@ -385,7 +529,7 @@
           handleBookingAction(action, bookingId);
         });
 
-        function handleBookingAction(action, bookingId) {
+        async function handleBookingAction(action, bookingId) {
           // simple action routing. Adjust URLs to actual app routes if available.
           console.log('Booking action', action, 'for', bookingId);
           const details = document.getElementById('roomBookingDetailsContent');
@@ -403,7 +547,11 @@
           }
           if (action === 'cancel') {
             // optimistic UI: show confirmation inline and then POST to cancel endpoint if exists
-            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            const confirmed = await showConfirm(
+              'Are you sure you want to cancel this booking?',
+              { title: 'Cancel Booking', confirmText: 'Yes, Cancel', confirmClass: 'btn-danger' }
+            );
+            if (!confirmed) return;
             // call API to cancel (endpoint not defined here) - attempt to hit a sensible endpoint
             fetch('api/cancel_booking.php', {
               method: 'POST',
@@ -489,9 +637,8 @@
           // show modal spinner while building calendar
           try { showSpinnerById('roomModalSpinner'); } catch (e) {}
 
-          // read selected range (days)
-          const rangeSelect = document.getElementById('roomCalendarRange');
-          const rangeDays = parseInt(rangeSelect ? rangeSelect.value : 90, 10) || 90;
+          // Use fixed 90-day range
+          const rangeDays = 90;
           console.log('Using range:', rangeDays, 'days');
 
           // destroy previous instance if exists
@@ -585,9 +732,15 @@
             },
             eventClick: function (info) {
               console.log('Event clicked:', info.event.id, info.event.title);
-              // show details for booking events
-              if (info.event && info.event.id && info.event.id.startsWith('booking-')) {
+              console.log('Event details:', info.event);
+              console.log('Extended props:', info.event.extendedProps);
+              
+              // show details for booking events (skip background events)
+              if (info.event && info.event.id && !info.event.id.toString().startsWith('reserved-bg-') && !info.event.id.toString().startsWith('free-range-')) {
+                console.log('Calling showBookingDetailsInPane...');
                 showBookingDetailsInPane(info.event);
+              } else {
+                console.log('Event is a background event, skipping details display');
               }
             },
             eventDidMount: function(info) {
@@ -606,15 +759,7 @@
           try { hideSpinnerById('roomModalSpinner'); } catch (e) {}
         }
 
-        // re-render modal calendar when range selector changes (if modal open)
-        document.addEventListener('DOMContentLoaded', function () {
-          const rangeSelect = document.getElementById('roomCalendarRange');
-          if (rangeSelect) {
-            rangeSelect.addEventListener('change', function () {
-              if (window.currentModalRoomId) initializeRoomModalCalendar(window.currentModalRoomId);
-            });
-          }
-        });
+
 
         // Fetch latest room list from API and refresh DOM + window.roomList
         async function fetchAndRefreshRoomList() {

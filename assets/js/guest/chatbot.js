@@ -1,15 +1,20 @@
 const chatbotKnowledgeBase = {
-  'room availability': { response: "To check room availability, simply visit our Availability Calendar section. You can also browse our Rooms & Facilities page to see real-time availability status. Green indicators mean the room is available!", quickReplies: ['booking process', 'pricing'] },
-  'booking process': { response: "Booking is easy! Navigate to 'Booking & Reservation', choose between Reservation (for rooms) or Pencil Booking (for function halls), fill in the required details, and submit. No account needed! You'll receive a confirmation email.", quickReplies: ['discount', 'payment'] },
-  'pricing': { response: "Our pricing varies by room type and facility. Room rates start from ₱1,500/night for standard rooms. Function hall rates depend on capacity and duration. You can see exact prices when browsing our Rooms & Facilities section.", quickReplies: ['discount', 'amenities'] },
-  'facilities': { response: "We offer comfortable rooms, function halls for events, free WiFi, complimentary parking, and 24/7 front desk service. All rooms are air-conditioned with modern amenities.", quickReplies: ['room availability', 'booking process'] },
-  'discount': { response: "We offer discounts! PWD/Senior Citizens get 20%, LCUP Personnel get 10%, and LCUP Students/Alumni get 7%. Just select your discount type when booking and upload a valid ID.", quickReplies: ['booking process', 'payment'] },
-  'payment': { response: "Payment details and methods will be provided after your booking is confirmed. We accept various payment options for your convenience.", quickReplies: ['booking process', 'cancellation'] },
-  'cancellation': { response: "For cancellation or modification of bookings, please contact us at +63 912 345 6789 or visit our Contact section. We'll assist you promptly.", quickReplies: ['contact', 'booking process'] },
-  'contact': { response: "You can reach us at:\n📞 +63 912 345 6789\n📧 Through our contact form\n🕐 Check-in: 2:00 PM\n🕐 Check-out: 12:00 PM", quickReplies: ['booking process', 'facilities'] },
-  'amenities': { response: "All rooms include: Air conditioning, Free WiFi, Clean linens & towels, 24/7 security, and complimentary parking. Function halls have audio-visual equipment available.", quickReplies: ['pricing', 'booking process'] },
-  'checkin': { response: "Check-in time is 2:00 PM onwards. Early check-in may be available depending on room availability. Please contact us in advance if you need early check-in.", quickReplies: ['checkout', 'contact'] },
-  'checkout': { response: "Check-out time is 12:00 PM. Late check-out may be available upon request and subject to room availability. Additional charges may apply.", quickReplies: ['checkin', 'payment'] }
+  'room availability': { response: "To check room availability, visit our Availability Calendar section. You can see real-time status - green means available! We have Standard Rooms, Deluxe Rooms, and Function Halls available for booking.", quickReplies: ['booking process', 'pricing', 'facilities'] },
+  'booking process': { response: "Booking is easy! Go to 'Booking & Reservation', choose Reservation (rooms) or Pencil Booking (function halls), fill in your details, upload required IDs if claiming discount, and submit. You'll receive a confirmation email with payment details.", quickReplies: ['discount', 'payment', 'requirements'] },
+  'pricing': { response: "Standard Rooms start from ₱1,500/night, Deluxe Rooms from ₱2,500/night. Function halls vary by capacity (₱3,000-₱8,000). Discounts available: PWD/Senior 20%, LCUP Personnel 10%, Students/Alumni 7%.", quickReplies: ['discount', 'booking process'] },
+  'facilities': { response: "We offer: Comfortable air-conditioned rooms, Function halls (50-200 capacity), Free WiFi throughout, Complimentary parking, 24/7 front desk & security, Clean linens & towels, Modern amenities in all rooms.", quickReplies: ['room availability', 'amenities'] },
+  'discount': { response: "Available discounts: PWD/Senior Citizens: 20%, LCUP Personnel: 10%, LCUP Students/Alumni: 7%. Select your discount type when booking and upload a valid ID (School ID, PWD card, etc.) for verification.", quickReplies: ['booking process', 'requirements'] },
+  'payment': { response: "After booking approval, you'll receive payment instructions via email. We accept bank transfers, GCash, and on-site payments. A deposit may be required for reservations. QR code for payment will be provided.", quickReplies: ['booking process', 'cancellation'] },
+  'cancellation': { response: "To cancel or modify your booking, contact us immediately at barcieinternationalcenter.web@gmail.com or through our contact form. Cancellation policies apply - contact us for details.", quickReplies: ['contact', 'booking process'] },
+  'contact': { response: "BarCIE International Center\n📧 barcieinternationalcenter.web@gmail.com\n📍 La Consolacion University Philippines\n🕐 Check-in: 2:00 PM | Check-out: 12:00 PM\n📅 Available for inquiries 24/7", quickReplies: ['booking process', 'location'] },
+  'amenities': { response: "All rooms include: Air conditioning, Free WiFi, Cable TV, Private bathroom, Clean linens & towels, Desk & chair, Wardrobe. Function halls include: Tables & chairs, Audio system, Projector/screen (on request), Air conditioning.", quickReplies: ['pricing', 'facilities'] },
+  'checkin': { response: "Check-in: 2:00 PM onwards. Early check-in may be available if the room is ready (subject to confirmation). Please bring valid ID and booking confirmation. Late arrivals are accommodated 24/7.", quickReplies: ['checkout', 'requirements'] },
+  'checkout': { response: "Check-out: 12:00 PM (noon). Late check-out available upon request (additional charges may apply, subject to room availability). Please settle all bills before checkout and return room keys.", quickReplies: ['checkin', 'payment'] },
+  'requirements': { response: "For booking: Valid ID (required), Contact details, Check-in/out dates. For discounts: Valid ID (School ID for students, PWD card, Company ID). Photo upload required during booking for verification.", quickReplies: ['discount', 'booking process'] },
+  'location': { response: "BarCIE International Center is located at La Consolacion University Philippines campus. Easily accessible with ample parking. Near restaurants, shops, and city center.", quickReplies: ['contact', 'facilities'] },
+  'function hall': { response: "We offer multiple function halls for events, conferences, meetings: Small (50pax), Medium (100pax), Large (200pax). All include tables, chairs, air conditioning. Audio-visual equipment available on request.", quickReplies: ['pricing', 'booking process'] },
+  'guest portal': { response: "Our Guest Portal features: Overview dashboard, Availability Calendar (real-time), Rooms & Facilities browser, Booking & Reservation system, Feedback submission. No account needed - book directly!", quickReplies: ['booking process', 'room availability'] },
+  'features': { response: "Website features: Real-time availability checking, Online booking system, Pencil booking for function halls, Discount application with ID upload, Email confirmations, Guest feedback system, AI-powered chatbot assistance.", quickReplies: ['guest portal', 'booking process'] }
 };
 
 function toggleChatbot() {
@@ -42,9 +47,20 @@ function updateAiToggleUI(enabled) {
 function updateStatusLabel(source) {
   const el = document.getElementById('chatbotAiStatus');
   if (!el) return;
-  if (source === 'ai') { el.textContent = 'AI'; el.classList.remove('text-white-50'); el.style.opacity = 1; }
-  else if (source === 'local') { el.textContent = 'Local KB'; el.classList.add('text-white-50'); el.style.opacity = 0.9; }
-  else { el.textContent = 'Unknown'; el.classList.add('text-white-50'); }
+  if (source === 'ai') { 
+    el.textContent = 'AI Mode'; 
+    el.style.color = '#10b981'; 
+    el.style.fontWeight = '600';
+  }
+  else if (source === 'local') { 
+    el.textContent = 'Local KB'; 
+    el.style.color = 'rgba(255, 255, 255, 0.8)'; 
+    el.style.fontWeight = '500';
+  }
+  else { 
+    el.textContent = 'Unknown'; 
+    el.style.color = 'rgba(255, 255, 255, 0.6)';
+  }
 }
 
 function sendChatbotMessage() {
@@ -185,7 +201,7 @@ function addBotMessage(message, quickReplies = []) {
     quickRepliesHTML += '</div>';
   }
   messageDiv.innerHTML = `
-    <div class="message-avatar"><i class="fas fa-robot"></i></div>
+    <div class="message-avatar"><i class="fas fa-hotel"></i></div>
     <div class="message-content"><p>${message}</p>${quickRepliesHTML}</div>
   `;
   messagesContainer.appendChild(messageDiv);
@@ -197,7 +213,7 @@ function showTypingIndicator() {
   const typingDiv = document.createElement('div');
   typingDiv.className = 'chatbot-message bot-message typing-indicator-message';
   typingDiv.innerHTML = `
-    <div class="message-avatar"><i class="fas fa-robot"></i></div>
+    <div class="message-avatar"><i class="fas fa-hotel"></i></div>
     <div class="message-content">
       <div class="typing-indicator">
         <div class="typing-dot"></div>

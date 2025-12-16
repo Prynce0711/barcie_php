@@ -1,6 +1,9 @@
 <?php
 // Pencil Book Management Section
 // This section displays pencil bookings management specifically
+
+// Set timezone to ensure consistent time display
+date_default_timezone_set('Asia/Manila');
 ?>
 
 <!-- Pencil Book Management -->
@@ -12,22 +15,63 @@
         <small class="opacity-75">Manage all pencil bookings - tentative reservations awaiting confirmation.</small>
       </div>
       <div class="card-body">
-        <!-- Filters -->
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <label for="pencilStatusFilter" class="form-label">Filter by Status:</label>
-            <select id="pencilStatusFilter" class="form-select" onchange="filterPencilBookings()">
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-          <div class="col-md-8">
-            <label for="pencilSearch" class="form-label">Search:</label>
-            <input type="text" id="pencilSearch" class="form-control" placeholder="Search by guest name, phone, email..." oninput="filterPencilBookings()">
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-end mb-2 gap-2">
+          <button type="button" class="btn btn-sm btn-outline-warning" onclick="downloadPencilBookingsExcel()">
+            <i class="fas fa-file-excel me-1"></i>Export to Excel
+          </button>
+          <button type="button" class="btn btn-sm btn-warning" onclick="downloadPencilBookingsPDF()">
+            <i class="fas fa-file-alt me-1"></i>Export to Text
+          </button>
+        </div>
+        
+        <!-- Filters Section -->
+        <div class="card mb-3 border-0 bg-light">
+          <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+              <!-- Date Filter -->
+              <div class="col-md-3">
+                <label for="pencilDateFilter" class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-calendar-alt me-1"></i>Date
+                </label>
+                <input type="date" id="pencilDateFilter" class="form-control" onchange="filterPencilBookings()">
+              </div>
+              
+              <!-- Quick Date Actions -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-warning" onclick="setPencilDateToday()">
+                    <i class="fas fa-calendar-day me-1"></i>Today
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPencilDate()">
+                    <i class="fas fa-calendar me-1"></i>All
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Status Filter -->
+              <div class="col-md-4">
+                <label for="pencilStatusFilter" class="form-label fw-semibold text-muted small mb-2">
+                  <i class="fas fa-info-circle me-1"></i>Status
+                </label>
+                <select id="pencilStatusFilter" class="form-select" onchange="filterPencilBookings()">
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              
+              <!-- Reset Button -->
+              <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('pencilDateFilter').value='';document.getElementById('pencilStatusFilter').value='';filterPencilBookings();">
+                  <i class="fas fa-redo me-1"></i>Reset
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -39,7 +83,7 @@
           <table class="table table-hover align-middle" id="pencilTable">
             <thead class="table-dark">
               <tr>
-                <th style="font-size: 0.75rem;">Receipt #</th>
+                <th style="font-size: 0.75rem;">Pencil Book No.</th>
                 <th style="font-size: 0.75rem;">Room/Facility</th>
                 <th style="font-size: 0.75rem;">Guest Details</th>
                 <th style="font-size: 0.75rem;">Schedule</th>
@@ -92,8 +136,11 @@
                   $expires_class = 'text-success';
                   $expires_text = $days_remaining . ' days left';
                 }
+                
+                // Extract date from created_at for filtering (format: YYYY-MM-DD)
+                $booking_date = date('Y-m-d', strtotime($booking['created_at']));
               ?>
-              <tr data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
+              <tr data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
                 <td>
                   <strong style="font-size: 0.7rem;">BARCIE-<?= date('Ymd', strtotime($booking['created_at'])) ?>-<?= str_pad($booking['id'], 4, '0', STR_PAD_LEFT) ?></strong>
                 </td>
@@ -141,24 +188,24 @@
                 </td>
                 <td>
                   <div class="d-flex flex-column" style="gap: 0.25rem;">
-                    <button class="btn btn-info btn-sm" onclick="viewPencilBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                    <button class="btn btn-info btn-sm view-pencil-btn" onclick="viewPencilBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
                       <i class="fas fa-eye"></i> View
                     </button>
                     
                     <?php if ($booking['status'] === 'pending'): ?>
-                      <button class="btn btn-success btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                      <button class="btn btn-success btn-sm pencil-action-btn" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
                         <i class="fas fa-check"></i> Approve
                       </button>
-                      <button class="btn btn-danger btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                      <button class="btn btn-danger btn-sm pencil-action-btn" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
                         <i class="fas fa-times"></i> Reject
                       </button>
                     <?php elseif ($booking['status'] === 'approved'): ?>
-                      <button class="btn btn-primary btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'confirmed')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-                        <i class="fas fa-check-circle"></i> Confirm & Convert
+                      <button class="btn btn-secondary btn-sm pencil-action-btn" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+                        <i class="fas fa-ban"></i> Cancel
                       </button>
-                      <button class="btn btn-secondary btn-sm" onclick="updatePencilBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-                        Cancel
-                      </button>
+                      <small class="text-info" style="font-size: 0.6rem;">
+                        <i class="fas fa-info-circle"></i> Auto-converts when guest proceeds
+                      </small>
                     <?php endif; ?>
                     
                     <?php if ($booking['terms_acknowledged']): ?>
@@ -195,38 +242,35 @@
     document.head.appendChild(s);
   }
 
-  // Client-side filtering implementation
-  window.filterPencilBookings = function(){
-    const status = (document.getElementById('pencilStatusFilter')?.value || '').toLowerCase();
-    const query = (document.getElementById('pencilSearch')?.value || '').toLowerCase().trim();
-    const rows = document.querySelectorAll('#pencilTable tbody tr');
-    let visibleCount = 0;
-    rows.forEach(row => {
-      const rstatus = (row.dataset.status || '').toLowerCase();
-      const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
-      
-      let show = true;
-      if (status && rstatus.indexOf(status) === -1) show = false;
-      if (query && rguest.indexOf(query) === -1) show = false;
-      
-      row.style.display = show ? '' : 'none';
-      if (show) visibleCount++;
-    });
-
-    // Show no-results row when filtered out completely
-    const noId = 'pencil-no-results';
-    let noRow = document.getElementById(noId);
-    if (visibleCount === 0) {
-      if (!noRow) {
-        noRow = document.createElement('tr');
-        noRow.id = noId;
-        noRow.innerHTML = '<td colspan="7" class="text-center text-muted">No pencil bookings match the current filters.</td>';
-        document.querySelector('#pencilTable tbody').appendChild(noRow);
-      }
-      noRow.style.display = '';
-    } else {
-      if (noRow) noRow.style.display = 'none';
+  // Hide pencil booking action buttons for staff (except view)
+  function hideStaffPencilActions() {
+    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+    if (role === 'staff') {
+      document.querySelectorAll('.pencil-action-btn').forEach(btn => {
+        btn.style.display = 'none';
+      });
     }
+  }
+  
+  // Run on load and after table updates
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideStaffPencilActions);
+  } else {
+    hideStaffPencilActions();
+  }
+  
+  // Re-run when pencil table updates
+  const observer = new MutationObserver(hideStaffPencilActions);
+  const pencilTable = document.querySelector('#pencilTable tbody');
+  if (pencilTable) {
+    observer.observe(pencilTable, { childList: true, subtree: true });
+  }
+
+  // Client-side filtering implementation
+  // This basic filter doesn't manipulate display - pagination handles that
+  window.filterPencilBookings = function(){
+    // Filter logic is handled by doesRowMatchFilter() used in pagination
+    // This function exists as a trigger to recalc pagination
   };
 
   // Client-side pagination
@@ -240,12 +284,12 @@
 
   function doesRowMatchFilter(row){
     const status = (document.getElementById('pencilStatusFilter')?.value || '').toLowerCase();
-    const query = (document.getElementById('pencilSearch')?.value || '').toLowerCase().trim();
+    const dateFilter = document.getElementById('pencilDateFilter')?.value || '';
     const rstatus = (row.dataset.status || '').toLowerCase();
-    const rguest = (row.dataset.guest || row.innerText || '').toLowerCase();
+    const rdate = row.dataset.date || '';
 
     if (status && rstatus.indexOf(status) === -1) return false;
-    if (query && rguest.indexOf(query) === -1) return false;
+    if (dateFilter && rdate !== dateFilter) return false;
     return true;
   }
 
@@ -295,24 +339,20 @@
     state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
     if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
 
-    const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
-    const myToken = ++fadeToken;
-
-    const removeSpinner = showTableSpinner(document.querySelector('#pencilTable'));
-    await fadeOutRows(currentlyVisible);
-
-    if (myToken !== fadeToken) { removeSpinner(); return; }
-
-    rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+    // Hide all rows first
+    rows.forEach(r => { 
+      r.style.display = 'none'; 
+      r.setAttribute('data-hidden-by-pagination','true'); 
+    });
+    
+    // Show only the current page slice
     const start = (state.currentPage - 1) * state.perPage;
     const end = start + state.perPage;
     visibleRows.slice(start, end).forEach(r => {
       r.removeAttribute('data-hidden-by-pagination');
       r.style.display = '';
-      r.style.opacity = 0;
-      requestAnimationFrame(() => { r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
     });
-    setTimeout(() => { try { removeSpinner(); } catch(e){} }, 220);
+    
     renderPaginationControls();
   }
 
@@ -323,62 +363,72 @@
     [container, topContainer].forEach(c => { if (c) c.innerHTML = ''; });
     if (state.totalPages <= 1) return;
 
-    const nav = document.createElement('nav');
-    const ul = document.createElement('ul');
-    ul.className = 'pagination justify-content-center mb-0';
+    // Helper to create pagination for a specific container
+    const createPaginationFor = (targetContainer) => {
+      if (!targetContainer) return;
+      
+      const nav = document.createElement('nav');
+      const ul = document.createElement('ul');
+      ul.className = 'pagination justify-content-center mb-0';
 
-    const createPageItem = (label, page, disabled, active) => {
-      const li = document.createElement('li');
-      li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-      const btn = document.createElement('button');
-      btn.className = 'page-link';
-      btn.type = 'button';
-      btn.textContent = label;
-      btn.addEventListener('click', e => { e.preventDefault(); if (disabled) return; state.currentPage = page; recalcPagination(); });
-      li.appendChild(btn);
-      return li;
+      const createPageItem = (label, page, disabled, active) => {
+        const li = document.createElement('li');
+        li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+        const btn = document.createElement('button');
+        btn.className = 'page-link';
+        btn.type = 'button';
+        btn.textContent = label;
+        btn.addEventListener('click', e => { e.preventDefault(); if (disabled) return; state.currentPage = page; recalcPagination(); });
+        li.appendChild(btn);
+        return li;
+      };
+
+      ul.appendChild(createPageItem('«', Math.max(1, state.currentPage - 1), state.currentPage === 1, false));
+
+      const maxButtons = 7;
+      let start = Math.max(1, state.currentPage - 3);
+      let end = Math.min(state.totalPages, start + maxButtons - 1);
+      if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
+
+      if (start > 1) {
+        ul.appendChild(createPageItem('1', 1, false, state.currentPage === 1));
+        if (start > 2) {
+          const gap = document.createElement('li');
+          gap.className = 'page-item disabled';
+          gap.innerHTML = '<span class="page-link">…</span>';
+          ul.appendChild(gap);
+        }
+      }
+
+      for (let p = start; p <= end; p++) {
+        ul.appendChild(createPageItem(String(p), p, false, p === state.currentPage));
+      }
+
+      if (end < state.totalPages) {
+        if (end < state.totalPages - 1) {
+          const gap = document.createElement('li');
+          gap.className = 'page-item disabled';
+          gap.innerHTML = '<span class="page-link">…</span>';
+          ul.appendChild(gap);
+        }
+        ul.appendChild(createPageItem(String(state.totalPages), state.totalPages, false, state.currentPage === state.totalPages));
+      }
+
+      ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
+
+      nav.appendChild(ul);
+      targetContainer.appendChild(nav);
+      
+      // animate pagination controls into view
+      requestAnimationFrame(() => {
+        const p = targetContainer.querySelector('.pagination'); 
+        if (p) p.classList.add('show');
+      });
     };
 
-    ul.appendChild(createPageItem('«', Math.max(1, state.currentPage - 1), state.currentPage === 1, false));
-
-    const maxButtons = 7;
-    let start = Math.max(1, state.currentPage - 3);
-    let end = Math.min(state.totalPages, start + maxButtons - 1);
-    if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
-
-    if (start > 1) {
-      ul.appendChild(createPageItem('1', 1, false, state.currentPage === 1));
-      if (start > 2) {
-        const gap = document.createElement('li');
-        gap.className = 'page-item disabled';
-        gap.innerHTML = '<span class="page-link">…</span>';
-        ul.appendChild(gap);
-      }
-    }
-
-    for (let p = start; p <= end; p++) {
-      ul.appendChild(createPageItem(String(p), p, false, p === state.currentPage));
-    }
-
-    if (end < state.totalPages) {
-      if (end < state.totalPages - 1) {
-        const gap = document.createElement('li');
-        gap.className = 'page-item disabled';
-        gap.innerHTML = '<span class="page-link">…</span>';
-        ul.appendChild(gap);
-      }
-      ul.appendChild(createPageItem(String(state.totalPages), state.totalPages, false, state.currentPage === state.totalPages));
-    }
-
-    ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
-
-    nav.appendChild(ul);
-    if (container) container.appendChild(nav.cloneNode(true));
-    if (topContainer) topContainer.appendChild(nav.cloneNode(true));
-    requestAnimationFrame(() => {
-      const p1 = container && container.querySelector('.pagination'); if (p1) p1.classList.add('show');
-      const p2 = topContainer && topContainer.querySelector('.pagination'); if (p2) p2.classList.add('show');
-    });
+    // Create pagination for both containers
+    createPaginationFor(container);
+    createPaginationFor(topContainer);
   }
 
   document.addEventListener('DOMContentLoaded', function(){
@@ -412,7 +462,7 @@ function viewPencilBookingDetails(bookingId) {
           <div class="booking-details">
             <h5>Pencil Booking Details</h5>
             <table class="table table-sm">
-              <tr><th>Receipt No:</th><td>${booking.receipt_no}</td></tr>
+              <tr><th>Pencil Book No:</th><td>${booking.receipt_no}</td></tr>
               <tr><th>Guest Name:</th><td>${booking.guest_name}</td></tr>
               <tr><th>Email:</th><td>${booking.email}</td></tr>
               <tr><th>Contact:</th><td>${booking.contact_number}</td></tr>
@@ -456,7 +506,7 @@ function viewPencilBookingDetails(bookingId) {
             this.remove();
           });
         } else {
-          alert(details.replace(/<[^>]*>/g, '\n'));
+          showToast('Booking details loaded', 'info', 3000);
         }
       } else {
         showAlert('pencil_alert', data.message || 'Failed to load booking details', 'danger');
@@ -510,5 +560,143 @@ function showAlert(elementId, message, type) {
       alertDiv.style.display = 'none';
     }, 5000);
   }
+}
+
+// Helper functions for date filter
+window.setPencilDateToday = function() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('pencilDateFilter');
+  if (dateInput) {
+    dateInput.value = today;
+    filterPencilBookings();
+  }
+};
+
+window.clearPencilDate = function() {
+  const dateInput = document.getElementById('pencilDateFilter');
+  if (dateInput) {
+    dateInput.value = '';
+    filterPencilBookings();
+  }
+};
+
+// Set default filter to today on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('pencilDateFilter');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = today;
+    filterPencilBookings();
+  }
+});
+
+// Download pencil bookings as text backup
+function downloadPencilBookingsPDF() {
+  const rows = Array.from(document.querySelectorAll('#pencilTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No pencil bookings to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('pencilDateFilter')?.value || 'All Dates';
+  const statusFilter = document.getElementById('pencilStatusFilter')?.value || 'All Status';
+  
+  let content = `BARCIE INTERNATIONAL CENTER - PENCIL BOOKINGS BACKUP
+Generated: ${new Date().toLocaleString()}
+Total Records: ${rows.length}
+
+FILTERS APPLIED:
+- Date: ${dateFilter}
+- Status: ${statusFilter}
+
+${'='.repeat(80)}
+
+`;
+
+  rows.forEach((row, index) => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 7) {
+      const receipt = cells[0].textContent.trim();
+      const room = cells[1].textContent.trim();
+      const guest = cells[2].textContent.trim().replace(/\n/g, ' ');
+      const schedule = cells[3].textContent.trim().replace(/\n/g, ' ');
+      const status = cells[4].textContent.trim();
+      const expires = cells[5].textContent.trim().replace(/\n/g, ' ');
+      const created = cells[6].textContent.trim().replace(/\n/g, ' ');
+      
+      content += `${index + 1}. ${receipt}
+   Room/Facility: ${room}
+   Guest: ${guest}
+   Schedule: ${schedule}
+   Status: ${status}
+   Expires: ${expires}
+   Created: ${created}
+${'-'.repeat(80)}
+
+`;
+    }
+  });
+  
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pencil_bookings_backup_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('Pencil bookings backup downloaded successfully', 'success');
+}
+
+// Download pencil bookings as Excel
+function downloadPencilBookingsExcel() {
+  const rows = Array.from(document.querySelectorAll('#pencilTable tbody tr')).filter(row => {
+    return row.style.display !== 'none' && !row.id;
+  });
+  
+  if (rows.length === 0) {
+    showToast('No pencil bookings to export with current filters', 'warning');
+    return;
+  }
+  
+  const dateFilter = document.getElementById('pencilDateFilter')?.value || 'All Dates';
+  const statusFilter = document.getElementById('pencilStatusFilter')?.value || 'All Status';
+  
+  let csv = 'Pencil Book No.,Room/Facility,Guest Name,Guest Contact,Schedule,Status,Expires,Created\n';
+  
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 7) {
+      const receipt = cells[0].textContent.trim().replace(/,/g, ';');
+      const room = cells[1].textContent.trim().replace(/,/g, ';');
+      const guestText = cells[2].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      const guestParts = guestText.split(/[📞✉]/);
+      const guestName = guestParts[0].trim();
+      const guestContact = guestParts.slice(1).join(' | ').trim();
+      const schedule = cells[3].textContent.trim().replace(/\n/g, ' | ').replace(/,/g, ';');
+      const status = cells[4].textContent.trim().replace(/,/g, ';');
+      const expires = cells[5].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      const created = cells[6].textContent.trim().replace(/\n/g, ' ').replace(/,/g, ';');
+      
+      csv += `"${receipt}","${room}","${guestName}","${guestContact}","${schedule}","${status}","${expires}","${created}"\n`;
+    }
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pencil_bookings_${dateFilter.replace(/[^0-9-]/g, '') || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast(`Exported ${rows.length} pencil bookings to Excel (Filters: Date=${dateFilter}, Status=${statusFilter})`, 'success');
 }
 </script>

@@ -17,15 +17,11 @@
       </div>
       <div class="modal-body">
         <div id="roomCalendarInner" style="min-height: 220px; position:relative;">
-          <div id="roomCalendarLegend" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;padding:8px;background:#f8f9fa;border-radius:6px;">
+          <div id="roomCalendarLegend" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;padding:8px;background:#f8f9fa;border-radius:6px;flex-wrap:wrap;">
             <small class="text-muted fw-bold me-2">Legend:</small>
             <div style="display:flex;align-items:center;gap:6px;">
-              <div style="width:16px;height:16px;background:#ffffff;border:2px solid #dee2e6;border-radius:3px;"></div>
-              <small class="text-muted">Available</small>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <div style="width:16px;height:16px;background:#ffc107;border:1px solid #ffc107;border-radius:3px;"></div>
-              <small class="text-muted">Pending</small>
+              <div style="width:16px;height:16px;background:#fd7e14;border:1px solid #fd7e14;border-radius:3px;"></div>
+              <small class="text-muted">Pencil Booking</small>
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
               <div style="width:16px;height:16px;background:#dc3545;border:1px solid #dc3545;border-radius:3px;"></div>
@@ -51,6 +47,9 @@
         </style>
       </div>
       <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="bookFromCalendarBtn" onclick="bookFromCalendar()">
+          <i class="fas fa-calendar-plus me-1"></i>Book This Room/Facility
+        </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
@@ -167,14 +166,20 @@
               const props = e.extendedProps || {};
               let status = (props.booking_status || props.status || e.status || e.booking_status || '').toString().toLowerCase();
 
-              // Booking events are shown in red/yellow based on status
-              // The calendar colors events that ARE bookings, dates without events are available (green in legend)
-              if (status === 'pending') {
+              // Booking events are shown in colors based on status
+              // The calendar colors events that ARE bookings, dates without events are available
+              const bookingType = props.booking_type || '';
+              
+              if (status === 'pencil' || bookingType === 'pencil') {
+                e.backgroundColor = '#fd7e14'; // orange for pencil bookings
+                e.borderColor = '#fd7e14';
+                e.textColor = '#ffffff';
+              } else if (status === 'pending') {
                 e.backgroundColor = '#ffc107'; // yellow for pending
                 e.borderColor = '#ffc107';
                 e.textColor = '#000000';
               } else if (['confirmed', 'approved', 'checked_in', 'occupied'].indexOf(status) !== -1) {
-                e.backgroundColor = '#dc3545'; // red for occupied
+                e.backgroundColor = '#dc3545'; // red for confirmed bookings
                 e.borderColor = '#dc3545';
                 e.textColor = '#ffffff';
               } else {
@@ -238,5 +243,52 @@
   window.roomCalendarPrev = function() { try { if (roomCalendar) roomCalendar.prev(); } catch(e){} };
   window.roomCalendarToday = function() { try { if (roomCalendar) roomCalendar.today(); } catch(e){} };
   window.roomCalendarNext = function() { try { if (roomCalendar) roomCalendar.next(); } catch(e){} };
+
+  // Function to book from calendar - navigates to booking section with pre-filled data
+  window.bookFromCalendar = function() {
+    try {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('roomCalendarModal'));
+      if (modal) modal.hide();
+
+      // Navigate to booking section
+      const bookingSection = document.getElementById('booking');
+      if (bookingSection) {
+        // Hide all sections first
+        document.querySelectorAll('.content-section').forEach(s => {
+          s.style.display = 'none';
+          s.classList.remove('active');
+        });
+        
+        // Show booking section
+        bookingSection.style.display = 'block';
+        bookingSection.classList.add('active');
+        
+        // Update navigation if available
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#booking' || link.dataset.section === 'booking') {
+            link.classList.add('active');
+          }
+        });
+        
+        // Pre-fill room selection if we have currentItemId
+        if (currentItemId) {
+          const roomSelect = document.getElementById('room_select');
+          if (roomSelect) {
+            roomSelect.value = currentItemId;
+            // Trigger change event to update prices, etc.
+            roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        
+        // Scroll to booking form
+        setTimeout(() => {
+          bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    } catch (e) {
+      console.error('Error navigating to booking:', e);
+    }
+  };
 })();
 </script>

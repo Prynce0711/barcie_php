@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     log_addons_debug('Processed addonsList: ' . print_r($addonsList, true));
     error_log('===================');
 
-    // Fetch existing images
+    // Fetch existing images from database
     $existing = [];
     $q = $conn->query("SELECT images, image FROM items WHERE id = " . $id);
     if ($q && $q->num_rows) {
@@ -99,6 +99,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       } elseif (!empty($row['image'])) {
         $existing = [$row['image']];
       }
+    }
+
+    // Also check if existing_images was sent from the form (as backup)
+    if (empty($existing) && !empty($_POST['existing_images'])) {
+      $decoded = json_decode($_POST['existing_images'], true);
+      if (is_array($decoded)) $existing = $decoded;
     }
 
     // Removed list

@@ -8,10 +8,12 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=yes">
+  <meta name="theme-color" content="#3b82f6">
   <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
   <title>Admin Dashboard</title>
   <!-- Bootstrap CSS -->
@@ -19,13 +21,19 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <!-- FullCalendar CSS & JS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="assets/css/dashboard.css">
   <link rel="stylesheet" href="assets/css/dashboard-enhancements.css">
+  <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
   <link rel="stylesheet" href="assets/css/news.css">
+  <link rel="stylesheet" href="assets/css/reports.css">
+  <!-- Enhanced Admin Management Styles -->
+  <link rel="stylesheet" href="assets/css/admin-online-status.css">
 </head>
 
 
@@ -164,6 +172,12 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         };
 
         console.log("📊 Dashboard data initialized");
+        // Current admin info exposed to frontend
+        window.currentAdmin = <?php echo json_encode([
+            'id' => $_SESSION['admin_id'] ?? null,
+            'username' => $_SESSION['admin_username'] ?? null,
+            'role' => $_SESSION['admin_role'] ?? 'staff'
+        ]); ?>;
       </script>
 
 
@@ -187,13 +201,26 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <section id="feedback-section" class="content-section">
         <?php include 'components/dashboard/sections/feedback_section.php'; ?>
       </section>
-
+ 
       <!-- News & Updates Section -->
       <section id="news-section" class="content-section">
         <?php include 'components/dashboard/sections/news_section.php'; ?>
       </section>
 
+      <!-- Payment Verification Section -->
+      <section id="payment-verification-section" class="content-section">
+        <?php include 'components/dashboard/sections/payment_verification.php'; ?>
+      </section>
 
+      <!-- Reports & Analytics Section -->
+      <section id="reports-section" class="content-section">
+        <?php include 'components/dashboard/sections/reports_section.php'; ?>
+      </section>
+
+      <!-- Admin Management Section (Manage Roles) -->
+      <section id="admin-management-section" class="content-section">
+        <?php include 'components/dashboard/sections/admin_management_enhanced.php'; ?>
+      </section>
 
       
 
@@ -280,7 +307,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
             // Initialize edit forms directly
             if (typeof setupEditFormToggles === 'function') {
-              setupEditFormToggles();
+              setupEditFormToggles(); 
             }
 
             // Debug: log all edit buttons and forms found
@@ -312,6 +339,35 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
   <?php include 'components/dashboard/sections/add_item_modal.php'; ?>
   <?php include 'components/dashboard/sections/edit_item_modal.php'; ?>
+  
+  <!-- Include Admin Management Modals at page bottom so they're always accessible -->
+  <?php include 'components/dashboard/sections/modals/admin_auth_modal.php'; ?>
+  <?php include 'components/dashboard/sections/modals/add_admin_modal.php'; ?>
+  <?php include 'components/dashboard/sections/modals/edit_admin_modal.php'; ?>
+  
+  <!-- Delete Admin Confirmation Modal (header styled blue for modal theme consistency) -->
+  <div class="modal fade" id="deleteAdminModal" tabindex="-1" aria-labelledby="deleteAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="deleteAdminModalLabel">
+            <i class="fas fa-exclamation-triangle me-2"></i>Delete Administrator
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete admin <strong id="delete-admin-username"></strong>?</p>
+          <p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>This action cannot be undone!</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteAdmin">
+            <i class="fas fa-trash me-2"></i>Delete Admin
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -409,7 +465,11 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         window.toggleDarkMode = toggleDarkMode;
       </script>
 
+      <!-- Enhanced Admin Management JavaScript -->
+      <script src="assets/js/admin-management-enhanced.js"></script>
 
+      <!-- Reports & Analytics JavaScript -->
+      <script src="assets/js/dashboard/reports.js"></script>
 
 </body>
 

@@ -25,6 +25,19 @@
         loadNews();
     }
 
+    // Show success modal for create/update
+    function showNewsSuccess(message) {
+        const el = document.getElementById('newsSuccessMessage');
+        if (el) el.innerHTML = message || 'Operation successful.';
+        const modalEl = document.getElementById('newsSuccessModal');
+        if (modalEl) {
+            const m = new bootstrap.Modal(modalEl);
+            m.show();
+        } else {
+            alert(message);
+        }
+    }
+
     /**
      * Setup event listeners
      */
@@ -319,6 +332,12 @@
         
         formData.append('action', newsId ? 'update' : 'create');
 
+        // Debug: Log form data
+        console.log('Submitting news form...');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, ':', value instanceof File ? `File: ${value.name}` : value);
+        }
+
         // Show loading state
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
@@ -335,8 +354,9 @@
             submitBtn.innerHTML = originalText;
 
             if (data.success) {
-                alert(data.message);
+                // show success modal instead of alert
                 bootstrap.Modal.getInstance(document.getElementById('newsModal')).hide();
+                showNewsSuccess(data.message);
                 loadNews(); // Reload news list
             } else {
                 alert('Error: ' + data.message);
@@ -353,31 +373,32 @@
     /**
      * Delete news
      */
-    window.deleteNews = function(newsId) {
-        if (!confirm('Are you sure you want to delete this news item? This action cannot be undone.')) {
-            return;
-        }
+    window.deleteNews = async function(newsId) {
+        try {
+            const confirmed = await (window.showConfirm ? window.showConfirm(
+                'Are you sure you want to delete this news item? This action cannot be undone.',
+                { title: 'Delete News', confirmText: 'Delete', confirmClass: 'btn-danger' }
+            ) : Promise.resolve(confirm('Are you sure you want to delete this news item?')));
 
-        fetch('api/news.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `action=delete&id=${newsId}`
-        })
-        .then(response => response.json())
-        .then(data => {
+            if (!confirmed) return;
+
+            const resp = await fetch('api/news.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=delete&id=${newsId}`
+            });
+
+            const data = await resp.json();
             if (data.success) {
                 alert(data.message);
                 loadNews(); // Reload news list
             } else {
-                alert('Error: ' + data.message);
+                alert('Error: ' + (data.message || 'Unknown error'));
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error deleting news:', error);
             alert('An error occurred while deleting news');
-        });
+        }
     };
 
     /**

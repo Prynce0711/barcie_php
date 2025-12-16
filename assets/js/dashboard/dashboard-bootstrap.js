@@ -69,7 +69,7 @@ function initializeDashboard() {
     // Log what we found
     const editButtons = document.querySelectorAll('.edit-toggle-btn');
     const editForms = document.querySelectorAll('[id^="editForm"]');
-    console.log(`Found ${editButtons.length} edit buttons and ${editForms.length} edit forms`);
+    console.log('Found ' + editButtons.length + ' edit buttons and ' + editForms.length + ' edit forms');
   }, 500);
 }
 
@@ -196,12 +196,12 @@ function setupSectionNavigation() {
   
   navLinks.forEach((link, index) => {
     const sectionId = link.getAttribute("data-section");
-    console.log(`  Setting up link ${index + 1}: ${sectionId}`);
+    console.log('  Setting up link ' + (index + 1) + ': ' + sectionId);
     
     link.addEventListener("click", function (e) {
       e.preventDefault(); // Prevent default anchor behavior
       const clickedSectionId = this.getAttribute("data-section");
-      console.log("🖱️ Navigation clicked:", clickedSectionId);
+      console.log('🖱️ Navigation clicked:', clickedSectionId);
       showSection(clickedSectionId);
 
       // Update active state
@@ -263,7 +263,7 @@ function showSection(sectionId) {
   }
   
   allSections.forEach((section, index) => {
-    console.log(`  Hiding section ${index + 1}: ${section.id || 'NO ID'}`);
+    console.log('  Hiding section ' + (index + 1) + ': ' + (section.id || 'NO ID'));
     // Remove all display classes first
     section.classList.remove("d-block", "active");
     section.classList.add("d-none");
@@ -939,7 +939,7 @@ function handleEditToggle(e) {
 
   const toggleBtn = e.target.closest(".edit-toggle-btn");
   const itemId = toggleBtn.getAttribute("data-item-id");
-  const editFormContainer = document.getElementById(`editForm${itemId}`);
+  const editFormContainer = document.getElementById('editForm' + itemId);
 
   console.log(
     "Toggle button:",
@@ -981,7 +981,7 @@ function handleEditCancel(e) {
 
   const cancelBtn = e.target.closest(".edit-cancel-btn");
   const itemId = cancelBtn.getAttribute("data-item-id");
-  const editFormContainer = document.getElementById(`editForm${itemId}`);
+  const editFormContainer = document.getElementById('editForm' + itemId);
   const toggleBtn = document.querySelector(
     `[data-item-id="${itemId}"].edit-toggle-btn`
   );
@@ -1130,6 +1130,28 @@ async function generateReceiptNumber() {
   }
 }
 
+// Fallback receipt number generator
+function generateFallbackReceiptNumber() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
+
+  const receiptNo = `BARCIE-${year}${month}${day}-${hours}${minutes}${seconds}`;
+
+  const receiptField = 
+    document.querySelector('input[name="receipt_no"]') ||
+    document.getElementById("receipt_no");
+  if (receiptField) {
+    receiptField.value = receiptNo;
+    receiptField.classList.add("is-valid");
+    console.log("Generated fallback receipt number:", receiptNo);
+  }
+}
+
 
 
 
@@ -1242,106 +1264,90 @@ function initializeCharts() {
     }
   }
 
-  // Status Distribution Chart (Doughnut Chart)
+  // Status Distribution Chart - Clean version with percentages on slices
   const statusChartElement = document.getElementById("statusChart");
   if (statusChartElement) {
+    // Destroy any existing chart instance properly
+    const existingChart = Chart.getChart(statusChartElement);
+    if (existingChart) {
+      existingChart.destroy();
+    }
+    
     const ctx = statusChartElement.getContext("2d");
-
-    // Check if data exists and has content
     const statusData = window.statusDistributionData || {};
 
-    // Destroy existing chart if it exists
-    if (window.statusChartInstance) {
-      window.statusChartInstance.destroy();
-    }
-
     const statusLabels = Object.keys(statusData);
-    const statusValues = Object.values(statusData).map(
-      (val) => parseInt(val) || 0
-    );
-    const hasData = statusValues.some((value) => value > 0);
+    const statusValues = Object.values(statusData).map(val => parseInt(val) || 0);
+    const hasData = statusValues.some(value => value > 0);
 
     if (hasData) {
-      try {
-        window.statusChartInstance = new Chart(ctx, {
-          type: "doughnut",
-          data: {
-            labels: statusLabels.map(
-              (label) => label.charAt(0).toUpperCase() + label.slice(1)
-            ),
-            datasets: [
-              {
-                data: statusValues,
-                backgroundColor: [
-                  "#f6c23e", // pending - yellow
-                  "#1cc88a", // approved - green
-                  "#36b9cc", // checked_in - info
-                  "#5a5c69", // checked_out - secondary
-                  "#e74a3b", // cancelled - red
-                ],
-                borderWidth: 2,
-                borderColor: "#ffffff",
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: "bottom",
-                labels: {
-                  boxWidth: 12,
-                  padding: 15,
-                },
-              },
-              title: {
-                display: true,
-                text: "Booking Status Distribution",
-              },
+      window.statusChartInstance = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels: statusLabels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
+          datasets: [{
+            data: statusValues,
+            backgroundColor: ["#ffc107", "#28a745", "#17a2b8", "#0d6efd", "#6c757d", "#f39c12", "#dc3545"],
+            borderWidth: 2,
+            borderColor: "#ffffff"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
+              labels: { 
+                boxWidth: 15, 
+                padding: 15, 
+                font: { size: 13 },
+                generateLabels: function(chart) {
+                  const data = chart.data;
+                  if (data.labels.length && data.datasets.length) {
+                    const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    return data.labels.map((label, i) => {
+                      const value = data.datasets[0].data[i];
+                      const percentage = ((value / total) * 100).toFixed(0);
+                      return {
+                        text: `${label} (${percentage}%)`,
+                        fillStyle: data.datasets[0].backgroundColor[i],
+                        hidden: false,
+                        index: i
+                      };
+                    });
+                  }
+                  return [];
+                }
+              }
             },
-            cutout: "60%",
-          },
-        });
-      } catch (error) {
-        console.error("Error creating status chart:", error);
-      }
-    } else {
-      // Display "No data" message
-      ctx.clearRect(0, 0, statusChartElement.width, statusChartElement.height);
-      ctx.fillStyle = "#6c757d";
-      ctx.font = "16px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        "No status data available",
-        statusChartElement.width / 2,
-        statusChartElement.height / 2
-      );
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ${value} (${percentage}%)`;
+                }
+              }
+            },
+            datalabels: {
+              color: '#fff',
+              font: { weight: 'bold', size: 14 },
+              formatter: function(value, context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(0);
+                return percentage + '%';
+              }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
     }
   }
 
-  // Legacy chart for backward compatibility
-  const legacyChartElement = document.getElementById("reportChart");
-  if (legacyChartElement && typeof Chart !== "undefined") {
-    const ctx = legacyChartElement.getContext("2d");
-    new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May"],
-        datasets: [
-          {
-            label: "Bookings",
-            data: [12, 19, 7, 15, 20],
-            backgroundColor: "#1abc9c",
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
-  }
+  // Chart initialization completed
 }
 
 // Dashboard Data Management
@@ -1605,7 +1611,7 @@ async function loadFeedbackData(limit = 50, offset = 0) {
 
     // Then load the feedback data
     const response = await fetch(
-      `database/user_auth.php?action=get_feedback_data&limit=${limit}&offset=${offset}`
+      'database/user_auth.php?action=get_feedback_data&limit=' + limit + '&offset=' + offset
     );
     const data = await response.json();
 
@@ -1853,12 +1859,12 @@ function exportFeedback() {
 
 function viewFeedbackDetails(feedbackId) {
   // Implementation for viewing detailed feedback
-  showToast(`View details for feedback ID: ${feedbackId}`, "info");
+  showToast('View details for feedback ID: ' + feedbackId, 'info');
 }
 
 function respondToFeedback(feedbackId) {
   // Implementation for responding to feedback
-  showToast(`Respond to feedback ID: ${feedbackId}`, "info");
+  showToast('Respond to feedback ID: ' + feedbackId, 'info');
 }
 
 // Export feedback functions globally

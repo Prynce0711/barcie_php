@@ -1,5 +1,3 @@
-# Environment files
-.env
 
 # Logs
 *.log
@@ -18,4 +16,7 @@ tmp/
 temp/
  
 # Persisted user uploads - keep out of git
-uploads/
+uploads/*
+!uploads/.gitkeep
+uploads/items/*
+!uploads/items/.gitkeep

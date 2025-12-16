@@ -8,10 +8,19 @@
 // });
 
 function filterBookings() {
-  const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-  const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
-  const guestSearch = document.getElementById('guestSearch').value.toLowerCase();
+  const statusFilterEl = document.getElementById('statusFilter');
+  const typeFilterEl = document.getElementById('typeFilter');
+  const guestSearchEl = document.getElementById('guestSearch');
   const table = document.getElementById('bookingsTable');
+  
+  // If elements don't exist (e.g., not on bookings section), exit early
+  if (!statusFilterEl || !typeFilterEl || !guestSearchEl || !table) {
+    return;
+  }
+  
+  const statusFilter = statusFilterEl.value.toLowerCase();
+  const typeFilter = typeFilterEl.value.toLowerCase();
+  const guestSearch = guestSearchEl.value.toLowerCase();
   const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
 
   for (let i = 0; i < rows.length; i++) {

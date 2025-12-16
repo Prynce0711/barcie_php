@@ -2,7 +2,7 @@
 <!-- Rooms & Facilities Header -->
 <div class="row mb-4">
   <div class="col-12">
-    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
       <div class="card-body text-white">
         <div class="text-center">
           <h2 class="mb-1"><i class="fas fa-building me-2"></i>Rooms & Facilities Management</h2>
@@ -48,12 +48,47 @@
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control" id="searchItems" placeholder="Search by name, room number, or description...">
               </div>
-              <!-- Add New Button -->
-              <div class="d-grid">
+              <!-- Add New Button - Only for managers and super_admins -->
+              <div class="d-grid" id="add-room-button-container">
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
                   <i class="fas fa-plus me-2"></i>Add New Room / Facility
                 </button>
               </div>
+              <script>
+                // Role-based access control for Rooms & Facilities
+                // Staff: CANNOT edit any data (❌) - can only view
+                // Admin: Can edit assigned modules only (✓ assigned modules)
+                // Manager/Super Admin: Full access (✓)
+                (function() {
+                  const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
+                  
+                  // Hide Add New button for staff (no add permission)
+                  const addBtn = document.getElementById('add-room-button-container');
+                  if (addBtn && currentRole === 'staff') {
+                    addBtn.style.display = 'none';
+                  }
+                  
+                  // Hide edit/delete buttons for staff
+                  function applyRoomsRoleRestrictions() {
+                    if (currentRole === 'staff') {
+                      document.querySelectorAll('.edit-toggle-btn, .delete-item-btn, [onclick*="deleteItem"]').forEach(btn => {
+                        btn.style.display = 'none';
+                      });
+                      console.log('Rooms: Staff restricted to view-only');
+                    }
+                  }
+                  
+                  // Apply on load and when items are updated
+                  applyRoomsRoleRestrictions();
+                  setTimeout(applyRoomsRoleRestrictions, 300);
+                  
+                  const itemsContainer = document.getElementById('items-container');
+                  if (itemsContainer) {
+                    const observer = new MutationObserver(applyRoomsRoleRestrictions);
+                    observer.observe(itemsContainer, { childList: true, subtree: true });
+                  }
+                })();
+              </script>
             </div>
           </div>
         </div>

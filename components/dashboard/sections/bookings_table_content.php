@@ -1,21 +1,27 @@
 <?php
 // Bookings Table Content
+// Only show bookings where payment has been verified (payment_status = 'verified')
+
+// Set timezone to ensure consistent time display
+date_default_timezone_set('Asia/Manila');
+
 $bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number,
                           IFNULL(b.discount_status, 'none') as discount_status
                           FROM bookings b 
                           LEFT JOIN items i ON b.room_id = i.id 
-                          WHERE b.type = 'reservation' OR b.type IS NULL
+                          WHERE (b.type = 'reservation' OR b.type IS NULL)
+                          AND (b.payment_status = 'verified' OR b.payment_status IS NULL OR b.payment_status = 'none')
                           ORDER BY b.created_at DESC");
 while ($booking = $bookings->fetch_assoc()):
-  // Determine status badge color
+  // Determine status badge color - each status has unique color
   $status_color = [
-    'pending' => 'warning',
-    'approved' => 'success',
-    'confirmed' => 'info',
-    'checked_in' => 'primary',
-    'checked_out' => 'secondary',
-    'cancelled' => 'danger',
-    'rejected' => 'danger'
+    'pending' => 'warning',     // Yellow #ffc107
+    'approved' => 'success',    // Green #28a745
+    'confirmed' => 'info',      // Cyan #17a2b8
+    'checked_in' => 'primary',  // Blue #0d6efd
+    'checked_out' => 'secondary', // Gray #6c757d
+    'cancelled' => 'warning',   // Orange-Yellow (will style differently)
+    'rejected' => 'danger'      // Red #dc3545
   ];
   $badge_color = $status_color[$booking['status']] ?? 'secondary';
   
@@ -38,29 +44,34 @@ while ($booking = $bookings->fetch_assoc()):
   if ($booking['room_number']) {
     $room_facility .= ' #' . $booking['room_number'];
   }
+  
+  // Extract date from payment_verified_at for filtering (format: YYYY-MM-DD)
+  // Use payment_verified_at if available, otherwise fall back to created_at
+  $filter_date = !empty($booking['payment_verified_at']) ? $booking['payment_verified_at'] : $booking['created_at'];
+  $booking_date = date('Y-m-d', strtotime($filter_date));
   ?>
-  <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
-    <!-- Receipt # -->
-    <td>
-      <strong style="font-size: 0.7rem;">BARCIE-<?= date('Ymd', strtotime($booking['created_at'])) ?>-<?= str_pad($booking['id'], 4, '0', STR_PAD_LEFT) ?></strong>
+  <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
+    <!-- Reservation No. -->
+    <td data-label="Reservation No.">
+      <strong style="font-size: 0.7rem;"><?= htmlspecialchars($booking['receipt_no'] ?: 'BARCIE-' . date('Ymd', strtotime($booking['created_at'] ?: 'now')) . '-' . str_pad($booking['id'], 4, '0', STR_PAD_LEFT)) ?></strong>
     </td>
     
     <!-- Room/Facility -->
-    <td>
+    <td data-label="Room/Facility">
       <div style="line-height: 1.3;">
         <strong style="font-size: 0.75rem;"><?= htmlspecialchars($room_facility ?? 'Unassigned') ?></strong>
       </div>
     </td>
     
     <!-- Type -->
-    <td>
-      <span class="badge bg-<?= $booking['type'] === 'reservation' ? 'primary' : 'warning' ?>" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-        <?= $booking['type'] === 'reservation' ? 'Reservation' : 'Pencil Booking' ?>
+    <td data-label="Type">
+      <span class="badge bg-<?= $booking['type'] === 'reservation' ? 'primary' : 'warning' ?>" style="font-size: 0.6rem; padding: 0.25rem 0.4rem; white-space: nowrap;">
+        <?= $booking['type'] === 'reservation' ? 'Reserve' : 'Pencil' ?>
       </span>
     </td>
     
     <!-- Guest Details -->
-    <td>
+    <td data-label="Guest">
       <div style="line-height: 1.3;">
         <strong style="font-size: 0.75rem;"><?= htmlspecialchars($guest_name ?? 'Guest') ?></strong><br>
         <?php if ($guest_phone): ?>
@@ -73,7 +84,7 @@ while ($booking = $bookings->fetch_assoc()):
     </td>
     
     <!-- Schedule -->
-    <td>
+    <td data-label="Schedule">
       <div style="line-height: 1.3; font-size: 0.7rem;">
         <strong>In:</strong> <?= date('M j, Y', strtotime($booking['checkin'])) ?><br>
         <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['checkin'])) ?></small><br>
@@ -83,14 +94,14 @@ while ($booking = $bookings->fetch_assoc()):
     </td>
     
     <!-- Booking Status -->
-    <td>
+    <td data-label="Status">
       <span class="badge bg-<?= $badge_color ?>" style="font-size: 0.65rem; padding: 0.35rem 0.6rem;">
         <?= ucfirst(str_replace('_', ' ', $booking['status'])) ?>
       </span>
     </td>
     
     <!-- Discount Status -->
-    <td>
+    <td data-label="Discount">
       <?php 
       $discount_badge_colors = [
         'pending' => 'warning',
@@ -106,41 +117,43 @@ while ($booking = $bookings->fetch_assoc()):
       </span>
     </td>
     
-    <!-- Created -->
-    <td>
-      <div style="font-size: 0.7rem; line-height: 1.3;">
-        <?= date('M j, Y', strtotime($booking['created_at'])) ?><br>
-        <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['created_at'])) ?></small>
-      </div>
+    <!-- Approved Date -->
+    <td data-label="Approved">
+      <?php if (!empty($booking['payment_verified_at'])): ?>
+        <div style="font-size: 0.7rem; line-height: 1.3;">
+          <?= date('M j, Y', strtotime($booking['payment_verified_at'])) ?><br>
+          <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['payment_verified_at'])) ?></small>
+        </div>
+      <?php elseif (!empty($booking['approved_at'])): ?>
+        <div style="font-size: 0.7rem; line-height: 1.3;">
+          <?= date('M j, Y', strtotime($booking['approved_at'])) ?><br>
+          <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['approved_at'])) ?></small>
+        </div>
+      <?php else: ?>
+        <span class="text-muted" style="font-size: 0.65rem;">Pending</span>
+      <?php endif; ?>
     </td>
     
     <!-- Actions -->
-    <td>
-      <div class="d-flex flex-column" style="gap: 0.25rem;">
+    <td data-label="Actions">
+      <div class="d-flex flex-row flex-wrap" style="gap: 0.25rem;">
         <!-- View Details Button (Always visible) -->
-        <button class="btn btn-info btn-sm" onclick="viewBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+        <button class="btn btn-info btn-sm view-booking-btn" onclick="viewBookingDetails(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
           <i class="fas fa-eye"></i> View
         </button>
         
         <?php if ($booking['status'] === 'pending'): ?>
-          <button class="btn btn-success btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-success btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'approved')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             <i class="fas fa-check"></i> Approve
           </button>
-          <button class="btn btn-danger btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+          <button class="btn btn-danger btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             <i class="fas fa-times"></i> Reject
           </button>
-        <?php elseif ($booking['status'] === 'approved'): ?>
-          <button class="btn btn-primary btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_in')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-            <i class="fas fa-sign-in-alt"></i> Check In
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-            Cancel
-          </button>
-        <?php elseif ($booking['status'] === 'checked_in'): ?>
-          <button class="btn btn-info btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_out')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-            <i class="fas fa-sign-out-alt"></i> Check Out
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+        <?php elseif ($booking['status'] === 'approved' || $booking['status'] === 'checked_in'): ?>
+          <span class="badge bg-info" style="font-size: 0.65rem; padding: 0.35rem 0.6rem;">
+            <i class="fas fa-clock"></i> Auto Check-in/out
+          </span>
+          <button class="btn btn-secondary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             Cancel
           </button>
         <?php endif; ?>

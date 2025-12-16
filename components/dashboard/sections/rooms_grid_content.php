@@ -123,7 +123,7 @@ while ($item = $res->fetch_assoc()):
         </div>
 
         <!-- Action Buttons -->
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 room-action-buttons">
           <button type="button" class="btn btn-outline-primary flex-fill" 
             onclick="openEditModal(<?= $item['id'] ?>)" 
             data-item-id="<?= $item['id'] ?>">
@@ -134,6 +134,16 @@ while ($item = $res->fetch_assoc()):
             <i class="fas fa-trash me-1"></i>Delete
           </button>
         </div>
+        <script>
+          // Hide edit/delete buttons for staff
+          (function() {
+            const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+            if (role === 'staff') {
+              const buttons = document.querySelectorAll('.room-action-buttons');
+              buttons.forEach(btn => btn.style.display = 'none');
+            }
+          })();
+        </script>
 
         <!-- Hidden Edit Form (kept for data extraction by modal) -->
         <div class="edit-form-container mt-3" id="editForm<?= $item['id'] ?>" style="display: none;">
@@ -328,7 +338,7 @@ while ($item = $res->fetch_assoc()):
                     if (addBtn) addBtn.addEventListener('click', function(){
                       const current = container.querySelectorAll('.addon-row').length;
                       if (current >= MAX_ADDONS) {
-                        alert('Maximum of ' + MAX_ADDONS + ' add-ons allowed.');
+                        showToast('Maximum of ' + MAX_ADDONS + ' add-ons allowed.', 'warning');
                         return;
                       }
                       const card = createCard();
@@ -356,7 +366,7 @@ while ($item = $res->fetch_assoc()):
                       form.addEventListener('submit', function(e){
                         const rows = container.querySelectorAll('.addon-row');
                         if (rows.length > MAX_ADDONS) {
-                          alert('You have too many add-ons. Maximum allowed: ' + MAX_ADDONS);
+                          showToast('You have too many add-ons. Maximum allowed: ' + MAX_ADDONS, 'error');
                           e.preventDefault(); return;
                         }
                         let ok = true;
@@ -369,7 +379,7 @@ while ($item = $res->fetch_assoc()):
                             }
                           }
                         });
-                        if (!ok) { alert('Please provide valid numeric prices for add-ons (or leave price empty).'); e.preventDefault(); }
+                        if (!ok) { showToast('Please provide valid numeric prices for add-ons (or leave price empty).', 'error'); e.preventDefault(); }
                       });
                     }
                   })();
@@ -429,8 +439,8 @@ while ($item = $res->fetch_assoc()):
                       if (!container) return;
                       const currentEntries = container.querySelectorAll('.image-entry');
                       // Prevent removing the last remaining image
-                      if (currentEntries.length <= 1) {
-                        alert('Cannot remove the last image. Replace it instead or add a new image first.');
+                        if (imageEntries.length <= 1) {
+                        showToast('Cannot remove the last image. Replace it instead or add a new image first.', 'warning');
                         return;
                       }
                       const imageDiv = container.querySelector(`[data-image-path="${imagePath}"]`);
