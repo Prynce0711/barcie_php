@@ -111,12 +111,16 @@ while ($booking = $bookings->fetch_assoc()):
       </span>
     </td>
     
-    <!-- Created -->
-    <td data-label="Created">
-      <div style="font-size: 0.7rem; line-height: 1.3;">
-        <?= date('M j, Y', strtotime($booking['created_at'])) ?><br>
-        <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['created_at'])) ?></small>
-      </div>
+    <!-- Approved Date -->
+    <td data-label="Approved">
+      <?php if (!empty($booking['approved_at'])): ?>
+        <div style="font-size: 0.7rem; line-height: 1.3;">
+          <?= date('M j, Y', strtotime($booking['approved_at'])) ?><br>
+          <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['approved_at'])) ?></small>
+        </div>
+      <?php else: ?>
+        <span class="text-muted" style="font-size: 0.65rem;">Pending</span>
+      <?php endif; ?>
     </td>
     
     <!-- Actions -->
@@ -134,17 +138,10 @@ while ($booking = $bookings->fetch_assoc()):
           <button class="btn btn-danger btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'rejected')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             <i class="fas fa-times"></i> Reject
           </button>
-        <?php elseif ($booking['status'] === 'approved'): ?>
-          <button class="btn btn-primary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_in')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-            <i class="fas fa-sign-in-alt"></i> Check In
-          </button>
-          <button class="btn btn-secondary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-            Cancel
-          </button>
-        <?php elseif ($booking['status'] === 'checked_in'): ?>
-          <button class="btn btn-info btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'checked_out')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
-            <i class="fas fa-sign-out-alt"></i> Check Out
-          </button>
+        <?php elseif ($booking['status'] === 'approved' || $booking['status'] === 'checked_in'): ?>
+          <span class="badge bg-info" style="font-size: 0.65rem; padding: 0.35rem 0.6rem;">
+            <i class="fas fa-clock"></i> Auto Check-in/out
+          </span>
           <button class="btn btn-secondary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             Cancel
           </button>

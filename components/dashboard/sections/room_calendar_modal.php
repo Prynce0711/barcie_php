@@ -26,16 +26,6 @@
             </div>
           </div>
 
-          <!-- Range Selector -->
-          <div class="d-flex align-items-center me-3">
-            <label class="text-white-50 me-2 small" style="font-weight: 500;">View Range:</label>
-            <select id="roomCalendarRange" class="form-select form-select-sm shadow-sm" style="width: 120px; background: rgba(255,255,255,0.95); border: none; border-radius: 8px; font-weight: 500;">
-              <option value="30">30 days</option>
-              <option value="90" selected>90 days</option>
-              <option value="365">1 year</option>
-            </select>
-          </div>
-
           <!-- Close Button -->
           <button type="button" class="btn-close btn-close-white shadow-sm" data-bs-dismiss="modal" aria-label="Close" style="opacity: 0.9;"></button>
         </div>
@@ -47,33 +37,29 @@
         <!-- Legend Card -->
         <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; overflow: hidden;">
           <div class="card-body py-3 px-4" style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);">
-            <div class="d-flex align-items-center justify-content-center gap-4 flex-wrap">
+            <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
               <div class="d-flex align-items-center">
-                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #d1ecf1; border: 2px solid #bee5eb; border-radius: 6px; margin-right: 10px;"></span>
-                <span style="font-weight: 500; color: #0c5460; font-size: 0.95rem;">
-                  <i class="fas fa-check-circle me-1"></i>Available
-                </span>
+                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 20px; height: 20px; background: #d1ecf1; border: 2px solid #bee5eb; border-radius: 4px; margin-right: 6px;"></span>
+                <span style="font-weight: 500; color: #0c5460; font-size: 0.85rem;">Available</span>
               </div>
               <div class="d-flex align-items-center">
-                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #ffc107; border: 2px solid #ffc107; border-radius: 6px; margin-right: 10px;"></span>
-                <span style="font-weight: 500; color: #856404; font-size: 0.95rem;">
-                  <i class="fas fa-clock me-1"></i>Pending
-                </span>
+                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 20px; height: 20px; background: #ffc107; border: 2px solid #ffc107; border-radius: 4px; margin-right: 6px;"></span>
+                <span style="font-weight: 500; color: #856404; font-size: 0.85rem;">Pending</span>
               </div>
               <div class="d-flex align-items-center">
-                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #fd7e14; border: 2px solid #fd7e14; border-radius: 6px; margin-right: 10px;"></span>
-                <span style="font-weight: 500; color: #7d3f07; font-size: 0.95rem;">
-                  <i class="fas fa-pencil-alt me-1"></i>Pencil Booking
-                </span>
+                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 20px; height: 20px; background: #28a745; border: 2px solid #28a745; border-radius: 4px; margin-right: 6px;"></span>
+                <span style="font-weight: 500; color: #155724; font-size: 0.85rem;">Approved</span>
               </div>
               <div class="d-flex align-items-center">
-                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 24px; height: 24px; background: #f8d7da; border: 2px solid #f5c6cb; border-radius: 6px; margin-right: 10px;"></span>
-                <span style="font-weight: 500; color: #721c24; font-size: 0.95rem;">
-                  <i class="fas fa-ban me-1"></i>Booked
-                </span>
+                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 20px; height: 20px; background: #fd7e14; border: 2px solid #fd7e14; border-radius: 4px; margin-right: 6px;"></span>
+                <span style="font-weight: 500; color: #7d3f07; font-size: 0.85rem;">Pencil</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <span class="legend-indicator shadow-sm" style="display: inline-block; width: 20px; height: 20px; background: #dc3545; border: 2px solid #dc3545; border-radius: 4px; margin-right: 6px;"></span>
+                <span style="font-weight: 500; color: #721c24; font-size: 0.85rem;">Booked</span>
               </div>
               <div class="text-muted small">
-                <i class="fas fa-info-circle me-1"></i>Click on a booking for details
+                <i class="fas fa-info-circle me-1"></i>Click for details
               </div>
             </div>
           </div>
@@ -100,8 +86,8 @@
           </div>
         </div>
 
-        <!-- Hidden Booking Details (for functionality) -->
-        <div id="roomBookingDetails" style="display: none;">
+        <!-- Booking Details Panel (shown when clicking an event) -->
+        <div id="roomBookingDetails" class="mt-3" style="display: none;">
           <div id="roomBookingDetailsContent"></div>
         </div>
 
