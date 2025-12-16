@@ -88,11 +88,12 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
     $stmt->execute();
     $totalBookings = $stmt->get_result()->fetch_assoc()['total'];
     
-    // Total revenue
+    // Total revenue (including approved bookings with verified payments)
     $sql = "SELECT COALESCE(SUM(b.amount), 0) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
             WHERE b.checkin BETWEEN ? AND ?
-            AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')$roomTypeFilter";
+            AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')
+            AND b.payment_status = 'verified'$roomTypeFilter";
     $stmt = $conn->prepare($sql);
     if (!empty($roomType)) {
         $stmt->bind_param('sss', $startDate, $endDate, $roomType);
@@ -119,7 +120,7 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
     $sql = "SELECT COUNT(DISTINCT DATE(b.checkin)) as booked_days FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
             WHERE b.checkin BETWEEN ? AND ?
-            AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')$roomTypeFilter";
+            AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')$roomTypeFilter";
     $stmt = $conn->prepare($sql);
     if (!empty($roomType)) {
         $stmt->bind_param('sss', $startDate, $endDate, $roomType);
@@ -229,7 +230,7 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
             FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
             WHERE b.checkin BETWEEN ? AND ?
-            AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')$roomTypeFilter
+            AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')$roomTypeFilter
             GROUP BY DATE(b.checkin) ORDER BY date ASC";
     $stmt = $conn->prepare($sql);
     if (!empty($roomType)) {
@@ -263,14 +264,14 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
     // Current room/facility status
     $sql = "SELECT 
             CASE 
-                WHEN b.id IS NOT NULL AND b.status IN ('confirmed', 'approved', 'checked_in') THEN 'Occupied'
+                WHEN b.id IS NOT NULL AND b.status IN ('approved', 'confirmed', 'checked_in') THEN 'Occupied'
                 ELSE 'Available'
             END as status,
             COUNT(*) as count
             FROM items i
             LEFT JOIN bookings b ON i.id = b.room_id 
                 AND CURDATE() BETWEEN b.checkin AND b.checkout
-                AND b.status IN ('confirmed', 'approved', 'checked_in')
+                AND b.status IN ('approved', 'confirmed', 'checked_in')
             WHERE i.item_type IN ('room', 'facility')" . ($roomType ? " AND i.name = ?" : "") . "
             GROUP BY status";
     $stmt = $conn->prepare($sql);
@@ -300,11 +301,12 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
 function getRevenueReports($conn, $startDate, $endDate, $roomType) {
     $roomTypeFilter = !empty($roomType) ? " AND i.name = ?" : "";
     
-    // Total revenue
+    // Total revenue (only verified payments)
     $sql = "SELECT COALESCE(SUM(b.amount), 0) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
             WHERE b.checkin BETWEEN ? AND ?
-            AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')$roomTypeFilter";
+            AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')
+            AND b.payment_status = 'verified'$roomTypeFilter";
     $stmt = $conn->prepare($sql);
     if (!empty($roomType)) {
         $stmt->bind_param('sss', $startDate, $endDate, $roomType);
@@ -314,11 +316,12 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
     $stmt->execute();
     $totalRevenue = $stmt->get_result()->fetch_assoc()['total'];
     
-    // Daily revenue trend
+    // Daily revenue trend (only verified payments)
     $sql = "SELECT DATE(b.checkin) as date, COALESCE(SUM(b.amount), 0) as revenue FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
             WHERE b.checkin BETWEEN ? AND ?
-            AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')$roomTypeFilter
+            AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')
+            AND b.payment_status = 'verified'$roomTypeFilter
             GROUP BY DATE(b.checkin) ORDER BY date ASC";
     $stmt = $conn->prepare($sql);
     if (!empty($roomType)) {
@@ -329,14 +332,15 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
     $stmt->execute();
     $dailyRevenue = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Monthly revenue breakdown
+    // Monthly revenue breakdown (only verified payments)
     $sql = "SELECT DATE_FORMAT(b.checkin, '%Y-%m') as month,
             DATE_FORMAT(b.checkin, '%M %Y') as month_name,
             COALESCE(SUM(b.amount), 0) as revenue, COUNT(*) as bookings
             FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
             WHERE b.checkin BETWEEN ? AND ?
-            AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')$roomTypeFilter
+            AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')
+            AND b.payment_status = 'verified'$roomTypeFilter
             GROUP BY DATE_FORMAT(b.checkin, '%Y-%m') ORDER BY month DESC";
     $stmt = $conn->prepare($sql);
     if (!empty($roomType)) {
@@ -460,7 +464,7 @@ function getRoomReports($conn, $startDate, $endDate, $roomType) {
             FROM items i
             LEFT JOIN bookings b ON i.id = b.room_id 
                 AND b.checkin BETWEEN ? AND ?
-                AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')
+                AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')
             WHERE i.item_type IN ('room', 'facility')" . ($roomType ? " AND i.name = ?" : "") . "
             GROUP BY i.id, i.name, i.item_type
             ORDER BY bookings ASC LIMIT 10";
@@ -476,12 +480,12 @@ function getRoomReports($conn, $startDate, $endDate, $roomType) {
     // Room/Facility type distribution
     $sql = "SELECT i.item_type as type,
             COUNT(*) as total_items,
-            SUM(CASE WHEN b.id IS NULL OR b.status NOT IN ('confirmed', 'approved', 'checked_in', '0') THEN 1 ELSE 0 END) as available,
-            SUM(CASE WHEN b.id IS NOT NULL AND b.status IN ('confirmed', 'approved', 'checked_in') THEN 1 ELSE 0 END) as occupied
+            SUM(CASE WHEN b.id IS NULL OR b.status NOT IN ('approved', 'confirmed', 'checked_in', '0') THEN 1 ELSE 0 END) as available,
+            SUM(CASE WHEN b.id IS NOT NULL AND b.status IN ('approved', 'confirmed', 'checked_in') THEN 1 ELSE 0 END) as occupied
             FROM items i
             LEFT JOIN bookings b ON i.id = b.room_id 
                 AND CURDATE() BETWEEN b.checkin AND b.checkout
-                AND b.status IN ('confirmed', 'approved', 'checked_in')
+                AND b.status IN ('approved', 'confirmed', 'checked_in')
             WHERE i.item_type IN ('room', 'facility')" . ($roomType ? " AND i.name = ?" : "") . "
             GROUP BY i.item_type";
     $stmt = $conn->prepare($sql);
@@ -496,7 +500,7 @@ function getRoomReports($conn, $startDate, $endDate, $roomType) {
             FROM items i
             LEFT JOIN bookings b ON i.id = b.room_id 
                 AND b.checkin BETWEEN ? AND ?
-                AND b.status IN ('confirmed', 'approved', 'checked_in', 'checked_out')
+                AND b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out')
             WHERE i.item_type IN ('room', 'facility')" . ($roomType ? " AND i.name = ?" : "") . "
             GROUP BY i.id, i.name, i.item_type
             ORDER BY i.name";

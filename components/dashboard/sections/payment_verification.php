@@ -70,7 +70,7 @@
 						</thead>
 						<tbody>
 <?php
-$stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.proof_of_payment, b.proof_of_id, b.guest_age, b.amount, b.created_at, b.checkin, i.name as room_name FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.payment_status = 'pending' ORDER BY b.created_at DESC");
+$stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.proof_of_payment, b.proof_of_id, b.guest_age, b.amount, b.created_at, b.payment_date, b.checkin, i.name as room_name FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.payment_status = 'pending' ORDER BY COALESCE(b.payment_date, b.created_at) DESC");
 if ($stmt) {
 	$stmt->execute();
 	$res = $stmt->get_result();
@@ -81,6 +81,7 @@ if ($stmt) {
 			$details = $row['details'] ?: '';
 			$proof = $row['proof_of_payment'] ?: '';
 			$created = $row['created_at'];
+			$payment_date = $row['payment_date'] ?: $created;
 			$checkin = $row['checkin'] ?: '';
 			$room = $row['room_name'] ?: 'Unassigned';
 
@@ -100,7 +101,7 @@ if ($stmt) {
 			echo '<td>';
 			echo '<button class="btn btn-info btn-sm" onclick="viewPaymentDetails(' . $id . ')" title="View Details"><i class="fas fa-eye me-1"></i>View Details</button>';
 			echo '</td>';
-			echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($created))) . '</td>';
+			echo '<td>' . htmlspecialchars(date('M j, Y H:i', strtotime($payment_date))) . '</td>';
 			echo '<td>';
 			echo '<td class="payment-action-buttons">';
 			echo '<button class="btn btn-success btn-sm payment-action me-1 mb-1" data-booking-id="' . $id . '" data-action="verify"><i class="fas fa-check me-1"></i>Verify</button> ';
@@ -325,41 +326,32 @@ if ($stmt) {
 
 		function pRecalc(){
 			const rows = pGetAllRows();
-			const total = rows.length;
+			// Apply filter first to get matching rows
+			const dateFilter = document.getElementById('paymentDateFilter')?.value || '';
+			const matchingRows = rows.filter(row => {
+				const rdate = row.dataset.date || '';
+				return !dateFilter || rdate === dateFilter;
+			});
+			
+			const total = matchingRows.length;
 			pstate.totalPages = Math.max(1, Math.ceil(total / pstate.perPage));
 			if (pstate.currentPage > pstate.totalPages) pstate.currentPage = pstate.totalPages;
 
-			const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
-			const myToken = ++paymentsFadeToken;
-
-			// show spinner while transitioning
-			const removeSpinner = (function(){
-				try {
-					const tbl = document.querySelector('#paymentsTable');
-					if (!tbl) return function(){};
-					let parent = tbl.closest && tbl.closest('.table-responsive') ? tbl.closest('.table-responsive') : tbl;
-					const prevPos = parent.style.position || '';
-					const computed = window.getComputedStyle(parent).position;
-					if (computed === 'static') parent.style.position = 'relative';
-					const overlay = document.createElement('div'); overlay.className = 'table-spinner-overlay'; overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-					parent.appendChild(overlay);
-					return function(){ try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch(e){}; try { if (computed === 'static') parent.style.position = prevPos || ''; } catch(e){} };
-				} catch (err) { return function(){}; }
-			})();
-
-			// fade out current rows then show new slice
-			fadeOutRows(currentlyVisible).then(()=>{
-				if (myToken !== paymentsFadeToken) { removeSpinner(); return; }
-				rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
-				const start = (pstate.currentPage - 1) * pstate.perPage;
-				const end = start + pstate.perPage;
-				rows.slice(start, end).forEach(r => {
-					r.removeAttribute('data-hidden-by-pagination'); r.style.display = ''; r.style.opacity = 0;
-					requestAnimationFrame(()=>{ r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
-				});
-				setTimeout(()=>{ try { removeSpinner(); } catch(e){} }, 220);
-				pRender();
+			// Hide all rows first
+			rows.forEach(r => { 
+				r.style.display = 'none'; 
+				r.setAttribute('data-hidden-by-pagination','true'); 
 			});
+			
+			// Show only matching rows for current page
+			const start = (pstate.currentPage - 1) * pstate.perPage;
+			const end = start + pstate.perPage;
+			matchingRows.slice(start, end).forEach(r => {
+				r.removeAttribute('data-hidden-by-pagination');
+				r.style.display = '';
+			});
+			
+			pRender();
 		}
 
 		function pRender(){
