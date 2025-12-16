@@ -332,6 +332,12 @@
         
         formData.append('action', newsId ? 'update' : 'create');
 
+        // Debug: Log form data
+        console.log('Submitting news form...');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, ':', value instanceof File ? `File: ${value.name}` : value);
+        }
+
         // Show loading state
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;

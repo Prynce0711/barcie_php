@@ -144,9 +144,22 @@ function createNews($conn) {
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $image_path = handleImageUpload($_FILES['image']);
         if ($image_path === false) {
-            echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
+            error_log("News create failed - Image upload returned false");
+            echo json_encode(['success' => false, 'message' => 'Failed to upload image. Please check file type (JPEG, PNG, GIF, WebP) and size (max 5MB)']);
             return;
         }
+    } elseif (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        // Log the upload error
+        $upload_errors = [
+            UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+            UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+            UPLOAD_ERR_EXTENSION => 'Upload stopped by extension'
+        ];
+        $error_msg = $upload_errors[$_FILES['image']['error']] ?? 'Unknown upload error';
+        error_log("News create - Upload error: $error_msg (code: {$_FILES['image']['error']})");
     }
     
     // Insert into database
@@ -270,20 +283,29 @@ function handleImageUpload($file) {
     $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     $max_size = 5 * 1024 * 1024; // 5MB
     
+    // Log upload attempt
+    error_log("News image upload attempt - Name: {$file['name']}, Type: {$file['type']}, Size: {$file['size']}");
+    
     // Validate file type
     if (!in_array($file['type'], $allowed_types)) {
+        error_log("News image upload failed - Invalid file type: {$file['type']}");
         return false;
     }
     
     // Validate file size
     if ($file['size'] > $max_size) {
+        error_log("News image upload failed - File too large: {$file['size']} bytes");
         return false;
     }
     
     // Create uploads directory if it doesn't exist
     $upload_dir = __DIR__ . '/../uploads/news/';
     if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
+        if (!mkdir($upload_dir, 0777, true)) {
+            error_log("News image upload failed - Could not create directory: $upload_dir");
+            return false;
+        }
+        error_log("Created news upload directory: $upload_dir");
     }
     
     // Generate unique filename
@@ -293,9 +315,11 @@ function handleImageUpload($file) {
     
     // Move uploaded file
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
+        error_log("News image uploaded successfully: $filepath");
         return 'uploads/news/' . $filename;
     }
     
+    error_log("News image upload failed - Could not move file from {$file['tmp_name']} to $filepath");
     return false;
 }
 ?>

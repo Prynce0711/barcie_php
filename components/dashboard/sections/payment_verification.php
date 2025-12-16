@@ -6,17 +6,17 @@
 <div class="row mb-4">
 	<div class="col-12">
 		<div class="card">
-			<div class="card-header bg-info text-white">
+			<div class="card-header text-white" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
 				<h6 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Verifications (Pending)</h6>
 				<small class="opacity-75">Review payment proofs and verify or reject payments.</small>
 			</div>
 			<div class="card-body">
 				<!-- Action Buttons -->
 				<div class="d-flex justify-content-end mb-2 gap-2">
-					<button type="button" class="btn btn-sm btn-outline-info" onclick="downloadPaymentsExcel()">
+					<button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadPaymentsExcel()">
 						<i class="fas fa-file-excel me-1"></i>Export to Excel
 					</button>
-					<button type="button" class="btn btn-sm btn-info text-white" onclick="downloadPaymentsPDF()">
+					<button type="button" class="btn btn-sm btn-primary text-white" onclick="downloadPaymentsPDF()">
 						<i class="fas fa-file-alt me-1"></i>Export to Text
 					</button>
 				</div>
@@ -37,7 +37,7 @@
 							<div class="col-md-4">
 								<label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
 								<div class="d-flex gap-2">
-									<button type="button" class="btn btn-sm btn-info text-white" onclick="setPaymentDateToday()">
+								<button type="button" class="btn btn-sm btn-primary text-white" onclick="setPaymentDateToday()">
 										<i class="fas fa-calendar-day me-1"></i>Today
 									</button>
 									<button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPaymentDate()">

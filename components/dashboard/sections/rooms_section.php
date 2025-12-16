@@ -2,7 +2,7 @@
 <!-- Rooms & Facilities Header -->
 <div class="row mb-4">
   <div class="col-12">
-    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
       <div class="card-body text-white">
         <div class="text-center">
           <h2 class="mb-1"><i class="fas fa-building me-2"></i>Rooms & Facilities Management</h2>

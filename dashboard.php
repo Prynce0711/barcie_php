@@ -31,6 +31,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
   <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
   <link rel="stylesheet" href="assets/css/news.css">
+  <link rel="stylesheet" href="assets/css/reports.css">
   <!-- Enhanced Admin Management Styles -->
   <link rel="stylesheet" href="assets/css/admin-online-status.css">
 </head>
@@ -209,6 +210,11 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       <!-- Payment Verification Section -->
       <section id="payment-verification-section" class="content-section">
         <?php include 'components/dashboard/sections/payment_verification.php'; ?>
+      </section>
+
+      <!-- Reports & Analytics Section -->
+      <section id="reports-section" class="content-section">
+        <?php include 'components/dashboard/sections/reports_section.php'; ?>
       </section>
 
       <!-- Admin Management Section (Manage Roles) -->
@@ -461,6 +467,9 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
       <!-- Enhanced Admin Management JavaScript -->
       <script src="assets/js/admin-management-enhanced.js"></script>
+
+      <!-- Reports & Analytics JavaScript -->
+      <script src="assets/js/dashboard/reports.js"></script>
 
 </body>
 
