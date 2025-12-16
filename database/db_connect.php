@@ -5,6 +5,23 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
+// Load environment variables from .env file
+if (file_exists(__DIR__ . '/../.env')) {
+    $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos($line, '=') === false) continue;
+        
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+        
+        if (!getenv($name)) {
+            putenv("$name=$value");
+        }
+    }
+}
+
 // Database connection details
 // Auto-detect environment: use localhost DB when on localhost, remote DB when on server
 $is_localhost = in_array($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost', 
@@ -12,12 +29,12 @@ $is_localhost = in_array($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? 'lo
 
 if ($is_localhost) {
     // LOCALHOST configuration (XAMPP)
-    $host = getenv('DB_HOST') ?: "127.0.0.1";  // or "127.0.0.1"
+    $host = getenv('DB_HOST') ?: "127.0.0.1";
     $user = getenv('DB_USER') ?: "root";
-    $pass = getenv('DB_PASS') ?: "";  // XAMPP default is empty password (change if you set a password)
+    $pass = getenv('DB_PASS') ?: "";  // XAMPP default is empty password
     $dbname = getenv('DB_NAME') ?: "barcie_db";
 } else {
-    // REMOTE SERVER configuration
+    // REMOTE/LIVE SERVER configuration
     $host = getenv('DB_HOST') ?: "10.20.0.2";  // Server database IP
     $user = getenv('DB_USER') ?: "root";
     $pass = getenv('DB_PASS') ?: "root";
