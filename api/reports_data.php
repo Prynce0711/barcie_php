@@ -6,13 +6,26 @@
  *       bookings.details (JSON with guest info)
  */
 
+// Set timezone first to ensure consistent time display
+date_default_timezone_set('Asia/Manila');
+
 require_once '../database/db_connect.php';
 
 header('Content-Type: application/json');
 
+// Enable error logging for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 try {
     if (!isset($conn)) {
         throw new Exception('Database connection not available');
+    }
+    
+    // Test database connection
+    if ($conn->connect_error) {
+        throw new Exception('Database connection failed: ' . $conn->connect_error);
     }
     
     // Get filter parameters
@@ -73,20 +86,26 @@ try {
 }
 
 function getOverviewData($conn, $startDate, $endDate, $roomType) {
-    $roomTypeFilter = !empty($roomType) ? " AND i.name = ?" : "";
-    
-    // Total bookings
-    $sql = "SELECT COUNT(*) as total FROM bookings b
-            LEFT JOIN items i ON b.room_id = i.id
-            WHERE b.checkin BETWEEN ? AND ?$roomTypeFilter";
-    $stmt = $conn->prepare($sql);
-    if (!empty($roomType)) {
-        $stmt->bind_param('sss', $startDate, $endDate, $roomType);
-    } else {
-        $stmt->bind_param('ss', $startDate, $endDate);
-    }
-    $stmt->execute();
-    $totalBookings = $stmt->get_result()->fetch_assoc()['total'];
+    try {
+        $roomTypeFilter = !empty($roomType) ? " AND i.name = ?" : "";
+        
+        // Total bookings
+        $sql = "SELECT COUNT(*) as total FROM bookings b
+                LEFT JOIN items i ON b.room_id = i.id
+                WHERE b.checkin BETWEEN ? AND ?$roomTypeFilter";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . $conn->error);
+        }
+        if (!empty($roomType)) {
+            $stmt->bind_param('sss', $startDate, $endDate, $roomType);
+        } else {
+            $stmt->bind_param('ss', $startDate, $endDate);
+        }
+        if (!$stmt->execute()) {
+            throw new Exception("Execute failed: " . $stmt->error);
+        }
+        $totalBookings = $stmt->get_result()->fetch_assoc()['total'];
     
     // Total revenue (including approved bookings with verified payments)
     $sql = "SELECT COALESCE(SUM(b.amount), 0) as total FROM bookings b
@@ -146,6 +165,19 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
         'guest_reports' => getGuestReports($conn, $startDate, $endDate, $roomType),
         'room_reports' => getRoomReports($conn, $startDate, $endDate, $roomType)
     ];
+    
+    } catch (Exception $e) {
+        error_log("getOverviewData error: " . $e->getMessage());
+        return [
+            'summary' => [
+                'total_bookings' => 0,
+                'total_revenue' => 0,
+                'total_guests' => 0,
+                'occupancy_rate' => 0
+            ],
+            'error' => $e->getMessage()
+        ];
+    }
 }
 
 function getBookingReports($conn, $startDate, $endDate, $roomType) {
