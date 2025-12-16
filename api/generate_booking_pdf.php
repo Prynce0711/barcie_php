@@ -34,30 +34,57 @@ try {
     }
     
     // Fetch booking details
-    $query = "SELECT 
-        b.id,
-        b.receipt_number,
-        b.guest_name,
-        b.guest_email,
-        b.guest_phone,
-        b.check_in_date,
-        b.check_out_date,
-        b.occupants,
-        b.company,
-        b.company_contact,
-        b.status,
-        b.discount_status,
-        b.created_at,
-        b.total_amount,
-        b.payment_method,
-        i.name as room_name,
-        i.item_type,
-        i.room_number,
-        i.capacity,
-        i.price
-    FROM {$table} b 
-    LEFT JOIN items i ON b.room_id = i.id
-    WHERE {$whereClause}";
+    if ($type === 'pencil_booking') {
+        $query = "SELECT 
+            b.id,
+            b.receipt_no as receipt_number,
+            b.guest_name,
+            b.email as guest_email,
+            b.contact_number as guest_phone,
+            b.checkin as check_in_date,
+            b.checkout as check_out_date,
+            b.occupants,
+            b.company,
+            b.company_contact,
+            b.status,
+            'N/A' as discount_status,
+            b.created_at,
+            b.total_price as total_amount,
+            'N/A' as payment_method,
+            i.name as room_name,
+            i.item_type,
+            i.room_number,
+            i.capacity,
+            i.price
+        FROM {$table} b 
+        LEFT JOIN items i ON b.room_id = i.id
+        WHERE {$whereClause}";
+    } else {
+        $query = "SELECT 
+            b.id,
+            b.receipt_no as receipt_number,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Guest: ', -1), ' |', 1) as guest_name,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Email: ', -1), ' |', 1) as guest_email,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Phone: ', -1), ' |', 1) as guest_phone,
+            b.checkin as check_in_date,
+            b.checkout as check_out_date,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Occupants: ', -1), ' |', 1) as occupants,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Company: ', -1), ' |', 1) as company,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Company Contact: ', -1), ' |', 1) as company_contact,
+            b.status,
+            b.discount_status,
+            b.created_at,
+            b.amount as total_amount,
+            SUBSTRING_INDEX(SUBSTRING_INDEX(b.details, 'Payment Method: ', -1), ' |', 1) as payment_method,
+            i.name as room_name,
+            i.item_type,
+            i.room_number,
+            i.capacity,
+            i.price
+        FROM {$table} b 
+        LEFT JOIN items i ON b.room_id = i.id
+        WHERE {$whereClause}";
+    }
     
     $stmt = $pdo->prepare($query);
     $stmt->execute([$param]);
@@ -90,10 +117,12 @@ try {
     // Generate current date and time
     $currentDateTime = date('F j, Y \a\t g:i A');
     
-    // Format dates
-    $checkInFormatted = date('F j, Y \a\t g:i A', strtotime($booking['check_in_date']));
-    $checkOutFormatted = date('F j, Y \a\t g:i A', strtotime($booking['check_out_date']));
-    $createdFormatted = date('F j, Y \a\t g:i A', strtotime($booking['created_at']));
+    // Format dates with validation
+    $checkInFormatted = $booking['check_in_date'] ? date('F j, Y \a\t g:i A', strtotime($booking['check_in_date'])) : 'Not set';
+    $checkOutFormatted = $booking['check_out_date'] ? date('F j, Y \a\t g:i A', strtotime($booking['check_out_date'])) : 'Not set';
+    $createdFormatted = $booking['created_at'] ? date('F j, Y \a\t g:i A', strtotime($booking['created_at'])) : 'Not available';
+    
+    error_log('PDF Date Debug - check_in_date: ' . $booking['check_in_date'] . ', check_out_date: ' . $booking['check_out_date'] . ', created_at: ' . $booking['created_at']);
     
     // Calculate duration
     $checkInDate = new DateTime($booking['check_in_date']);

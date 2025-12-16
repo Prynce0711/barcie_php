@@ -692,8 +692,8 @@ $active_bookings = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE st
 // Pending Approvals
 $pending_approvals = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='pending'")->fetch_assoc()['count'];
 
-// Total Revenue (assuming you have a price/payment system)
-$total_revenue_result = $conn->query("SELECT SUM(CAST(SUBSTRING_INDEX(details, 'Price: P', -1) AS DECIMAL(10,2))) as revenue FROM bookings WHERE status='approved'");
+// Total Revenue (only verified payments, excluding cancelled/rejected bookings)
+$total_revenue_result = $conn->query("SELECT COALESCE(SUM(COALESCE(amount, 0)), 0) as revenue FROM bookings WHERE payment_status = 'verified' AND status NOT IN ('cancelled', 'rejected')");
 $total_revenue = $total_revenue_result->fetch_assoc()['revenue'] ?? 0;
 
 // Monthly bookings for chart (last 12 months)

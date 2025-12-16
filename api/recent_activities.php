@@ -14,17 +14,26 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    // For development/testing allow sample activities when explicitly requested
-    if (isset($_GET['allow_sample']) && $_GET['allow_sample'] === '1') {
-        // proceed and return sample activities below if no real ones
-    } else {
-        http_response_code(401);
-        echo json_encode(['error' => 'Unauthorized']);
-        exit;
-    }
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized', 'debug' => 'No admin session found']);
+    exit;
 }
 
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
+// Check database connection
+if (!isset($conn) || $conn->connect_error) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Database connection failed',
+        'message' => isset($conn) ? $conn->connect_error : 'Connection object not found'
+    ]);
+    exit;
+}
 
 try {
     $activities = [];
@@ -45,8 +54,13 @@ try {
     LIMIT ?";
     
     $stmt = $conn->prepare($pencil_query);
+    if (!$stmt) {
+        throw new Exception("Failed to prepare pencil_query: " . $conn->error);
+    }
     $stmt->bind_param('i', $limit);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to execute pencil_query: " . $stmt->error);
+    }
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
         $activities[] = $row;
@@ -239,65 +253,34 @@ try {
     }
     $stmt->close();
     
-    // Add sample activities if no real activities found
-    if (empty($activities)) {
-        $activities = [
-            [
-                'activity_type' => 'pencil_created',
-                'id' => 0,
-                'receipt_no' => 'SAMPLE-001',
-                'guest_name' => 'John Doe',
-                'activity_date' => date('Y-m-d H:i:s', strtotime('-2 hours')),
-                'room_name' => 'Standard Room',
-                'admin_name' => null
-            ],
-            [
-                'activity_type' => 'payment_approved',
-                'id' => 0,
-                'receipt_no' => 'SAMPLE-002',
-                'guest_name' => 'Jane Smith',
-                'activity_date' => date('Y-m-d H:i:s', strtotime('-5 hours')),
-                'room_name' => 'Deluxe Suite',
-                'admin_name' => 'Admin User'
-            ],
-            [
-                'activity_type' => 'guest_checkin',
-                'id' => 0,
-                'receipt_no' => 'SAMPLE-003',
-                'guest_name' => 'Robert Johnson',
-                'activity_date' => date('Y-m-d H:i:s', strtotime('-1 day')),
-                'room_name' => 'Premium Room',
-                'admin_name' => null
-            ],
-            [
-                'activity_type' => 'pencil_approved',
-                'id' => 0,
-                'receipt_no' => 'SAMPLE-004',
-                'guest_name' => 'Maria Garcia',
-                'activity_date' => date('Y-m-d H:i:s', strtotime('-1 day 3 hours')),
-                'room_name' => 'Conference Room',
-                'admin_name' => 'Manager User'
-            ],
-            [
-                'activity_type' => 'guest_checkout',
-                'id' => 0,
-                'receipt_no' => 'SAMPLE-005',
-                'guest_name' => 'David Lee',
-                'activity_date' => date('Y-m-d H:i:s', strtotime('-2 days')),
-                'room_name' => 'Executive Suite',
-                'admin_name' => null
-            ],
-            [
-                'activity_type' => 'booking_cancelled',
-                'id' => 0,
-                'receipt_no' => 'SAMPLE-006',
-                'guest_name' => 'Sarah Wilson',
-                'activity_date' => date('Y-m-d H:i:s', strtotime('-3 days')),
-                'room_name' => 'Family Room',
-                'admin_name' => null
-            ]
-        ];
+    // Get feedback submissions
+    $feedback_query = "SELECT 
+        'feedback_submitted' as activity_type,
+        f.id,
+        NULL as receipt_no,
+        COALESCE(f.feedback_name, f.google_name, 'Anonymous') as guest_name,
+        f.created_at as activity_date,
+        NULL as room_name,
+        NULL as admin_name,
+        f.rating as rating
+    FROM feedback f
+    WHERE f.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    ORDER BY f.created_at DESC
+    LIMIT ?";
+    
+    $stmt = $conn->prepare($feedback_query);
+    if (!$stmt) {
+        throw new Exception("Failed to prepare feedback_query: " . $conn->error);
     }
+    $stmt->bind_param('i', $limit);
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to execute feedback_query: " . $stmt->error);
+    }
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $activities[] = $row;
+    }
+    $stmt->close();
     
     // Sort all activities by date
     usort($activities, function($a, $b) {

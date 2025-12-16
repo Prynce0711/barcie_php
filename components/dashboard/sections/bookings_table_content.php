@@ -41,13 +41,15 @@ while ($booking = $bookings->fetch_assoc()):
     $room_facility .= ' #' . $booking['room_number'];
   }
   
-  // Extract date from created_at for filtering (format: YYYY-MM-DD)
-  $booking_date = date('Y-m-d', strtotime($booking['created_at']));
+  // Extract date from payment_verified_at for filtering (format: YYYY-MM-DD)
+  // Use payment_verified_at if available, otherwise fall back to created_at
+  $filter_date = !empty($booking['payment_verified_at']) ? $booking['payment_verified_at'] : $booking['created_at'];
+  $booking_date = date('Y-m-d', strtotime($filter_date));
   ?>
   <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
-    <!-- Receipt # -->
-    <td data-label="Receipt #">
-      <strong style="font-size: 0.7rem;">BARCIE-<?= date('Ymd', strtotime($booking['created_at'])) ?>-<?= str_pad($booking['id'], 4, '0', STR_PAD_LEFT) ?></strong>
+    <!-- Reservation No. -->
+    <td data-label="Reservation No.">
+      <strong style="font-size: 0.7rem;"><?= htmlspecialchars($booking['receipt_no'] ?: 'BARCIE-' . date('Ymd', strtotime($booking['created_at'] ?: 'now')) . '-' . str_pad($booking['id'], 4, '0', STR_PAD_LEFT)) ?></strong>
     </td>
     
     <!-- Room/Facility -->
@@ -113,7 +115,12 @@ while ($booking = $bookings->fetch_assoc()):
     
     <!-- Approved Date -->
     <td data-label="Approved">
-      <?php if (!empty($booking['approved_at'])): ?>
+      <?php if (!empty($booking['payment_verified_at'])): ?>
+        <div style="font-size: 0.7rem; line-height: 1.3;">
+          <?= date('M j, Y', strtotime($booking['payment_verified_at'])) ?><br>
+          <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['payment_verified_at'])) ?></small>
+        </div>
+      <?php elseif (!empty($booking['approved_at'])): ?>
         <div style="font-size: 0.7rem; line-height: 1.3;">
           <?= date('M j, Y', strtotime($booking['approved_at'])) ?><br>
           <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['approved_at'])) ?></small>

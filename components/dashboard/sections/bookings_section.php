@@ -56,10 +56,10 @@
                 <div class="col-md-3">
                   <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
                   <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-primary" onclick="setBookingDateToday()">
+                    <button type="button" id="todayFilterBtn" class="btn btn-sm btn-primary" onclick="setBookingDateToday()">
                       <i class="fas fa-calendar-day me-1"></i>Today
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearBookingDate()">
+                    <button type="button" id="allFilterBtn" class="btn btn-sm btn-outline-secondary" onclick="clearBookingDate()">
                       <i class="fas fa-calendar me-1"></i>All
                     </button>
                   </div>
@@ -125,7 +125,7 @@
       <table class="table table-hover align-middle" id="bookingsTable">
               <thead class="table-dark">
                 <tr>
-                  <th style="width: 8%;">Receipt #</th>
+                  <th style="width: 8%;">Reservation No.</th>
                   <th style="width: 11%;">Room/Facility</th>
                   <th style="width: 5%;">Type</th>
                   <th style="width: 15%;">Guest Details</th>
@@ -284,43 +284,11 @@
         }
       } catch(e) { console.warn(e); }
 
+      // This basic filter doesn't manipulate display - pagination handles that
+      // It only exists to provide a hook for the pagination wrapper
       window.filterBookings = function(){
-        const status = (document.getElementById('statusFilter')?.value || '').toLowerCase();
-        const type = (document.getElementById('typeFilter')?.value || '').toLowerCase();
-        const dateFilter = document.getElementById('bookingDateFilter')?.value || '';
-        const rows = document.querySelectorAll('#bookingsTable tbody tr');
-        let visibleCount = 0;
-        rows.forEach(row => {
-          // skip template/comment rows
-          if (row.closest('tbody') === null) return;
-          const rstatus = (row.dataset.status || '').toLowerCase();
-          const rtype = (row.dataset.type || '').toLowerCase();
-          const rdate = row.dataset.date || '';
-
-          let show = true;
-          if (status && rstatus.indexOf(status) === -1) show = false;
-          if (type && rtype.indexOf(type) === -1) show = false;
-          if (dateFilter && rdate !== dateFilter) show = false;
-
-          row.style.display = show ? '' : 'none';
-          if (show) visibleCount++;
-        });
-
-        // show a no-results row when filtered out completely
-        const noId = 'bookings-no-results';
-        let noRow = document.getElementById(noId);
-        if (visibleCount === 0) {
-          if (!noRow) {
-            const cols = document.querySelectorAll('#bookingsTable thead th').length || 9;
-            noRow = document.createElement('tr');
-            noRow.id = noId;
-            noRow.innerHTML = '<td colspan="' + cols + '" class="text-center text-muted">No bookings match your filters.</td>';
-            const tbody = document.querySelector('#bookingsTable tbody');
-            if (tbody) tbody.appendChild(noRow);
-          }
-        } else {
-          if (noRow && noRow.parentNode) noRow.parentNode.removeChild(noRow);
-        }
+        // Filter logic is handled by doesRowMatchFilter() used in pagination
+        // This function just exists as a trigger point
       };
       
       // Helper functions for date filter
@@ -331,6 +299,13 @@
           dateInput.value = today;
           filterBookings();
         }
+        // Update button styles
+        const todayBtn = document.getElementById('todayFilterBtn');
+        const allBtn = document.getElementById('allFilterBtn');
+        if (todayBtn && allBtn) {
+          todayBtn.className = 'btn btn-sm btn-primary';
+          allBtn.className = 'btn btn-sm btn-outline-secondary';
+        }
       };
       
       window.clearBookingDate = function() {
@@ -338,6 +313,13 @@
         if (dateInput) {
           dateInput.value = '';
           filterBookings();
+        }
+        // Update button styles
+        const todayBtn = document.getElementById('todayFilterBtn');
+        const allBtn = document.getElementById('allFilterBtn');
+        if (todayBtn && allBtn) {
+          todayBtn.className = 'btn btn-sm btn-outline-primary';
+          allBtn.className = 'btn btn-sm btn-secondary';
         }
       };
       
@@ -620,33 +602,20 @@
         state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
         if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
 
-        // Determine currently visible rows (those not hidden by pagination)
-        const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
-
-        // bump token to cancel overlapping ops
-        const myToken = ++bookingsFadeToken;
-
-  // show spinner while transitioning
-  const removeSpinner = showTableSpinner(document.querySelector('#bookingsTable'));
-
-  // fade out current page rows first
-  await fadeOutRows(currentlyVisible);
-
-  // if another pagination action started, abort showing this page and remove spinner
-  if (myToken !== bookingsFadeToken) { removeSpinner(); return; }
-
-  // Now hide all and show the new slice
-  rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+        // Hide all rows first
+        rows.forEach(r => { 
+          r.style.display = 'none'; 
+          r.setAttribute('data-hidden-by-pagination','true'); 
+        });
+        
+        // Show only the current page slice
         const start = (state.currentPage - 1) * state.perPage;
         const end = start + state.perPage;
         visibleRows.slice(start, end).forEach(r => {
           r.removeAttribute('data-hidden-by-pagination');
           r.style.display = '';
-          r.style.opacity = 0;
-          requestAnimationFrame(() => { r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
         });
-        // remove spinner after new rows are visible
-        setTimeout(() => { try { removeSpinner(); } catch(e){} }, 220);
+        
         renderPaginationControls();
       }
 
@@ -902,7 +871,7 @@ function downloadBookingsExcel() {
   const statusFilter = document.getElementById('statusFilter')?.value || 'All Status';
   const typeFilter = document.getElementById('typeFilter')?.value || 'All Types';
   
-  let csv = 'Receipt #,Room/Facility,Type,Guest Name,Guest Contact,Schedule,Booking Status,Discount Status,Created\n';
+  let csv = 'Reservation No.,Room/Facility,Type,Guest Name,Guest Contact,Schedule,Booking Status,Discount Status,Created\n';
   
   rows.forEach(row => {
     const cells = row.querySelectorAll('td');

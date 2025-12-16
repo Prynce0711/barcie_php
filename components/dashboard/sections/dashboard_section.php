@@ -77,8 +77,8 @@ if (isset($conn) && $conn instanceof mysqli) {
     $cancelled_bookings = intval($row['cancelled'] ?? 0);
   }
 
-  // Today's revenue (sum of amount for verified payments today)
-  $r = $conn->query("SELECT COALESCE(SUM(COALESCE(amount,0)),0) AS total_today FROM bookings WHERE DATE(payment_date) = CURDATE() AND payment_status = 'verified'");
+  // Today's revenue (sum of amount for verified payments today, excluding cancelled/rejected)
+  $r = $conn->query("SELECT COALESCE(SUM(COALESCE(amount,0)),0) AS total_today FROM bookings WHERE DATE(payment_verified_at) = CURDATE() AND payment_status = 'verified' AND status NOT IN ('cancelled', 'rejected')");
   if ($r) {
     $row = $r->fetch_assoc();
     $today_revenue = floatval($row['total_today'] ?? 0.00);
@@ -92,9 +92,9 @@ if (isset($conn) && $conn instanceof mysqli) {
     }
   }
 
-  // Sparkline data: last 7 days revenue (verified payments)
+  // Sparkline data: last 7 days revenue (verified payments, excluding cancelled/rejected)
   $spark_data = [];
-  $spark_res = $conn->query("SELECT DATE(payment_date) as d, COALESCE(SUM(COALESCE(amount,0)),0) as total FROM bookings WHERE payment_status = 'verified' AND payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(payment_date) ORDER BY DATE(payment_date) ASC");
+  $spark_res = $conn->query("SELECT DATE(payment_date) as d, COALESCE(SUM(COALESCE(amount,0)),0) as total FROM bookings WHERE payment_status = 'verified' AND status NOT IN ('cancelled', 'rejected') AND payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(payment_date) ORDER BY DATE(payment_date) ASC");
   if ($spark_res) {
       $tmp = [];
       while ($sr = $spark_res->fetch_assoc()) {
@@ -126,17 +126,6 @@ if (isset($conn) && $conn instanceof mysqli) {
                       <div>
                         <h3 class="text-white mb-1 fw-bold">Admin Dashboard</h3>
                         <p class="text-white-50 mb-0 small">BarCIE International Center Management</p>
-                        <?php if ($admin_display_name): ?>
-                          <div class="d-flex align-items-center mt-2" style="gap:12px;">
-                            <div style="width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center;">
-                              <i class="fas fa-user-shield text-white" style="font-size:1.1rem;"></i>
-                            </div>
-                            <div>
-                              <div style="color:#ffffff; font-size:1.05rem; font-weight:700; line-height:1;"><?php echo htmlspecialchars($greeting . ', ' . $admin_display_name); ?></div>
-                              <?php if ($admin_role): ?><small class="text-white-50" style="opacity:0.85;"><?php echo htmlspecialchars(ucfirst($admin_role)); ?></small><?php endif; ?>
-                            </div>
-                          </div>
-                        <?php endif; ?>
                       </div>
                     </div>
                     <p class="text-white mb-2" style="font-size: 0.95rem;">
@@ -147,10 +136,18 @@ if (isset($conn) && $conn instanceof mysqli) {
                       <small>Last updated: <?php echo date('M d, Y - H:i'); ?></small>
                     </div>
                   </div>
-                  <div class="col-md-4 text-center d-none d-md-block">
-                    <div class="position-relative" style="opacity: 0.15;">
-                      <i class="fas fa-hotel" style="font-size: 8rem; color: white;"></i>
-                    </div>
+                  <div class="col-md-4 text-end">
+                    <?php if ($admin_display_name): ?>
+                      <div class="d-inline-flex align-items-center" style="gap:12px; background:rgba(255,255,255,0.1); padding:12px 20px; border-radius:12px; backdrop-filter: blur(10px);">
+                        <div style="width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center;">
+                          <i class="fas fa-user-shield text-white" style="font-size:1.1rem;"></i>
+                        </div>
+                        <div class="text-start">
+                          <div style="color:#ffffff; font-size:1.05rem; font-weight:700; line-height:1.2;"><?php echo htmlspecialchars($greeting . ', ' . $admin_display_name); ?></div>
+                          <?php if ($admin_role): ?><small class="text-white-50" style="opacity:0.9; text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px;"><?php echo htmlspecialchars($admin_role); ?></small><?php endif; ?>
+                        </div>
+                      </div>
+                    <?php endif; ?>
                   </div>
                 </div>
               </div>
@@ -227,7 +224,7 @@ if (isset($conn) && $conn instanceof mysqli) {
                     <div class="p-3 rounded" style="background-color: #f8f9fa; border: 1px solid #e9ecef;">
                       <div class="d-flex align-items-center mb-2">
                         <div class="rounded-circle d-flex align-items-center justify-content-center me-2" 
-                             style="width: 36px; height: 36px; background-color: #6c757d;">
+                              style="width: 36px; height: 36px; background-color: #6c757d;">
                           <i class="fas fa-sign-out-alt text-white" style="font-size: 0.85rem;"></i>
                         </div>
                         <div>
@@ -302,39 +299,237 @@ if (isset($conn) && $conn instanceof mysqli) {
           </div>
         </div>
 
+        <!-- Recent Activities Section -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-left: 3px solid #6f42c1 !important;">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                  <div class="d-flex align-items-center">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
+                         style="width: 48px; height: 48px; background-color: #6f42c1;">
+                      <i class="fas fa-history text-white" style="font-size: 1.2rem;"></i>
+                    </div>
+                    <div>
+                      <h5 class="mb-0 fw-bold" style="color: #2d3748;">Recent Activities</h5>
+                      <small class="text-muted">Latest system events and actions</small>
+                    </div>
+                  </div>
+                  <span class="badge bg-primary px-3 py-2" style="font-size: 0.75rem; font-weight: 600;">LIVE</span>
+                </div>
+
+                <!-- Activities List -->
+                <div id="recentActivitiesList" class="activity-timeline">
+                  <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Loading recent activities...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <script>
-        (function(){
-          try {
-            var data = <?php echo json_encode(array_map('floatval', $spark_data ?? [])); ?> || [];
-            var c = document.getElementById('revenueSparkline');
-            if (!c || !c.getContext) return;
-            var ctx = c.getContext('2d');
-            var w = c.width, h = c.height; ctx.clearRect(0,0,w,h);
-            if (data.length === 0) {
-              // draw placeholder
-              ctx.fillStyle = 'rgba(255,255,255,0.05)';
-              ctx.fillRect(0,0,w,h);
-              ctx.fillStyle = '#ffffff'; ctx.font = '10px sans-serif'; ctx.fillText('No data', w/2 - 16, h/2 + 4);
-              return;
+        // Fetch and display recent activities
+        let cachedActivities = [];
+        let lastUpdateTime = null;
+
+        function loadRecentActivities() {
+          fetch('api/recent_activities.php?limit=8', {
+            credentials: 'same-origin'
+          })
+            .then(response => {
+              if (!response.ok) {
+                return response.json().then(err => {
+                  throw new Error(err.error || 'Network response was not ok');
+                });
+              }
+              return response.json();
+            })
+            .then(data => {
+              if (data.success && data.activities) {
+                cachedActivities = data.activities;
+                lastUpdateTime = new Date();
+                displayActivities(cachedActivities);
+              } else {
+                showActivitiesError('No activities available');
+              }
+            })
+            .catch(error => {
+              console.error('Error loading activities:', error);
+              showActivitiesError('Failed to load activities');
+            });
+        }
+
+        function displayActivities(activities) {
+          const container = document.getElementById('recentActivitiesList');
+          if (!activities || activities.length === 0) {
+            container.innerHTML = '<div class="text-center py-4"><p class="text-muted mb-0">No recent activities found</p></div>';
+            return;
+          }
+
+          let html = '';
+          activities.forEach((activity, index) => {
+            const { icon, color, bgColor, text } = getActivityDisplay(activity);
+            const timeAgo = formatTimeAgo(activity.activity_date);
+            
+            html += `
+              <div class="activity-item d-flex align-items-start p-3 ${index !== activities.length - 1 ? 'border-bottom' : ''}" style="transition: background 0.2s;" data-timestamp="${activity.activity_date}">
+                <div class="activity-icon me-3">
+                  <div class="icon-circle rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 42px; height: 42px; background-color: ${bgColor}; flex-shrink: 0;">
+                    <i class="${icon}" style="color: ${color}; font-size: 1rem;"></i>
+                  </div>
+                </div>
+                <div class="flex-grow-1" style="min-width: 0;">
+                  <div class="d-flex align-items-start justify-content-between">
+                    <p class="mb-1" style="color: #4a5568; font-size: 0.95rem; line-height: 1.5;">
+                      ${text}
+                      ${activity.receipt_no ? `<span class="badge bg-secondary ms-2" style="font-size: 0.7rem; padding: 3px 8px;">${activity.receipt_no}</span>` : ''}
+                    </p>
+                    <small class="activity-time text-muted text-nowrap ms-3" style="font-size: 0.8rem; font-weight: 600;">${timeAgo}</small>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+
+          container.innerHTML = html;
+        }
+
+        function updateTimeAgo() {
+          // Update time ago labels without re-fetching data
+          const activityItems = document.querySelectorAll('.activity-item');
+          activityItems.forEach(item => {
+            const timestamp = item.getAttribute('data-timestamp');
+            const timeElement = item.querySelector('.activity-time');
+            if (timestamp && timeElement) {
+              timeElement.textContent = formatTimeAgo(timestamp);
             }
-            var max = Math.max.apply(null, data.concat([1]));
-            var min = Math.min.apply(null, data.concat([0]));
-            var pad = 6;
-            var len = data.length;
-            var stepX = (w - pad*2) / Math.max(1, len-1);
-            ctx.beginPath();
-            for (var i=0;i<len;i++){
-              var x = pad + i*stepX;
-              var y = pad + (1 - ((data[i]-min)/(max-min || 1))) * (h - pad*2);
-              if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-            }
-            ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2; ctx.stroke();
-            // fill under curve
-            ctx.lineTo(pad + (len-1)*stepX, h-pad);
-            ctx.lineTo(pad, h-pad);
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fill();
-          } catch(e) { console && console.warn && console.warn('sparkline', e); }
-        })();
+          });
+        }
+
+        function getActivityDisplay(activity) {
+          const guestName = activity.guest_name || 'Guest';
+          const roomName = activity.room_name || 'Room';
+          const adminName = activity.admin_name || 'Admin';
+
+          switch (activity.activity_type) {
+            case 'guest_checkin':
+              return {
+                icon: 'fas fa-sign-in-alt',
+                color: '#3b82f6',
+                bgColor: '#dbeafe',
+                text: `<strong>${guestName}</strong> checked in to <strong>${roomName}</strong>`
+              };
+            case 'guest_checkout':
+              return {
+                icon: 'fas fa-sign-out-alt',
+                color: '#6b7280',
+                bgColor: '#f3f4f6',
+                text: `<strong>${guestName}</strong> checked out from <strong>${roomName}</strong>`
+              };
+            case 'booking_approved':
+              return {
+                icon: 'fas fa-check-circle',
+                color: '#10b981',
+                bgColor: '#d1fae5',
+                text: `Booking for <strong>${guestName}</strong> was approved by <strong>${adminName}</strong>`
+              };
+            case 'payment_approved':
+              return {
+                icon: 'fas fa-credit-card',
+                color: '#10b981',
+                bgColor: '#d1fae5',
+                text: `Payment for <strong>${guestName}</strong> was approved by <strong>${adminName}</strong>`
+              };
+            case 'booking_cancelled':
+              return {
+                icon: 'fas fa-times-circle',
+                color: '#ef4444',
+                bgColor: '#fee2e2',
+                text: `Booking for <strong>${guestName}</strong> was cancelled`
+              };
+            case 'pencil_created':
+              return {
+                icon: 'fas fa-pencil-alt',
+                color: '#8b5cf6',
+                bgColor: '#ede9fe',
+                text: `Pencil booking created for <strong>${guestName}</strong>`
+              };
+            case 'pencil_approved':
+              return {
+                icon: 'fas fa-user-check',
+                color: '#10b981',
+                bgColor: '#d1fae5',
+                text: `Booking for <strong>${guestName}</strong> was approved by <strong>${adminName}</strong>`
+              };
+            case 'pencil_cancelled':
+              return {
+                icon: 'fas fa-ban',
+                color: '#ef4444',
+                bgColor: '#fee2e2',
+                text: `Booking for <strong>${guestName}</strong> was cancelled`
+              };
+            case 'feedback_submitted':
+              const stars = '⭐'.repeat(activity.rating || 0);
+              return {
+                icon: 'fas fa-comment-dots',
+                color: '#f59e0b',
+                bgColor: '#fef3c7',
+                text: `<strong>${guestName}</strong> submitted ${stars} feedback`
+              };
+            default:
+              return {
+                icon: 'fas fa-info-circle',
+                color: '#6b7280',
+                bgColor: '#f3f4f6',
+                text: `Activity: ${activity.activity_type}`
+              };
+          }
+        }
+
+        function formatTimeAgo(dateString) {
+          const date = new Date(dateString);
+          const now = new Date();
+          const diffMs = now - date;
+          const diffSecs = Math.floor(diffMs / 1000);
+          const diffMins = Math.floor(diffSecs / 60);
+          const diffHours = Math.floor(diffMins / 60);
+          const diffDays = Math.floor(diffHours / 24);
+
+          if (diffSecs < 60) return 'JUST NOW';
+          if (diffMins < 60) return diffMins + 'M AGO';
+          if (diffHours < 24) return diffHours + 'H AGO';
+          if (diffDays === 1) return '1D AGO';
+          if (diffDays < 7) return diffDays + 'D AGO';
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function showActivitiesError(message) {
+          const container = document.getElementById('recentActivitiesList');
+          container.innerHTML = `
+            <div class="text-center py-4">
+              <i class="fas fa-exclamation-circle text-warning mb-2" style="font-size: 2rem;"></i>
+              <p class="text-muted mb-0">${message || 'Failed to load recent activities'}</p>
+              <button class="btn btn-sm btn-primary mt-2" onclick="loadRecentActivities()">
+                <i class="fas fa-refresh me-1"></i>Retry
+              </button>
+            </div>
+          `;
+        }
+
+        // Load activities on page load
+        document.addEventListener('DOMContentLoaded', function() {
+          // Load immediately
+          loadRecentActivities();
+          // Update time ago every 1 second for real-time counting
+          setInterval(updateTimeAgo, 1000);
+          // Refresh activities every 15 seconds for faster updates
+          setInterval(loadRecentActivities, 15000);
+        });
         </script>
 

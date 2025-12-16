@@ -80,7 +80,7 @@
           <table class="table table-hover align-middle" id="pencilTable">
             <thead class="table-dark">
               <tr>
-                <th style="font-size: 0.75rem;">Receipt #</th>
+                <th style="font-size: 0.75rem;">Pencil Book No.</th>
                 <th style="font-size: 0.75rem;">Room/Facility</th>
                 <th style="font-size: 0.75rem;">Guest Details</th>
                 <th style="font-size: 0.75rem;">Schedule</th>
@@ -264,37 +264,10 @@
   }
 
   // Client-side filtering implementation
+  // This basic filter doesn't manipulate display - pagination handles that
   window.filterPencilBookings = function(){
-    const status = (document.getElementById('pencilStatusFilter')?.value || '').toLowerCase();
-    const dateFilter = document.getElementById('pencilDateFilter')?.value || '';
-    const rows = document.querySelectorAll('#pencilTable tbody tr');
-    let visibleCount = 0;
-    rows.forEach(row => {
-      const rstatus = (row.dataset.status || '').toLowerCase();
-      const rdate = row.dataset.date || '';
-      
-      let show = true;
-      if (status && rstatus.indexOf(status) === -1) show = false;
-      if (dateFilter && rdate !== dateFilter) show = false;
-      
-      row.style.display = show ? '' : 'none';
-      if (show) visibleCount++;
-    });
-
-    // Show no-results row when filtered out completely
-    const noId = 'pencil-no-results';
-    let noRow = document.getElementById(noId);
-    if (visibleCount === 0) {
-      if (!noRow) {
-        noRow = document.createElement('tr');
-        noRow.id = noId;
-        noRow.innerHTML = '<td colspan="7" class="text-center text-muted">No pencil bookings match the current filters.</td>';
-        document.querySelector('#pencilTable tbody').appendChild(noRow);
-      }
-      noRow.style.display = '';
-    } else {
-      if (noRow) noRow.style.display = 'none';
-    }
+    // Filter logic is handled by doesRowMatchFilter() used in pagination
+    // This function exists as a trigger to recalc pagination
   };
 
   // Client-side pagination
@@ -363,24 +336,20 @@
     state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
     if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
 
-    const currentlyVisible = rows.filter(r => r.style.display !== 'none' && !r.hasAttribute('data-hidden-by-pagination'));
-    const myToken = ++fadeToken;
-
-    const removeSpinner = showTableSpinner(document.querySelector('#pencilTable'));
-    await fadeOutRows(currentlyVisible);
-
-    if (myToken !== fadeToken) { removeSpinner(); return; }
-
-    rows.forEach(r => { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination','true'); r.style.opacity = 0; });
+    // Hide all rows first
+    rows.forEach(r => { 
+      r.style.display = 'none'; 
+      r.setAttribute('data-hidden-by-pagination','true'); 
+    });
+    
+    // Show only the current page slice
     const start = (state.currentPage - 1) * state.perPage;
     const end = start + state.perPage;
     visibleRows.slice(start, end).forEach(r => {
       r.removeAttribute('data-hidden-by-pagination');
       r.style.display = '';
-      r.style.opacity = 0;
-      requestAnimationFrame(() => { r.style.transition = r.style.transition || 'opacity 220ms ease-in-out'; r.style.opacity = 1; });
     });
-    setTimeout(() => { try { removeSpinner(); } catch(e){} }, 220);
+    
     renderPaginationControls();
   }
 
@@ -490,7 +459,7 @@ function viewPencilBookingDetails(bookingId) {
           <div class="booking-details">
             <h5>Pencil Booking Details</h5>
             <table class="table table-sm">
-              <tr><th>Receipt No:</th><td>${booking.receipt_no}</td></tr>
+              <tr><th>Pencil Book No:</th><td>${booking.receipt_no}</td></tr>
               <tr><th>Guest Name:</th><td>${booking.guest_name}</td></tr>
               <tr><th>Email:</th><td>${booking.email}</td></tr>
               <tr><th>Contact:</th><td>${booking.contact_number}</td></tr>
@@ -546,12 +515,8 @@ function viewPencilBookingDetails(bookingId) {
     });
 }
 
-async function updatePencilBookingStatus(bookingId, newStatus) {
-  const confirmed = await showConfirm(
-    `Are you sure you want to ${newStatus} this pencil booking?`,
-    { title: 'Confirm Status Change', confirmText: 'Yes, Continue', confirmClass: 'btn-primary' }
-  );
-  if (!confirmed) {
+function updatePencilBookingStatus(bookingId, newStatus) {
+  if (!confirm(`Are you sure you want to ${newStatus} this pencil booking?`)) {
     return;
   }
   
@@ -699,7 +664,7 @@ function downloadPencilBookingsExcel() {
   const dateFilter = document.getElementById('pencilDateFilter')?.value || 'All Dates';
   const statusFilter = document.getElementById('pencilStatusFilter')?.value || 'All Status';
   
-  let csv = 'Receipt #,Room/Facility,Guest Name,Guest Contact,Schedule,Status,Expires,Created\n';
+  let csv = 'Pencil Book No.,Room/Facility,Guest Name,Guest Contact,Schedule,Status,Expires,Created\n';
   
   rows.forEach(row => {
     const cells = row.querySelectorAll('td');
