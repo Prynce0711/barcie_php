@@ -369,6 +369,80 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
     </div>
   </div>
 
+  <!-- Delete Admin Modal JavaScript -->
+  <script>
+  (function() {
+    let deleteAdminModal;
+    let adminToDelete = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const modalElement = document.getElementById('deleteAdminModal');
+      if (modalElement) {
+        deleteAdminModal = new bootstrap.Modal(modalElement);
+      }
+
+      // Confirm delete button
+      const confirmBtn = document.getElementById('confirmDeleteAdmin');
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+          if (!adminToDelete) return;
+
+          const originalHtml = this.innerHTML;
+          this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
+          this.disabled = true;
+
+          const formData = new FormData();
+          formData.append('action', 'delete');
+          formData.append('admin_id', adminToDelete.id);
+
+          fetch('api/admin_management_enhanced.php', {
+            method: 'POST',
+            body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              if (typeof window.showAdminAlert === 'function') {
+                window.showAdminAlert('success', 'Admin deleted successfully!');
+              }
+              deleteAdminModal.hide();
+              if (typeof window.loadAdmins === 'function') {
+                window.loadAdmins();
+              }
+            } else {
+              if (typeof window.showAdminAlert === 'function') {
+                window.showAdminAlert('danger', data.message || 'Failed to delete admin');
+              } else {
+                alert(data.message || 'Failed to delete admin');
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            if (typeof window.showAdminAlert === 'function') {
+              window.showAdminAlert('danger', 'Error deleting admin');
+            } else {
+              alert('Error deleting admin');
+            }
+          })
+          .finally(() => {
+            this.innerHTML = originalHtml;
+            this.disabled = false;
+            adminToDelete = null;
+          });
+        });
+      }
+    });
+
+    // Global function to open delete modal
+    window.deleteAdmin = function(adminId, username) {
+      adminToDelete = { id: adminId, username: username };
+      document.getElementById('delete-admin-username').textContent = username;
+      deleteAdminModal.show();
+    };
+  })();
+  </script>
+
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>

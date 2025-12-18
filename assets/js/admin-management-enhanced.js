@@ -409,19 +409,9 @@
   }
 
   function escapeHtml(text) {
-    fetch(`api/admin_management_enhanced.php?action=get&admin_id=${adminId}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.success && data.admin) {
-          showAdminDetailsModal(data.admin);
-        } else {
-          showToast('Failed to load admin details', 'error');
-        }
-      })
-      .catch(error => {
-        console.error('Error loading admin details:', error);
-        showToast('Error loading admin details', 'error');
-      });
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   function showAdminDetailsModal(admin) {
@@ -671,8 +661,9 @@
 
   // View admin details
   window.viewAdminDetails = function(adminId) {
-    const admin = adminsData.find(a => a.id === adminId);
+    const admin = adminsData.find(a => parseInt(a.id) === parseInt(adminId));
     if (!admin) {
+      console.error('Admin not found. ID:', adminId, 'Available IDs:', adminsData.map(a => a.id));
       showToast('Admin not found', 'error');
       return;
     }
