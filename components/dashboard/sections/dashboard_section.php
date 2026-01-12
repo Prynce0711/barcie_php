@@ -304,7 +304,7 @@ if (isset($conn) && $conn instanceof mysqli) {
           <div class="col-12">
             <div class="card border-0 shadow-sm" style="border-left: 3px solid #6f42c1 !important;">
               <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
                   <div class="d-flex align-items-center">
                     <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
                          style="width: 48px; height: 48px; background-color: #6f42c1;">
@@ -318,13 +318,58 @@ if (isset($conn) && $conn instanceof mysqli) {
                   <span class="badge bg-primary px-3 py-2" style="font-size: 0.75rem; font-weight: 600;">LIVE</span>
                 </div>
 
+                <!-- Filter Controls -->
+                <div class="row mb-3 g-2">
+                  <div class="col-md-6 col-lg-4">
+                    <select id="activityTypeFilter" class="form-select form-select-sm">
+                      <option value="all">All Activities</option>
+                      <option value="booking_approved">Bookings Approved</option>
+                      <option value="payment_approved">Payments Approved</option>
+                      <option value="booking_cancelled">Bookings Cancelled</option>
+                      <option value="guest_checkin">Check-ins</option>
+                      <option value="guest_checkout">Check-outs</option>
+                      <option value="feedback_submitted">Feedback</option>
+                      <option value="pencil_created">Pencil Bookings</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6 col-lg-4">
+                    <input type="text" id="activitySearchInput" class="form-control form-control-sm" placeholder="Search by guest name or booking ID...">
+                  </div>
+                  <div class="col-md-12 col-lg-4">
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-sm btn-outline-primary flex-fill" onclick="loadRecentActivities()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary" onclick="clearActivityFilters()">
+                        <i class="fas fa-times"></i> Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Activities List -->
-                <div id="recentActivitiesList" class="activity-timeline">
+                <div id="recentActivitiesList" class="activity-timeline" style="max-height: 600px; overflow-y: auto;">
                   <div class="text-center py-4">
                     <div class="spinner-border text-primary" role="status">
                       <span class="visually-hidden">Loading...</span>
                     </div>
                     <p class="text-muted mt-2 mb-0">Loading recent activities...</p>
+                  </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                  <div>
+                    <small class="text-muted">Showing <span id="activityCount">0</span> of <span id="totalActivityCount">0</span> activities</small>
+                  </div>
+                  <div class="d-flex gap-2" id="activityPagination">
+                    <button class="btn btn-sm btn-outline-secondary" id="prevPageBtn" disabled>
+                      <i class="fas fa-chevron-left"></i> Prev
+                    </button>
+                    <span class="align-self-center px-2 text-muted" id="pageInfo">Page 1</span>
+                    <button class="btn btn-sm btn-outline-secondary" id="nextPageBtn" disabled>
+                      Next <i class="fas fa-chevron-right"></i>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -334,11 +379,14 @@ if (isset($conn) && $conn instanceof mysqli) {
 
         <script>
         // Fetch and display recent activities
-        let cachedActivities = [];
+        let allActivities = [];
+        let filteredActivities = [];
+        let currentPage = 1;
+        const activitiesPerPage = 10;
         let lastUpdateTime = null;
 
         function loadRecentActivities() {
-          fetch('api/recent_activities.php?limit=8', {
+          fetch('api/recent_activities.php?limit=100', {
             credentials: 'same-origin'
           })
             .then(response => {
@@ -351,9 +399,9 @@ if (isset($conn) && $conn instanceof mysqli) {
             })
             .then(data => {
               if (data.success && data.activities) {
-                cachedActivities = data.activities;
+                allActivities = data.activities;
                 lastUpdateTime = new Date();
-                displayActivities(cachedActivities);
+                applyFilters();
               } else {
                 showActivitiesError('No activities available');
               }
@@ -364,20 +412,77 @@ if (isset($conn) && $conn instanceof mysqli) {
             });
         }
 
-        function displayActivities(activities) {
+        function applyFilters() {
+          const typeFilter = document.getElementById('activityTypeFilter').value;
+          const searchTerm = document.getElementById('activitySearchInput').value.toLowerCase();
+
+          filteredActivities = allActivities.filter(activity => {
+            const typeMatch = typeFilter === 'all' || activity.activity_type === typeFilter;
+            const searchMatch = searchTerm === '' || 
+              (activity.guest_name && activity.guest_name.toLowerCase().includes(searchTerm)) ||
+              (activity.receipt_no && activity.receipt_no.toLowerCase().includes(searchTerm));
+            
+            return typeMatch && searchMatch;
+          });
+
+          currentPage = 1;
+          displayActivities();
+        }
+
+        function clearActivityFilters() {
+          document.getElementById('activityTypeFilter').value = 'all';
+          document.getElementById('activitySearchInput').value = '';
+          applyFilters();
+        }
+
+        function changePage(direction) {
+          console.log('changePage called with direction:', direction);
+          console.log('Current page:', currentPage);
+          console.log('Filtered activities:', filteredActivities.length);
+          
+          const totalPages = Math.ceil(filteredActivities.length / activitiesPerPage);
+          const newPage = currentPage + direction;
+          
+          console.log('Total pages:', totalPages);
+          console.log('New page would be:', newPage);
+          
+          // Validate page bounds
+          if (newPage < 1 || newPage > totalPages) {
+            console.log('Page out of bounds, returning');
+            return;
+          }
+          
+          currentPage = newPage;
+          console.log('Setting current page to:', currentPage);
+          displayActivities();
+          
+          // Scroll to top of activities list
           const container = document.getElementById('recentActivitiesList');
-          if (!activities || activities.length === 0) {
-            container.innerHTML = '<div class="text-center py-4"><p class="text-muted mb-0">No recent activities found</p></div>';
+          if (container) {
+            container.scrollTop = 0;
+          }
+        }
+
+        function displayActivities() {
+          const container = document.getElementById('recentActivitiesList');
+          
+          if (!filteredActivities || filteredActivities.length === 0) {
+            container.innerHTML = '<div class="text-center py-4"><p class="text-muted mb-0">No activities found matching your filters</p></div>';
+            updatePaginationInfo(0, 0);
             return;
           }
 
+          const startIndex = (currentPage - 1) * activitiesPerPage;
+          const endIndex = startIndex + activitiesPerPage;
+          const pageActivities = filteredActivities.slice(startIndex, endIndex);
+
           let html = '';
-          activities.forEach((activity, index) => {
+          pageActivities.forEach((activity, index) => {
             const { icon, color, bgColor, text } = getActivityDisplay(activity);
             const timeAgo = formatTimeAgo(activity.activity_date);
             
             html += `
-              <div class="activity-item d-flex align-items-start p-3 ${index !== activities.length - 1 ? 'border-bottom' : ''}" style="transition: background 0.2s;" data-timestamp="${activity.activity_date}">
+              <div class="activity-item d-flex align-items-start p-3 border-bottom" style="transition: background 0.2s;" data-timestamp="${activity.activity_date}">
                 <div class="activity-icon me-3">
                   <div class="icon-circle rounded-circle d-flex align-items-center justify-content-center" 
                        style="width: 42px; height: 42px; background-color: ${bgColor}; flex-shrink: 0;">
@@ -398,6 +503,24 @@ if (isset($conn) && $conn instanceof mysqli) {
           });
 
           container.innerHTML = html;
+          updatePaginationInfo(pageActivities.length, filteredActivities.length);
+        }
+
+        function updatePaginationInfo(showing, total) {
+          const totalPages = Math.max(1, Math.ceil(total / activitiesPerPage));
+          
+          document.getElementById('activityCount').textContent = showing;
+          document.getElementById('totalActivityCount').textContent = total;
+          document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+          
+          // Update button states
+          const prevBtn = document.getElementById('prevPageBtn');
+          const nextBtn = document.getElementById('nextPageBtn');
+          
+          if (prevBtn && nextBtn) {
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages || total === 0;
+          }
         }
 
         function updateTimeAgo() {
@@ -526,10 +649,37 @@ if (isset($conn) && $conn instanceof mysqli) {
         document.addEventListener('DOMContentLoaded', function() {
           // Load immediately
           loadRecentActivities();
+          
+          // Add filter event listeners
+          document.getElementById('activityTypeFilter').addEventListener('change', applyFilters);
+          document.getElementById('activitySearchInput').addEventListener('input', debounce(applyFilters, 300));
+          
+          // Add pagination button listeners
+          document.getElementById('prevPageBtn').addEventListener('click', function() {
+            changePage(-1);
+          });
+          
+          document.getElementById('nextPageBtn').addEventListener('click', function() {
+            changePage(1);
+          });
+          
           // Update time ago every 1 second for real-time counting
           setInterval(updateTimeAgo, 1000);
-          // Refresh activities every 15 seconds for faster updates
-          setInterval(loadRecentActivities, 15000);
+          
+          // Auto-refresh activities every 30 seconds
+          setInterval(loadRecentActivities, 30000);
         });
-        </script>
 
+        // Debounce function for search input
+        function debounce(func, wait) {
+          let timeout;
+          return function executedFunction(...args) {
+            const later = () => {
+              clearTimeout(timeout);
+              func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+          };
+        }
+        </script>

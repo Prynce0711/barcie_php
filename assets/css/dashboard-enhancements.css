@@ -1059,19 +1059,44 @@ img {
   margin: 0;
 }
 
+.activity-timeline::-webkit-scrollbar {
+  width: 8px;
+}
+
+.activity-timeline::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.activity-timeline::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.activity-timeline::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .activity-item {
   transition: all 0.2s ease;
   cursor: pointer;
   position: relative;
+  border-radius: 4px;
+  margin-bottom: 1px;
 }
 
 .activity-item:hover {
   background: #f8fafc !important;
-  transform: translateX(2px);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.activity-item:not(:last-child) {
-  border-bottom: 1px solid #e2e8f0 !important;
+.activity-item:last-child {
+  border-bottom: none !important;
+}
+
+.activity-item .border-bottom {
+  border-color: #e2e8f0 !important;
 }
 
 .activity-icon .icon-circle {
@@ -1080,8 +1105,8 @@ img {
 }
 
 .activity-item:hover .activity-icon .icon-circle {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .activity-item p {
@@ -1097,18 +1122,129 @@ img {
   font-family: 'Courier New', monospace;
   font-weight: 600;
   letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.activity-item:hover .badge {
+  transform: scale(1.05);
+}
+
+/* Filter controls styling */
+#activityTypeFilter,
+#activitySearchInput {
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+#activityTypeFilter:focus,
+#activitySearchInput:focus {
+  border-color: #6f42c1;
+  box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.15);
+}
+
+/* Pagination styling */
+#activityPagination button {
+  transition: all 0.2s ease;
+}
+
+#activityPagination button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#activityPagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* LIVE badge animation */
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.7;
+    opacity: 0.8;
+    transform: scale(1.05);
   }
 }
 
 .badge.bg-primary {
   animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* Activity type specific hover colors */
+.activity-item:has(.fa-check-circle):hover {
+  border-left: 3px solid #10b981;
+}
+
+.activity-item:has(.fa-credit-card):hover {
+  border-left: 3px solid #10b981;
+}
+
+.activity-item:has(.fa-times-circle):hover,
+.activity-item:has(.fa-ban):hover {
+  border-left: 3px solid #ef4444;
+}
+
+.activity-item:has(.fa-sign-in-alt):hover {
+  border-left: 3px solid #3b82f6;
+}
+
+.activity-item:has(.fa-sign-out-alt):hover {
+  border-left: 3px solid #6b7280;
+}
+
+.activity-item:has(.fa-comment-dots):hover {
+  border-left: 3px solid #f59e0b;
+}
+
+.activity-item:has(.fa-pencil-alt):hover {
+  border-left: 3px solid #8b5cf6;
+}
+
+/* Loading state */
+.activity-timeline .spinner-border {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.3em;
+}
+
+/* Empty state */
+.activity-timeline .text-muted {
+  font-size: 0.95rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .activity-item {
+    padding: 0.75rem !important;
+  }
+  
+  .activity-icon .icon-circle {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  
+  .activity-icon .icon-circle i {
+    font-size: 0.85rem !important;
+  }
+  
+  .activity-item p {
+    font-size: 0.85rem !important;
+  }
+  
+  .activity-time {
+    font-size: 0.7rem !important;
+  }
+  
+  #activityPagination {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  #activityPagination button {
+    width: 100%;
+  }
 }

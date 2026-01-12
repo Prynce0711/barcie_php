@@ -35,11 +35,6 @@
           <a class="nav-link" href="#contact">Contact</a>
         </li>
       </ul>
-      <div class="navbar-nav">
-        <button class="btn btn-primary-custom" onclick="showSection('admin-login')">
-          <i class="fas fa-shield-alt me-1"></i> Admin
-        </button>
-      </div>
     </div>
   </div>
 </nav>

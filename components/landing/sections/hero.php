@@ -14,8 +14,8 @@
           Welcome to <span class="text-gradient">BarCIE</span> International Center
         </h1>
         <p class="hero-description lead text-white mb-4">
-          Barasoain Center for Innovative Education (BarCIE) - LCUP's premier laboratory facility for BS Tourism
-          Management. Experience world-class hospitality education and services.
+          This is a Capstone Project for the Barasoain Center for Innovative Education (BarCIE), LCUP’s premier laboratory facility for BS Tourism Management. It offers world-class hospitality education and services.
+
         </p>
         <div class="booking-cta-box mb-4">
           <div class="cta-icon">
