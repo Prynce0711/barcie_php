@@ -7,24 +7,26 @@
  * @version 1.0.0
  */
 
-class ErrorHandler {
-    
+class ErrorHandler
+{
+
     private static $logPath = __DIR__ . '/../logs/';
     private static $isProduction = false;
     private static $initialized = false;
-    
+
     /**
      * Initialize error handler
      */
-    public static function init() {
+    public static function init()
+    {
         if (self::$initialized) {
             return;
         }
-        
+
         // Check environment
         $appEnv = getenv('APP_ENV') ?: 'development';
         self::$isProduction = ($appEnv === 'production');
-        
+
         // Set error reporting based on environment
         if (self::$isProduction) {
             error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
@@ -35,34 +37,35 @@ class ErrorHandler {
             ini_set('display_errors', '1');
             ini_set('log_errors', '1');
         }
-        
+
         // Create logs directory if it doesn't exist
         if (!is_dir(self::$logPath)) {
             @mkdir(self::$logPath, 0755, true);
         }
-        
+
         // Set custom error log path
         ini_set('error_log', self::$logPath . 'php_errors.log');
-        
+
         // Set custom error handlers
         set_error_handler([self::class, 'errorHandler']);
         set_exception_handler([self::class, 'exceptionHandler']);
         register_shutdown_function([self::class, 'shutdownHandler']);
-        
+
         self::$initialized = true;
     }
-    
+
     /**
      * Custom error handler
      */
-    public static function errorHandler($errno, $errstr, $errfile, $errline) {
+    public static function errorHandler($errno, $errstr, $errfile, $errline)
+    {
         // Don't handle suppressed errors (@)
         if (!(error_reporting() & $errno)) {
             return false;
         }
-        
+
         $errorType = self::getErrorType($errno);
-        
+
         // Log the error
         self::logError([
             'type' => $errorType,
@@ -71,19 +74,20 @@ class ErrorHandler {
             'line' => $errline,
             'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)
         ]);
-        
+
         // Throw exception for fatal errors
         if ($errno === E_ERROR || $errno === E_USER_ERROR) {
             throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
         }
-        
+
         return true;
     }
-    
+
     /**
      * Custom exception handler
      */
-    public static function exceptionHandler($exception) {
+    public static function exceptionHandler($exception)
+    {
         // Log the exception
         self::logError([
             'type' => 'Exception',
@@ -93,17 +97,18 @@ class ErrorHandler {
             'line' => $exception->getLine(),
             'trace' => $exception->getTrace()
         ]);
-        
+
         // Send appropriate response
         self::sendErrorResponse($exception->getMessage(), 500);
     }
-    
+
     /**
      * Shutdown handler for fatal errors
      */
-    public static function shutdownHandler() {
+    public static function shutdownHandler()
+    {
         $error = error_get_last();
-        
+
         if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
             // Log the fatal error
             self::logError([
@@ -112,24 +117,25 @@ class ErrorHandler {
                 'file' => $error['file'],
                 'line' => $error['line']
             ]);
-            
+
             // Clear output buffer
             while (ob_get_level()) {
                 ob_end_clean();
             }
-            
+
             // Send error response
             self::sendErrorResponse('A critical error occurred. Please try again later.', 500);
         }
     }
-    
+
     /**
      * Log error to file
      */
-    private static function logError($error) {
+    private static function logError($error)
+    {
         $timestamp = date('Y-m-d H:i:s');
         $logFile = self::$logPath . 'app_errors.log';
-        
+
         $logMessage = sprintf(
             "[%s] %s: %s in %s:%d\n",
             $timestamp,
@@ -138,7 +144,7 @@ class ErrorHandler {
             $error['file'] ?? 'unknown',
             $error['line'] ?? 0
         );
-        
+
         // Add trace in development mode
         if (!self::$isProduction && isset($error['trace'])) {
             $logMessage .= "Stack trace:\n";
@@ -152,53 +158,55 @@ class ErrorHandler {
                 );
             }
         }
-        
+
         $logMessage .= "\n";
-        
+
         @file_put_contents($logFile, $logMessage, FILE_APPEND);
     }
-    
+
     /**
      * Send JSON error response
      */
-    public static function sendErrorResponse($message, $code = 500, $additionalData = []) {
+    public static function sendErrorResponse($message, $code = 500, $additionalData = [])
+    {
         // Check if headers already sent
         if (headers_sent()) {
             return;
         }
-        
+
         http_response_code($code);
         header('Content-Type: application/json');
-        
+
         $response = [
             'success' => false,
             'error' => self::getHttpStatusText($code),
             'message' => $message
         ];
-        
+
         // Add stack trace in development mode
         if (!self::$isProduction && getenv('APP_DEBUG') === 'true') {
             $response['debug'] = [
                 'backtrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)
             ];
         }
-        
+
         // Merge additional data
         if (!empty($additionalData)) {
             $response = array_merge($response, $additionalData);
         }
-        
+
         echo json_encode($response, JSON_PRETTY_PRINT);
         exit;
     }
-    
+
     /**
      * Send JSON success response
      */
-    public static function sendSuccessResponse($message, $data = [], $code = 200) {
+    public static function sendSuccessResponse($message, $data = [], $code = 200)
+    {
         http_response_code($code);
         header('Content-Type: application/json');
-        
+
         echo json_encode([
             'success' => true,
             'message' => $message,
@@ -206,11 +214,12 @@ class ErrorHandler {
         ], JSON_PRETTY_PRINT);
         exit;
     }
-    
+
     /**
      * Get error type name
      */
-    private static function getErrorType($errno) {
+    private static function getErrorType($errno)
+    {
         $errorTypes = [
             E_ERROR => 'Fatal Error',
             E_WARNING => 'Warning',
@@ -228,14 +237,15 @@ class ErrorHandler {
             E_DEPRECATED => 'Deprecated',
             E_USER_DEPRECATED => 'User Deprecated'
         ];
-        
+
         return $errorTypes[$errno] ?? 'Unknown Error';
     }
-    
+
     /**
      * Get HTTP status text
      */
-    private static function getHttpStatusText($code) {
+    private static function getHttpStatusText($code)
+    {
         $statusTexts = [
             200 => 'OK',
             400 => 'Bad Request',
@@ -249,17 +259,18 @@ class ErrorHandler {
             500 => 'Internal Server Error',
             503 => 'Service Unavailable'
         ];
-        
+
         return $statusTexts[$code] ?? 'Error';
     }
-    
+
     /**
      * Log custom message
      */
-    public static function log($message, $level = 'INFO') {
+    public static function log($message, $level = 'INFO')
+    {
         $timestamp = date('Y-m-d H:i:s');
         $logFile = self::$logPath . 'app.log';
-        
+
         $logMessage = sprintf("[%s] [%s] %s\n", $timestamp, $level, $message);
         @file_put_contents($logFile, $logMessage, FILE_APPEND);
     }
