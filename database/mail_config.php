@@ -19,7 +19,8 @@ if (file_exists($autoload)) {
 // Helper function to read environment variables with fallback
 // Helper function to read environment variables with fallback
 if (!function_exists('env')) {
-    function env($key, $default = null) {
+    function env($key, $default = null)
+    {
         $value = getenv($key);
         if ($value === false) {
             $value = $_ENV[$key] ?? $default;

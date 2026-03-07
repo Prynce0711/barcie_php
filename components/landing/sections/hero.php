@@ -6,7 +6,7 @@
     <div class="shape shape-2"></div>
     <div class="shape shape-3"></div>
   </div>
-  
+
   <div class="container position-relative">
     <div class="row align-items-center">
       <div class="col-lg-6" data-aos="fade-right">
@@ -14,7 +14,8 @@
           Welcome to <span class="text-gradient">BarCIE</span> International Center
         </h1>
         <p class="hero-description lead text-white mb-4">
-          This is a Capstone Project for the Barasoain Center for Innovative Education (BarCIE), LCUP’s premier laboratory facility for BS Tourism Management. It offers world-class hospitality education and services.
+          This is a Capstone Project for the Barasoain Center for Innovative Education (BarCIE), LCUP’s premier
+          laboratory facility for BS Tourism Management. It offers world-class hospitality education and services.
 
         </p>
         <div class="booking-cta-box mb-4">
@@ -38,7 +39,7 @@
       <div class="col-lg-6" data-aos="fade-left">
         <div class="hero-image-wrapper">
           <div class="glass-card p-4 hero-logo-card">
-            <img src="assets/images/imageBg/barcie_logo.jpg" alt="BarCIE Hotel" class="img-fluid rounded-3 shadow-lg">
+            <img src="public/images/imageBg/barcie_logo.jpg" alt="BarCIE Hotel" class="img-fluid rounded-3 shadow-lg">
           </div>
         </div>
       </div>

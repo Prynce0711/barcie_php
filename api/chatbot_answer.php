@@ -7,21 +7,24 @@ $message = '';
 if ($raw !== false && trim($raw) !== '') {
     $decoded = json_decode($raw, true);
     if (is_array($decoded) && isset($decoded['message'])) {
-        $message = trim((string)$decoded['message']);
+        $message = trim((string) $decoded['message']);
     } else {
         // try parse as urlencoded form body
         parse_str($raw, $parsed);
         if (isset($parsed['message'])) {
-            $message = trim((string)$parsed['message']);
+            $message = trim((string) $parsed['message']);
         }
     }
 }
 
 // fallback to _POST/_GET/_REQUEST
 if ($message === '') {
-    if (isset($_POST['message'])) $message = trim((string)$_POST['message']);
-    elseif (isset($_GET['message'])) $message = trim((string)$_GET['message']);
-    elseif (isset($_REQUEST['message'])) $message = trim((string)$_REQUEST['message']);
+    if (isset($_POST['message']))
+        $message = trim((string) $_POST['message']);
+    elseif (isset($_GET['message']))
+        $message = trim((string) $_GET['message']);
+    elseif (isset($_REQUEST['message']))
+        $message = trim((string) $_REQUEST['message']);
 }
 
 if ($message === '') {
@@ -33,8 +36,10 @@ if ($message === '') {
 $lower = mb_strtolower($message, 'UTF-8');
 
 // Helper to safely read text files
-function safe_read($path) {
-    if (!file_exists($path)) return null;
+function safe_read($path)
+{
+    if (!file_exists($path))
+        return null;
     $content = @file_get_contents($path);
     return $content === false ? null : $content;
 }
@@ -45,9 +50,12 @@ $composer = safe_read($base . DIRECTORY_SEPARATOR . 'composer.json');
 $package = safe_read($base . DIRECTORY_SEPARATOR . 'package.json');
 
 $sources = [];
-if ($readme) $sources[] = 'README.md';
-if ($composer) $sources[] = 'composer.json';
-if ($package) $sources[] = 'package.json';
+if ($readme)
+    $sources[] = 'README.md';
+if ($composer)
+    $sources[] = 'composer.json';
+if ($package)
+    $sources[] = 'package.json';
 
 $answer = null;
 
@@ -72,14 +80,17 @@ if (!$gemini_key) {
 }
 
 // helper: call Google Gemini API
-function call_gemini_api($apiKey, $prompt, $max_tokens = 800) {
+function call_gemini_api($apiKey, $prompt, $max_tokens = 800)
+{
     // Use Gemini 2.5 Flash for responses (stable, fast and efficient model)
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey;
-    
+
     $payload = json_encode([
-        'contents' => [[
-            'parts' => [['text' => $prompt]]
-        ]],
+        'contents' => [
+            [
+                'parts' => [['text' => $prompt]]
+            ]
+        ],
         'generationConfig' => [
             'temperature' => 0.3,
             'maxOutputTokens' => $max_tokens,
@@ -109,7 +120,8 @@ function call_gemini_api($apiKey, $prompt, $max_tokens = 800) {
         return ['error' => $err ?: 'HTTP ' . $code, 'raw' => $resp];
     }
     $j = json_decode($resp, true);
-    if (!is_array($j)) return ['error' => 'Invalid JSON from Gemini', 'raw' => $resp];
+    if (!is_array($j))
+        return ['error' => 'Invalid JSON from Gemini', 'raw' => $resp];
     return $j;
 }
 
@@ -121,7 +133,8 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
         $json = json_decode($composer, true);
         if (is_array($json)) {
             $name = $json['name'] ?? ($json['description'] ?? null);
-            if ($name) $parts[] = "Project (from composer.json): " . trim($name);
+            if ($name)
+                $parts[] = "Project (from composer.json): " . trim($name);
             if (!empty($json['require'])) {
                 $deps = array_keys($json['require']);
                 $parts[] = 'PHP dependencies: ' . implode(', ', array_slice($deps, 0, 10));
@@ -133,7 +146,8 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
         $jsonp = json_decode($package, true);
         if (is_array($jsonp)) {
             $pname = $jsonp['name'] ?? null;
-            if ($pname) $parts[] = "Node/package name: " . $pname;
+            if ($pname)
+                $parts[] = "Node/package name: " . $pname;
             if (!empty($jsonp['dependencies'])) {
                 $ndeps = array_keys($jsonp['dependencies']);
                 $parts[] = 'Node dependencies: ' . implode(', ', array_slice($ndeps, 0, 10));
@@ -148,11 +162,13 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
         foreach ($lines as $ln) {
             $ln = trim($ln);
             if ($ln === '') {
-                if (!empty($para)) break;
+                if (!empty($para))
+                    break;
                 continue;
             }
             // skip badges or markdown headings lines that look like images
-            if (preg_match('/^!\[.*\]\(.*\)/', $ln)) continue;
+            if (preg_match('/^!\[.*\]\(.*\)/', $ln))
+                continue;
             $para[] = $ln;
         }
         if (!empty($para)) {
@@ -168,7 +184,7 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
     // If Gemini key available, ask the model to produce a short project overview using the files
     if (!empty($gemini_key)) {
         // --- Build smarter context by indexing project files and extracting relevant snippets ---
-        $allowed_exts = ['php','md','js','json','css','html','txt'];
+        $allowed_exts = ['php', 'md', 'js', 'json', 'css', 'html', 'txt'];
         $exclude_dirs = ['vendor', 'node_modules', '.git', 'uploads', 'storage', 'tailscale-nginx'];
 
         // list files recursively (limited depth and total files)
@@ -176,36 +192,58 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, RecursiveDirectoryIterator::SKIP_DOTS));
         $maxFiles = 1000; // safety cap
         foreach ($it as $file) {
-            if (count($filesList) >= $maxFiles) break;
+            if (count($filesList) >= $maxFiles)
+                break;
             $path = $file->getPathname();
             $rel = substr($path, strlen($base) + 1);
             // skip excluded dirs
             $skip = false;
-            foreach ($exclude_dirs as $ex) { if (stripos($rel, $ex . DIRECTORY_SEPARATOR) === 0 || stripos($rel, DIRECTORY_SEPARATOR . $ex . DIRECTORY_SEPARATOR) !== false) { $skip = true; break; } }
-            if ($skip) continue;
+            foreach ($exclude_dirs as $ex) {
+                if (stripos($rel, $ex . DIRECTORY_SEPARATOR) === 0 || stripos($rel, DIRECTORY_SEPARATOR . $ex . DIRECTORY_SEPARATOR) !== false) {
+                    $skip = true;
+                    break;
+                }
+            }
+            if ($skip)
+                continue;
             $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if (!in_array($ext, $allowed_exts)) continue;
+            if (!in_array($ext, $allowed_exts))
+                continue;
             $filesList[] = $path;
         }
 
         // If user asked a code-level question (contains file/class/function hints) prefer file content search.
         $query = $message;
         $tokens = preg_split('/\W+/', mb_strtolower($query));
-        $tokens = array_filter($tokens, function($t){ return strlen($t) > 2; });
+        $tokens = array_filter($tokens, function ($t) {
+            return strlen($t) > 2;
+        });
 
         // Score files by filename match and content match (simple counts)
         $scores = [];
         foreach ($filesList as $p) {
             $score = 0;
             $fname = strtolower(basename($p));
-            foreach ($tokens as $t) { if ($t === '') continue; if (strpos($fname, $t) !== false) $score += 3; }
+            foreach ($tokens as $t) {
+                if ($t === '')
+                    continue;
+                if (strpos($fname, $t) !== false)
+                    $score += 3;
+            }
             // quick content scan (limit read to 100KB)
             $cont = @file_get_contents($p, false, null, 0, 102400);
             if ($cont !== false) {
                 $low = strtolower($cont);
-                foreach ($tokens as $t) { if ($t === '') continue; $pos = strpos($low, $t); if ($pos !== false) $score += 5; }
+                foreach ($tokens as $t) {
+                    if ($t === '')
+                        continue;
+                    $pos = strpos($low, $t);
+                    if ($pos !== false)
+                        $score += 5;
+                }
             }
-            if ($score > 0) $scores[$p] = $score;
+            if ($score > 0)
+                $scores[$p] = $score;
         }
 
         // If no scored files, fall back to top-level README/composer/package as before
@@ -218,18 +256,23 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
             $totalChars = 0;
             $charLimit = 14000; // approximate safety limit for prompt size
             foreach ($scores as $p => $sc) {
-                if ($included >= $maxFilesToInclude) break;
+                if ($included >= $maxFilesToInclude)
+                    break;
                 $snips = [];
                 $text = @file_get_contents($p);
-                if ($text === false) continue;
+                if ($text === false)
+                    continue;
                 $low = mb_strtolower($text, 'UTF-8');
                 // find up to 3 matches and extract context
                 $found = 0;
                 foreach ($tokens as $t) {
-                    if ($found >= 3) break;
-                    if ($t === '') continue;
+                    if ($found >= 3)
+                        break;
+                    if ($t === '')
+                        continue;
                     $pos = mb_strpos($low, $t, 0, 'UTF-8');
-                    if ($pos === false) continue;
+                    if ($pos === false)
+                        continue;
                     $start = max(0, $pos - 200);
                     $snippet = mb_substr($text, $start, 600, 'UTF-8');
                     $snips[] = trim($snippet);
@@ -241,15 +284,19 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
                 }
                 $block = "FILE: " . $rel = substr($p, strlen($base) + 1) . "\n" . implode("\n\n---\n\n", $snips);
                 $len = mb_strlen($block, 'UTF-8');
-                if ($totalChars + $len > $charLimit) break;
+                if ($totalChars + $len > $charLimit)
+                    break;
                 $context_items[] = $block;
                 $totalChars += $len;
                 $included++;
             }
         } else {
-            if ($readme) $context_items[] = "README:\n" . substr($readme, 0, 3000);
-            if ($composer) $context_items[] = "COMPOSER.JSON:\n" . substr($composer, 0, 2000);
-            if ($package) $context_items[] = "PACKAGE.JSON:\n" . substr($package, 0, 2000);
+            if ($readme)
+                $context_items[] = "README:\n" . substr($readme, 0, 3000);
+            if ($composer)
+                $context_items[] = "COMPOSER.JSON:\n" . substr($composer, 0, 2000);
+            if ($package)
+                $context_items[] = "PACKAGE.JSON:\n" . substr($package, 0, 2000);
         }
 
         // Add comprehensive BarCIE website context
@@ -267,11 +314,11 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
         // Build comprehensive prompt for Gemini
         $prompt = "You are the BarCIE International Center AI Assistant. Answer the guest's question using the information provided.\n\n";
         $prompt .= $barcie_context;
-        
+
         if (!empty($context_items)) {
             $prompt .= "\n=== PROJECT CODE SNIPPETS ===\n" . implode("\n\n---\n\n", array_slice($context_items, 0, 8)) . "\n\n";
         }
-        
+
         $prompt .= "\n=== GUEST QUESTION ===\n" . $message . "\n\n";
         $prompt .= "INSTRUCTIONS:\n";
         $prompt .= "- Answer naturally and conversationally as a helpful hotel assistant\n";
@@ -288,13 +335,20 @@ if (preg_match('/\b(project|what is this|about (this )?project|describe (this )?
             $model_answer = $res['candidates'][0]['content']['parts'][0]['text'];
             // Extract relevant quick replies based on content
             $qr = [];
-            if (stripos($model_answer, 'book') !== false || stripos($message, 'book') !== false) $qr[] = 'booking process';
-            if (stripos($model_answer, 'room') !== false || stripos($message, 'room') !== false) $qr[] = 'room availability';
-            if (stripos($model_answer, 'price') !== false || stripos($model_answer, 'cost') !== false) $qr[] = 'pricing';
-            if (stripos($model_answer, 'discount') !== false) $qr[] = 'discount';
-            if (stripos($model_answer, 'contact') !== false || stripos($model_answer, 'email') !== false) $qr[] = 'contact';
-            if (stripos($model_answer, 'payment') !== false) $qr[] = 'payment';
-            if (empty($qr)) $qr = ['booking process', 'room availability', 'facilities'];
+            if (stripos($model_answer, 'book') !== false || stripos($message, 'book') !== false)
+                $qr[] = 'booking process';
+            if (stripos($model_answer, 'room') !== false || stripos($message, 'room') !== false)
+                $qr[] = 'room availability';
+            if (stripos($model_answer, 'price') !== false || stripos($model_answer, 'cost') !== false)
+                $qr[] = 'pricing';
+            if (stripos($model_answer, 'discount') !== false)
+                $qr[] = 'discount';
+            if (stripos($model_answer, 'contact') !== false || stripos($model_answer, 'email') !== false)
+                $qr[] = 'contact';
+            if (stripos($model_answer, 'payment') !== false)
+                $qr[] = 'payment';
+            if (empty($qr))
+                $qr = ['booking process', 'room availability', 'facilities'];
             echo json_encode(['answer' => trim($model_answer), 'quickReplies' => array_slice(array_unique($qr), 0, 3), 'sourceFiles' => $sources]);
             exit;
         }
@@ -322,7 +376,7 @@ if (!empty($gemini_key)) {
     $barcie_context .= "- Check-in 2PM, Check-out 12PM\n";
     $barcie_context .= "- Contact: barcieinternationalcenter.web@gmail.com\n";
     $barcie_context .= "- Easy online booking - no account needed!\n\n";
-    
+
     $barcie_context .= "=== WEBSITE FEATURES ===\n";
     $barcie_context .= "1. Real-time Availability Calendar\n";
     $barcie_context .= "2. Direct booking system (rooms & function halls)\n";
@@ -330,7 +384,7 @@ if (!empty($gemini_key)) {
     $barcie_context .= "4. Email confirmations\n";
     $barcie_context .= "5. Guest feedback system\n";
     $barcie_context .= "6. AI chatbot (that's me!)\n\n";
-    
+
     $prompt = $barcie_context;
     $prompt .= "GUEST QUESTION: " . $message . "\n\n";
     $prompt .= "Provide a helpful, friendly answer. Include relevant details about BarCIE if applicable. ";
@@ -338,21 +392,26 @@ if (!empty($gemini_key)) {
     $prompt .= "If asked general questions, answer naturally. ";
     $prompt .= "Keep response conversational and under 400 words.\n\n";
     $prompt .= "ANSWER:";
-    
+
     $res = call_gemini_api($gemini_key, $prompt, 800);
     error_log("CHATBOT DEBUG - Gemini response: " . json_encode($res));
-    
+
     // Check if we got a valid response
     if (isset($res['candidates'][0]['content']['parts'][0]['text'])) {
         $model_answer = $res['candidates'][0]['content']['parts'][0]['text'];
         error_log("CHATBOT DEBUG - Got answer: " . substr($model_answer, 0, 100));
         // Suggest relevant quick replies
         $qr = [];
-        if (stripos($message, 'book') !== false) $qr[] = 'booking process';
-        if (stripos($message, 'room') !== false) $qr[] = 'room availability';
-        if (stripos($message, 'price') !== false || stripos($message, 'cost') !== false) $qr[] = 'pricing';
-        if (stripos($message, 'discount') !== false) $qr[] = 'discount';
-        if (empty($qr)) $qr = ['booking process', 'facilities', 'pricing'];
+        if (stripos($message, 'book') !== false)
+            $qr[] = 'booking process';
+        if (stripos($message, 'room') !== false)
+            $qr[] = 'room availability';
+        if (stripos($message, 'price') !== false || stripos($message, 'cost') !== false)
+            $qr[] = 'pricing';
+        if (stripos($message, 'discount') !== false)
+            $qr[] = 'discount';
+        if (empty($qr))
+            $qr = ['booking process', 'facilities', 'pricing'];
         echo json_encode(['answer' => trim($model_answer), 'quickReplies' => array_slice(array_unique($qr), 0, 3)]);
         exit;
     } else if (isset($res['error'])) {

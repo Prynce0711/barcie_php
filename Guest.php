@@ -105,18 +105,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['convert_from_pencil']
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <?php include __DIR__ . '/components/guest/head.php'; ?>
+  <?php include __DIR__ . '/Components/Guest/head.php'; ?>
   <script>
     // expose minimal globals used by guest-bootstrap.js if needed
-    window.BARCIE_GUEST = { 
+    window.BARCIE_GUEST = {
       userId: <?php echo json_encode($user_id); ?>,
       pencilConversion: <?php echo json_encode($pencil_conversion_data); ?>
     };
   </script>
   <!-- Pencil Conversion Handler -->
-  <script src="assets/js/guest/pencil-conversion.js"></script>
+  <script src="Components/Guest/Booking/pencil-conversion.js"></script>
 </head>
+
 <body>
   <!-- Mobile Menu Toggle -->
   <button class="mobile-menu-toggle d-lg-none" onclick="toggleSidebar()">
@@ -127,23 +129,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['convert_from_pencil']
   <div class="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <!-- Sidebar -->
-  <?php include __DIR__ . '/components/guest/sidebar.php'; ?>
+  <?php include __DIR__ . '/Components/Guest/sidebar.php'; ?>
 
   <!-- Main Content -->
   <main class="main-content">
     <div class="container-fluid">
-  <?php include __DIR__ . '/components/guest/sections/overview.php'; ?>
-  <?php include __DIR__ . '/components/guest/sections/availability.php'; ?>
-  <?php include __DIR__ . '/components/guest/sections/rooms.php'; ?>
-  <?php include __DIR__ . '/components/guest/sections/booking.php'; ?>
-  <?php include __DIR__ . '/components/guest/sections/feedback.php'; ?>
+      <?php include __DIR__ . '/Components/Guest/Dashboard/overview.php'; ?>
+      <?php include __DIR__ . '/Components/Guest/AvailabilityCalendar.php/availability.php'; ?>
+      <?php include __DIR__ . '/Components/Guest/RoomsAndFacilities.php/rooms.php'; ?>
+      <?php include __DIR__ . '/Components/Guest/Booking/booking.php'; ?>
+      <?php include __DIR__ . '/Components/Guest/Feedback/feedback.php'; ?>
     </div>
   </main>
 
   <!-- Chatbot -->
-  <?php include __DIR__ . '/components/guest/sections/chatbot.php'; ?>
+  <?php include __DIR__ . '/Components/Guest/ChatBot/chatbot.php'; ?>
 
   <!-- Footer -->
-  <?php include __DIR__ . '/components/guest/footer.php'; ?>
+  <?php include __DIR__ . '/Components/Guest/footer.php'; ?>
+
+  <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>
+  <?php include __DIR__ . '/Components/Popup/ErrorPopup.php'; ?>
+  <?php include __DIR__ . '/Components/Popup/LoadingPopup.php'; ?>
+  <?php include __DIR__ . '/Components/Popup/SuccessPopup.php'; ?>
 </body>
+
 </html>

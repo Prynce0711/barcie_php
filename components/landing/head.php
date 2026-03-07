@@ -9,17 +9,17 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Custom Landing Page CSS -->
   <?php $css_version = time() . '_' . rand(1000, 9999); ?>
-  <link rel="stylesheet" href="assets/css/landing-page.css?v=<?php echo $css_version; ?>">
+  <link rel="stylesheet" href="Components/Landing/landing-page.css?v=<?php echo $css_version; ?>">
   <!-- Caterings / Event Stylists CSS -->
-  <link rel="stylesheet" href="assets/css/caterings.css?v=<?php echo $css_version; ?>">
+  <link rel="stylesheet" href="Components/Landing/caterings.css?v=<?php echo $css_version; ?>">
   <!-- News Section CSS -->
-  <link rel="stylesheet" href="assets/css/news.css?v=<?php echo $css_version; ?>">
+  <link rel="stylesheet" href="Components/Admin/News/news.css?v=<?php echo $css_version; ?>">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Bootstrap JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Toast Notification System -->
-  <script src="assets/js/toast-notification.js"></script>
+  <!-- Popup Manager -->
+  <script src="Components/Popup/popup-manager.js"></script>
   <!-- AOS Animation Library -->
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -88,7 +88,7 @@
       box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     }
 
-    
+
     /* Hero Section */
     .hero-section {
       height: 100vh;

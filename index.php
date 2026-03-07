@@ -1,32 +1,32 @@
 <!doctype html>
 <html lang="en">
 
-<?php include 'components/landing/head.php'; ?>
+<?php include __DIR__ . '/Components/Landing/head.php'; ?>
 
 <body class="overflow-x-hidden">
 
-  <?php include 'components/landing/navigation.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/navigation.php'; ?>
 
-  <?php include 'components/landing/sections/hero.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/sections/hero.php'; ?>
 
-  <?php include 'components/landing/sections/about.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/sections/about.php'; ?>
 
-  <?php include 'components/landing/sections/vision_mission.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/sections/vision_mission.php'; ?>
 
-  <?php include 'components/landing/sections/news.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/sections/news.php'; ?>
 
-  <?php include 'components/landing/sections/event_stylists.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/sections/event_stylists.php'; ?>
 
-  <?php include 'components/landing/sections/caterings.php'; ?>
-  
-  <?php include 'components/landing/sections/brochure.php'; ?>
-  
-  <?php include 'components/landing/sections/features.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/sections/caterings.php'; ?>
+
+  <?php include __DIR__ . '/Components/Landing/sections/brochure.php'; ?>
+
+  <?php include __DIR__ . '/Components/Landing/sections/features.php'; ?>
 
 
-  <?php include 'components/landing/sections/contact.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/sections/contact.php'; ?>
 
-  <?php include 'components/landing/footer.php'; ?>
+  <?php include __DIR__ . '/Components/Landing/footer.php'; ?>
 
 
 
@@ -38,11 +38,16 @@
   ?>
   <script>console.log('🔄 Cache bust version: <?php echo $v; ?>');</script>
   <script src="assets/js/page-state-manager.js?v=<?php echo $v; ?>"></script>
-  <script src="assets/js/landing/main.js?v=<?php echo $v; ?>"></script>
-  <script src="assets/js/landing/auth.js?v=<?php echo $v; ?>"></script>
+  <script src="Components/Landing/main.js?v=<?php echo $v; ?>"></script>
+  <script src="Components/Landing/auth.js?v=<?php echo $v; ?>"></script>
 
   <!-- Component Verification Script (for testing) -->
-  <script src="assets/js/landing/verify-components.js?v=<?php echo $v; ?>"></script>
+  <script src="Components/Landing/verify-components.js?v=<?php echo $v; ?>"></script>
+
+  <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>
+  <?php include __DIR__ . '/Components/Popup/ErrorPopup.php'; ?>
+  <?php include __DIR__ . '/Components/Popup/LoadingPopup.php'; ?>
+  <?php include __DIR__ . '/Components/Popup/SuccessPopup.php'; ?>
 
 </body>
 
