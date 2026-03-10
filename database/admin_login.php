@@ -3,7 +3,20 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/../logs/admin_login_errors.log');
+
+// Ensure logs directory exists and is writable; fall back if not
+$logDir = __DIR__ . '/../logs';
+if (!is_dir($logDir)) {
+    @mkdir($logDir, 0777, true);
+}
+$logFile = $logDir . '/admin_login_errors.log';
+if (is_dir($logDir) && is_writable($logDir)) {
+    ini_set('error_log', $logFile);
+} else {
+    // Fallback to PHP's default error log (syslog or server-level log)
+    // Do not attempt to write into a non-existent/unwritable directory
+    ini_set('error_log', ini_get('error_log'));
+}
 
 // Start output buffering to catch any accidental output
 ob_start();

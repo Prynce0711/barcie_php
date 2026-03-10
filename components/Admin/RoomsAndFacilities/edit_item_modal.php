@@ -377,7 +377,7 @@
         <button type="button" class="btn btn-danger btn-sm remove-icon">
           <i class="fas fa-times"></i>
         </button>
-        <img src="${imgSrc}" alt="Image ${index + 1}" onerror="this.src='assets/images/imageBg/barcie_logo.jpg'">
+        <img src="${imgSrc}" alt="Image ${index + 1}" onerror="this.src='public/images/imageBg/barcie_logo.jpg'">
         <div class="gallery-image-overlay">
           <i class="fas fa-trash-alt fa-2x text-white"></i>
         </div>

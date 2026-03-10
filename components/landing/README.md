@@ -56,8 +56,7 @@ Admin dashboard interface components for managing bookings, rooms, and content.
 
 ##### Admin User Modals (`modals/`)
 
-- **`add_admin_modal_enhanced.php`** - Enhanced add admin modal
-- **`add_admin_modal.php`** - Basic add admin modal
+- **`add_admin_modal.php`** - Add admin modal
 - **`edit_admin_modal.php`** - Edit admin user modal
 - **`admin_auth_modal.php`** - Admin authentication modal
 
@@ -169,16 +168,19 @@ Landing page components for the public-facing website.
 ### Component Types
 
 #### Layout Components
+
 - Header, Footer, Sidebar
 - Define the overall page structure
 - Include navigation and branding
 
 #### Section Components
+
 - Content-specific sections
 - Feature or page-specific functionality
 - Can be composed of smaller components
 
 #### Modal Components
+
 - Overlay dialogs and popups
 - Form submissions and confirmations
 - Data input and editing interfaces
@@ -231,12 +233,14 @@ $data = fetchData();
 ## 🔄 Data Flow
 
 ### Dashboard Components
+
 1. User interacts with component
 2. Component sends request to API endpoint
 3. API processes and returns data
 4. Component updates UI with response
 
 ### Guest Components
+
 1. Guest fills form/selects options
 2. Data validated on client-side
 3. Submitted to API endpoint
@@ -244,6 +248,7 @@ $data = fetchData();
 5. UI updates accordingly
 
 ### Landing Components
+
 1. Static content loaded from database
 2. Interactive elements use JavaScript
 3. Forms submit to API endpoints

@@ -8,11 +8,8 @@
   <link rel="shortcut icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
   <link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
   <title>BarCIE Admin Login - Secure Access Portal</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Bootstrap JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
   <style>
@@ -237,13 +234,30 @@
       }
     });
 
-    // Resolve project root even when this page is opened from /Components/Login/
+    // Resolve project root robustly for different install layouts
     function getProjectRoot() {
       const path = window.location.pathname || '';
-      const marker = '/Components/Login/';
-      if (path.includes(marker)) {
-        return path.split(marker)[0] || '';
+      const lowerPath = path.toLowerCase();
+
+      // Try common component markers first (case-insensitive)
+      const markers = ['/components/login/', '/components/guest/', '/components/login', '/components/'];
+      for (const marker of markers) {
+        const idx = lowerPath.indexOf(marker);
+        if (idx !== -1) {
+          return path.substring(0, idx) || '';
+        }
       }
+
+      // Fallback: use the first path segment as the project folder, e.g. '/barcie_php'
+      const parts = path.split('/').filter(Boolean);
+      if (parts.length > 0) {
+        // If first segment looks like a filename (contains a dot), ignore it
+        if (parts[0].indexOf('.') === -1) {
+          return '/' + parts[0];
+        }
+      }
+
+      // As last resort, return empty string (assume site root)
       return '';
     }
 

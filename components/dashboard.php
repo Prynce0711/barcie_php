@@ -198,6 +198,11 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         <?php include __DIR__ . '/Components/Admin/Booking/bookings_section.php'; ?>
       </section>
 
+      <!-- Pencil Bookings Management (independent from bookings) -->
+      <section id="pencil-bookings-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/Booking/pencil_book_management.php'; ?>
+      </section>
+
 
       <!-- Feedback Section -->
       <section id="feedback-section" class="content-section">
@@ -558,6 +563,11 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       <script src="Components/Admin/AccountManagement/admin-management-enhanced.js"></script>
 
       <!-- Reports & Analytics JavaScript -->
+      <script src="Components/Admin/Reports/js/state.js"></script>
+      <script src="Components/Admin/Reports/js/utils.js"></script>
+      <script src="Components/Admin/Reports/js/charts.js"></script>
+      <script src="Components/Admin/Reports/js/updaters.js"></script>
+      <script src="Components/Admin/Reports/js/actions.js"></script>
       <script src="Components/Admin/Reports/reports.js"></script>
 
 </body>

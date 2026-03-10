@@ -3,21 +3,6 @@
 // This section displays bookings management and discount applications
 ?>
 
-<!-- Section Navigation Buttons -->
-<div class="row mb-3">
-  <div class="col-12">
-    <div class="btn-group" role="group" aria-label="Booking sections">
-      <button type="button" class="btn btn-primary section-nav-btn active" data-section="bookings-tab">
-        <i class="fas fa-calendar-check me-1"></i> Booking Management
-      </button>
-      <button type="button" class="btn btn-outline-primary section-nav-btn" data-section="pencil-tab">
-        <i class="fas fa-pencil-alt me-1"></i> Pencil Book Management
-      </button>
-      <!-- Discount Applications tab removed - discounts now auto-approved when ID uploaded -->
-    </div>
-  </div>
-</div>
-
 <!-- Bookings Management Section -->
 <div id="bookings-tab" class="booking-tab-content" style="display:block;">
   <div class="row mb-4">
@@ -30,94 +15,71 @@
           <small class="opacity-75">Manage all guest reservations and bookings</small>
         </div>
         <div class="card-body">
-          <!-- Action Buttons -->
-          <div class="d-flex justify-content-end mb-2 gap-2">
-            <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadBookingsExcel()">
-              <i class="fas fa-file-excel me-1"></i>Export to Excel
-            </button>
-            <button type="button" class="btn btn-sm btn-success" onclick="downloadBookingsPDF()">
-              <i class="fas fa-file-alt me-1"></i>Export to Text
-            </button>
-          </div>
-
-          <!-- Filters Section -->
+          <!-- Filters Bar -->
           <div class="card mb-3 border-0 bg-light">
-            <div class="card-body py-3">
-              <div class="row g-3">
-                <!-- Date Filter -->
-                <div class="col-md-3">
-                  <label for="bookingDateFilter" class="form-label fw-semibold text-muted small mb-2">
-                    <i class="fas fa-calendar-alt me-1"></i>Date
-                  </label>
-                  <input type="date" id="bookingDateFilter" class="form-control" onchange="filterBookings()">
-                </div>
-
-                <!-- Quick Date Actions -->
-                <div class="col-md-3">
-                  <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
-                  <div class="d-flex gap-2">
-                    <button type="button" id="todayFilterBtn" class="btn btn-sm btn-primary"
-                      onclick="setBookingDateToday()">
-                      <i class="fas fa-calendar-day me-1"></i>Today
-                    </button>
-                    <button type="button" id="allFilterBtn" class="btn btn-sm btn-outline-secondary"
-                      onclick="clearBookingDate()">
-                      <i class="fas fa-calendar me-1"></i>All
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Status Filter -->
-                <div class="col-md-3">
-                  <label class="form-label fw-semibold text-muted small mb-2">
-                    <i class="fas fa-info-circle me-1"></i>Status
-                  </label>
-                  <select class="form-select" id="statusFilter" onchange="filterBookings()">
-                    <option value="">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="checked_in">Checked In</option>
-                    <option value="checked_out">Checked Out</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                </div>
-
-                <!-- Type Filter -->
-                <div class="col-md-3">
-                  <label class="form-label fw-semibold text-muted small mb-2">
-                    <i class="fas fa-tag me-1"></i>Type
-                  </label>
-                  <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm type-filter-btn active" data-type="">
-                      <i class="fas fa-list me-1"></i>All
-                    </button>
-                    <button type="button" class="btn btn-outline-primary btn-sm type-filter-btn" data-type="room">
-                      <i class="fas fa-bed me-1"></i>Room
-                    </button>
-                    <button type="button" class="btn btn-outline-primary btn-sm type-filter-btn" data-type="facility">
-                      <i class="fas fa-building me-1"></i>Facility
-                    </button>
-                  </div>
-                  <select class="form-select d-none" id="typeFilter" onchange="filterBookings()">
-                    <option value="">All Types</option>
-                    <option value="room">Room</option>
-                    <option value="facility">Facility</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Reset Button Row -->
-              <div class="row mt-2">
-                <div class="col-12 text-end">
-                  <button class="btn btn-sm btn-outline-secondary" onclick="resetFilters()">
-                    <i class="fas fa-redo me-1"></i>Reset Filters
+            <div class="card-body py-2 px-3">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <?php $dateScope = 'bookings'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+                <div class="vr d-none d-md-block" style="height:28px;"></div>
+                <?php $searchScope = 'bookings'; $searchPlaceholder = 'Search guest or booking...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+                <div class="vr d-none d-md-block" style="height:28px;"></div>
+                <select class="form-select form-select-sm" id="statusFilter" style="width:auto; min-width:130px;">
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="checked_in">Checked In</option>
+                  <option value="checked_out">Checked Out</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+                <select class="form-select d-none" id="typeFilter"><option value="">All Types</option><option value="room">Room</option><option value="facility">Facility</option></select>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                  <?php $resetScope = 'bookings'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+                  <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadBookingsExcel()">
+                    <i class="fas fa-file-excel me-1"></i>Excel
+                  </button>
+                  <button type="button" class="btn btn-sm btn-success" onclick="downloadBookingsPDF()">
+                    <i class="fas fa-file-alt me-1"></i>Text
                   </button>
                 </div>
               </div>
             </div>
           </div>
+          <!-- Bridge: sync reusable components → existing filter logic -->
+          <script>
+          (function(){
+            function sync(){ if(typeof filterBookings==='function') filterBookings(); }
+            document.addEventListener('date-filter-changed', function(e){
+              if(e.detail.scope!=='bookings') return;
+              var el=document.getElementById('bookingDateFilter');
+              if(!el){el=document.createElement('input');el.type='hidden';el.id='bookingDateFilter';document.body.appendChild(el);}
+              el.value=e.detail.from||'';
+              sync();
+            });
+            document.addEventListener('search-changed', function(e){
+              if(e.detail.scope!=='bookings') return;
+              var el=document.getElementById('guestSearch');
+              if(!el){el=document.createElement('input');el.type='hidden';el.id='guestSearch';document.body.appendChild(el);}
+              el.value=e.detail.value||'';
+              sync();
+            });
+            document.addEventListener('filter-changed', function(e){
+              var f=e.detail&&e.detail.filter||'';
+              var el=document.getElementById('typeFilter');
+              if(el) el.value=(f==='all'?'':f);
+              sync();
+            });
+            var st=document.getElementById('statusFilter');
+            if(st) st.addEventListener('change', sync);
+            document.addEventListener('filters-reset', function(e){
+              if(e.detail&&e.detail.scope&&e.detail.scope!=='bookings') return;
+              var st2=document.getElementById('statusFilter');if(st2) st2.value='';
+              if(typeof resetFilters==='function') resetFilters();
+            });
+          })();
+          </script>
 
           <!-- Bookings Table -->
           <div id="admin_discount_alert" class="mb-2"></div>
@@ -754,48 +716,9 @@
 </div>
 <!-- End Bookings Management Section -->
 
-<!-- Pencil Book Management Section -->
-<div id="pencil-tab" class="booking-tab-content" style="display:none;">
-  <?php include __DIR__ . '/pencil_book_management.php'; ?>
-</div>
-
-<!-- Discount Applications Section -->
-<div id="discounts-tab" class="booking-tab-content" style="display:none;">
-  <?php include __DIR__ . '/discount_applications.php'; ?>
-</div>
-
 <!-- Payment Verification moved to its own dashboard section (see main dashboard include) -->
 
 <script>
-  // Section navigation handler
-  (function () {
-    document.addEventListener('click', function (e) {
-      const btn = e.target.closest('.section-nav-btn');
-      if (!btn) return;
-
-      const targetSection = btn.getAttribute('data-section');
-      if (!targetSection) return;
-
-      // Update button states
-      document.querySelectorAll('.section-nav-btn').forEach(b => {
-        b.classList.remove('active', 'btn-primary');
-        b.classList.add('btn-outline-primary');
-      });
-      btn.classList.remove('btn-outline-primary');
-      btn.classList.add('btn-primary', 'active');
-
-      // Hide all booking tabs only (not other sections in dashboard)
-      document.querySelectorAll('.booking-tab-content').forEach(s => {
-        s.style.display = 'none';
-      });
-
-      // Show target section
-      const target = document.getElementById(targetSection);
-      if (target) {
-        target.style.display = 'block';
-      }
-    });
-  })();
 
   // Download bookings as text backup
   function downloadBookingsPDF() {

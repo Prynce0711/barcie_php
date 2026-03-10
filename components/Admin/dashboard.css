@@ -108,12 +108,12 @@
 
   /* Shadows - Softer and More Natural */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 
@@ -123,8 +123,9 @@
   --transition-slow: 0.5s ease;
 
   /* Typography */
-  --font-family-sans: "Inter", "Segoe UI", "SF Pro Display", -apple-system,
-    BlinkMacSystemFont, system-ui, sans-serif;
+  --font-family-sans:
+    "Inter", "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -145,8 +146,14 @@
 }
 
 body {
-  font-family: "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont,
-    Roboto, Arial, sans-serif;
+  font-family:
+    "Segoe UI",
+    "SF Pro Display",
+    -apple-system,
+    BlinkMacSystemFont,
+    Roboto,
+    Arial,
+    sans-serif;
   background: #f0f4f8;
   color: #1a202c;
   min-height: 100vh;
@@ -546,7 +553,8 @@ table:not(.table-dark) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       circle at 30% 40%,
       rgba(59, 130, 246, 0.03) 0%,
       transparent 50%
@@ -905,21 +913,21 @@ section.content-section:not(.active) {
     transform: translateX(-100%);
     transition: transform 0.3s ease;
   }
-  
+
   .sidebar.open {
     transform: translateX(0);
   }
-  
+
   .main-content {
     margin-left: 0;
     width: 100%;
     padding: 20px;
   }
-  
+
   .mobile-menu-toggle {
     display: block !important;
   }
-  
+
   header {
     margin: 10px;
   }
@@ -1681,13 +1689,13 @@ form button:hover {
     padding-left: var(--space-md);
     padding-right: var(--space-md);
   }
-  
+
   /* Make tables horizontally scrollable */
   .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  
+
   /* Stack form controls vertically */
   .row.mb-3 > [class*="col-"] {
     margin-bottom: 1rem;
@@ -2648,7 +2656,6 @@ html {
   margin: 0 !important;
   position: relative !important;
   border-radius: 12px !important;
-  
 }
 
 #addItemModal .modal-body {
@@ -2792,7 +2799,9 @@ body.modal-open {
 
 /* Modal animation - smooth scroll in */
 .modal.fade .modal-dialog {
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out !important;
+  transition:
+    transform 0.3s ease-out,
+    opacity 0.3s ease-out !important;
   transform: translateY(-50px) !important;
   opacity: 0 !important;
 }
@@ -3387,15 +3396,33 @@ html {
   }
 
   /* Add data-label attributes via JavaScript or inline */
-  #bookingsTable td:nth-child(1)::before { content: "Receipt #"; }
-  #bookingsTable td:nth-child(2)::before { content: "Room/Facility"; }
-  #bookingsTable td:nth-child(3)::before { content: "Type"; }
-  #bookingsTable td:nth-child(4)::before { content: "Guest"; }
-  #bookingsTable td:nth-child(5)::before { content: "Schedule"; }
-  #bookingsTable td:nth-child(6)::before { content: "Booking Status"; }
-  #bookingsTable td:nth-child(7)::before { content: "Discount"; }
-  #bookingsTable td:nth-child(8)::before { content: "Created"; }
-  #bookingsTable td:nth-child(9)::before { content: "Actions"; }
+  #bookingsTable td:nth-child(1)::before {
+    content: "Receipt #";
+  }
+  #bookingsTable td:nth-child(2)::before {
+    content: "Room/Facility";
+  }
+  #bookingsTable td:nth-child(3)::before {
+    content: "Type";
+  }
+  #bookingsTable td:nth-child(4)::before {
+    content: "Guest";
+  }
+  #bookingsTable td:nth-child(5)::before {
+    content: "Schedule";
+  }
+  #bookingsTable td:nth-child(6)::before {
+    content: "Booking Status";
+  }
+  #bookingsTable td:nth-child(7)::before {
+    content: "Discount";
+  }
+  #bookingsTable td:nth-child(8)::before {
+    content: "Created";
+  }
+  #bookingsTable td:nth-child(9)::before {
+    content: "Actions";
+  }
 
   /* Action Buttons - Stack Vertically */
   #bookingsTable td .btn {

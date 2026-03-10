@@ -4,10 +4,9 @@ function populateItemModal(modal, item) {
   const modalBody = modal.querySelector("#itemDetailsBody");
   const modalTitle = modal.querySelector("#itemDetailsModalLabel");
   const bookNowBtn = modal.querySelector("#modalBookNowBtn");
-
   modalTitle.textContent = `${item.name} - Details`;
 
-  // Parse images array
+
   let images = [];
   if (item.images && item.images !== "") {
     try {
@@ -142,6 +141,5 @@ function populateItemModal(modal, item) {
   };
 }
 
-// Redirect to booking section with pre-filled item
 
 </script>

@@ -86,10 +86,9 @@
     mainImage.style.transform = "scale(1)";
     mainImage.alt = `Image ${index + 1}`;
 
-    // Update counter
+
     document.getElementById("currentImageIndex").textContent = index + 1;
 
-    // Update thumbnail selection
     updateThumbnailSelection();
   }
 
@@ -144,7 +143,7 @@
   function navigateGallery(direction) {
     let newIndex = currentGalleryIndex + direction;
 
-    // Loop around
+
     if (newIndex < 0) {
       newIndex = galleryImages.length - 1;
     } else if (newIndex >= galleryImages.length) {

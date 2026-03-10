@@ -31,11 +31,16 @@
 
 <section id="availability"
   class="content-section bg-white/95 border-2 border-[rgba(52,152,219,0.2)] p-[30px] mb-[30px] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.1)] relative z-[1]">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Room & Facility Availability</h2>
+  <h2 class="mb-3">Room & Facility Availability</h2>
 
-    <div>
-      <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+  <!-- Filters Bar -->
+  <div class="card mb-3 border-0 bg-light">
+    <div class="card-body py-2 px-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+        <div class="vr d-none d-md-block" style="height:28px;"></div>
+        <?php $searchScope = 'availability'; $searchPlaceholder = 'Search rooms & facilities...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+      </div>
     </div>
   </div>
 

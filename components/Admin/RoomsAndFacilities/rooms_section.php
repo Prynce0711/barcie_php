@@ -17,78 +17,15 @@
 <div class="row mb-4">
   <div class="col-12">
     <div class="card border-0 shadow-sm">
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col-md-6">
-            <h5 class="mb-3"><i class="fas fa-filter me-2 text-primary"></i>Filter & Search</h5>
-            <div class="btn-group w-100 item-filters" role="group" aria-label="Type filter">
-              <input type="radio" class="btn-check type-filter" name="type_filter" id="filter-all" value="all" checked>
-              <label class="btn btn-outline-primary" for="filter-all">
-                <i class="fas fa-list me-1"></i>All
-                <span class="badge bg-primary ms-1 type-count" data-type="all">0</span>
-              </label>
-
-              <input type="radio" class="btn-check type-filter" name="type_filter" id="filter-room" value="room">
-              <label class="btn btn-outline-primary" for="filter-room">
-                <i class="fas fa-bed me-1"></i>Rooms
-                <span class="badge bg-primary ms-1 type-count" data-type="room">0</span>
-              </label>
-
-              <input type="radio" class="btn-check type-filter" name="type_filter" id="filter-facility" value="facility">
-              <label class="btn btn-outline-primary" for="filter-facility">
-                <i class="fas fa-building me-1"></i>Facilities
-                <span class="badge bg-primary ms-1 type-count" data-type="facility">0</span>
-              </label>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label class="form-label">Search Items</label>
-              <div class="input-group mb-3">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                <input type="text" class="form-control" id="searchItems" placeholder="Search by name, room number, or description...">
-              </div>
-              <!-- Add New Button - Only for managers and super_admins -->
-              <div class="d-grid" id="add-room-button-container">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                  <i class="fas fa-plus me-2"></i>Add New Room / Facility
-                </button>
-              </div>
-              <script>
-                // Role-based access control for Rooms & Facilities
-                // Staff: CANNOT edit any data (❌) - can only view
-                // Admin: Can edit assigned modules only (✓ assigned modules)
-                // Manager/Super Admin: Full access (✓)
-                (function() {
-                  const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
-                  
-                  // Hide Add New button for staff (no add permission)
-                  const addBtn = document.getElementById('add-room-button-container');
-                  if (addBtn && currentRole === 'staff') {
-                    addBtn.style.display = 'none';
-                  }
-                  
-                  // Hide edit/delete buttons for staff
-                  function applyRoomsRoleRestrictions() {
-                    if (currentRole === 'staff') {
-                      document.querySelectorAll('.edit-toggle-btn, .delete-item-btn, [onclick*="deleteItem"]').forEach(btn => {
-                        btn.style.display = 'none';
-                      });
-                      console.log('Rooms: Staff restricted to view-only');
-                    }
-                  }
-                  
-                  // Apply on load and when items are updated
-                  applyRoomsRoleRestrictions();
-                  setTimeout(applyRoomsRoleRestrictions, 300);
-                  
-                  const itemsContainer = document.getElementById('items-container');
-                  if (itemsContainer) {
-                    const observer = new MutationObserver(applyRoomsRoleRestrictions);
-                    observer.observe(itemsContainer, { childList: true, subtree: true });
-                  }
-                })();
-              </script>
+      <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+          <div class="vr d-none d-md-block" style="height:28px;"></div>
+          <?php $searchScope = 'rooms'; $searchPlaceholder = 'Search by name, room number, or description...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <!-- Add New Button - Only for managers and super_admins -->
+            <div id="add-room-button-container">
+              <?php $addLabel = 'Add New'; $addClass = 'btn-success'; $addSize = 'btn-sm'; $addTarget = '#addItemModal'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
             </div>
           </div>
         </div>
@@ -96,6 +33,45 @@
     </div>
   </div>
 </div>
+<!-- Bridge: sync search component → existing search input -->
+<script>
+(function(){
+  document.addEventListener('search-changed', function(e){
+    if(e.detail.scope!=='rooms') return;
+    var el=document.getElementById('searchItems');
+    if(!el){el=document.createElement('input');el.type='hidden';el.id='searchItems';document.body.appendChild(el);}
+    el.value=e.detail.value||'';
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  document.addEventListener('filter-changed', function(e){
+    var f=e.detail&&e.detail.filter||'all';
+    var radios=document.querySelectorAll('input.type-filter[name="type_filter"]');
+    radios.forEach(function(r){if(r.value===f) r.checked=true;});
+  });
+})();
+</script>
+<script>
+  // Role-based access control for Rooms & Facilities
+  (function() {
+    const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
+    const addBtn = document.getElementById('add-room-button-container');
+    if (addBtn && currentRole === 'staff') addBtn.style.display = 'none';
+    function applyRoomsRoleRestrictions() {
+      if (currentRole === 'staff') {
+        document.querySelectorAll('.edit-toggle-btn, .delete-item-btn, [onclick*="deleteItem"]').forEach(btn => {
+          btn.style.display = 'none';
+        });
+      }
+    }
+    applyRoomsRoleRestrictions();
+    setTimeout(applyRoomsRoleRestrictions, 300);
+    const itemsContainer = document.getElementById('items-container');
+    if (itemsContainer) {
+      const observer = new MutationObserver(applyRoomsRoleRestrictions);
+      observer.observe(itemsContainer, { childList: true, subtree: true });
+    }
+  })();
+</script>
 
 <!-- Items Grid -->
 <!-- Items Grid (wrapped to allow overlay spinner) -->

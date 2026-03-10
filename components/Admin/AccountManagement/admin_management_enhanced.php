@@ -11,7 +11,7 @@
           <i class="fas fa-lock fa-5x text-warning"></i>
         </div>
         <h2 class="mb-3">
-          <i class="fas fa-user-shield me-2"></i>Admin Management
+          <i class="fas fa-user-shield me-2"></i>Account Management
         </h2>
         <p class="text-muted mb-4">
           This section contains sensitive administrative functions. Please authenticate to continue.
@@ -31,7 +31,7 @@
     <div class="col-md-12">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="dashboard-title">
-          <i class="fas fa-user-shield me-2"></i>Admin Management
+          <i class="fas fa-user-shield me-2"></i>Account Management
           <span class="badge bg-success ms-2">
             <i class="fas fa-check-circle me-1"></i>Verified
           </span>
@@ -40,9 +40,7 @@
           <button class="btn btn-secondary me-2" onclick="loadAdmins()" title="Refresh">
             <i class="fas fa-sync-alt me-2"></i>Refresh
           </button>
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAdminModal">
-            <i class="fas fa-plus me-2"></i>Add New Admin
-          </button>
+          <?php $addLabel = 'Add New Admin'; $addClass = 'btn-primary'; $addSize = ''; $addTarget = '#addAdminModal'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
         </div>
       </div>
     </div>
@@ -56,40 +54,49 @@
 
   <!-- Search and Filter Section -->
   <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-5">
-          <div class="input-group">
-            <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input type="text" class="form-control" id="admin-search"
-              placeholder="Search by username, email, or name...">
-          </div>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select" id="admin-role-filter">
-            <option value="">All Roles</option>
-            <option value="super_admin">Super Admin</option>
-            <option value="manager">Manager</option>
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select class="form-select" id="admin-status-filter">
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="online">Online Now</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
-            <i class="fas fa-times me-1"></i>Clear
-          </button>
+    <div class="card-body py-2 px-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <?php $searchScope = 'admins'; $searchPlaceholder = 'Search by username, email, or name...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+        <div class="vr d-none d-md-block" style="height:28px;"></div>
+        <select class="form-select form-select-sm" id="admin-role-filter" style="width:auto; min-width:130px;">
+          <option value="">All Roles</option>
+          <option value="super_admin">Super Admin</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+          <option value="staff">Staff</option>
+        </select>
+        <select class="form-select form-select-sm" id="admin-status-filter" style="width:auto; min-width:120px;">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="online">Online Now</option>
+        </select>
+        <div class="ms-auto">
+          <?php $resetScope = 'admins'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
         </div>
       </div>
     </div>
   </div>
+  <!-- Bridge: sync reusable components → existing admin filter logic -->
+  <script>
+  (function(){
+    function sync(){
+      var el=document.getElementById('admin-search');
+      if(!el){el=document.createElement('input');el.type='hidden';el.id='admin-search';document.body.appendChild(el);}
+      if(window.Searchbar&&window.Searchbar.admins) el.value=window.Searchbar.admins.getValue();
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    document.addEventListener('search-changed', function(e){
+      if(e.detail.scope!=='admins') return; sync();
+    });
+    document.addEventListener('filters-reset', function(e){
+      if(e.detail&&e.detail.scope&&e.detail.scope!=='admins') return;
+      var r=document.getElementById('admin-role-filter');if(r)r.value='';
+      var s=document.getElementById('admin-status-filter');if(s)s.value='';
+      if(typeof clearFilters==='function') clearFilters();
+    });
+  })();
+  </script>
 
   <!-- Admins Table -->
   <div class="card shadow-sm">
