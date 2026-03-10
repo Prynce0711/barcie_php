@@ -15,66 +15,52 @@ date_default_timezone_set('Asia/Manila');
         <small class="opacity-75">Manage all pencil bookings - tentative reservations awaiting confirmation.</small>
       </div>
       <div class="card-body">
-        <!-- Action Buttons -->
-        <div class="d-flex justify-content-end mb-2 gap-2">
-          <button type="button" class="btn btn-sm btn-outline-warning" onclick="downloadPencilBookingsExcel()">
-            <i class="fas fa-file-excel me-1"></i>Export to Excel
-          </button>
-          <button type="button" class="btn btn-sm btn-warning" onclick="downloadPencilBookingsPDF()">
-            <i class="fas fa-file-alt me-1"></i>Export to Text
-          </button>
-        </div>
-
-        <!-- Filters Section -->
+        <!-- Filters Bar -->
         <div class="card mb-3 border-0 bg-light">
-          <div class="card-body py-3">
-            <div class="row g-3 align-items-end">
-              <!-- Date Filter -->
-              <div class="col-md-3">
-                <label for="pencilDateFilter" class="form-label fw-semibold text-muted small mb-2">
-                  <i class="fas fa-calendar-alt me-1"></i>Date
-                </label>
-                <input type="date" id="pencilDateFilter" class="form-control" onchange="filterPencilBookings()">
-              </div>
-
-              <!-- Quick Date Actions -->
-              <div class="col-md-3">
-                <label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
-                <div class="d-flex gap-2">
-                  <button type="button" class="btn btn-sm btn-warning" onclick="setPencilDateToday()">
-                    <i class="fas fa-calendar-day me-1"></i>Today
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPencilDate()">
-                    <i class="fas fa-calendar me-1"></i>All
-                  </button>
-                </div>
-              </div>
-
-              <!-- Status Filter -->
-              <div class="col-md-4">
-                <label for="pencilStatusFilter" class="form-label fw-semibold text-muted small mb-2">
-                  <i class="fas fa-info-circle me-1"></i>Status
-                </label>
-                <select id="pencilStatusFilter" class="form-select" onchange="filterPencilBookings()">
-                  <option value="">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-
-              <!-- Reset Button -->
-              <div class="col-md-2">
-                <button class="btn btn-sm btn-outline-secondary w-100"
-                  onclick="document.getElementById('pencilDateFilter').value='';document.getElementById('pencilStatusFilter').value='';filterPencilBookings();">
-                  <i class="fas fa-redo me-1"></i>Reset
+          <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <?php $dateScope = 'pencil'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+              <div class="vr d-none d-md-block" style="height:28px;"></div>
+              <select class="form-select form-select-sm" id="pencilStatusFilter" style="width:auto; min-width:130px;">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <div class="ms-auto d-flex align-items-center gap-2">
+                <?php $resetScope = 'pencil'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+                <button type="button" class="btn btn-sm btn-outline-warning" onclick="downloadPencilBookingsExcel()">
+                  <i class="fas fa-file-excel me-1"></i>Excel
+                </button>
+                <button type="button" class="btn btn-sm btn-warning" onclick="downloadPencilBookingsPDF()">
+                  <i class="fas fa-file-alt me-1"></i>Text
                 </button>
               </div>
             </div>
           </div>
         </div>
+        <!-- Bridge: sync reusable components → existing pencil filter logic -->
+        <script>
+        (function(){
+          function sync(){ if(typeof filterPencilBookings==='function') filterPencilBookings(); }
+          document.addEventListener('date-filter-changed', function(e){
+            if(e.detail.scope!=='pencil') return;
+            var el=document.getElementById('pencilDateFilter');
+            if(!el){el=document.createElement('input');el.type='hidden';el.id='pencilDateFilter';document.body.appendChild(el);}
+            el.value=e.detail.from||'';
+            sync();
+          });
+          var st=document.getElementById('pencilStatusFilter');
+          if(st) st.addEventListener('change', sync);
+          document.addEventListener('filters-reset', function(e){
+            if(e.detail&&e.detail.scope&&e.detail.scope!=='pencil') return;
+            var st2=document.getElementById('pencilStatusFilter');if(st2) st2.value='';
+            sync();
+          });
+        })();
+        </script>
 
         <!-- Pencil Bookings Table -->
         <div id="pencil_alert" class="mb-2"></div>

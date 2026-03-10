@@ -1,14 +1,11 @@
 <?php
-// Ensure server-side times use Philippine time
+
 date_default_timezone_set('Asia/Manila');
-// Data Processing File
-// This file contains all the PHP logic for dashboard data processing
-// Include this file in the main dashboard.php
+
 
 session_start();
 require __DIR__ . '/../../database/db_connect.php';
 
-// ✅ Auth check: only admins can access
 if (!isset($_SESSION['admin_id'])) {
   error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access denied. Session ID: " . session_id() . ". Session data: " . print_r($_SESSION, true));
   header("Location: index.php");
@@ -17,14 +14,9 @@ if (!isset($_SESSION['admin_id'])) {
   error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access granted for admin ID: " . $_SESSION['admin_id'] . " (Username: " . ($_SESSION['admin_username'] ?? 'unknown') . ")");
 }
 
-/**
- * Normalize item_type values coming from forms to canonical values used by the app.
- * Returns 'room' or 'facility' (defaults to 'room' when unknown).
- */
 function normalize_item_type($raw) {
   $v = strtolower(trim((string)$raw));
   $v = preg_replace('/\s+/', ' ', $v);
-  // simple singularize common trailing 's'
   $v_singular = rtrim($v, "s \t\n\r\0\x0B");
 
   $map = [
@@ -38,28 +30,23 @@ function normalize_item_type($raw) {
     }
   }
 
-  // Heuristics
   if (strpos($v, 'room') !== false) return 'room';
   if (strpos($v, 'facil') !== false) return 'facility';
 
-  // Default fallback
+
   return 'room';
 }
 
-// ------------------ HANDLE ITEM ADD/UPDATE/DELETE ------------------
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   if (isset($_POST['action'])) {
     $action = $_POST['action'];
 
-    // DELETE ITEM
+
     if ($action === "delete" && isset($_POST['id'])) {
-      // Only managers and super_admin can delete rooms/facilities
       require_once __DIR__ . '/../../database/role_check.php';
       page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to delete rooms or facilities');
       
       $id = intval($_POST['id']);
-      
-      // Get the image path before deleting
       $stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
       $stmt->bind_param("i", $id);
       $stmt->execute();
@@ -67,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $stmt->fetch();
       $stmt->close();
 
-      // Delete the image file if it exists
+
       if ($img) {
         $image_full_path = $_SERVER['DOCUMENT_ROOT'] . "/" . ltrim($img, '/');
         if (file_exists($image_full_path)) {
@@ -76,7 +63,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
       }
 
-      // Delete the database record
       $stmt = $conn->prepare("DELETE FROM items WHERE id=?");
       $stmt->bind_param("i", $id);
       
@@ -93,34 +79,33 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       exit;
     }
 
-    // UPDATE ITEM
+
     if ($action === "update" && isset($_POST['id'])) {
-      // Only managers and super_admin can edit rooms/facilities
+
       require_once __DIR__ . '/../../database/role_check.php';
       page_require_roles(['manager','super_admin'], 'dashboard.php#rooms', 'You do not have permission to edit rooms or facilities');
       
       $id = intval($_POST['id']);
       $name = trim($_POST['name']);
-  // Normalize item type server-side to canonical values
+
   $type = normalize_item_type($_POST['item_type'] ?? 'room');
       $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
       $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
       $capacity = intval($_POST['capacity'] ?? 0);
       $price = floatval($_POST['price'] ?? 0);
 
-      // Add-ons JSON (optional)
+
       $addons_json = null;
       if (!empty($_POST['addons_json'])) {
-        // Ensure valid JSON; if invalid, set to null to avoid DB errors
+
         $tmp = json_decode($_POST['addons_json'], true);
         if (json_last_error() === JSON_ERROR_NONE) {
-          $addons_json = json_encode($tmp); // re-encode to normalize
+          $addons_json = json_encode($tmp); 
         } else {
           error_log('Invalid addons_json supplied in update: ' . $_POST['addons_json']);
         }
       }
 
-      // Get current images from database
       $current_image_stmt = $conn->prepare("SELECT image, images FROM items WHERE id=?");
       $current_image_stmt->bind_param("i", $id);
       $current_image_stmt->execute();
@@ -128,7 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $current_image_stmt->fetch();
       $current_image_stmt->close();
 
-      // Parse current images
+
       $current_images = [];
       if (!empty($current_images_json)) {
         $decoded = json_decode($current_images_json, true);
@@ -139,29 +124,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $current_images = [$current_image];
       }
       
-      // Handle removed images
+
       if (!empty($_POST['removed_images'])) {
         $removed = explode(',', $_POST['removed_images']);
         foreach ($removed as $removed_path) {
           $removed_path = trim($removed_path);
           if (empty($removed_path)) continue;
           
-          // Remove from array
+
           $current_images = array_filter($current_images, function($img) use ($removed_path) {
             return $img !== $removed_path;
           });
           
-          // Delete file using absolute path
+ 
           $full_path = $_SERVER['DOCUMENT_ROOT'] . "/" . ltrim($removed_path, '/');
           if (file_exists($full_path)) {
             unlink($full_path);
             error_log("Deleted removed image: $full_path");
           }
         }
-        $current_images = array_values($current_images); // Re-index array
+        $current_images = array_values($current_images); 
       }
       
-      // Handle new image uploads
+    
       if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
         $file_count = count($_FILES['images']['name']);
         $total_images = count($current_images) + $file_count;
@@ -227,11 +212,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
       }
       
-      // Legacy single image support
+
       $image_path = $current_image;
       if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        // Security: Validate file size (max 5MB)
-        $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
+        
+ 
+        $max_file_size = 5 * 1024 * 1024; 
         if ($_FILES['image']['size'] > $max_file_size) {
           error_log("File too large: " . $_FILES['image']['size'] . " bytes");
           $_SESSION['error_message'] = "Image file is too large. Maximum size is 5MB.";
@@ -285,13 +271,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           $target_file = $target_dir . $unique_filename;
           
           if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-            // Security: Set restrictive file permissions
+        
             chmod($target_file, 0644);
             
-            // Store relative path from root
+       
             $image_path = "uploads/" . $unique_filename;
-            
-            // Delete old image if exists and is different
+         
             if (!empty($current_image) && $current_image !== $image_path) {
               $old_image_full_path = $_SERVER['DOCUMENT_ROOT'] . "/" . ltrim($current_image, '/');
               if (file_exists($old_image_full_path)) {

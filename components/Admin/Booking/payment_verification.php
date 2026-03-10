@@ -14,54 +14,49 @@ date_default_timezone_set('Asia/Manila');
 				<small class="opacity-75">Review payment proofs and verify or reject payments.</small>
 			</div>
 			<div class="card-body">
-				<!-- Action Buttons -->
-				<div class="d-flex justify-content-end mb-2 gap-2">
-					<button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadPaymentsExcel()">
-						<i class="fas fa-file-excel me-1"></i>Export to Excel
-					</button>
-					<button type="button" class="btn btn-sm btn-primary text-white" onclick="downloadPaymentsPDF()">
-						<i class="fas fa-file-alt me-1"></i>Export to Text
-					</button>
-				</div>
-
-				<!-- Filters Section -->
+				<!-- Filters Bar -->
 				<div class="card mb-3 border-0 bg-light">
-					<div class="card-body py-3">
-						<div class="row g-3 align-items-end">
-							<!-- Date Filter -->
-							<div class="col-md-4">
-								<label for="paymentDateFilter" class="form-label fw-semibold text-muted small mb-2">
-									<i class="fas fa-calendar-alt me-1"></i>Date
-								</label>
-								<input type="date" id="paymentDateFilter" class="form-control"
-									onchange="filterPayments()">
-							</div>
-
-							<!-- Quick Date Actions -->
-							<div class="col-md-4">
-								<label class="form-label fw-semibold text-muted small mb-2">Quick Filter</label>
-								<div class="d-flex gap-2">
-									<button type="button" class="btn btn-sm btn-primary text-white"
-										onclick="setPaymentDateToday()">
-										<i class="fas fa-calendar-day me-1"></i>Today
-									</button>
-									<button type="button" class="btn btn-sm btn-outline-secondary"
-										onclick="clearPaymentDate()">
-										<i class="fas fa-calendar me-1"></i>All
-									</button>
-								</div>
-							</div>
-
-							<!-- Reset Button -->
-							<div class="col-md-4 text-end">
-								<button class="btn btn-sm btn-outline-secondary"
-									onclick="document.getElementById('paymentDateFilter').value='';filterPayments();">
-									<i class="fas fa-redo me-1"></i>Reset Filters
+					<div class="card-body py-2 px-3">
+						<div class="d-flex align-items-center gap-2 flex-wrap">
+							<?php $dateScope = 'payments'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+							<div class="vr d-none d-md-block" style="height:28px;"></div>
+							<?php $searchScope = 'payments'; $searchPlaceholder = 'Search guest or receipt...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+							<div class="ms-auto d-flex align-items-center gap-2">
+								<?php $resetScope = 'payments'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+								<button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadPaymentsExcel()">
+									<i class="fas fa-file-excel me-1"></i>Excel
+								</button>
+								<button type="button" class="btn btn-sm btn-primary text-white" onclick="downloadPaymentsPDF()">
+									<i class="fas fa-file-alt me-1"></i>Text
 								</button>
 							</div>
 						</div>
 					</div>
 				</div>
+				<!-- Bridge: sync reusable components → existing payment filter logic -->
+				<script>
+				(function(){
+					function sync(){ if(typeof filterPayments==='function') filterPayments(); }
+					document.addEventListener('date-filter-changed', function(e){
+						if(e.detail.scope!=='payments') return;
+						var el=document.getElementById('paymentDateFilter');
+						if(!el){el=document.createElement('input');el.type='hidden';el.id='paymentDateFilter';document.body.appendChild(el);}
+						el.value=e.detail.from||'';
+						sync();
+					});
+					document.addEventListener('search-changed', function(e){
+						if(e.detail.scope!=='payments') return;
+						var el=document.getElementById('paymentSearchFilter');
+						if(!el){el=document.createElement('input');el.type='hidden';el.id='paymentSearchFilter';document.body.appendChild(el);}
+						el.value=e.detail.value||'';
+						sync();
+					});
+					document.addEventListener('filters-reset', function(e){
+						if(e.detail&&e.detail.scope&&e.detail.scope!=='payments') return;
+						sync();
+					});
+				})();
+				</script>
 
 				<div class="table-responsive">
 					<table class="table table-hover align-middle" id="paymentsTable">
@@ -305,10 +300,12 @@ date_default_timezone_set('Asia/Manila');
 
 			function pGetAllRows() {
 				const dateFilter = document.getElementById('paymentDateFilter')?.value || '';
+				const searchFilter = (document.getElementById('paymentSearchFilter')?.value || '').toLowerCase();
 				return Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => {
 					if (r.id === 'payments-no-results') return false;
 					const rdate = r.dataset.date || '';
 					if (dateFilter && rdate !== dateFilter) return false;
+					if (searchFilter && r.textContent.toLowerCase().indexOf(searchFilter) === -1) return false;
 					return true;
 				});
 			}
@@ -345,20 +342,15 @@ date_default_timezone_set('Asia/Manila');
 			}
 
 			function pRecalc() {
-				const rows = pGetAllRows();
-				// Apply filter first to get matching rows
-				const dateFilter = document.getElementById('paymentDateFilter')?.value || '';
-				const matchingRows = rows.filter(row => {
-					const rdate = row.dataset.date || '';
-					return !dateFilter || rdate === dateFilter;
-				});
+				const allRows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => r.id !== 'payments-no-results');
+				const matchingRows = pGetAllRows();
 
 				const total = matchingRows.length;
 				pstate.totalPages = Math.max(1, Math.ceil(total / pstate.perPage));
 				if (pstate.currentPage > pstate.totalPages) pstate.currentPage = pstate.totalPages;
 
 				// Hide all rows first
-				rows.forEach(r => {
+				allRows.forEach(r => {
 					r.style.display = 'none';
 					r.setAttribute('data-hidden-by-pagination', 'true');
 				});
@@ -400,30 +392,13 @@ date_default_timezone_set('Asia/Manila');
 				} catch (err) { console.error('filterPayments error', err); }
 			};
 
-			window.setPaymentDateToday = function () {
-				const today = new Date().toISOString().split('T')[0];
-				const dateInput = document.getElementById('paymentDateFilter');
-				if (dateInput) {
-					dateInput.value = today;
-					filterPayments();
-				}
-			};
-
-			window.clearPaymentDate = function () {
-				const dateInput = document.getElementById('paymentDateFilter');
-				if (dateInput) {
-					dateInput.value = '';
-					filterPayments();
-				}
-			};
-
-			// Set default filter to today on page load
+			// Set DateFilter component default to today on page load
 			document.addEventListener('DOMContentLoaded', function () {
-				const today = new Date().toISOString().split('T')[0];
-				const dateInput = document.getElementById('paymentDateFilter');
-				if (dateInput && !dateInput.value) {
-					dateInput.value = today;
-					filterPayments();
+				if (window.DateFilter && window.DateFilter['payments']) {
+					var vals = window.DateFilter['payments'].getValues();
+					if (!vals.from) {
+						window.DateFilter['payments'].setToday();
+					}
 				}
 			});
 
@@ -450,7 +425,6 @@ FILTERS APPLIED:
 ${'='.repeat(80)}
 
 `;
-
 				rows.forEach((row, index) => {
 					const cells = row.querySelectorAll('td');
 					if (cells.length >= 6) {
@@ -532,11 +506,11 @@ ${'-'.repeat(80)}
 			};
 		})();
 
-		// View Payment Details Modal Function
+	
 		window.viewPaymentDetails = function (bookingId) {
 			if (!bookingId) return;
 
-			// Fetch booking details via AJAX
+			
 			fetch('database/user_auth.php', {
 				method: 'POST',
 				credentials: 'same-origin',
@@ -556,7 +530,7 @@ ${'-'.repeat(80)}
 					const booking = data.booking;
 					const modalId = 'payment-details-modal-' + bookingId;
 
-					// Build modal HTML
+					
 					let modalHTML = `
 				<div class="modal fade" id="${modalId}" tabindex="-1">
 					<div class="modal-dialog modal-dialog-centered modal-lg">
@@ -588,7 +562,7 @@ ${'-'.repeat(80)}
 									</div>
 								</div>`;
 
-					// Add-ons Section
+					
 					if (booking.add_ons) {
 						try {
 							const addOns = JSON.parse(booking.add_ons);
@@ -617,7 +591,7 @@ ${'-'.repeat(80)}
 								
 								<div class="row g-3">`;
 
-					// ID Proof Section
+				
 					if (booking.proof_of_id) {
 						modalHTML += `
 									<div class="col-md-6">
@@ -631,7 +605,7 @@ ${'-'.repeat(80)}
 									</div>`;
 					}
 
-					// Payment Proof Section
+					
 					if (booking.proof_of_payment) {
 						modalHTML += `
 									<div class="col-md-6">
@@ -656,11 +630,11 @@ ${'-'.repeat(80)}
 				</div>
 			`;
 
-					// Remove any existing modal with same ID
+					
 					const existingModal = document.getElementById(modalId);
 					if (existingModal) existingModal.remove();
 
-					// Add modal to body and show
+					
 					document.body.insertAdjacentHTML('beforeend', modalHTML);
 					const modalEl = document.getElementById(modalId);
 					const bsModal = new bootstrap.Modal(modalEl);

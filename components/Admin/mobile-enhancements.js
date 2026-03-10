@@ -1,11 +1,5 @@
-/**
- * Mobile Enhancements for Dashboard
- * Improves touch interactions and mobile usability
- */
-
 console.log("📱 mobile-enhancements.js loading...");
 
-// Detect if device is mobile
 const isMobile = () => {
   return (
     window.innerWidth <= 768 ||
@@ -15,7 +9,6 @@ const isMobile = () => {
   );
 };
 
-// Improved sidebar toggle for mobile
 function enhancedToggleSidebar() {
   const sidebar = document.querySelector(".sidebar");
   const overlay = getOrCreateOverlay();
@@ -37,7 +30,6 @@ function enhancedToggleSidebar() {
   }
 }
 
-// Get or create sidebar overlay
 function getOrCreateOverlay() {
   let overlay = document.querySelector(".sidebar-overlay");
 
@@ -45,15 +37,12 @@ function getOrCreateOverlay() {
     overlay = document.createElement("div");
     overlay.className = "sidebar-overlay";
     document.body.appendChild(overlay);
-
-    // Close sidebar when clicking overlay
     overlay.addEventListener("click", enhancedToggleSidebar);
   }
 
   return overlay;
 }
 
-// Enhanced touch feedback
 function addTouchFeedback() {
   const touchElements = document.querySelectorAll(
     ".btn, .card, .list-group-item, .nav-link",
@@ -76,7 +65,6 @@ function addTouchFeedback() {
   });
 }
 
-// Swipe to navigate images
 function enableImageSwipe() {
   const imageContainers = document.querySelectorAll(".image-slider-container");
 
@@ -106,16 +94,13 @@ function enableImageSwipe() {
       const diff = touchStartX - touchEndX;
 
       if (Math.abs(diff) > swipeThreshold) {
-        // Find the item ID from the container
         const itemId = container.id.replace("imageCarousel", "");
 
         if (diff > 0) {
-          // Swipe left - next image
           if (typeof navigateImage === "function" && itemId) {
             navigateImage(itemId, 1);
           }
         } else {
-          // Swipe right - previous image
           if (typeof navigateImage === "function" && itemId) {
             navigateImage(itemId, -1);
           }
@@ -125,7 +110,6 @@ function enableImageSwipe() {
   });
 }
 
-// Add pull-to-refresh functionality (optional)
 function enablePullToRefresh() {
   let startY = 0;
   let pullDistance = 0;
@@ -150,7 +134,6 @@ function enablePullToRefresh() {
 
       if (pullDistance > 0 && pullDistance < threshold * 2) {
         e.preventDefault();
-        // Visual feedback could be added here
       }
     }
   });
@@ -159,7 +142,6 @@ function enablePullToRefresh() {
     "touchend",
     () => {
       if (pullDistance > threshold) {
-        // Refresh the page
         location.reload();
       }
       startY = 0;
@@ -169,14 +151,12 @@ function enablePullToRefresh() {
   );
 }
 
-// Optimize table display for mobile
 function optimizeTablesForMobile() {
   if (!isMobile()) return;
 
   const tables = document.querySelectorAll("table");
 
   tables.forEach((table) => {
-    // Add data-label attributes for mobile view
     const headers = table.querySelectorAll("thead th");
     const rows = table.querySelectorAll("tbody tr");
 
@@ -191,13 +171,10 @@ function optimizeTablesForMobile() {
   });
 }
 
-// Improve form input experience on mobile
 function enhanceMobileFormInputs() {
-  // Prevent zoom on input focus for iOS
   const inputs = document.querySelectorAll("input, select, textarea");
 
   inputs.forEach((input) => {
-    // Add proper input types for mobile keyboards
     if (input.name && input.name.includes("email")) {
       input.type = "email";
     }
@@ -213,9 +190,7 @@ function enhanceMobileFormInputs() {
   });
 }
 
-// Smooth scroll to top button for mobile
 function addScrollToTop() {
-  // Create scroll to top button
   const scrollBtn = document.createElement("button");
   scrollBtn.className = "scroll-to-top";
   scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
@@ -240,7 +215,6 @@ function addScrollToTop() {
 
   document.body.appendChild(scrollBtn);
 
-  // Show/hide based on scroll position
   window.addEventListener("scroll", () => {
     if (window.scrollY > 300) {
       scrollBtn.style.opacity = "1";
@@ -251,7 +225,6 @@ function addScrollToTop() {
     }
   });
 
-  // Scroll to top on click
   scrollBtn.addEventListener("click", () => {
     window.scrollTo({
       top: 0,
@@ -260,11 +233,9 @@ function addScrollToTop() {
   });
 }
 
-// Optimize modal display for mobile
 function optimizeModalsForMobile() {
   if (!isMobile()) return;
 
-  // Observe for modal openings
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
@@ -273,7 +244,6 @@ function optimizeModalsForMobile() {
           node.classList.contains("modal") &&
           node.classList.contains("show")
         ) {
-          // Adjust modal for mobile
           const modalDialog = node.querySelector(".modal-dialog");
           if (modalDialog) {
             modalDialog.style.margin = "10px";
@@ -287,38 +257,30 @@ function optimizeModalsForMobile() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-// Improve touch scrolling
 function improveScrolling() {
-  // Add momentum scrolling for iOS
   document.body.style.webkitOverflowScrolling = "touch";
-
-  // Improve modal scrolling
   const modals = document.querySelectorAll(".modal");
   modals.forEach((modal) => {
     modal.style.webkitOverflowScrolling = "touch";
   });
 }
 
-// Add haptic feedback (if supported)
 function addHapticFeedback() {
   if (!("vibrate" in navigator)) return;
 
-  // Add to important buttons
   const importantButtons = document.querySelectorAll(
     ".btn-primary, .btn-success, .btn-danger",
   );
 
   importantButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      navigator.vibrate(10); // Short vibration
+      navigator.vibrate(10);
     });
   });
 }
 
-// Handle orientation change
 function handleOrientationChange() {
   window.addEventListener("orientationchange", () => {
-    // Close sidebar if open
     const sidebar = document.querySelector(".sidebar");
     const overlay = document.querySelector(".sidebar-overlay");
 
@@ -328,14 +290,12 @@ function handleOrientationChange() {
       document.body.classList.remove("sidebar-open");
     }
 
-    // Re-calculate dimensions
     setTimeout(() => {
       window.dispatchEvent(new Event("resize"));
     }, 100);
   });
 }
 
-// Improve double-tap zoom prevention on specific elements
 function preventDoubleTapZoom() {
   let lastTap = 0;
 
@@ -355,7 +315,6 @@ function preventDoubleTapZoom() {
   });
 }
 
-// Initialize all mobile enhancements
 function initializeMobileEnhancements() {
   if (!isMobile()) {
     console.log("📱 Desktop detected, skipping mobile enhancements");
@@ -365,8 +324,6 @@ function initializeMobileEnhancements() {
   console.log("📱 Initializing mobile enhancements...");
 
   try {
-    // If the server rendered the sidebar as open on page load, force it closed
-    // for small viewports so the main content can occupy full width.
     (function ensureSidebarClosedOnLoad() {
       try {
         const sidebar = document.querySelector(".sidebar");
@@ -377,7 +334,6 @@ function initializeMobileEnhancements() {
           sidebar.classList.remove("show", "open", "active");
           overlay.classList.remove("show", "active");
           document.body.classList.remove("sidebar-open");
-          // ensure transform is applied by toggling a tiny inline style fallback
           sidebar.style.transform =
             sidebar.style.transform || "translateX(-120%)";
         }
@@ -389,10 +345,7 @@ function initializeMobileEnhancements() {
       }
     })();
 
-    // Override global toggleSidebar with enhanced version
     window.toggleSidebar = enhancedToggleSidebar;
-
-    // Initialize enhancements
     addTouchFeedback();
     enableImageSwipe();
     optimizeTablesForMobile();
@@ -404,7 +357,6 @@ function initializeMobileEnhancements() {
     handleOrientationChange();
     preventDoubleTapZoom();
 
-    // Create overlay element
     getOrCreateOverlay();
 
     console.log("✅ Mobile enhancements initialized");
@@ -413,19 +365,16 @@ function initializeMobileEnhancements() {
   }
 }
 
-// Run when DOM is ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeMobileEnhancements);
 } else {
   initializeMobileEnhancements();
 }
 
-// Re-initialize on dynamic content changes
 window.addEventListener("load", () => {
   setTimeout(initializeMobileEnhancements, 500);
 });
 
-// Export functions
 window.mobileEnhancements = {
   isMobile,
   enhancedToggleSidebar,

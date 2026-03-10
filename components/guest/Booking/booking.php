@@ -983,8 +983,7 @@ include __DIR__ . '/confirm_addOn.php';
             console.log(`Matched ${matchedKeywords} keywords:`, matchedTexts);
             console.log('Text preview:', textPreview);
 
-            // VERY LENIENT Validation: Must match at least 1 keyword from the selected ID type
-            // This reduces false rejections while still validating it's likely the correct ID type
+            
             if (matchedKeywords >= 2) {
               resolve({
                 isValid: true,
@@ -1020,14 +1019,14 @@ include __DIR__ . '/confirm_addOn.php';
       });
     }
 
-    // Basic image quality checks before OCR
+   
     async function performBasicImageChecks(file) {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = function (e) {
           const img = new Image();
           img.onload = function () {
-            // Minimum resolution check (relaxed)
+         
             if (img.width < 300 || img.height < 200) {
               resolve({
                 isValid: false,
@@ -1036,7 +1035,7 @@ include __DIR__ . '/confirm_addOn.php';
               return;
             }
 
-            // File size check (relaxed)
+           
             const fileSizeKB = file.size / 1024;
             if (fileSizeKB < 20) {
               resolve({
@@ -1054,7 +1053,7 @@ include __DIR__ . '/confirm_addOn.php';
               return;
             }
 
-            // All basic checks passed - OCR will do the real validation
+          
             resolve({ isValid: true });
           };
           img.onerror = function () {
@@ -1069,40 +1068,40 @@ include __DIR__ . '/confirm_addOn.php';
       });
     }
 
-    // Handle ID Type selection for Reservation form
+  
     const reservationIdTypeSelect = document.getElementById('reservation_id_type');
     const reservationIdUpload = document.getElementById('reservation_id_upload');
 
     if (reservationIdTypeSelect && reservationIdUpload) {
       reservationIdTypeSelect.addEventListener('change', function () {
         if (this.value) {
-          // Enable file upload when ID type is selected
+         
           reservationIdUpload.removeAttribute('disabled');
           reservationIdUpload.style.opacity = '1';
           reservationIdUpload.style.cursor = 'pointer';
 
-          // Update help text based on ID type
+         
           const idTypeText = this.options[this.selectedIndex].text;
           const helpText = reservationIdUpload.parentElement.querySelector('.form-text');
           if (helpText) {
             helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
           }
         } else {
-          // Disable file upload if no ID type selected
+          
           reservationIdUpload.setAttribute('disabled', 'disabled');
           reservationIdUpload.style.opacity = '0.5';
           reservationIdUpload.style.cursor = 'not-allowed';
           reservationIdUpload.value = '';
 
-          // Reset validation
+        
           const validatedInput = document.getElementById('reservation_id_upload_validated');
           if (validatedInput) validatedInput.value = '0';
 
-          // Hide preview
+         
           const preview = document.getElementById('reservation_id_preview');
           if (preview) preview.style.display = 'none';
 
-          // Hide validation message
+         
           const validationElement = document.getElementById('reservation_id_validation');
           if (validationElement) validationElement.style.display = 'none';
 
@@ -1111,7 +1110,7 @@ include __DIR__ . '/confirm_addOn.php';
       });
     }
 
-    // Handle ID upload preview for reservation form
+ 
     if (reservationIdUpload) {
       reservationIdUpload.addEventListener('change', async function (e) {
         const file = e.target.files[0];
@@ -1127,12 +1126,12 @@ include __DIR__ . '/confirm_addOn.php';
           return;
         }
 
-        // Get selected ID type
+       
         const idType = idTypeSelect ? idTypeSelect.value : null;
 
         if (!preview || !thumb) return;
 
-        // Display preview first
+       
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
           reader.onload = function (e) {
@@ -1145,14 +1144,11 @@ include __DIR__ . '/confirm_addOn.php';
           preview.style.display = 'block';
         }
 
-        // Validate the ID with the selected type
         const isValid = await validateIDDocument(file, validationElement, validatedInput, idType);
 
-        // Enable form fields only if validation passed
         if (isValid) {
           checkAndEnableFormFields('reservation');
         } else {
-          // Keep form locked if ID is invalid
           const formFields = document.getElementById('reservation_form_fields');
           if (formFields) {
             const allInputs = formFields.querySelectorAll('input:not([type="hidden"]):not([readonly]), select, textarea, button');
@@ -1162,46 +1158,44 @@ include __DIR__ . '/confirm_addOn.php';
               field.style.cursor = 'not-allowed';
             });
           }
-          // Clear the file input
           this.value = '';
         }
       });
     }
 
-    // Handle ID Type selection for Pencil form
     const pencilIdTypeSelect = document.getElementById('pencil_id_type');
     const pencilIdUpload = document.getElementById('pencil_id_upload');
 
     if (pencilIdTypeSelect && pencilIdUpload) {
       pencilIdTypeSelect.addEventListener('change', function () {
         if (this.value) {
-          // Enable file upload when ID type is selected
+        
           pencilIdUpload.removeAttribute('disabled');
           pencilIdUpload.style.opacity = '1';
           pencilIdUpload.style.cursor = 'pointer';
 
-          // Update help text based on ID type
+       
           const idTypeText = this.options[this.selectedIndex].text;
           const helpText = pencilIdUpload.parentElement.querySelector('.form-text');
           if (helpText) {
             helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
           }
         } else {
-          // Disable file upload if no ID type selected
+       
           pencilIdUpload.setAttribute('disabled', 'disabled');
           pencilIdUpload.style.opacity = '0.5';
           pencilIdUpload.style.cursor = 'not-allowed';
           pencilIdUpload.value = '';
 
-          // Reset validation
+    
           const validatedInput = document.getElementById('pencil_id_upload_validated');
           if (validatedInput) validatedInput.value = '0';
 
-          // Hide preview
+
           const preview = document.getElementById('pencil_id_preview');
           if (preview) preview.style.display = 'none';
 
-          // Hide validation message
+
           const validationElement = document.getElementById('pencil_id_validation');
           if (validationElement) validationElement.style.display = 'none';
 
@@ -1210,7 +1204,7 @@ include __DIR__ . '/confirm_addOn.php';
       });
     }
 
-    // Handle ID upload preview for pencil form
+
     if (pencilIdUpload) {
       pencilIdUpload.addEventListener('change', async function (e) {
         const file = e.target.files[0];
@@ -1226,12 +1220,12 @@ include __DIR__ . '/confirm_addOn.php';
           return;
         }
 
-        // Get selected ID type
+
         const idType = idTypeSelect ? idTypeSelect.value : null;
 
         if (!preview || !thumb) return;
 
-        // Display preview first
+
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
           reader.onload = function (e) {
@@ -1244,14 +1238,13 @@ include __DIR__ . '/confirm_addOn.php';
           preview.style.display = 'block';
         }
 
-        // Validate the ID with the selected type
+
         const isValid = await validateIDDocument(file, validationElement, validatedInput, idType);
 
-        // Enable form fields only if validation passed
         if (isValid) {
           checkAndEnableFormFields('pencil');
         } else {
-          // Keep form locked if ID is invalid
+
           const formFields = document.getElementById('pencil_form_fields');
           if (formFields) {
             const allInputs = formFields.querySelectorAll('input:not([type="hidden"]):not([readonly]), select, textarea, button');
@@ -1261,7 +1254,7 @@ include __DIR__ . '/confirm_addOn.php';
               field.style.cursor = 'not-allowed';
             });
           }
-          // Clear the file input
+         
           this.value = '';
         }
       });

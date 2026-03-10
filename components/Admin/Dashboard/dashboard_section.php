@@ -319,33 +319,47 @@ if (isset($conn) && $conn instanceof mysqli) {
                 </div>
 
                 <!-- Filter Controls -->
-                <div class="row mb-3 g-2">
-                  <div class="col-md-6 col-lg-4">
-                    <select id="activityTypeFilter" class="form-select form-select-sm">
-                      <option value="all">All Activities</option>
-                      <option value="booking_approved">Bookings Approved</option>
-                      <option value="payment_approved">Payments Approved</option>
-                      <option value="booking_cancelled">Bookings Cancelled</option>
-                      <option value="guest_checkin">Check-ins</option>
-                      <option value="guest_checkout">Check-outs</option>
-                      <option value="feedback_submitted">Feedback</option>
-                      <option value="pencil_created">Pencil Bookings</option>
-                    </select>
-                  </div>
-                  <div class="col-md-6 col-lg-4">
-                    <input type="text" id="activitySearchInput" class="form-control form-control-sm" placeholder="Search by guest name or booking ID...">
-                  </div>
-                  <div class="col-md-12 col-lg-4">
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-outline-primary flex-fill" onclick="loadRecentActivities()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                      </button>
-                      <button class="btn btn-sm btn-outline-secondary" onclick="clearActivityFilters()">
-                        <i class="fas fa-times"></i> Clear
-                      </button>
+                <div class="card mb-3 border-0 bg-light">
+                  <div class="card-body py-2 px-3">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <select id="activityTypeFilter" class="form-select form-select-sm" style="width:auto; min-width:150px;">
+                        <option value="all">All Activities</option>
+                        <option value="booking_approved">Bookings Approved</option>
+                        <option value="payment_approved">Payments Approved</option>
+                        <option value="booking_cancelled">Bookings Cancelled</option>
+                        <option value="guest_checkin">Check-ins</option>
+                        <option value="guest_checkout">Check-outs</option>
+                        <option value="feedback_submitted">Feedback</option>
+                        <option value="pencil_created">Pencil Bookings</option>
+                      </select>
+                      <div class="vr d-none d-md-block" style="height:28px;"></div>
+                      <?php $searchScope = 'activities'; $searchPlaceholder = 'Search by guest name or booking ID...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+                      <div class="ms-auto d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-light" onclick="loadRecentActivities()">
+                          <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                        <?php $resetScope = 'activities'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+                      </div>
                     </div>
                   </div>
                 </div>
+                <!-- Bridge: sync search component → existing activity search -->
+                <script>
+                (function(){
+                  document.addEventListener('search-changed', function(e){
+                    if(e.detail.scope!=='activities') return;
+                    var el=document.getElementById('activitySearchInput');
+                    if(!el){el=document.createElement('input');el.type='hidden';el.id='activitySearchInput';document.body.appendChild(el);}
+                    el.value=e.detail.value||'';
+                    if(typeof applyFilters==='function') applyFilters();
+                  });
+                  document.addEventListener('filters-reset', function(e){
+                    if(e.detail&&e.detail.scope&&e.detail.scope!=='activities') return;
+                    var t=document.getElementById('activityTypeFilter');if(t)t.value='all';
+                    if(typeof clearActivityFilters==='function') clearActivityFilters();
+                  });
+                })();
+                </script>
 
                 <!-- Activities List -->
                 <div id="recentActivitiesList" class="activity-timeline" style="max-height: 600px; overflow-y: auto;">
@@ -384,10 +398,27 @@ if (isset($conn) && $conn instanceof mysqli) {
         let currentPage = 1;
         const activitiesPerPage = 10;
         let lastUpdateTime = null;
+        let activitiesRequestInFlight = false;
+        let activitiesAbortController = null;
 
         function loadRecentActivities() {
+          // Prevent overlapping requests from piling up and keeping the page busy.
+          if (activitiesRequestInFlight) {
+            return;
+          }
+
+          activitiesRequestInFlight = true;
+          activitiesAbortController = new AbortController();
+          const timeoutId = setTimeout(() => {
+            if (activitiesAbortController) {
+              activitiesAbortController.abort();
+            }
+          }, 12000);
+
           fetch('api/recent_activities.php?limit=100', {
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            cache: 'no-store',
+            signal: activitiesAbortController.signal
           })
             .then(response => {
               if (!response.ok) {
@@ -408,7 +439,16 @@ if (isset($conn) && $conn instanceof mysqli) {
             })
             .catch(error => {
               console.error('Error loading activities:', error);
-              showActivitiesError('Failed to load activities');
+              if (error && error.name === 'AbortError') {
+                showActivitiesError('Loading activities timed out. Please retry.');
+              } else {
+                showActivitiesError('Failed to load activities');
+              }
+            })
+            .finally(() => {
+              clearTimeout(timeoutId);
+              activitiesRequestInFlight = false;
+              activitiesAbortController = null;
             });
         }
 
@@ -645,16 +685,16 @@ if (isset($conn) && $conn instanceof mysqli) {
           `;
         }
 
-        // Load activities on page load
+
         document.addEventListener('DOMContentLoaded', function() {
-          // Load immediately
+ 
           loadRecentActivities();
           
-          // Add filter event listeners
+
           document.getElementById('activityTypeFilter').addEventListener('change', applyFilters);
           document.getElementById('activitySearchInput').addEventListener('input', debounce(applyFilters, 300));
           
-          // Add pagination button listeners
+
           document.getElementById('prevPageBtn').addEventListener('click', function() {
             changePage(-1);
           });
@@ -663,14 +703,13 @@ if (isset($conn) && $conn instanceof mysqli) {
             changePage(1);
           });
           
-          // Update time ago every 1 second for real-time counting
+
           setInterval(updateTimeAgo, 1000);
           
-          // Auto-refresh activities every 30 seconds
+   
           setInterval(loadRecentActivities, 30000);
         });
 
-        // Debounce function for search input
         function debounce(func, wait) {
           let timeout;
           return function executedFunction(...args) {

@@ -17,44 +17,30 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
   <meta name="theme-color" content="#3b82f6">
   <link rel="icon" type="image/png" href="public/images/imageBg/barcie_logo.jpg">
   <title>Admin Dashboard</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-  <!-- FullCalendar CSS & JS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="Components/Admin/dashboard.css">
   <link rel="stylesheet" href="Components/Admin/dashboard-enhancements.css">
   <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
   <link rel="stylesheet" href="Components/Admin/News/news.css">
   <link rel="stylesheet" href="Components/Admin/Reports/reports.css">
-  <!-- Enhanced Admin Management Styles -->
   <link rel="stylesheet" href="Components/Admin/AccountManagement/admin-online-status.css">
 </head>
 
 
 <body>
 
-
-
-
-  <!-- Mobile Menu Toggle -->
   <button class="mobile-menu-toggle d-lg-none" onclick="toggleSidebar()">
     <i class="fas fa-bars"></i>
   </button>
 
-  <!-- Sidebar -->
   <?php include __DIR__ . '/Components/Admin/sidebar.php'; ?>
 
-
-
-  <!-- Main Content -->
   <div class="main-content">
     <div class="container-fluid px-2" style="max-width: 100%;">
       <div class="row">
@@ -77,16 +63,15 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         </div>
       </div>
 
-      <!-- Dashboard Section -->
+
       <section id="dashboard-section" class="content-section active d-block">
         <?php include __DIR__ . '/Components/Admin/Dashboard/dashboard_section.php'; ?>
       </section>
 
       <?php
-      // Load booking events for calendar
+
       $events = [];
 
-      // Safe query - no user input (status is hardcoded)
       $calendar_query = "SELECT b.* FROM bookings b WHERE b.status != 'rejected' ORDER BY b.id DESC";
       $result = $conn->query($calendar_query);
 
@@ -94,7 +79,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         while ($row = $result->fetch_assoc()) {
           $room_facility = 'Booking #' . $row['id'];
 
-          // Try to extract guest name from details
+
           if (strpos($row['details'], 'Guest:') !== false) {
             $parts = explode('|', $row['details']);
             foreach ($parts as $part) {
@@ -196,6 +181,11 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       <!-- Bookings Management -->
       <section id="bookings-section" class="content-section">
         <?php include __DIR__ . '/Components/Admin/Booking/bookings_section.php'; ?>
+      </section>
+
+      <!-- Pencil Bookings Management (independent from bookings) -->
+      <section id="pencil-bookings-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/Booking/pencil_book_management.php'; ?>
       </section>
 
 
@@ -558,6 +548,11 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       <script src="Components/Admin/AccountManagement/admin-management-enhanced.js"></script>
 
       <!-- Reports & Analytics JavaScript -->
+      <script src="Components/Admin/Reports/js/state.js"></script>
+      <script src="Components/Admin/Reports/js/utils.js"></script>
+      <script src="Components/Admin/Reports/js/charts.js"></script>
+      <script src="Components/Admin/Reports/js/updaters.js"></script>
+      <script src="Components/Admin/Reports/js/actions.js"></script>
       <script src="Components/Admin/Reports/reports.js"></script>
 
 </body>

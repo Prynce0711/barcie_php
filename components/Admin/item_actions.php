@@ -1,19 +1,15 @@
 <?php
-// Item actions: migration and POST handlers for items (images + addons)
-// Expects $conn (mysqli) to be available in the including file's scope.
-
-// Ensure addons column exists (migrate if necessary)
 try {
   $chk = $conn->query("SHOW COLUMNS FROM items LIKE 'addons'");
   if (!$chk || $chk->num_rows === 0) {
     $conn->query("ALTER TABLE items ADD COLUMN addons TEXT NULL");
   }
 } catch (Exception $e) {
-  // ignore migration failures, log
+
   error_log('Migration check failed: ' . $e->getMessage());
 }
 
-// Simple file logger for addon debugging (writes to project's logs folder)
+
 function log_addons_debug($msg) {
   $logDir = __DIR__ . '/../../../logs';
   if (!is_dir($logDir)) {
@@ -25,19 +21,17 @@ function log_addons_debug($msg) {
   @file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
 }
 
-// Handle POST actions centrally
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
-  // helper: ensure upload dir
+
   $uploadDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/items';
   if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
-  // allowed image extensions and MIME types
+
   $allowedExt = ['jpg','jpeg','png','gif','webp'];
   $allowedMime = ['image/jpeg','image/png','image/gif','image/webp'];
-  $maxSize = 5 * 1024 * 1024; // 5MB per image
+  $maxSize = 5 * 1024 * 1024; 
 
-  // helper to validate uploaded file
   $validateAndMove = function($tmpPath, $origName) use ($uploadDir, $allowedExt, $allowedMime, $maxSize) {
     if (!is_uploaded_file($tmpPath)) return false;
     if (filesize($tmpPath) > $maxSize) return false;
@@ -64,9 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $capacity = intval($_POST['capacity'] ?? 0);
     $price = floatval($_POST['price'] ?? 0);
 
-    // Process addons
+  
     $addonsList = [];
-    // DEBUG: Log received POST data for addons (both to apache log and project file)
     $postAddonsStr = isset($_POST['addons']) ? print_r($_POST['addons'], true) : 'NOT SET';
     error_log('=== ADDONS DEBUG ===');
     error_log('POST addons isset: ' . (isset($_POST['addons']) ? 'YES' : 'NO'));
@@ -88,7 +81,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     log_addons_debug('Processed addonsList: ' . print_r($addonsList, true));
     error_log('===================');
 
-    // Fetch existing images from database
     $existing = [];
     $q = $conn->query("SELECT images, image FROM items WHERE id = " . $id);
     if ($q && $q->num_rows) {
@@ -101,20 +93,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
-    // Also check if existing_images was sent from the form (as backup)
     if (empty($existing) && !empty($_POST['existing_images'])) {
       $decoded = json_decode($_POST['existing_images'], true);
       if (is_array($decoded)) $existing = $decoded;
     }
 
-    // Removed list
+    
     $removed = [];
     if (!empty($_POST['removed_images'])) {
       $parts = array_filter(array_map('trim', explode(',', $_POST['removed_images'])));
       $removed = $parts;
     }
 
-    // Handle replace_images (nested by itemId)
+   
     if (!empty($_FILES['replace_images']) && isset($_FILES['replace_images']['name'][$id])) {
       foreach ($_FILES['replace_images']['name'][$id] as $idx => $origName) {
         if (empty($origName)) continue;
@@ -132,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
-    // Remove images marked removed
+  
     if (!empty($removed)) {
       foreach ($removed as $r) {
         $existing = array_values(array_filter($existing, function($v) use ($r){ return $v !== $r; }));
@@ -141,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
-    // Handle newly uploaded images[] (append)
+  
     if (!empty($_FILES['images']) && !empty($_FILES['images']['name'])) {
       foreach ($_FILES['images']['name'] as $i => $iname) {
         if (empty($iname)) continue;

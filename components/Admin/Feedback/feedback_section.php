@@ -17,31 +17,59 @@
 			</div>
 			<div class="card-body">
 				<?php if (isset($_SESSION) && !empty($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
-					<div class="mb-3 row g-2 align-items-center">
-						<div class="col-md-3">
-							<input id="feedbackSearch" class="form-control" placeholder="Search messages, names, rooms..." />
-					
-
-						</div>
-						<div class="col-md-2">
-							<select id="feedbackRatingFilter" class="form-select">
-								<option value="">All ratings</option>
-								<option value="5">5 stars</option>
-								<option value="4">4 stars</option>
-								<option value="3">3 stars</option>
-								<option value="2">2 stars</option>
-								<option value="1">1 star</option>
-							</select>
-						</div>
-						<!-- status removed: feedbacks appear immediately,	 no approval required -->
-						<div class="col-md-2 d-flex">
-							<input id="dateFrom" type="dat 	e" class="form-control me-1" />
-							<input id="dateTo" type="date" class="form-control" />
-						</div>
-						<div class="col-md-3 text-end">
-							<small id="feedbackCount" class="text-muted">Loading...</small>
+					<!-- Filters Bar -->
+					<div class="card mb-3 border-0 bg-light">
+						<div class="card-body py-2 px-3">
+							<div class="d-flex align-items-center gap-2 flex-wrap">
+								<?php $searchScope = 'feedback'; $searchPlaceholder = 'Search messages, names, rooms...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+								<div class="vr d-none d-md-block" style="height:28px;"></div>
+								<select id="feedbackRatingFilter" class="form-select form-select-sm" style="width:auto; min-width:120px;">
+									<option value="">All ratings</option>
+									<option value="5">5 stars</option>
+									<option value="4">4 stars</option>
+									<option value="3">3 stars</option>
+									<option value="2">2 stars</option>
+									<option value="1">1 star</option>
+								</select>
+								<div class="vr d-none d-md-block" style="height:28px;"></div>
+								<?php $dateScope = 'feedback'; $dateShowRange = true; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+								<div class="ms-auto d-flex align-items-center gap-2">
+									<small id="feedbackCount" class="text-muted">Loading...</small>
+									<?php $resetScope = 'feedback'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+								</div>
+							</div>
 						</div>
 					</div>
+					<!-- Bridge: sync reusable components → existing feedback filter logic -->
+					<script>
+					(function(){
+						function sync(){ if(typeof applyFilters==='function') applyFilters(); }
+						document.addEventListener('search-changed', function(e){
+							if(e.detail.scope!=='feedback') return;
+							var el=document.getElementById('feedbackSearch');
+							if(!el){el=document.createElement('input');el.type='hidden';el.id='feedbackSearch';document.body.appendChild(el);}
+							el.value=e.detail.value||'';
+							sync();
+						});
+						document.addEventListener('date-filter-changed', function(e){
+							if(e.detail.scope!=='feedback') return;
+							var from=document.getElementById('dateFrom');
+							if(!from){from=document.createElement('input');from.type='hidden';from.id='dateFrom';document.body.appendChild(from);}
+							from.value=e.detail.from||'';
+							var to=document.getElementById('dateTo');
+							if(!to){to=document.createElement('input');to.type='hidden';to.id='dateTo';document.body.appendChild(to);}
+							to.value=e.detail.to||'';
+							sync();
+						});
+						var rat=document.getElementById('feedbackRatingFilter');
+						if(rat) rat.addEventListener('change', sync);
+						document.addEventListener('filters-reset', function(e){
+							if(e.detail&&e.detail.scope&&e.detail.scope!=='feedback') return;
+							var rat2=document.getElementById('feedbackRatingFilter');if(rat2) rat2.value='';
+							sync();
+						});
+					})();
+					</script>
 
 					<div class="table-responsive" style="max-height:520px; overflow:auto;">
 						<table class="table table-striped table-hover align-middle" id="feedbackTable">

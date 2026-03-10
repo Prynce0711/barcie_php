@@ -12,9 +12,7 @@ if ($news_result && $news_result->num_rows > 0) {
 
 <div class="section-header d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-newspaper me-2"></i>News & Updates</h2>
-    <button class="btn btn-primary" onclick="openAddNewsModal()">
-        <i class="fas fa-plus me-1"></i> Add News
-    </button>
+    <?php $addLabel = 'Add News'; $addClass = 'btn-primary'; $addSize = ''; $addTarget = ''; $addOnclick = 'openAddNewsModal()'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
 </div>
 
 <div class="row mb-4">
@@ -84,15 +82,11 @@ if ($news_result && $news_result->num_rows > 0) {
                                                 <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($news['author']); ?>
                                             </small>
                                             <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-primary" onclick="viewNews(<?php echo $news['id']; ?>)" title="View">
+                                                <button class="btn btn-outline-primary barcie-action-btn" onclick="viewNews(<?php echo $news['id']; ?>)" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button class="btn btn-outline-warning" onclick="editNews(<?php echo $news['id']; ?>)" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn btn-outline-danger" onclick="deleteNews(<?php echo $news['id']; ?>)" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <?php $editLabel = ''; $editIcon = 'fa-edit'; $editClass = 'btn-outline-warning'; $editSize = ''; $editOnclick = 'editNews(' . $news['id'] . ')'; $editTitle = 'Edit'; include __DIR__ . '/../../ActionButton/Edit.php'; ?>
+                                                <?php $deleteLabel = ''; $deleteIcon = 'fa-trash'; $deleteClass = 'btn-outline-danger'; $deleteSize = ''; $deleteOnclick = 'deleteNews(' . $news['id'] . ')'; $deleteTitle = 'Delete'; include __DIR__ . '/../../ActionButton/Delete.php'; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -108,7 +102,7 @@ if ($news_result && $news_result->num_rows > 0) {
 
 <!-- Add/Edit News Modal -->
 <div class="modal fade" id="newsModal" tabindex="-1" aria-labelledby="newsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="newsModalLabel">Add News</h5>
@@ -175,7 +169,7 @@ if ($news_result && $news_result->num_rows > 0) {
 
 <!-- View News Modal -->
 <div class="modal fade" id="viewNewsModal" tabindex="-1" aria-labelledby="viewNewsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewNewsModalLabel">News Details</h5>
@@ -191,23 +185,7 @@ if ($news_result && $news_result->num_rows > 0) {
     </div>
 </div>
 
-            <!-- Success Modal for news operations -->
-            <div class="modal fade" id="newsSuccessModal" tabindex="-1" aria-labelledby="newsSuccessModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-sm modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="newsSuccessModalLabel">Success</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body" id="newsSuccessMessage">
-                            <!-- message will be injected -->
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
 <script>
 // Role-based access control for News & Updates
@@ -220,11 +198,11 @@ if ($news_result && $news_result->num_rows > 0) {
     
     if (role === 'staff') {
       // Hide Add News button
-      const addBtn = document.querySelector('[onclick="openAddNewsModal()"]');
+      const addBtn = document.querySelector('.barcie-action-add[onclick="openAddNewsModal()"]');
       if (addBtn) addBtn.style.display = 'none';
       
       // Hide edit and delete buttons on news cards
-      document.querySelectorAll('.btn-outline-warning, .btn-outline-danger').forEach(btn => {
+      document.querySelectorAll('.barcie-action-edit, .barcie-action-delete').forEach(btn => {
         const onclick = btn.getAttribute('onclick');
         const isEditOrDelete = onclick && (onclick.includes('editNews') || onclick.includes('deleteNews'));
         if (isEditOrDelete) {

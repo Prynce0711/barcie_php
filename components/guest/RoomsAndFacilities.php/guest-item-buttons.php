@@ -1,9 +1,9 @@
-<?php /* migrated from Components/Guest/js/guest-item-buttons.js */ ?>
+<?php  ?>
 <script>
 function setupItemButtons() {
   console.log("Setting up item buttons...");
 
-  // View Details buttons
+
   const viewDetailsBtns = document.querySelectorAll(".view-details-btn");
   console.log("Found view details buttons:", viewDetailsBtns.length);
 
@@ -16,7 +16,7 @@ function setupItemButtons() {
     });
   });
 
-  // Book Now buttons
+
   const bookNowBtns = document.querySelectorAll(".book-now-btn");
   console.log("Found book now buttons:", bookNowBtns.length);
 
@@ -29,7 +29,7 @@ function setupItemButtons() {
     });
   });
 
-  // Image click handlers for gallery
+
   const cardImages = document.querySelectorAll(".card-image");
   console.log("Found card images:", cardImages.length);
 
@@ -51,7 +51,6 @@ function setupItemButtons() {
   console.log("Item buttons setup complete");
 }
 
-// Show item details in modal
 function showItemDetails(itemId) {
   const item = window.allItems.find((item) => item.id == itemId);
 
@@ -60,21 +59,21 @@ function showItemDetails(itemId) {
     return;
   }
 
-  // Create or update modal
+
   let modal = document.getElementById("itemDetailsModal");
   if (!modal) {
     modal = createItemDetailsModal();
   }
 
-  // Populate modal with item details
+
   populateItemModal(modal, item);
 
-  // Show modal
+
   const bsModal = new bootstrap.Modal(modal);
   bsModal.show();
 }
 
-// Create item details modal
+
 function createItemDetailsModal() {
   const modalHtml = `
     <div class="modal fade" id="itemDetailsModal" tabindex="-1" aria-labelledby="itemDetailsModalLabel" aria-hidden="true">
@@ -100,6 +99,6 @@ function createItemDetailsModal() {
   return document.getElementById("itemDetailsModal");
 }
 
-// Populate modal with item details
+
 
 </script>

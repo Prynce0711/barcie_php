@@ -1,4 +1,4 @@
-<?php /* migrated from Components/Guest/js/guest-gallery-bindings.js */ ?>
+<?php  ?>
 <script>
   function resetZoom() {
     currentZoomLevel = 1;
@@ -37,19 +37,17 @@
           resetZoom();
           break;
         case "Escape":
-          // Let Bootstrap handle modal closing
           break;
       }
     };
 
-    // Remove existing listener if any
+    
     document.removeEventListener("keydown", keyHandler);
     document.addEventListener("keydown", keyHandler);
   }
 
-  // Setup gallery button event listeners when DOM is ready
+
   document.addEventListener("DOMContentLoaded", function () {
-    // Navigation buttons
     const prevBtn = document.getElementById("galleryPrevBtn");
     const nextBtn = document.getElementById("galleryNextBtn");
 
@@ -61,7 +59,7 @@
       nextBtn.addEventListener("click", () => navigateGallery(1));
     }
 
-    // Zoom buttons
+
     const zoomInBtn = document.getElementById("zoomInBtn");
     const zoomOutBtn = document.getElementById("zoomOutBtn");
     const zoomResetBtn = document.getElementById("zoomResetBtn");
@@ -78,7 +76,7 @@
       zoomResetBtn.addEventListener("click", resetZoom);
     }
 
-    // Image dragging when zoomed
+
     const mainImage = document.getElementById("galleryMainImage");
     if (mainImage) {
       let isDragging = false;
@@ -100,7 +98,7 @@
         const x = e.pageX - startX;
         const y = e.pageY - startY;
 
-        // Update transform origin for panning effect
+
         mainImage.style.transformOrigin = `${50 - x / 10}% ${50 - y / 10}%`;
       });
 
@@ -116,16 +114,15 @@
       });
     }
 
-    // Reset zoom when modal closes
     const modal = document.getElementById("imageGalleryModal");
     if (modal) {
       modal.addEventListener("hidden.bs.modal", function () {
         resetZoom();
-        // If gallery was opened from an item details modal, reopen that details view
+
         if (galleryReturnItemId) {
           const returnId = galleryReturnItemId;
           galleryReturnItemId = null;
-          // small defer to ensure modal stack is stable
+
           setTimeout(() => {
             try {
               showItemDetails(returnId);
@@ -138,7 +135,7 @@
     }
   });
 
-  // Export gallery functions
+
   window.openImageGallery = openImageGallery;
   window.navigateGallery = navigateGallery;
   window.zoomImage = zoomImage;

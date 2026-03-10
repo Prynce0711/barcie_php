@@ -1,48 +1,33 @@
 <?php
 // Calendar Section Template
-// This section displays calendar view and room list management
+// Displays room & facility cards with per-room availability calendar (guest-style)
 ?>
 
 <!-- Calendar & Rooms Section -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-primary text-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-              <i class="fas fa-list me-2"></i>Room & Facility Management
-            </h5>
-            <div class="text-white-50">
-              <small>Click on any room to view its availability calendar</small>
-            </div>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="fas fa-calendar-alt me-2 text-primary"></i>Room &amp; Facility Availability</h4>
+        <div class="d-flex gap-2 align-items-center">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Filter">
+            <button type="button" class="btn btn-outline-secondary admin-room-filter-btn active" data-filter="all">All</button>
+            <button type="button" class="btn btn-outline-secondary admin-room-filter-btn" data-filter="room">Rooms</button>
+            <button type="button" class="btn btn-outline-secondary admin-room-filter-btn" data-filter="facility">Facilities</button>
+          </div>
+          <div class="input-group input-group-sm" style="max-width: 220px;">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" placeholder="Search..." id="room-search">
           </div>
         </div>
-        <div class="card-body p-0">
-          <!-- Room List View -->
-          <div id="room-list-content" class="calendar-content">
-            <div class="p-3 border-bottom bg-light">
-              <div class="row align-items-center">
-                <div class="col-md-8">
-                  <h6 class="mb-1">Room & Facility Status Overview</h6>
-                  <small class="text-muted">Current status and upcoming reservations for all rooms and facilities</small>
-                </div>
-                <div class="col-md-4 text-end">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" class="form-control" placeholder="Search rooms & facilities..." id="room-search">
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="room-list-container position-relative" style="max-height: 600px; overflow-y: auto;">
-              <!-- Spinner overlay shown while room list is being annotated/refreshed -->
-              <div id="roomListSpinner" class="spinner-overlay d-flex justify-content-center align-items-center" style="position:absolute; inset:0; background: rgba(255,255,255,0.6); z-index:40;">
-                <div class="spinner-border text-secondary" role="status"><span class="visually-hidden">Loading rooms...</span></div>
-              </div>
-              <?php include 'room_list_content.php'; ?>
-            </div>
-          </div>
+      </div>
 
+      <!-- Room/Facility Card List (JS-rendered like guest AvailabilityCalendar) -->
+      <div class="room-list-container position-relative">
+        <div id="adminRoomListContainer" class="row">
+          <div class="col-12 text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+            <p class="text-muted">Loading rooms and facilities...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -67,9 +52,11 @@
         }
       </style>
       <script>
-        // Initialize room management when the document is ready
+        // Initialize room card rendering when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
-          initializeRoomSearch();
+          renderAdminRoomCards();
+          initAdminRoomFilters();
+          initAdminRoomSearch();
         });
 
         // Global calendar variables
@@ -186,15 +173,23 @@
           }
         }
 
-        // Also generate a room list to ensure clickable items exist for the UI
+        // Generate room list with full data for card rendering (images, price, capacity)
         echo "window.roomList = window.roomList || [];\n";
-        $items_query = "SELECT id, name, room_number, item_type FROM items ORDER BY name ASC";
+        $items_query = "SELECT id, name, room_number, item_type, capacity, price, images, image FROM items ORDER BY 
+                        CASE WHEN LOWER(TRIM(item_type))='room' THEN 0 WHEN LOWER(TRIM(item_type))='facility' THEN 1 ELSE 2 END,
+                        room_number ASC, name ASC";
         $items_result = $conn->query($items_query);
         if ($items_result && $items_result->num_rows > 0) {
           while ($item = $items_result->fetch_assoc()) {
             $iname = $item['name'] ? addslashes($item['name']) : 'Unnamed';
             $rnum = $item['room_number'] ? addslashes($item['room_number']) : '';
-            echo "window.roomList.push({ id: {$item['id']}, name: '{$iname}', roomNumber: '{$rnum}', itemType: '" . addslashes($item['item_type'] ?: 'room') . "' });\n";
+            $itype = addslashes($item['item_type'] ?: 'room');
+            $capacity = (int)($item['capacity'] ?: 0);
+            $price = (int)($item['price'] ?: 0);
+            // Pass raw images/image fields for JS-side image resolution
+            $images_raw = $item['images'] ? addslashes($item['images']) : '';
+            $image_raw = $item['image'] ? addslashes($item['image']) : '';
+            echo "window.roomList.push({ id: {$item['id']}, name: '{$iname}', roomNumber: '{$rnum}', itemType: '{$itype}', capacity: {$capacity}, price: {$price}, images: '{$images_raw}', image: '{$image_raw}' });\n";
           }
         }
         ?>
@@ -289,123 +284,176 @@
 
 
 
-        // Room search and click wiring
-        function initializeRoomSearch() {
-          console.log('Initializing room search...');
-          const searchInput = document.getElementById('room-search');
-          const container = document.querySelector('.room-list-container');
-          console.log('Container found:', !!container);
-
-          // If the included room list doesn't provide clickable items, build a simple list
-          const existingItems = container ? container.querySelectorAll('.room-list-item, .room-item, .list-group-item') : [];
-          console.log('Existing room items found in DOM:', existingItems.length);
-
-          // If there are no items at all, build a fallback list from window.roomList
-          if (container && existingItems.length === 0) {
-            console.log('Building fallback room list from window.roomList:', window.roomList);
-            const listGroup = document.createElement('div');
-            listGroup.className = 'list-group list-group-flush';
-            (window.roomList || []).forEach(r => {
-              const btn = document.createElement('button');
-              btn.type = 'button';
-              btn.className = 'list-group-item list-group-item-action room-list-item';
-              btn.setAttribute('data-room-id', r.id);
-              btn.setAttribute('data-room-name', r.name + (r.roomNumber ? ' #' + r.roomNumber : ''));
-              btn.textContent = r.name + (r.roomNumber ? ' #' + r.roomNumber : '');
-              listGroup.appendChild(btn);
-            });
-            container.appendChild(listGroup);
-            console.log('Added', window.roomList.length, 'room items to list');
-          } else if (container && existingItems.length > 0) {
-            // There are DOM items present but they might lack data-room-id attributes.
-            // Try to annotate them by matching their visible text to entries in window.roomList.
-            try {
-              const lookup = (window.roomList || []).reduce((acc, r) => {
-                const key = (r.name + (r.roomNumber ? ' #' + r.roomNumber : '')).trim().toLowerCase();
-                acc[key] = r;
-                return acc;
-              }, {});
-
-              existingItems.forEach(el => {
-                // if element already has a room id, skip
-                if (el.getAttribute('data-room-id')) {
-                  el.style.cursor = el.style.cursor || 'pointer';
-                  return;
-                }
-
-                const text = (el.textContent || el.innerText || '').trim();
-                const key = text.toLowerCase();
-                const match = lookup[key];
-                if (match) {
-                  el.setAttribute('data-room-id', match.id);
-                  el.setAttribute('data-room-name', match.name + (match.roomNumber ? ' #' + match.roomNumber : ''));
-                  el.classList.add('room-list-item');
-                  el.style.cursor = el.style.cursor || 'pointer';
-                  console.log('Annotated room list element with data-room-id:', match.id, 'text:', text);
-                } else {
-                  // no exact match; leave as-is but make clickable to attempt best-effort lookup when clicked
-                  el.style.cursor = el.style.cursor || 'pointer';
-                }
-              });
-            } catch (ex) {
-              console.warn('Error while annotating existing room list items:', ex);
-            }
+        // Choose best preview image for a room/facility item
+        function chooseAdminPreviewImage(item) {
+          var defaultImg = 'public/images/imageBg/barcie_logo.jpg';
+          function normalize(path) {
+            if (!path || typeof path !== 'string') return null;
+            path = path.trim();
+            if (!path) return null;
+            if (path.startsWith('http://') || path.startsWith('https://')) return path;
+            return path.replace(/^\/+/, '');
           }
-
-          // Search filter
-          if (searchInput && container) {
-            searchInput.addEventListener('input', function (e) {
-              const term = e.target.value.toLowerCase();
-              Array.from(container.querySelectorAll('.room-list-item, .room-item, .list-group-item')).forEach(el => {
-                const text = (el.textContent || el.innerText || '').toLowerCase();
-                el.style.display = text.indexOf(term) === -1 ? 'none' : '';
-              });
-            });
-          }
-
-          // Click handler (event delegation) - prefer container delegation but also install a document
-          // level fallback so dynamically-inserted items are also handled reliably.
-          function handleRoomClickEvent(e) {
-            try {
-              const el = (e.target && e.target.closest) ? e.target.closest('[data-room-id], .room-item') : null;
-              if (!el) return;
-
-              // Prefer explicit attribute, but allow dataset or fallback to text content
-              const roomId = el.getAttribute('data-room-id') || (el.dataset && el.dataset.roomId) || null;
-              const roomName = el.getAttribute('data-room-name') || (el.dataset && el.dataset.roomName) || el.textContent.trim();
-
-              console.log('Room click detected. id=', roomId, 'name=', roomName);
-
-              if (!roomId) {
-                // Try best-effort match from window.roomList using visible text
-                const text = (el.textContent || el.innerText || '').trim().toLowerCase();
-                const match = (window.roomList || []).find(r => (r.name + (r.roomNumber ? ' #' + r.roomNumber : '')).trim().toLowerCase() === text);
-                if (match) {
-                  console.log('Matched room by text to id', match.id);
-                  showRoomCalendar(match.id, match.name + (match.roomNumber ? ' #' + match.roomNumber : ''));
-                  return;
-                }
-                console.warn('Clicked room element has no data-room-id and no match was found:', text);
-                return;
+          try {
+            if (item.images) {
+              var imgs = item.images;
+              if (typeof imgs === 'string') {
+                try { imgs = JSON.parse(imgs); } catch(e) { imgs = [item.images]; }
               }
-
-              showRoomCalendar(roomId, roomName);
-            } catch (err) {
-              console.error('Error handling room click:', err);
+              if (Array.isArray(imgs) && imgs.length) {
+                var first = imgs[0];
+                if (typeof first === 'object' && first !== null) first = first.url || first.src || first.path || null;
+                var n = normalize(first);
+                if (n) return n;
+              }
             }
+            var candidates = [item.image, item.preview, item.thumbnail];
+            for (var i = 0; i < candidates.length; i++) {
+              var n = normalize(candidates[i]);
+              if (n) return n;
+            }
+          } catch(e) {}
+          return defaultImg;
+        }
+
+        // Current filter state
+        var _adminRoomFilter = 'all';
+
+        // Render room/facility cards in guest AvailabilityCalendar style
+        function renderAdminRoomCards(filterType) {
+          var container = document.getElementById('adminRoomListContainer');
+          if (!container) return;
+
+          var filter = (typeof filterType === 'string' && filterType) ? filterType : _adminRoomFilter;
+          _adminRoomFilter = filter;
+
+          var items = window.roomList || [];
+          if (!items.length) {
+            container.innerHTML = '<div class="col-12 text-center py-5"><i class="fas fa-building fa-2x text-muted mb-3"></i><p class="text-muted">No rooms or facilities found.</p></div>';
+            return;
           }
 
-          if (container) {
-            container.addEventListener('click', handleRoomClickEvent);
+          // Apply filter
+          var filtered = items;
+          if (filter === 'room') {
+            filtered = items.filter(function(i) { return (i.itemType || '').toLowerCase() === 'room'; });
+          } else if (filter === 'facility') {
+            filtered = items.filter(function(i) { return (i.itemType || '').toLowerCase() === 'facility'; });
           }
 
-          // Document-level fallback in case the container is replaced later or items are injected.
-          document.addEventListener('click', function (e) {
-            // Avoid double-handling when already handled by container
-            const withinContainer = e.target && e.target.closest && e.target.closest('.room-list-container');
-            if (withinContainer) return;
-            handleRoomClickEvent(e);
+          // Apply search term if present
+          var searchInput = document.getElementById('room-search');
+          var searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+          if (searchTerm) {
+            filtered = filtered.filter(function(i) {
+              var text = (i.name + ' ' + (i.roomNumber || '') + ' ' + (i.itemType || '')).toLowerCase();
+              return text.indexOf(searchTerm) !== -1;
+            });
+          }
+
+          if (!filtered.length) {
+            container.innerHTML = '<div class="col-12 text-center py-5"><i class="fas fa-exclamation-circle fa-2x text-muted mb-3"></i><p class="text-muted">No ' + (filter === 'room' ? 'rooms' : (filter === 'facility' ? 'facilities' : 'items')) + ' found.</p></div>';
+            return;
+          }
+
+          // Animate out existing content then rebuild
+          if (container.children.length > 0 && typeof container.animate === 'function') {
+            var outAnim = container.animate(
+              [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-8px)' }],
+              { duration: 180, easing: 'ease-in', fill: 'forwards' }
+            );
+            outAnim.onfinish = function() { buildCards(container, filtered); };
+          } else {
+            buildCards(container, filtered);
+          }
+        }
+
+        function buildCards(container, filtered) {
+          container.innerHTML = '';
+          filtered.forEach(function(item) {
+            var preview = chooseAdminPreviewImage(item);
+            var isRoom = (item.itemType || '').toLowerCase() === 'room';
+            var badgeClass = isRoom ? 'bg-primary' : 'bg-info';
+            var badgeText = isRoom ? 'ROOM' : 'FACILITY';
+            var capacityLabel = isRoom ? 'guests' : 'people';
+            var priceLabel = isRoom ? '/night' : '/day';
+            var roomInfo = isRoom && item.roomNumber ? ('Room #' + item.roomNumber + ' &middot; ') : (isRoom ? '' : 'Facility &middot; ');
+
+            var col = document.createElement('div');
+            col.className = 'col-12 mb-3';
+            col.innerHTML =
+              '<div class="card shadow-sm" style="transition: box-shadow 0.2s, transform 0.2s; cursor: default;">' +
+              '  <div class="card-body">' +
+              '    <div class="row align-items-center">' +
+              '      <div class="col-auto">' +
+              '        <img src="' + preview + '" alt="' + item.name + '" ' +
+              '             style="width:120px;height:90px;object-fit:cover;border-radius:8px;" ' +
+              '             onerror="this.src=\'public/images/imageBg/barcie_logo.jpg\';">' +
+              '      </div>' +
+              '      <div class="col">' +
+              '        <div class="d-flex justify-content-between align-items-start">' +
+              '          <div>' +
+              '            <h5 class="mb-1 fw-bold">' + item.name.toUpperCase() + '</h5>' +
+              '            <span class="badge ' + badgeClass + ' mb-2">' + badgeText + '</span>' +
+              '            <p class="text-muted mb-1">' + roomInfo + (item.capacity || 0) + ' ' + capacityLabel + '</p>' +
+              '          </div>' +
+              '          <div class="text-end">' +
+              '            <h4 class="mb-0 text-primary">&#8369;' + (item.price || 0).toLocaleString() + '</h4>' +
+              '            <small class="text-muted">' + priceLabel + '</small>' +
+              '          </div>' +
+              '        </div>' +
+              '        <div class="mt-3">' +
+              '          <button class="btn btn-outline-primary btn-sm view-cal-btn" data-room-id="' + item.id + '" data-room-name="' + item.name + (item.roomNumber ? ' #' + item.roomNumber : '') + '">' +
+              '            <i class="fas fa-calendar-alt me-1"></i>View Calendar' +
+              '          </button>' +
+              '        </div>' +
+              '      </div>' +
+              '    </div>' +
+              '  </div>' +
+              '</div>';
+
+            container.appendChild(col);
           });
+
+          // Wire up View Calendar buttons
+          container.querySelectorAll('.view-cal-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var roomId = this.getAttribute('data-room-id');
+              var roomName = this.getAttribute('data-room-name') || 'Room';
+              showRoomCalendar(roomId, roomName);
+            });
+          });
+
+          // Animate in
+          if (typeof container.animate === 'function') {
+            container.animate(
+              [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'translateY(0)' }],
+              { duration: 280, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'both' }
+            );
+          }
+        }
+
+        // Filter button handlers
+        function initAdminRoomFilters() {
+          var btns = document.querySelectorAll('.admin-room-filter-btn');
+          btns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              btns.forEach(function(b) { b.classList.remove('active'); });
+              this.classList.add('active');
+              renderAdminRoomCards(this.getAttribute('data-filter'));
+            });
+          });
+        }
+
+        // Search handler
+        function initAdminRoomSearch() {
+          var searchInput = document.getElementById('room-search');
+          if (searchInput) {
+            searchInput.addEventListener('input', function() {
+              renderAdminRoomCards(_adminRoomFilter);
+            });
+          }
         }
 
         // Populate booking details pane with comprehensive information
@@ -635,7 +683,8 @@
           }
 
           // show modal spinner while building calendar
-          try { showSpinnerById('roomModalSpinner'); } catch (e) {}
+          var spinnerEl = document.getElementById('roomModalSpinner');
+          if (spinnerEl) spinnerEl.style.display = 'flex';
 
           // Use fixed 90-day range
           const rangeDays = 90;
@@ -710,20 +759,14 @@
           console.log('Building modal calendar with', events.length, 'events (including backgrounds)');
           modalCalendarInstance = new FullCalendar.Calendar(el, {
             initialView: 'dayGridMonth',
-            headerToolbar: {
-              left: 'prev,next today',
-              center: 'title',
-              // modal calendar: don't render view buttons (we control views elsewhere)
-              right: ''
-            },
+            headerToolbar: false,
+            timeZone: 'Asia/Manila',
             events: events,
-            height: 'auto',
-            contentHeight: 280,
-            aspectRatio: 3.0,
+            height: calcModalCalendarHeight(),
             eventDisplay: 'block',
             nowIndicator: true,
-            displayEventTime: true,
-            displayEventEnd: true,
+            locale: 'en',
+            firstDay: 1,
             fixedWeekCount: true,
             showNonCurrentDates: false,
             dateClick: function (info) {
@@ -756,95 +799,77 @@
           console.log('Calendar rendered successfully');
 
           // hide modal spinner now that render is done
-          try { hideSpinnerById('roomModalSpinner'); } catch (e) {}
+          if (spinnerEl) spinnerEl.style.display = 'none';
+
+          // Update the title display in modal header
+          try {
+            var titleDisplay = document.getElementById('roomCalendarMonthTitle');
+            if (titleDisplay && modalCalendarInstance) {
+              titleDisplay.textContent = modalCalendarInstance.view.title;
+            }
+          } catch(e) {}
         }
 
+        // Responsive calendar height (like guest AvailabilityCalendar)
+        function calcModalCalendarHeight() {
+          var vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+          return Math.max(240, Math.min(520, Math.floor(vh * 0.5)));
+        }
+
+        // Custom nav button handlers for the modal calendar (matching guest style)
+        window.adminCalPrev = function() {
+          if (modalCalendarInstance) {
+            modalCalendarInstance.prev();
+            var t = document.getElementById('roomCalendarMonthTitle');
+            if (t) t.textContent = modalCalendarInstance.view.title;
+          }
+        };
+        window.adminCalToday = function() {
+          if (modalCalendarInstance) {
+            modalCalendarInstance.today();
+            var t = document.getElementById('roomCalendarMonthTitle');
+            if (t) t.textContent = modalCalendarInstance.view.title;
+          }
+        };
+        window.adminCalNext = function() {
+          if (modalCalendarInstance) {
+            modalCalendarInstance.next();
+            var t = document.getElementById('roomCalendarMonthTitle');
+            if (t) t.textContent = modalCalendarInstance.view.title;
+          }
+        };
 
 
-        // Fetch latest room list from API and refresh DOM + window.roomList
+
+        // Fetch latest room list from API and re-render cards
         async function fetchAndRefreshRoomList() {
-          const container = document.querySelector('.room-list-container');
-          if (!container) return;
-
           try {
-            // show spinner while fetching/annotating
-            try { showSpinnerById('roomListSpinner'); } catch (e) {}
             const res = await fetch('api/items.php', { method: 'GET', credentials: 'same-origin' });
             if (!res.ok) throw new Error('Failed to fetch items: ' + res.status);
             const data = await res.json();
             const items = (data && data.items) ? data.items : [];
 
-            // update global list
-            window.roomList = items.map(i => ({ id: i.id, name: i.name, roomNumber: i.room_number || '', itemType: i.item_type || 'room' }));
+            // Update global list with full data
+            window.roomList = items.map(i => ({
+              id: i.id,
+              name: i.name,
+              roomNumber: i.room_number || '',
+              itemType: i.item_type || 'room',
+              capacity: parseInt(i.capacity) || 0,
+              price: parseInt(i.price) || 0,
+              images: i.images || '',
+              image: i.image || ''
+            }));
 
-            console.log('Room list data fetched from API:', items.length, 'items');
-            
-            // Don't replace the container content - the PHP already rendered proper room cards
-            // Just ensure existing items have proper data attributes by annotating them
-            const existingItems = container.querySelectorAll('.room-item, .room-card');
-            
-            if (existingItems.length > 0) {
-              console.log('Found', existingItems.length, 'existing room cards, annotating with data attributes...');
-              
-              const lookup = items.reduce((acc, i) => {
-                const key = (i.name + (i.room_number ? ' #' + i.room_number : '')).trim().toLowerCase();
-                acc[key] = i;
-                return acc;
-              }, {});
-              
-              existingItems.forEach(el => {
-                if (el.getAttribute('data-room-id')) return; // Already has ID
-                
-                const text = (el.textContent || el.innerText || '').trim();
-                const key = text.toLowerCase();
-                const match = lookup[key];
-                
-                if (match) {
-                  el.setAttribute('data-room-id', match.id);
-                  el.setAttribute('data-room-name', match.name + (match.room_number ? ' #' + match.room_number : ''));
-                  el.style.cursor = 'pointer';
-                  console.log('Annotated room card:', match.name);
-                }
-              });
-              
-              console.log('Room cards annotated successfully');
-            } else {
-              console.log('No existing room cards found, building simple fallback list');
-              // Only build fallback if there are no existing cards at all
-              const listGroup = document.createElement('div');
-              listGroup.className = 'list-group list-group-flush';
-
-              items.forEach(i => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'list-group-item list-group-item-action room-list-item';
-                btn.setAttribute('data-room-id', i.id);
-                const rn = i.room_number ? (' #' + i.room_number) : '';
-                btn.setAttribute('data-room-name', i.name + rn);
-                btn.textContent = i.name + rn;
-                listGroup.appendChild(btn);
-              });
-
-              container.innerHTML = '';
-              container.appendChild(listGroup);
-              console.log('Fallback list built with', items.length, 'items');
-            }
-            // hide spinner after DOM annotation or fallback done
-            try { hideSpinnerById('roomListSpinner'); } catch (e) {}
+            // Re-render cards
+            renderAdminRoomCards(_adminRoomFilter);
           } catch (err) {
             console.warn('Could not refresh room list:', err);
-            try { hideSpinnerById('roomListSpinner'); } catch (e) {}
           }
         }
 
         // Expose a global helper to refresh room list after adding a room
         window.refreshRoomList = fetchAndRefreshRoomList;
-
-        // Optionally auto-refresh on page load in case items were added while user was on the page
-        document.addEventListener('DOMContentLoaded', function () {
-          // small delay to allow server-side window.roomList initialization to finish
-          setTimeout(() => { fetchAndRefreshRoomList(); }, 500);
-        });
 
 
 

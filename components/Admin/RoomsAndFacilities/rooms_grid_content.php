@@ -122,14 +122,8 @@ while ($item = $res->fetch_assoc()):
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 room-action-buttons">
-          <button type="button" class="btn btn-outline-primary flex-fill" onclick="openEditModal(<?= $item['id'] ?>)"
-            data-item-id="<?= $item['id'] ?>">
-            <i class="fas fa-edit me-1"></i>Edit
-          </button>
-          <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
-            data-bs-target="#deleteModal<?= $item['id'] ?>">
-            <i class="fas fa-trash me-1"></i>Delete
-          </button>
+          <?php $editOnclick = 'openEditModal(' . $item['id'] . ')'; $editDataId = $item['id']; $editClass = 'btn-outline-primary flex-fill'; include __DIR__ . '/../../ActionButton/Edit.php'; ?>
+          <?php $deleteOnclick = 'confirmDeleteItem(' . $item['id'] . ', ' . htmlspecialchars(json_encode($item['name']), ENT_QUOTES) . ')'; $deleteDataId = $item['id']; $deleteItemName = $item['name']; include __DIR__ . '/../../ActionButton/Delete.php'; ?>
         </div>
         <script>
           // Hide edit/delete buttons for staff
@@ -513,30 +507,24 @@ while ($item = $res->fetch_assoc()):
     </div>
   </div>
 
-  <!-- Delete Confirmation Modal -->
-  <div class="modal fade" id="deleteModal<?= $item['id'] ?>" data-bs-backdrop="false" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirm Deletion</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p>Are you sure you want to delete <strong><?= htmlspecialchars($item['name']) ?></strong>?</p>
-          <p class="text-muted small">This action cannot be undone.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <form method="POST" class="d-inline">
-            <input type="hidden" name="action" value="delete">
-            <input type="hidden" name="id" value="<?= $item['id'] ?>">
-            <button type="submit" class="btn btn-danger">Delete</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
 <?php endwhile; ?>
+
+<!-- Delete confirmation using shared popup -->
+<form id="deleteItemForm" method="POST" style="display:none;">
+  <input type="hidden" name="action" value="delete">
+  <input type="hidden" name="id" id="deleteItemId" value="">
+</form>
+<script>
+window.confirmDeleteItem = async function(itemId, itemName) {
+  const confirmed = await window.showConfirm(
+    'Are you sure you want to delete <strong>' + itemName + '</strong>?<br><small class="text-muted">This action cannot be undone.</small>',
+    { title: 'Confirm Deletion', confirmText: 'Delete', confirmClass: 'btn-danger', cancelText: 'Cancel', allowHtml: true }
+  );
+  if (!confirmed) return;
+  document.getElementById('deleteItemId').value = itemId;
+  document.getElementById('deleteItemForm').submit();
+};
+</script>
 
 <!-- Image Viewer Modal -->
 <div class="modal fade" id="imageViewerModal" tabindex="-1" style="z-index: 99999;">

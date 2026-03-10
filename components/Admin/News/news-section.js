@@ -9,11 +9,22 @@
   let currentNewsData = [];
   let editingNewsId = null;
 
+  function ensureNewsModalsInBody() {
+    ["newsModal", "viewNewsModal"].forEach((id) => {
+      const modalEl = document.getElementById(id);
+      if (modalEl && modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+      }
+    });
+  }
+
   /**
    * Initialize news section
    */
   function initializeNewsSection() {
     console.log("📰 Initializing News Section...");
+
+    ensureNewsModalsInBody();
 
     // Setup event listeners
     setupNewsEventListeners();
@@ -25,18 +36,14 @@
     loadNews();
   }
 
-  // Show success modal for create/update
+  // Show success popup for create/update
   function showNewsSuccess(message) {
-    const el = document.getElementById("newsSuccessMessage");
-    if (el) el.innerHTML = message || "Operation successful.";
-    const modalEl = document.getElementById("newsSuccessModal");
-    if (modalEl) {
-      const m = new bootstrap.Modal(modalEl);
-      m.show();
-    } else {
-      if (window.showToast) {
-        window.showToast(message || "Operation successful.", "success");
-      }
+    if (window.showSuccessPopup) {
+      window.showSuccessPopup(message || "Operation successful.", {
+        autoCloseMs: 3000,
+      });
+    } else if (window.showToast) {
+      window.showToast(message || "Operation successful.", "success");
     }
   }
 
@@ -235,6 +242,7 @@
    * Open add news modal
    */
   window.openAddNewsModal = function () {
+    ensureNewsModalsInBody();
     editingNewsId = null;
     document.getElementById("newsModalLabel").textContent = "Add News";
     document.getElementById("newsForm").reset();
@@ -274,6 +282,7 @@
    * Display news details in modal
    */
   function displayNewsDetails(news) {
+    ensureNewsModalsInBody();
     const imageHtml = news.image_path
       ? `<img src="${escapeHtml(news.image_path)}" class="img-fluid mb-3" alt="${escapeHtml(news.title)}">`
       : "";
@@ -339,6 +348,7 @@
    * Populate edit form
    */
   function populateEditForm(news) {
+    ensureNewsModalsInBody();
     editingNewsId = news.id;
     document.getElementById("newsModalLabel").textContent = "Edit News";
     document.getElementById("newsId").value = news.id;

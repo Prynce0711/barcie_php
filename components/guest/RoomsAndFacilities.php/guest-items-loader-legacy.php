@@ -14,24 +14,24 @@
       const response = await res.json();
       console.log("Guest: Raw response:", response);
 
-      // Handle both old and new response formats
+
       let items = [];
       if (response && response.success && Array.isArray(response.items)) {
-        // New format: { success: true, items: [...], count: X }
+
         items = response.items;
         console.log("Guest: Got wrapped items array:", items.length);
       } else if (Array.isArray(response)) {
-        // Old format: plain array
+
         items = response;
         console.log("Guest: Got plain array of items:", items.length);
       } else if (response && Array.isArray(response.data)) {
-        // Alternative format: { data: [...] }
+
         items = response.data;
         console.log("Guest: Got data array:", items.length);
       } else {
         console.warn("Guest: Unexpected response format:", response);
 
-        // If response has error property, show it
+
         if (response && response.error) {
           throw new Error(response.message || response.error);
         }
@@ -39,7 +39,7 @@
         items = [];
       }
 
-      // Store items globally for filtering
+
       window.allItems = items;
 
       const container = document.getElementById("cards-grid");
@@ -77,7 +77,7 @@
         card.dataset.price = item.price || 0;
         card.dataset.itemId = item.id;
 
-        // Parse images array
+
         let images = [];
         if (item.images && item.images !== "") {
           try {
@@ -89,38 +89,33 @@
           }
         }
 
-        // Fallback to single image if images array is empty
         if (images.length === 0 && item.image && item.image.trim() !== "") {
           images = [item.image];
         }
 
-        // Default image if no images available
         if (images.length === 0) {
           images = ["public/images/imageBg/barcie_logo.jpg"];
         }
 
-        // Normalize image paths: ensure they're absolute from the site root
+
         images = images.map((img) => {
           if (typeof img !== "string" || img.trim() === "")
             return "public/images/imageBg/barcie_logo.jpg";
           if (img.startsWith("http://") || img.startsWith("https://")) return img;
-          // Keep paths folder-relative so moving the app directory does not break assets.
+
           return img.replace(/^\/+/, "");
         });
 
-        // Store images in dataset for gallery
+
         card.dataset.images = JSON.stringify(images);
 
-        // Use actual room status if available, fallback to available
         const roomStatus = item.room_status || "available";
         card.dataset.availability = ["available", "clean"].includes(roomStatus)
           ? "available"
           : "occupied";
 
-        // Use first image as preview
-        const previewImage = images[0];
 
-        // Generate star rating HTML
+        const previewImage = images[0];
         const averageRating = parseFloat(item.average_rating) || 0;
         const totalReviews = parseInt(item.total_reviews) || 0;
         const fullStars = Math.floor(averageRating);
@@ -218,6 +213,5 @@
     }
   }
 
-  // Setup event handlers for item buttons
 
 </script>

@@ -267,45 +267,6 @@
             </div>
           </div>
 
-          <!-- Additional Step: Share Feedback -->
-          <div class="row mt-4">
-            <div class="col-12">
-              <div class="alert alert-info border-0 shadow-sm"
-                style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #2196f3 !important;">
-                <div class="d-flex align-items-start">
-                  <div class="me-3" style="color: #1976d2;">
-                    <i class="fas fa-star fa-2x"></i>
-                  </div>
-                  <div class="grow">
-                    <h5 class="fw-bold mb-2" style="color: #1976d2;">
-                      <i class="fas fa-plus-circle me-2"></i>After Your Stay: Share Your Experience
-                    </h5>
-                    <p class="mb-3">Help future guests by leaving a review! After your stay, you can rate and review
-                      your room experience. Your feedback helps us maintain quality service and assists others in making
-                      informed decisions.</p>
-                    <div class="d-flex flex-wrap gap-2">
-                      <span class="badge"
-                        style="background-color: #1976d2; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
-                        <i class="fas fa-star me-1"></i>Rate Your Stay
-                      </span>
-                      <span class="badge"
-                        style="background-color: #1976d2; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
-                        <i class="fas fa-comment me-1"></i>Share Your Thoughts
-                      </span>
-                      <span class="badge"
-                        style="background-color: #1976d2; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
-                        <i class="fas fa-user-secret me-1"></i>Anonymous Option Available
-                      </span>
-                      <span class="badge"
-                        style="background-color: #f0ad4e; color: #333; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
-                        <i class="fas fa-shield-alt me-1"></i>Admin Approval Required
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
