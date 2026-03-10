@@ -1,4 +1,271 @@
-<section id="rooms" class="content-section">
+<style>
+  /* Rooms & Cards scoped styles */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+    padding: 20px 0;
+  }
+
+  @media (max-width: 1024px) {
+    .cards-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .cards-grid {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+  }
+
+  /* Room card styles */
+  .room-card {
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid rgba(30, 40, 50, 0.06);
+    box-shadow: 0 6px 18px rgba(30, 40, 50, 0.04);
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+    cursor: pointer;
+  }
+
+  .room-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 50px rgba(20, 30, 40, 0.06);
+  }
+
+  .room-card .room-card-img {
+    transition: transform 0.35s ease, filter 0.35s ease;
+    display: block;
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    border-radius: 8px;
+    filter: saturate(0.98) contrast(0.98);
+  }
+
+  .room-card:hover .room-card-img {
+    transform: scale(1.01);
+  }
+
+  .room-card .btn-zoom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(30, 40, 50, 0.06);
+    color: #1f2d3d;
+  }
+
+  .type-badge .badge {
+    background: #fff;
+    color: #1f2d3d;
+    border: 1px solid rgba(30, 40, 50, 0.06);
+    padding: 0.55rem 0.9rem;
+    font-weight: 600;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(15, 20, 25, 0.03);
+  }
+
+  .room-card .room-title {
+    letter-spacing: 0.25px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #162028;
+  }
+
+  .room-card .price-amount {
+    font-weight: 700;
+    color: #1b3a4b;
+  }
+
+  .room-card .room-price small {
+    display: block;
+    color: #7b8a91;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .details-row .vr {
+    width: 1px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.02));
+  }
+
+  .details-row .fw-bold {
+    color: #23343f;
+  }
+
+  @media (max-width: 768px) {
+    .room-card .room-card-img {
+      height: 200px;
+    }
+
+    .room-card .card-body {
+      padding: 12px;
+    }
+  }
+
+  /* Gallery styles */
+  .gallery-main-image-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  #galleryMainImage {
+    transition: transform 0.3s ease;
+    cursor: default;
+  }
+
+  #galleryMainImage.zoomed {
+    cursor: move;
+  }
+
+  .btn-gallery-nav {
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-gallery-nav:hover {
+    opacity: 1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .gallery-zoom-controls .btn {
+    opacity: 0.9;
+    transition: all 0.3s ease;
+  }
+
+  .gallery-zoom-controls .btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  .gallery-thumbnail {
+    transition: all 0.3s ease;
+  }
+
+  .gallery-thumbnail:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .gallery-thumbnails::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .gallery-thumbnails::-webkit-scrollbar-track {
+    background: #2a2a2a;
+  }
+
+  .gallery-thumbnails::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
+
+  .gallery-thumbnails::-webkit-scrollbar-thumb:hover {
+    background: #777;
+  }
+
+  #imageGalleryModal.modal {
+    z-index: 20050 !important;
+  }
+
+  /* Card image */
+  .card-image {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+
+  .card-image:hover {
+    transform: scale(1.02);
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 25px;
+    border-radius: 15px;
+    border: 2px solid rgba(52, 152, 219, 0.2);
+    margin-bottom: 25px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    flex-wrap: wrap;
+  }
+
+  .filter-bar label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+    min-width: 150px;
+  }
+
+  .filter-bar select,
+  .filter-bar input {
+    padding: 10px 15px;
+    border: 2px solid rgba(52, 152, 219, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+  }
+
+  .filter-bar select:focus,
+  .filter-bar input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+  }
+
+  /* Available now card */
+  .available-now-card {
+    transition: all 0.3s ease;
+  }
+
+  .available-now-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(23, 162, 184, 0.2);
+    border-color: #17a2b8;
+  }
+
+  .available-now-card:hover .card-body {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9f7fd 100%);
+  }
+
+  .available-now-card:active {
+    transform: translateY(-2px);
+  }
+
+  /* Card actions */
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 1rem;
+  }
+
+  .card-actions .btn {
+    flex: 1;
+    transition: all 0.3s ease;
+  }
+
+  .card-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+</style>
+
+<section id="rooms"
+  class="content-section bg-white/95 border-2 border-[rgba(52,152,219,0.2)] p-[30px] mb-[30px] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.1)] relative z-[1]">
 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0"><i class="fas fa-door-open me-2"></i>Rooms & Facilities</h2>
@@ -239,3 +506,6 @@
     </div>
   </div>
 </template>
+
+<?php include __DIR__ . '/rooms-filter.php'; ?>
+<?php include __DIR__ . '/guest-items-loader.php'; ?>

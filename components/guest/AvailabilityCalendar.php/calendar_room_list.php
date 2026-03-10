@@ -16,15 +16,53 @@
       const container = document.getElementById('roomListContainer');
       if (!container) return;
 
-      // simple animation helpers (tweaked timing)
+      // Framer-style motion using Web Animations API (spring-like easing)
       function animateOut(el, cb) {
-        el.classList.add('list-fade-out');
-        setTimeout(() => { try { cb(); } catch (e) { }; }, 220);
+        const done = () => {
+          try { cb(); } catch (e) { }
+        };
+
+        if (!el || typeof el.animate !== 'function') {
+          done();
+          return;
+        }
+
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          done();
+          return;
+        }
+
+        const outAnim = el.animate(
+          [
+            { opacity: 1, transform: 'translateY(0px) scale(1)' },
+            { opacity: 0, transform: 'translateY(-8px) scale(0.995)' }
+          ],
+          {
+            duration: 220,
+            easing: 'cubic-bezier(0.4, 0, 1, 1)',
+            fill: 'forwards'
+          }
+        );
+
+        outAnim.onfinish = done;
+        outAnim.oncancel = done;
       }
+
       function animateIn(el) {
-        el.classList.remove('list-fade-out');
-        el.classList.add('list-fade-in');
-        setTimeout(() => { el.classList.remove('list-fade-in'); }, 320);
+        if (!el || typeof el.animate !== 'function') return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        el.animate(
+          [
+            { opacity: 0, transform: 'translateY(10px) scale(0.995)' },
+            { opacity: 1, transform: 'translateY(0px) scale(1)' }
+          ],
+          {
+            duration: 340,
+            easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            fill: 'both'
+          }
+        );
       }
 
       // spinner overlay element (create once)
@@ -153,7 +191,7 @@
                 <div class="col-auto">
                   <img src="${preview}" alt="${item.name}" 
                        style="width:120px;height:90px;object-fit:cover;border-radius:8px;" 
-                       onerror="this.src='assets/images/imageBg/barcie_logo.jpg';">
+                       onerror="this.src='public/images/imageBg/barcie_logo.jpg';">
                 </div>
                 <div class="col">
                   <div class="d-flex justify-content-between align-items-start">
@@ -210,19 +248,6 @@
   })();
 </script>
 <style>
-  /* List transition animations for availability list */
-  #roomListContainer.list-fade-out {
-    opacity: 0;
-    transform: translateY(-6px);
-    transition: opacity 220ms ease, transform 220ms ease;
-  }
-
-  #roomListContainer.list-fade-in {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 320ms ease, transform 320ms ease;
-  }
-
   /* Spinner overlay for list */
   .availability-list-spinner {
     display: none;

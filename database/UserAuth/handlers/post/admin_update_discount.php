@@ -16,7 +16,8 @@ if ($action === 'admin_update_discount') {
     }
 
     $_SESSION['msg'] = "Discount approvals are now automatic. No manual action needed.";
-    redirect('../dashboard.php');
+    header('Location: ../dashboard.php');
+    exit;
 }
 
 

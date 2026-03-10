@@ -21,13 +21,13 @@ try {
     if (!isset($conn)) {
         throw new Exception('Database connection not available');
     }
-    
+
     // Get filter parameters
     $startDate = $_GET['start_date'] ?? date('Y-m-01');
     $endDate = $_GET['end_date'] ?? date('Y-m-d');
     $roomType = $_GET['room_type'] ?? '';
     $reportType = $_GET['report_type'] ?? 'overview';
-    
+
     $response = [
         'success' => true,
         'filters' => [
@@ -37,39 +37,39 @@ try {
         ],
         'data' => []
     ];
-    
+
     switch ($reportType) {
         case 'overview':
         case 'all':
             $response['data'] = getOverviewData($conn, $startDate, $endDate, $roomType);
             break;
-            
+
         case 'booking':
             $response['data'] = getBookingReports($conn, $startDate, $endDate, $roomType);
             break;
-            
+
         case 'occupancy':
             $response['data'] = getOccupancyReports($conn, $startDate, $endDate, $roomType);
             break;
-            
+
         case 'revenue':
             $response['data'] = getRevenueReports($conn, $startDate, $endDate, $roomType);
             break;
-            
+
         case 'guest':
             $response['data'] = getGuestReports($conn, $startDate, $endDate, $roomType);
             break;
-            
+
         case 'room':
             $response['data'] = getRoomReports($conn, $startDate, $endDate, $roomType);
             break;
-            
+
         default:
             throw new Exception('Invalid report type');
     }
-    
+
     echo json_encode($response);
-    
+
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
@@ -81,9 +81,10 @@ try {
 /**
  * Get overview data (summary of all reports)
  */
-function getOverviewData($conn, $startDate, $endDate, $roomType) {
+function getOverviewData($conn, $startDate, $endDate, $roomType)
+{
     $roomTypeFilter = !empty($roomType) ? " AND i.type = ?" : "";
-    
+
     // Total bookings
     $sql = "SELECT COUNT(*) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -96,7 +97,7 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $totalBookings = $stmt->get_result()->fetch_assoc()['total'];
-    
+
     // Total revenue
     $sql = "SELECT COALESCE(SUM(b.total_price), 0) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -110,7 +111,7 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $totalRevenue = $stmt->get_result()->fetch_assoc()['total'];
-    
+
     // Total guests (using user_email if available, otherwise user_name)
     $sql = "SELECT COUNT(DISTINCT COALESCE(b.user_email, b.user_name)) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -123,7 +124,7 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $totalGuests = $stmt->get_result()->fetch_assoc()['total'];
-    
+
     // Simple occupancy rate (percentage of days with bookings)
     $sql = "SELECT COUNT(DISTINCT DATE(b.checkin)) as booked_days FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -137,15 +138,15 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $bookedDays = $stmt->get_result()->fetch_assoc()['booked_days'];
-    
+
     $daysDiff = max((strtotime($endDate) - strtotime($startDate)) / (60 * 60 * 24), 1);
     $occupancyRate = ($bookedDays / $daysDiff) * 100;
-    
+
     return [
         'summary' => [
-            'total_bookings' => (int)$totalBookings,
-            'total_revenue' => (float)$totalRevenue,
-            'total_guests' => (int)$totalGuests,
+            'total_bookings' => (int) $totalBookings,
+            'total_revenue' => (float) $totalRevenue,
+            'total_guests' => (int) $totalGuests,
             'occupancy_rate' => round($occupancyRate, 2)
         ],
         'booking_reports' => getBookingReports($conn, $startDate, $endDate, $roomType),
@@ -159,9 +160,10 @@ function getOverviewData($conn, $startDate, $endDate, $roomType) {
 /**
  * Get booking reports
  */
-function getBookingReports($conn, $startDate, $endDate, $roomType) {
+function getBookingReports($conn, $startDate, $endDate, $roomType)
+{
     $roomTypeFilter = !empty($roomType) ? " AND i.type = ?" : "";
-    
+
     // Daily bookings (last 10 days)
     $sql = "SELECT DATE(b.checkin) as date, COUNT(*) as count FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -175,7 +177,7 @@ function getBookingReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $dailyBookings = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Monthly bookings
     $sql = "SELECT DATE_FORMAT(b.checkin, '%Y-%m') as month, COUNT(*) as count FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -189,7 +191,7 @@ function getBookingReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $monthlyBookings = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Booking status breakdown
     $sql = "SELECT b.status, COUNT(*) as count, COALESCE(SUM(b.total_price), 0) as revenue FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -203,12 +205,12 @@ function getBookingReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $statusBreakdown = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Booking sources (placeholder - adjust if you have this column)
     $bookingSources = [
         ['source' => 'Online', 'count' => count($dailyBookings)]
     ];
-    
+
     // Booking trends (last 30 days)
     $sql = "SELECT DATE(b.checkin) as date, COUNT(*) as count FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -222,7 +224,7 @@ function getBookingReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $bookingTrends = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     return [
         'daily_bookings' => $dailyBookings,
         'monthly_bookings' => $monthlyBookings,
@@ -235,9 +237,10 @@ function getBookingReports($conn, $startDate, $endDate, $roomType) {
 /**
  * Get occupancy reports
  */
-function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
+function getOccupancyReports($conn, $startDate, $endDate, $roomType)
+{
     $roomTypeFilter = !empty($roomType) ? " AND i.type = ?" : "";
-    
+
     // Daily occupancy
     $sql = "SELECT DATE(b.checkin) as date, COUNT(DISTINCT b.room_id) as occupied_rooms,
             (SELECT COUNT(*) FROM items WHERE item_type = 'room') as total_rooms
@@ -254,19 +257,19 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $dailyOccupancy = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Calculate occupancy rates
     foreach ($dailyOccupancy as &$day) {
-        $day['occupancy_rate'] = $day['total_rooms'] > 0 
-            ? round(($day['occupied_rooms'] / $day['total_rooms']) * 100, 2) 
+        $day['occupancy_rate'] = $day['total_rooms'] > 0
+            ? round(($day['occupied_rooms'] / $day['total_rooms']) * 100, 2)
             : 0;
     }
-    
+
     // Average occupancy rate
     $avgOccupancyRate = !empty($dailyOccupancy)
         ? round(array_sum(array_column($dailyOccupancy, 'occupancy_rate')) / count($dailyOccupancy), 2)
         : 0;
-    
+
     // Peak occupancy
     $peakDay = !empty($dailyOccupancy) ? $dailyOccupancy[0] : null;
     if (!empty($dailyOccupancy)) {
@@ -276,7 +279,7 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
             }
         }
     }
-    
+
     // Current room status
     $sql = "SELECT 
             CASE 
@@ -296,7 +299,7 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $roomStatus = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Currently occupied count
     $currentlyOccupied = 0;
     foreach ($roomStatus as $status) {
@@ -305,7 +308,7 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
             break;
         }
     }
-    
+
     return [
         'daily_occupancy' => $dailyOccupancy,
         'avg_occupancy_rate' => $avgOccupancyRate,
@@ -318,9 +321,10 @@ function getOccupancyReports($conn, $startDate, $endDate, $roomType) {
 /**
  * Get revenue reports
  */
-function getRevenueReports($conn, $startDate, $endDate, $roomType) {
+function getRevenueReports($conn, $startDate, $endDate, $roomType)
+{
     $roomTypeFilter = !empty($roomType) ? " AND i.type = ?" : "";
-    
+
     // Total revenue
     $sql = "SELECT COALESCE(SUM(b.total_price), 0) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -334,7 +338,7 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $totalRevenue = $stmt->get_result()->fetch_assoc()['total'];
-    
+
     // Daily revenue trend
     $sql = "SELECT DATE(b.checkin) as date, COALESCE(SUM(b.total_price), 0) as revenue FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -349,7 +353,7 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $dailyRevenue = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Monthly revenue breakdown
     $sql = "SELECT DATE_FORMAT(b.checkin, '%Y-%m') as month,
             DATE_FORMAT(b.checkin, '%M %Y') as month_name,
@@ -367,7 +371,7 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $monthlyRevenue = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Revenue by room type
     $sql = "SELECT i.type, COALESCE(SUM(b.total_price), 0) as revenue, COUNT(*) as bookings
             FROM bookings b
@@ -383,16 +387,16 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $revenueByRoomType = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Calculate averages
     $daysDiff = max((strtotime($endDate) - strtotime($startDate)) / (60 * 60 * 24), 1);
     $monthsDiff = max($daysDiff / 30, 1);
-    
+
     $dailyAvg = $totalRevenue / $daysDiff;
     $monthlyAvg = $totalRevenue / $monthsDiff;
-    
+
     return [
-        'total_revenue' => (float)$totalRevenue,
+        'total_revenue' => (float) $totalRevenue,
         'daily_average' => round($dailyAvg, 2),
         'monthly_average' => round($monthlyAvg, 2),
         'daily_revenue' => $dailyRevenue,
@@ -404,9 +408,10 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
 /**
  * Get guest reports
  */
-function getGuestReports($conn, $startDate, $endDate, $roomType) {
+function getGuestReports($conn, $startDate, $endDate, $roomType)
+{
     $roomTypeFilter = !empty($roomType) ? " AND i.type = ?" : "";
-    
+
     // Total unique guests
     $sql = "SELECT COUNT(DISTINCT COALESCE(b.user_email, b.user_name)) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -419,7 +424,7 @@ function getGuestReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $totalGuests = $stmt->get_result()->fetch_assoc()['total'];
-    
+
     // Average stay length
     $sql = "SELECT AVG(DATEDIFF(b.checkout, b.checkin)) as avg_stay FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
@@ -433,7 +438,7 @@ function getGuestReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $avgStay = $stmt->get_result()->fetch_assoc()['avg_stay'] ?? 0;
-    
+
     // Return guests (guests with more than 1 booking)
     $sql = "SELECT COUNT(*) as return_guests FROM (
                 SELECT COALESCE(b.user_email, b.user_name) as guest
@@ -451,7 +456,7 @@ function getGuestReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $returnGuests = $stmt->get_result()->fetch_assoc()['return_guests'];
-    
+
     // Guest arrival trends
     $sql = "SELECT DATE(b.checkin) as date, COUNT(DISTINCT COALESCE(b.user_email, b.user_name)) as guests
             FROM bookings b
@@ -466,7 +471,7 @@ function getGuestReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $guestTrends = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Top guests
     $sql = "SELECT COALESCE(b.user_name, 'Guest') as user_name,
             COALESCE(b.user_email, 'N/A') as user_email,
@@ -484,11 +489,11 @@ function getGuestReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $topGuests = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     return [
-        'total_guests' => (int)$totalGuests,
-        'avg_stay_length' => round((float)$avgStay, 1),
-        'return_guests' => (int)$returnGuests,
+        'total_guests' => (int) $totalGuests,
+        'avg_stay_length' => round((float) $avgStay, 1),
+        'return_guests' => (int) $returnGuests,
         'guest_trends' => $guestTrends,
         'top_guests' => $topGuests
     ];
@@ -497,9 +502,10 @@ function getGuestReports($conn, $startDate, $endDate, $roomType) {
 /**
  * Get room reports
  */
-function getRoomReports($conn, $startDate, $endDate, $roomType) {
+function getRoomReports($conn, $startDate, $endDate, $roomType)
+{
     $roomTypeFilter = !empty($roomType) ? " AND i.type = ?" : "";
-    
+
     // Most booked rooms
     $sql = "SELECT i.name as room_number, i.type, COUNT(*) as bookings,
             COALESCE(SUM(b.total_price), 0) as revenue
@@ -517,7 +523,7 @@ function getRoomReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $mostBooked = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Least booked rooms
     $sql = "SELECT i.name as room_number, i.type, COALESCE(COUNT(b.id), 0) as bookings,
             COALESCE(SUM(b.total_price), 0) as revenue
@@ -536,7 +542,7 @@ function getRoomReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $leastBooked = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Room type distribution
     $sql = "SELECT i.type,
             COUNT(*) as total_rooms,
@@ -554,7 +560,7 @@ function getRoomReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $roomTypeDistribution = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Room performance (bookings per room)
     $sql = "SELECT i.name as room_number, COUNT(b.id) as bookings
             FROM items i
@@ -572,7 +578,7 @@ function getRoomReports($conn, $startDate, $endDate, $roomType) {
     }
     $stmt->execute();
     $roomPerformance = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     return [
         'most_booked' => $mostBooked,
         'least_booked' => $leastBooked,

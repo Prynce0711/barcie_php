@@ -119,20 +119,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['convert_from_pencil']
   <script src="Components/Guest/Booking/pencil-conversion.js"></script>
 </head>
 
-<body>
+<body class="flex min-h-screen flex-col overflow-x-hidden text-gray-800 transition-colors duration-500">
   <!-- Mobile Menu Toggle -->
-  <button class="mobile-menu-toggle d-lg-none" onclick="toggleSidebar()">
+  <button
+    class="mobile-menu-toggle fixed top-5 left-5 z-[1002] w-[50px] h-[50px] rounded-full border-none text-white text-xl flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 md:hidden"
+    style="background: linear-gradient(135deg, #3498db, #2980b9); box-shadow: 0 4px 15px rgba(52,152,219,0.3);"
+    onclick="toggleSidebar()">
     <i class="fas fa-bars"></i>
   </button>
 
   <!-- Mobile Sidebar Overlay -->
-  <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+  <div class="sidebar-overlay fixed inset-0 bg-black/50 z-[1000] hidden transition-opacity duration-300"
+    onclick="closeSidebar()"></div>
 
   <!-- Sidebar -->
-  <?php include __DIR__ . '/Components/Guest/sidebar.php'; ?>
+  <?php include __DIR__ . '/Components/Guest/Sidebar/sidebar.php'; ?>
 
   <!-- Main Content -->
-  <main class="main-content">
+  <main
+    class="main-content ml-[260px] p-[30px] pb-[120px] grow min-h-[calc(100vh-80px)] relative transition-all duration-300 max-md:ml-0 max-md:px-4 max-md:pb-[120px] max-[480px]:px-2.5">
     <div class="container-fluid">
       <?php include __DIR__ . '/Components/Guest/Dashboard/overview.php'; ?>
       <?php include __DIR__ . '/Components/Guest/AvailabilityCalendar.php/availability.php'; ?>

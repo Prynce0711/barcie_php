@@ -28,7 +28,8 @@
           </div>
         </div>
         <div class="d-flex flex-wrap gap-3 hero-buttons">
-          <button class="btn btn-primary-custom btn-lg pulse-button" onclick="window.location.href='Guest.php'">
+          <button class="btn btn-primary-custom btn-lg pulse-button"
+            onclick="window.location.href='Guest.php#overview'">
             <i class="fas fa-arrow-right me-2"></i>Get Started
           </button>
           <button class="btn btn-outline-custom btn-lg" onclick="scrollToSection('about')">

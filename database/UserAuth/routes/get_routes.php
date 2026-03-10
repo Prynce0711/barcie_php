@@ -5,6 +5,10 @@
     Using $_REQUEST allows fetch() clients that send 'action' in the URL query or request body to be accepted.
 */
 $action = $_REQUEST['action'] ?? '';
+
+// Dedicated GET handlers (each exits when matched).
+require_once __DIR__ . '/../handlers/get/get_room_reviews.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
     // Simple ping endpoint - no database required
