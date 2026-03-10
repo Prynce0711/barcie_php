@@ -1,5 +1,12 @@
 <!doctype html>
 <html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="user-id" content="<?php echo $user_id; ?>">
+<link rel="icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
+<link rel="shortcut icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
+<link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
+
 
 <?php include __DIR__ . '/Components/Landing/head.php'; ?>
 
@@ -30,18 +37,17 @@
 
 
 
-  <!-- Landing Page JavaScript -->
+
   <?php
-  // Ensure server-side times use Philippine time
+
   date_default_timezone_set('Asia/Manila');
-  $v = time() . '_' . rand(1000, 9999); // Strong cache busting
+  $v = time() . '_' . rand(1000, 9999);
   ?>
   <script>console.log('🔄 Cache bust version: <?php echo $v; ?>');</script>
   <script src="assets/js/page-state-manager.js?v=<?php echo $v; ?>"></script>
   <script src="Components/Landing/main.js?v=<?php echo $v; ?>"></script>
   <script src="Components/Landing/auth.js?v=<?php echo $v; ?>"></script>
 
-  <!-- Component Verification Script (for testing) -->
   <script src="Components/Landing/verify-components.js?v=<?php echo $v; ?>"></script>
 
   <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>

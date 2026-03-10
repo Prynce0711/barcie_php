@@ -44,6 +44,7 @@ header('Content-Type: application/json');
 // Email helpers are now centralized under Components/Email.
 require_once __DIR__ . '/../../../Components/Email/email_template.php';
 require_once __DIR__ . '/../../../Components/Email/smtp_mailer.php';
+require_once __DIR__ . '/../../../Components/Email/template_builders.php';
 
 
 session_start();

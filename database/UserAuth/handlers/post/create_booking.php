@@ -270,157 +270,28 @@ if ($action === 'create_booking') {
 
                     $subject = "Booking Confirmation - BarCIE International Center";
 
-                    // Calculate stay duration
                     $checkin_date = new DateTime($checkin);
                     $checkout_date = new DateTime($checkout);
                     $duration = $checkin_date->diff($checkout_date);
                     $nights = $duration->days;
+                    $cancelUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email);
 
-                    // Create professional email content
-                    $emailContent = '
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <div style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                                &#128205; RESERVATION RECEIVED
-                            </div>
-                        </div>
-                        
-                        <h2 style="margin: 0 0 15px 0; color: #212529; font-size: 26px; font-weight: 700; text-align: center;">Booking Confirmation</h2>
-                        <p style="margin: 0 0 25px 0; color: #6c757d; font-size: 14px; text-align: center;">
-                            Receipt #<strong style="color: #2a5298;">' . htmlspecialchars($receipt_no) . '</strong>
-                        </p>
-                        
-                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
-                            Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
-                        </p>
-                        <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
-                            Thank you for choosing BarCIE International Center! We have successfully received your reservation request. Our admin team will now verify your payment and approve your booking shortly.
-                        </p>
-                        
-                        <!-- Booking Details Card -->
-                        <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 10px; margin-bottom: 25px; border: 2px solid #dee2e6;" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="padding: 28px;">
-                                    <h3 style="margin: 0 0 20px 0; color: #212529; font-size: 18px; font-weight: 700; border-bottom: 2px solid #2a5298; padding-bottom: 10px;">
-                                        &#128197; Reservation Details
-                                    </h3>
-                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
-                                        <tr>
-                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px; width: 45%;">
-                                                <span style="font-weight: 600;">&#127970; Room/Facility:</span>
-                                            </td>
-                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . htmlspecialchars($room_data['name']) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
-                                                <span style="font-weight: 600;">&#128198; Check-in:</span>
-                                            </td>
-                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . date('l, F j, Y', strtotime($checkin)) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
-                                                <span style="font-weight: 600;">&#128197; Check-out:</span>
-                                            </td>
-                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . date('l, F j, Y', strtotime($checkout)) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
-                                                <span style="font-weight: 600;">&#128337; Duration:</span>
-                                            </td>
-                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . $nights . ' ' . ($nights == 1 ? 'Night' : 'Nights') . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
-                                                <span style="font-weight: 600;">&#128101; Occupants:</span>
-                                            </td>
-                                            <td style="padding: 10px 0; color: #212529; font-size: 15px; font-weight: 700;">' . htmlspecialchars($occupants) . ' ' . ($occupants == 1 ? 'Guest' : 'Guests') . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 10px 0; color: #6c757d; font-size: 14px;">
-                                                <span style="font-weight: 600;">&#128274; Status:</span>
-                                            </td>
-                                            <td style="padding: 10px 0;">
-                                                <span style="display: inline-block; padding: 6px 16px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 700; border-radius: 20px; box-shadow: 0 2px 6px rgba(255, 193, 7, 0.3);">&#9200; Pending Approval</span>
-                                            </td>
-                                        </tr>';
+                    $emailTemplate = build_booking_confirmation_email([
+                        'guest_name' => $guest_name,
+                        'receipt_no' => $receipt_no,
+                        'room_name' => $room_data['name'],
+                        'checkin' => $checkin,
+                        'checkout' => $checkout,
+                        'nights' => $nights,
+                        'occupants' => $occupants,
+                        'discount_type' => $discount_type,
+                        'discount_status' => $discount_status,
+                        'discount_percentage' => $discount_percentage,
+                        'discount_amount' => $discount_amount,
+                        'cancel_url' => $cancelUrl,
+                    ]);
 
-                    if (!empty($discount_type) && $discount_status === 'approved') {
-                        $emailContent .= '
-                                        <tr>
-                                            <td colspan="2" style="padding-top: 15px;">
-                                                <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 12px 15px; border-radius: 4px;">
-                                                    <p style="margin: 0 0 5px 0; color: #155724; font-size: 14px; font-weight: 600;">
-                                                        &#127991; Discount Applied: ' . htmlspecialchars($discount_type) . ' (' . $discount_percentage . '%)
-                                                    </p>
-                                                    <p style="margin: 0; color: #155724; font-size: 13px;">
-                                                        Status: <strong>✓ Automatically Approved</strong><br>
-                                                        Discount Amount: <strong>₱' . number_format($discount_amount, 2) . '</strong>
-                                                    </p>
-                                                </div>
-                                            </td>
-                                        </tr>';
-                    }
-
-                    $emailContent .= '
-                                    </table>
-                                </td>
-                            </tr>
-                        </table>
-                        
-                        <!-- Next Steps -->
-                        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #2196F3; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);">
-                            <h4 style="margin: 0 0 12px 0; color: #0d47a1; font-size: 16px; font-weight: 700;">
-                                &#128221; What Happens Next?
-                            </h4>
-                            <ol style="margin: 0; padding-left: 20px; color: #1565c0; font-size: 14px; line-height: 1.8;">
-                                <li><strong>Payment Verification:</strong> Our admin team will verify your submitted payment proof (usually within 24 hours)</li>
-                                <li><strong>Booking Approval:</strong> Once payment is verified, your booking will be officially approved and confirmed</li>
-                                <li><strong>Confirmation Email:</strong> You will receive a final confirmation email once your booking is approved</li>
-                                <li><strong>Prepare for Check-in:</strong> Bring a valid government-issued ID on your check-in date</li>
-                            </ol>
-                            <div style="margin-top: 15px; padding: 12px; background-color: #fff3cd; border-radius: 6px;">
-                                <p style="margin: 0; color: #856404; font-size: 13px; font-weight: 600; text-align: center;">
-                                    ⏳ Please wait for admin approval - Your reservation will be confirmed once payment is verified
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Important Reminders -->
-                        <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
-                            <h4 style="margin: 0 0 12px 0; color: #856404; font-size: 16px; font-weight: 700;">
-                                &#9888; Important Reminders
-                            </h4>
-                            <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px; line-height: 1.8;">
-                                <li>Check-in time: 2:00 PM | Check-out time: 12:00 PM</li>
-                                <li>Please bring a valid government-issued ID upon check-in</li>
-                                <li>Payment must be completed before check-in date</li>
-                                <li>Cancellations must be made 48 hours in advance</li>
-                            </ul>
-                        </div>
-                        
-                        <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.7; text-align: center;">
-                            For questions or modifications to your booking, please contact us with your receipt number <strong style="color: #2a5298;">' . htmlspecialchars($receipt_no) . '</strong>
-                        </p>
-                        
-                        <!-- Cancel Booking Section - Only shown for pending bookings -->
-                        <div style="text-align: center; margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
-                            <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
-                                Need to cancel your booking?
-                            </p>
-                            <a href="https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
-                                Cancel Booking
-                            </a>
-                            <p style="margin: 15px 0 0 0; color: #6c757d; font-size: 12px; font-style: italic;">
-                                Cancellations must be made at least 48 hours before check-in
-                            </p>
-                        </div>
-                        
-                        <div style="text-align: center; padding: 20px 0; border-top: 2px solid #e9ecef; margin-top: 25px;">
-                            <p style="margin: 0; color: #1e3c72; font-size: 16px; font-weight: 600;">
-                                We look forward to welcoming you! &#127881;
-                            </p>
-                        </div>';
-
-                    $emailBody = create_email_template('Booking Confirmation', $emailContent, 'This is an automated message. Please do not reply directly to this email.');
+                    $emailBody = create_email_template($emailTemplate['title'], $emailTemplate['content'], $emailTemplate['footer']);
 
                     error_log("BOOKING EMAIL - Calling send_smtp_mail()");
                     $mail_sent = send_smtp_mail($email, $subject, $emailBody);
@@ -431,28 +302,19 @@ if ($action === 'create_booking') {
                     if (!empty($discount_type)) {
                         error_log("DISCOUNT EMAIL - Sending admin notification");
                         $admin_email = 'pc.clemente11@gmail.com';
-                        $admin_subject = "New Discount Application - " . htmlspecialchars($discount_type);
-                        $admin_message = '<div style="font-family: Arial, sans-serif; padding: 20px;">
-                                <h3 style="color: #2d7be5;">New Discount Application</h3>
-                                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
-                                    <p><b>Guest:</b> ' . htmlspecialchars($guest_name) . '</p>
-                                    <p><b>Email:</b> ' . htmlspecialchars($email) . '</p>
-                                    <p><b>Contact:</b> ' . htmlspecialchars($contact) . '</p>
-                                    <p><b>Room/Facility:</b> ' . htmlspecialchars($room_data['name']) . '</p>
-                                    <p><b>Check-in:</b> ' . htmlspecialchars($checkin) . '</p>
-                                    <p><b>Check-out:</b> ' . htmlspecialchars($checkout) . '</p>
-                                    <p><b>Discount Type:</b> ' . htmlspecialchars($discount_type) . '</p>
-                                    <p><b>Discount Details:</b> ' . htmlspecialchars($discount_details) . '</p>';
-
-                        if (!empty($discount_proof_path)) {
-                            $admin_message .= '<p><b>Proof:</b> <a href="' . htmlspecialchars($discount_proof_path) . '">View Proof</a></p>';
-                        }
-
-                        $admin_message .= '</div>
-                                <p style="margin-top: 20px;"><em>Please review this discount application in the admin portal.</em></p>
-                            </div>';
-
-                        $admin_mail_sent = send_smtp_mail($admin_email, $admin_subject, $admin_message);
+                        $adminEmailTemplate = build_discount_admin_notification_email([
+                            'guest_name' => $guest_name,
+                            'email' => $email,
+                            'contact' => $contact,
+                            'room_name' => $room_data['name'],
+                            'checkin' => $checkin,
+                            'checkout' => $checkout,
+                            'discount_type' => $discount_type,
+                            'discount_details' => $discount_details,
+                            'discount_proof_path' => $discount_proof_path,
+                        ]);
+                        $admin_message = create_email_template($adminEmailTemplate['title'], $adminEmailTemplate['content'], $adminEmailTemplate['footer']);
+                        $admin_mail_sent = send_smtp_mail($admin_email, $adminEmailTemplate['subject'], $admin_message);
                         error_log("DISCOUNT EMAIL - Admin notification result: " . ($admin_mail_sent ? "SUCCESS" : "FAILED"));
                     }
                 } else {
@@ -534,22 +396,14 @@ if ($action === 'create_booking') {
 
                 // Send confirmation email to guest
                 if (!empty($contact_number) && preg_match('/@gmail\.com$/i', $contact_number)) {
-                    $subject = 'BarCIE Pencil Booking Confirmation';
-                    $message = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; padding: 24px; background: #fafbfc;'>"
-                        . "<h2 style='color: #2d7be5;'>BarCIE International Center</h2>"
-                        . "<p>Dear Guest,</p>"
-                        . "<p>Your pencil booking request has been <b>received</b>! Here are your details:</p>"
-                        . "<ul style='background: #f6f8fa; border-radius: 6px; padding: 16px; list-style: none;'>"
-                        . "<li><b>Facility:</b> " . htmlspecialchars($room_data['name']) . "</li>"
-                        . "<li><b>Date:</b> " . htmlspecialchars($pencil_date) . "</li>"
-                        . "<li><b>Event:</b> " . htmlspecialchars($event) . "</li>"
-                        . "<li><b>Pax:</b> " . htmlspecialchars($pax) . "</li>"
-                        . "</ul>"
-                        . "<p style='margin-top: 18px;'>We will review your booking and notify you once it is confirmed.</p>"
-                        . "<p style='color: #888;'>If you have questions, please reply to this email or contact us at info@barcie.com.</p>"
-                        . "<p style='margin-top: 32px; color: #2d7be5;'><b>Thank you for choosing BarCIE International Center!</b></p>"
-                        . "</div>";
-                    send_smtp_mail($contact_number, $subject, $message);
+                    $simplePencilTemplate = build_simple_pencil_booking_received_email([
+                        'room_name' => $room_data['name'],
+                        'pencil_date' => $pencil_date,
+                        'event' => $event,
+                        'pax' => $pax,
+                    ]);
+                    $message = create_email_template($simplePencilTemplate['title'], $simplePencilTemplate['content'], $simplePencilTemplate['footer']);
+                    send_smtp_mail($contact_number, $simplePencilTemplate['subject'], $message);
                 }
 
                 handleResponse("Pencil booking saved for " . $room_data['name'] . " on " . $pencil_date, true, '../Guest.php');
@@ -731,150 +585,24 @@ if ($action === 'create_booking') {
                     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
                     $conversion_link = "http://{$host}/barcie_php/components/guest/convert_pencil.php?token=" . urlencode($conversion_token);
 
-                    $emailContent = '
-                        <h2 style="margin: 0 0 20px 0; color: #856404; font-size: 24px; font-weight: 600;">📝 Draft Reservation (Pencil Booking)</h2>
-                        <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
-                            Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,
-                        </p>
-                        <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Thank you for submitting your draft reservation (pencil booking)! This is a <strong>temporary hold</strong> on your selected room/facility while you finalize your plans.
-                        </p>
-                        
-                        <!-- Important Notice -->
-                        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
-                            <p style="margin: 0 0 10px 0; color: #856404; font-size: 15px; font-weight: 600;">
-                                ⚠️ Important: This is a DRAFT reservation only
-                            </p>
-                            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
-                                To secure your reservation, you must confirm and complete payment within <strong>14 days (by ' . $expiresAt . ')</strong>. 
-                                Once you complete payment, our admin team will verify and approve your booking. If we do not receive confirmation and payment within this timeframe, your reservation slot may be released to other guests.
-                            </p>
-                        </div>
-                        
-                        <!-- Convert to Full Reservation Button -->
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="' . $conversion_link . '" style="display: inline-block; padding: 15px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
-                                🎯 Click Here to Proceed to Full Reservation
-                            </a>
-                            <p style="margin: 15px 0 0 0; color: #6c757d; font-size: 13px;">
-                                <em>This link will pre-fill your booking information for easy confirmation</em>
-                            </p>
-                        </div>
-                        
-                        <!-- Booking Details Card -->
-                        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f8f9fa; border-radius: 6px; margin-bottom: 25px;" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="padding: 25px;">
-                                    <table role="presentation" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Pencil Booking Number:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($receipt_no) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Room/Facility:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($room_data['name']) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-in Date:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y g:i A', strtotime($checkin)) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Check-out Date:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . date('F j, Y g:i A', strtotime($checkout)) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Number of Occupants:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">' . htmlspecialchars($occupants) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Estimated Price:</td>
-                                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: 600;">₱' . number_format($total_price, 2) . '</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Status:</td>
-                                            <td style="padding: 8px 0;">
-                                                <span style="display: inline-block; padding: 4px 12px; background-color: #ffc107; color: #000; font-size: 13px; font-weight: 600; border-radius: 4px;">Draft - Pending Confirmation</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Expires On:</td>
-                                            <td style="padding: 8px 0; color: #dc3545; font-size: 14px; font-weight: 600;">' . $expiresAt . '</td>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr>
-                        </table>
-                        
-                        <!-- Next Steps -->
-                        <div style="background-color: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
-                            <p style="margin: 0 0 10px 0; color: #1976D2; font-size: 15px; font-weight: 600;">
-                                📋 Next Steps to Confirm Your Reservation:
-                            </p>
-                            <ol style="margin: 0; padding-left: 20px; color: #1976D2; font-size: 14px; line-height: 1.8;">
-                                <li>Click the button above to convert your draft to a full reservation</li>
-                                <li>Complete the payment process via bank transfer or GCash</li>
-                                <li>Upload your payment receipt/proof</li>
-                                <li>Wait for admin verification and approval (usually within 24 hours)</li>
-                                <li>Receive your final booking confirmation email</li>
-                            </ol>
-                        </div>
-                        
-                        <!-- Payment Information -->
-                        <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-left: 5px solid #28a745; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);">
-                            <h4 style="margin: 0 0 15px 0; color: #155724; font-size: 16px; font-weight: 700;">
-                                &#128179; Payment Information
-                            </h4>
-                            <p style="margin: 0 0 15px 0; color: #155724; font-size: 14px; line-height: 1.6;">
-                                <strong>Bank Transfer Details:</strong>
-                            </p>
-                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 15px;" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Bank Name:</td>
-                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BDO / BPI</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Name:</td>
-                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">BarCIE International Center</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 5px 0; color: #155724; font-size: 14px;">Account Number:</td>
-                                    <td style="padding: 5px 0; color: #212529; font-size: 14px; font-weight: 600;">XXXX-XXXX-XXXX</td>
-                                </tr>
-                            </table>
-                            <div style="text-align: center; margin: 15px 0;">
-                                <a href="http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/components/guest/bank_qr.php" style="display: inline-block; padding: 14px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-decoration: none; border-radius: 25px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
-                                    &#128241; View Payment QR Code
-                                </a>
-                            </div>
-                            <p style="margin: 0 0 10px 0; color: #155724; font-size: 13px; line-height: 1.6; font-style: italic; text-align: center;">
-                                Scan the QR code with your banking app or use the account details above. Upload your payment receipt after completing the transaction.
-                            </p>
-                            <div style="background-color: #fff3cd; padding: 12px; border-radius: 6px; margin-top: 15px;">
-                                <p style="margin: 0; color: #856404; font-size: 13px; line-height: 1.6; font-weight: 600; text-align: center;">
-                                    ⚠️ <strong>Payment is required before check-in and is non-refundable.</strong>' . (strtotime($checkout) - strtotime($checkin) <= 86400 ? ' <br><em>Note: For 1-day bookings, we recommend walk-in reservations for more flexibility.</em>' : '') . '
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Please keep this pencil booking number for your records. If you have any questions or need to make changes, contact us with your booking number.
-                        </p>
-                        
-                        <!-- Cancel Pencil Booking Section -->
-                        <div style="text-align: center; margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
-                            <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
-                                Need to cancel your pencil booking?
-                            </p>
-                            <a href="https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '&type=pencil" style="display: inline-block; padding: 12px 28px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
-                                Cancel Pencil Booking
-                            </a>
-                        </div>
-                        
-                        <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                            Thank you for choosing BarCIE International Center!
-                        </p>';
+                    $qrLink = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/components/guest/bank_qr.php';
+                    $cancelLink = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '&type=pencil';
 
-                    $emailBody = create_email_template('Draft Reservation Confirmation', $emailContent, 'This is an automated reminder. Please respond within 14 days to confirm your reservation.');
+                    $draftTemplate = build_draft_reservation_email([
+                        'guest_name' => $guest_name,
+                        'receipt_no' => $receipt_no,
+                        'room_name' => $room_data['name'],
+                        'checkin' => $checkin,
+                        'checkout' => $checkout,
+                        'occupants' => $occupants,
+                        'total_price' => $total_price,
+                        'expires_at' => $expiresAt,
+                        'conversion_link' => $conversion_link,
+                        'qr_link' => $qrLink,
+                        'cancel_link' => $cancelLink,
+                    ]);
+
+                    $emailBody = create_email_template($draftTemplate['title'], $draftTemplate['content'], $draftTemplate['footer']);
 
                     error_log("PENCIL BOOKING EMAIL - Calling send_smtp_mail()");
                     $mail_sent = send_smtp_mail($email, $subject, $emailBody);
