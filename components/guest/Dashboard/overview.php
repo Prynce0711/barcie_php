@@ -1,4 +1,135 @@
-<section id="overview" class="content-section">
+<style>
+  /* Overview scoped styles */
+  .hero-carousel-wrapper {
+    min-height: 500px;
+  }
+
+  .hero-slide {
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .hero-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    filter: brightness(1.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .booking-step {
+    transition: transform 0.3s ease;
+  }
+
+  .booking-step:hover {
+    transform: translateY(-5px);
+  }
+
+  /* Notification styles */
+  .notification {
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .notification::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: currentColor;
+  }
+
+  .notification.success {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(39, 174, 96, 0.05));
+    border: 2px solid rgba(46, 204, 113, 0.3);
+    color: #27ae60;
+  }
+
+  .notification.error {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.05));
+    border: 2px solid rgba(231, 76, 60, 0.3);
+    color: #e74c3c;
+  }
+
+  .notification.info {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.05));
+    border: 2px solid rgba(52, 152, 219, 0.3);
+    color: #3498db;
+  }
+
+  .notification.warning {
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+    border: 2px solid rgba(243, 156, 18, 0.3);
+    color: #f39c12;
+  }
+
+  /* Header */
+  header {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(52, 152, 219, 0.3);
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  header h1 {
+    font-size: 2.2rem;
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  header p {
+    color: #546e7a;
+    font-weight: 500;
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  /* Detail item */
+  .detail-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f8f9fa;
+  }
+
+  .detail-item:last-child {
+    border-bottom: none;
+  }
+
+  @media (max-width: 768px) {
+    header {
+      padding: 25px 20px;
+      margin-top: 60px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    header {
+      padding: 20px 15px;
+      margin-top: 60px;
+    }
+
+    header h1 {
+      font-size: 1.7rem;
+    }
+  }
+</style>
+
+<section id="overview"
+  class="content-section bg-white/95 border-2 border-[rgba(52,152,219,0.2)] p-[30px] mb-[30px] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.1)] relative z-[1]">
   <!-- Hero Banner with Carousel Background -->
   <div class="row mb-4">
     <div class="col-12">

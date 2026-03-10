@@ -9,6 +9,24 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
     $feedback_name = trim($_POST['feedback_name'] ?? '');
     $feedback_email = trim($_POST['feedback_email'] ?? '');
 
+    function handleResponse($message, $success = true, $redirect = null)
+    {
+
+        if ($redirect) {
+            echo "<script>
+                alert('$message');
+                window.location.href='$redirect';
+              </script>";
+            exit;
+        }
+
+        echo json_encode([
+            "success" => $success,
+            "message" => $message
+        ]);
+        exit;
+    }
+
     if ($rating < 1 || $rating > 5) {
         handleResponse("Please select a star rating.", false, '../Guest.php#feedback');
     }

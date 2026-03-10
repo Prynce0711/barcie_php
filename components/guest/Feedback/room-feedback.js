@@ -328,7 +328,7 @@ function submitRoomFeedback() {
   const controls = form.querySelectorAll("input, textarea, button, select");
   controls.forEach((el) => (el.disabled = true));
 
-  fetch("database/user_auth.php", {
+  fetch("database/UserAuth/user_auth.php", {
     method: "POST",
     body: formData,
     headers: {
@@ -450,7 +450,9 @@ function openRoomDetailsModal(roomId) {
 
 function loadRoomReviews(roomId) {
   const reviewsList = document.getElementById("roomReviewsList");
-  fetch(`database/user_auth.php?action=get_room_reviews&room_id=${roomId}`)
+  fetch(
+    `database/UserAuth/user_auth.php?action=get_room_reviews&room_id=${roomId}`,
+  )
     .then((response) => response.json())
     .then((data) => {
       if (data.success && data.reviews) {

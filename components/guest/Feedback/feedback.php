@@ -1,4 +1,87 @@
-<section id="feedback" class="content-section">
+<style>
+  /* Star rating scoped styles */
+  .star-rating {
+    display: flex;
+    gap: 8px;
+    font-size: 2rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .star-rating .star {
+    color: #ddd;
+    transition: all 0.2s ease;
+    transform-origin: center;
+  }
+
+  .star-rating .star:hover {
+    transform: scale(1.2);
+  }
+
+  .star-rating .star.active {
+    color: #ffc107;
+    text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+  }
+
+  .star-rating .star.hover {
+    color: #ffb300;
+  }
+
+  .rating-text {
+    font-weight: 500;
+    margin-left: 15px;
+  }
+
+  .star-display {
+    font-size: 1.1rem;
+  }
+
+  .star-display .fas.fa-star {
+    color: #ffc107;
+    margin-right: 2px;
+  }
+
+  .star-display .far.fa-star {
+    color: #ddd;
+    margin-right: 2px;
+  }
+
+  #feedback-form {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 0;
+  }
+
+  .feedback-item {
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .feedback-item:last-child {
+    border-bottom: none;
+  }
+
+  #submit-feedback:disabled {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 768px) {
+    .star-rating {
+      font-size: 1.8rem;
+      gap: 6px;
+    }
+
+    .star-display {
+      font-size: 1rem;
+    }
+  }
+</style>
+
+<section id="feedback"
+  class="content-section bg-white/95 border-2 border-[rgba(52,152,219,0.2)] p-[30px] mb-[30px] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.1)] relative z-[1]">
   <div class="row">
     <div class="col-12">
       <div class="card">
