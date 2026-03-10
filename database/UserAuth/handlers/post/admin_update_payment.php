@@ -101,36 +101,14 @@ if ($action === 'admin_update_payment') {
             error_log("Email: $guest_email");
             error_log("========================================");
 
-            $emailSubject = '';
-            $emailContent = '';
+            $emailTemplate = build_admin_payment_update_email($paymentAction, [
+                'guest_name' => $guest_name,
+                'receipt_no' => $receipt_no,
+            ]);
 
-            if ($paymentAction === 'verify') {
-                $emailSubject = 'Payment Verified - BarCIE International Center';
-                $emailContent = '
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <div style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
-                            ✓ PAYMENT VERIFIED
-                        </div>
-                    </div>
-                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Payment Received</h2>
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,</p>
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">We have verified your payment' . (!empty($receipt_no) ? ' for receipt <strong>' . htmlspecialchars($receipt_no) . '</strong>' : '') . '. Thank you! Your booking will be processed accordingly.</p>';
-            } else {
-                $emailSubject = 'Payment Verification Failed - BarCIE International Center';
-                $emailContent = '
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <div style="display: inline-block; background-color: #dc3545; color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;">
-                            ✗ PAYMENT NOT VERIFIED
-                        </div>
-                    </div>
-                    <h2 style="margin: 0 0 20px 0; color: #212529; font-size: 24px; font-weight: 600; text-align: center;">Payment Could Not Be Verified</h2>
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 16px; line-height: 1.6; text-align: center;">Dear <strong>' . htmlspecialchars($guest_name) . '</strong>,</p>
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">We were unable to verify the payment you submitted' . (!empty($receipt_no) ? ' for receipt <strong>' . htmlspecialchars($receipt_no) . '</strong>' : '') . '. Please contact us or re-submit a clearer proof of payment.</p>';
-            }
-
-            if ($emailSubject && $emailContent) {
-                $emailBody = create_email_template($emailSubject, $emailContent, 'This is an automated message. Please do not reply directly to this email.');
-                $email_sent = send_smtp_mail($guest_email, $emailSubject, $emailBody);
+            if ($emailTemplate) {
+                $emailBody = create_email_template($emailTemplate['title'], $emailTemplate['content'], $emailTemplate['footer']);
+                $email_sent = send_smtp_mail($guest_email, $emailTemplate['subject'], $emailBody);
                 error_log("PAYMENT UPDATE EMAIL - Result: " . ($email_sent ? "SUCCESS" : "FAILED"));
             }
         }

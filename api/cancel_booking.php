@@ -2,6 +2,7 @@
 require_once '../database/config.php';
 require_once '../database/db_connect.php';
 require_once '../database/user_auth.php';
+require_once '../components/Email/template_builders.php';
 
 // Enable error reporting for debugging
 error_reporting(E_ALL);
@@ -84,7 +85,6 @@ if ($confirm === 'yes') {
         
         // Send cancellation confirmation email
         if (!empty($email)) {
-            $subject = "Booking Cancellation Confirmation - BarCIE International Center";
             $booking_type = ($type === 'pencil') ? 'Pencil Booking' : 'Booking';
             
             // Extract guest name from details field or use column
@@ -95,52 +95,13 @@ if ($confirm === 'yes') {
                 $guest_name = trim($matches[1]);
             }
             
-            $emailContent = '
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <div style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border-radius: 50px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);">
-                        ❌ BOOKING CANCELLED
-                    </div>
-                </div>
-                
-                <h2 style="margin: 0 0 15px 0; color: #212529; font-size: 26px; font-weight: 700; text-align: center;">Cancellation Confirmed</h2>
-                <p style="margin: 0 0 25px 0; color: #6c757d; font-size: 14px; text-align: center;">
-                    Receipt #<strong style="color: #dc3545;">' . htmlspecialchars($receipt) . '</strong>
-                </p>
-                
-                <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
-                    Dear <strong style="color: #1e3c72;">' . htmlspecialchars($guest_name) . '</strong>,
-                </p>
-                <p style="margin: 0 0 30px 0; color: #495057; font-size: 15px; line-height: 1.7;">
-                    Your ' . $booking_type . ' has been successfully cancelled as per your request.
-                </p>
-                
-                <div style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
-                    <h4 style="margin: 0 0 12px 0; color: #721c24; font-size: 16px; font-weight: 700;">
-                        📋 Cancelled Booking Details
-                    </h4>
-                    <ul style="margin: 0; padding-left: 20px; color: #721c24; font-size: 14px; line-height: 1.8;">
-                        <li><strong>Receipt Number:</strong> ' . htmlspecialchars($receipt) . '</li>
-                        <li><strong>Guest Name:</strong> ' . htmlspecialchars($guest_name) . '</li>
-                        <li><strong>Cancellation Date:</strong> ' . date('F j, Y g:i A') . '</li>
-                    </ul>
-                </div>
-                
-                <div style="background-color: #d1ecf1; border-left: 5px solid #17a2b8; padding: 20px 25px; margin-bottom: 25px; border-radius: 8px;">
-                    <p style="margin: 0 0 10px 0; color: #0c5460; font-size: 15px; font-weight: 600;">
-                        💡 What Happens Next?
-                    </p>
-                    <p style="margin: 0; color: #0c5460; font-size: 14px; line-height: 1.6;">
-                        If you made a payment, our team will process your refund according to our cancellation policy. 
-                        For questions about refunds, please contact us with your receipt number.
-                    </p>
-                </div>
-                
-                <p style="margin: 0 0 15px 0; color: #495057; font-size: 15px; line-height: 1.7; text-align: center;">
-                    We hope to serve you in the future. If you need to make a new reservation, please visit our website.
-                </p>';
-            
-            $emailBody = create_email_template('Booking Cancellation', $emailContent, 'This is an automated confirmation message.');
-            send_smtp_mail($email, $subject, $emailBody);
+            $template = build_cancellation_confirmation_email([
+                'receipt_no' => $receipt,
+                'guest_name' => $guest_name,
+                'booking_type' => $booking_type,
+            ]);
+            $emailBody = create_email_template($template['title'], $template['content'], $template['footer']);
+            send_smtp_mail($email, $template['subject'], $emailBody);
         }
         
         $success = true;

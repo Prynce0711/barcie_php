@@ -65,48 +65,26 @@ if ($action === 'update_pencil_booking_status') {
         if ($update_stmt->execute()) {
             // Send confirmation email if status is confirmed
             if ($new_status === 'confirmed' && !empty($booking['email'])) {
-                $subject = "Pencil Booking Confirmed - BarCIE International Center";
-                $emailContent = '
-                    <h2 style="margin: 0 0 20px 0; color: #28a745; font-size: 24px; font-weight: 600;">✅ Your Pencil Booking is Confirmed!</h2>
-                    <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
-                        Dear <strong>' . htmlspecialchars($booking['guest_name']) . '</strong>,
-                    </p>
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                        Great news! Your pencil booking has been <strong>CONFIRMED</strong>. Your reservation is now secured.
-                    </p>
-                    <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin-bottom: 25px; border-radius: 4px;">
-                        <p style="margin: 0; color: #155724; font-size: 15px; font-weight: 600;">
-                            ✓ Reservation Confirmed
-                        </p>
-                        <p style="margin: 5px 0 0 0; color: #155724; font-size: 14px;">
-                            Your booking number: <strong>' . htmlspecialchars($booking['receipt_no']) . '</strong>
-                        </p>
-                    </div>
-                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                        We look forward to welcoming you at BarCIE International Center!
-                    </p>';
-
-                $emailBody = create_email_template('Booking Confirmed', $emailContent);
-                send_smtp_mail($booking['email'], $subject, $emailBody);
+                $template = build_pencil_status_email('confirmed', [
+                    'guest_name' => $booking['guest_name'],
+                    'receipt_no' => $booking['receipt_no'],
+                ]);
+                if ($template) {
+                    $emailBody = create_email_template($template['title'], $template['content'], $template['footer']);
+                    send_smtp_mail($booking['email'], $template['subject'], $emailBody);
+                }
             }
 
             // Send rejection email if status is rejected
             if ($new_status === 'rejected' && !empty($booking['email'])) {
-                $subject = "Pencil Booking Update - BarCIE International Center";
-                $emailContent = '
-                    <h2 style="margin: 0 0 20px 0; color: #dc3545; font-size: 24px; font-weight: 600;">Pencil Booking Update</h2>
-                    <p style="margin: 0 0 20px 0; color: #495057; font-size: 16px; line-height: 1.6;">
-                        Dear <strong>' . htmlspecialchars($booking['guest_name']) . '</strong>,
-                    </p>
-                    <p style="margin: 0 0 25px 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                        We regret to inform you that your pencil booking (Receipt: <strong>' . htmlspecialchars($booking['receipt_no']) . '</strong>) could not be confirmed at this time.
-                    </p>
-                    <p style="margin: 0; color: #495057; font-size: 15px; line-height: 1.6;">
-                        Please contact us for alternative dates or rooms. We apologize for any inconvenience.
-                    </p>';
-
-                $emailBody = create_email_template('Booking Update', $emailContent);
-                send_smtp_mail($booking['email'], $subject, $emailBody);
+                $template = build_pencil_status_email('rejected', [
+                    'guest_name' => $booking['guest_name'],
+                    'receipt_no' => $booking['receipt_no'],
+                ]);
+                if ($template) {
+                    $emailBody = create_email_template($template['title'], $template['content'], $template['footer']);
+                    send_smtp_mail($booking['email'], $template['subject'], $emailBody);
+                }
             }
 
             echo json_encode(['success' => true, 'message' => 'Pencil booking status updated to ' . $new_status]);
