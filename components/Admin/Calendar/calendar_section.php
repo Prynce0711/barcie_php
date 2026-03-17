@@ -4,22 +4,26 @@
 ?>
 
 <!-- Calendar & Rooms Section -->
+  <?php ob_start(); ?>
+  <div class="d-flex align-items-center gap-2 flex-wrap py-1">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Filter">
+      <button type="button" class="btn btn-sm btn-outline-secondary admin-room-filter-btn active" data-filter="all">All</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary admin-room-filter-btn" data-filter="room">Rooms</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary admin-room-filter-btn" data-filter="facility">Facilities</button>
+    </div>
+    <div class="input-group input-group-sm" style="max-width: 240px;">
+      <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+      <input type="text" class="form-control" placeholder="Search rooms or facilities..." id="room-search">
+    </div>
+  </div>
+  <?php $sectionFilters = ob_get_clean(); ?>
+  <?php
+  $sectionTitle = 'Room & Facility Availability';
+  $sectionIcon  = 'fa-calendar-alt';
+  include __DIR__ . '/../Shared/SectionHeader.php';
+  ?>
   <div class="row mb-4">
     <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0"><i class="fas fa-calendar-alt me-2 text-primary"></i>Room &amp; Facility Availability</h4>
-        <div class="d-flex gap-2 align-items-center">
-          <div class="btn-group btn-group-sm" role="group" aria-label="Filter">
-            <button type="button" class="btn btn-outline-secondary admin-room-filter-btn active" data-filter="all">All</button>
-            <button type="button" class="btn btn-outline-secondary admin-room-filter-btn" data-filter="room">Rooms</button>
-            <button type="button" class="btn btn-outline-secondary admin-room-filter-btn" data-filter="facility">Facilities</button>
-          </div>
-          <div class="input-group input-group-sm" style="max-width: 220px;">
-            <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input type="text" class="form-control" placeholder="Search..." id="room-search">
-          </div>
-        </div>
-      </div>
 
       <!-- Room/Facility Card List (JS-rendered like guest AvailabilityCalendar) -->
       <div class="room-list-container position-relative">

@@ -10,37 +10,39 @@ if ($news_result && $news_result->num_rows > 0) {
 }
 ?>
 
-<div class="section-header d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-newspaper me-2"></i>News & Updates</h2>
-    <?php $addLabel = 'Add News'; $addClass = 'btn-primary'; $addSize = ''; $addTarget = ''; $addOnclick = 'openAddNewsModal()'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
+<?php
+ob_start();
+$addLabel = 'Add News'; $addClass = 'btn-light'; $addSize = 'btn-sm'; $addTarget = ''; $addOnclick = 'openAddNewsModal()';
+include __DIR__ . '/../../ActionButton/Add.php';
+$sectionActions = ob_get_clean();
+ob_start(); ?>
+<div class="d-flex align-items-center gap-2 flex-wrap py-2">
+    <div class="input-group input-group-sm" style="max-width:300px;">
+        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+        <input type="text" class="form-control" id="newsSearchInput" placeholder="Search by title or content...">
+    </div>
+    <select class="form-select form-select-sm" id="newsStatusFilter" style="width:auto; min-width:130px;">
+        <option value="all">All Status</option>
+        <option value="published" selected>Published</option>
+        <option value="draft">Draft</option>
+        <option value="archived">Archived</option>
+    </select>
+    <select class="form-select form-select-sm" id="newsSortOrder" style="width:auto; min-width:130px;">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="title">Title A-Z</option>
+    </select>
 </div>
+<?php $sectionFilters = ob_get_clean();
+$sectionTitle   = 'News & Updates';
+$sectionIcon    = 'fa-newspaper';
+include __DIR__ . '/../Shared/SectionHeader.php';
+?>
 
 <div class="row mb-4">
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-body">
-                <!-- Filter and Search -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <input type="text" class="form-control" id="newsSearchInput" placeholder="Search news by title or content...">
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="newsStatusFilter">
-                            <option value="all">All Status</option>
-                            <option value="published" selected>Published</option>
-                            <option value="draft">Draft</option>
-                            <option value="archived">Archived</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="newsSortOrder">
-                            <option value="newest">Newest First</option>
-                            <option value="oldest">Oldest First</option>
-                            <option value="title">Title A-Z</option>
-                        </select>
-                    </div>
-                </div>
-
                 <!-- News Cards Grid -->
                 <div id="newsGrid" class="row g-3">
                     <?php if (empty($news_items)): ?>

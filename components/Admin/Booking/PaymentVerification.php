@@ -6,33 +6,32 @@
 date_default_timezone_set('Asia/Manila');
 ?>
 
+<?php ob_start(); ?>
+<div class="d-flex align-items-center gap-2 flex-wrap py-1">
+	<?php $dateScope = 'payments'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+	<div class="vr d-none d-md-block" style="height:28px;"></div>
+	<?php $searchScope = 'payments'; $searchPlaceholder = 'Search guest or receipt...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+	<div class="ms-auto d-flex align-items-center gap-2">
+		<?php $resetScope = 'payments'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+		<button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadPaymentsExcel()">
+			<i class="fas fa-file-excel me-1"></i>Excel
+		</button>
+		<button type="button" class="btn btn-sm btn-primary text-white" onclick="downloadPaymentsPDF()">
+			<i class="fas fa-file-alt me-1"></i>Text
+		</button>
+	</div>
+</div>
+<?php $sectionFilters = ob_get_clean(); ?>
+<?php
+$sectionTitle    = 'Payment Verifications (Pending)';
+$sectionIcon     = 'fa-credit-card';
+$sectionSubtitle = 'Review payment proofs and verify or reject payments.';
+include __DIR__ . '/../Shared/SectionHeader.php';
+?>
 <div class="row mb-4">
 	<div class="col-12">
 		<div class="card">
-			<div class="card-header text-white" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-				<h6 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Verifications (Pending)</h6>
-				<small class="opacity-75">Review payment proofs and verify or reject payments.</small>
-			</div>
 			<div class="card-body">
-				<!-- Filters Bar -->
-				<div class="card mb-3 border-0 bg-light">
-					<div class="card-body py-2 px-3">
-						<div class="d-flex align-items-center gap-2 flex-wrap">
-							<?php $dateScope = 'payments'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
-							<div class="vr d-none d-md-block" style="height:28px;"></div>
-							<?php $searchScope = 'payments'; $searchPlaceholder = 'Search guest or receipt...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
-							<div class="ms-auto d-flex align-items-center gap-2">
-								<?php $resetScope = 'payments'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
-								<button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadPaymentsExcel()">
-									<i class="fas fa-file-excel me-1"></i>Excel
-								</button>
-								<button type="button" class="btn btn-sm btn-primary text-white" onclick="downloadPaymentsPDF()">
-									<i class="fas fa-file-alt me-1"></i>Text
-								</button>
-							</div>
-						</div>
-					</div>
-				</div>
 				<!-- Bridge: sync reusable components → existing payment filter logic -->
 				<script>
 				(function(){

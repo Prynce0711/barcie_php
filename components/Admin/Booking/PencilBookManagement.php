@@ -9,40 +9,39 @@ date_default_timezone_set('Asia/Manila');
 ?>
 
 <!-- Pencil Book Management -->
+<?php ob_start(); ?>
+<div class="d-flex align-items-center gap-2 flex-wrap py-1">
+  <?php $dateScope = 'pencil'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+  <div class="vr d-none d-md-block" style="height:28px;"></div>
+  <select class="form-select form-select-sm" id="pencilStatusFilter" style="width:auto; min-width:130px;">
+    <option value="">All Statuses</option>
+    <option value="pending">Pending</option>
+    <option value="approved">Approved</option>
+    <option value="confirmed">Confirmed</option>
+    <option value="cancelled">Cancelled</option>
+    <option value="rejected">Rejected</option>
+  </select>
+  <div class="ms-auto d-flex align-items-center gap-2">
+    <?php $resetScope = 'pencil'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+    <button type="button" class="btn btn-sm btn-outline-warning" onclick="downloadPencilBookingsExcel()">
+      <i class="fas fa-file-excel me-1"></i>Excel
+    </button>
+    <button type="button" class="btn btn-sm btn-warning" onclick="downloadPencilBookingsPDF()">
+      <i class="fas fa-file-alt me-1"></i>Text
+    </button>
+  </div>
+</div>
+<?php $sectionFilters = ob_get_clean(); ?>
+<?php
+$sectionTitle    = 'Pencil Book Management';
+$sectionIcon     = 'fa-pencil-alt';
+$sectionSubtitle = 'Manage all pencil bookings - tentative reservations awaiting confirmation.';
+include __DIR__ . '/../Shared/SectionHeader.php';
+?>
 <div class="row mb-4">
   <div class="col-12">
     <div class="card">
-      <div class="card-header bg-warning text-dark">
-        <h6 class="mb-0"><i class="fas fa-pencil-alt me-2"></i>Pencil Book Management</h6>
-        <small class="opacity-75">Manage all pencil bookings - tentative reservations awaiting confirmation.</small>
-      </div>
       <div class="card-body">
-        <!-- Filters Bar -->
-        <div class="card mb-3 border-0 bg-light">
-          <div class="card-body py-2 px-3">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <?php $dateScope = 'pencil'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
-              <div class="vr d-none d-md-block" style="height:28px;"></div>
-              <select class="form-select form-select-sm" id="pencilStatusFilter" style="width:auto; min-width:130px;">
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <div class="ms-auto d-flex align-items-center gap-2">
-                <?php $resetScope = 'pencil'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
-                <button type="button" class="btn btn-sm btn-outline-warning" onclick="downloadPencilBookingsExcel()">
-                  <i class="fas fa-file-excel me-1"></i>Excel
-                </button>
-                <button type="button" class="btn btn-sm btn-warning" onclick="downloadPencilBookingsPDF()">
-                  <i class="fas fa-file-alt me-1"></i>Text
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
         <!-- Bridge: sync reusable components → existing pencil filter logic -->
         <script>
         (function(){

@@ -24,7 +24,9 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
     src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <link rel="stylesheet" href="Components/Admin/dashboard.css">
-  <link rel="stylesheet" href="Components/Admin/dashboard-enhancements.css">
+
+  <!-- Tailwind CSS (compiled via CLI from src/css/admin.css) -->
+  <link rel="stylesheet" href="dist/css/admin.css">
   <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
   <link rel="stylesheet" href="Components/Admin/News/news.css">
