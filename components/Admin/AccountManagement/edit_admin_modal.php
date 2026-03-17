@@ -104,7 +104,7 @@
           submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
           submitBtn.disabled = true;
 
-          fetch('api/admin_management.php', {
+          fetch('api/AdminManagementEnhanced.php', {
             method: 'POST',
             body: formData
           })
@@ -144,7 +144,7 @@
 
     // Global function to open edit modal with admin data
     window.editAdmin = function (adminId) {
-      fetch(`api/admin_management.php?action=get&admin_id=${adminId}`)
+      fetch(`api/AdminManagementEnhanced.php?action=get&admin_id=${adminId}`)
         .then(response => response.json())
         .then(data => {
           if (data.success) {

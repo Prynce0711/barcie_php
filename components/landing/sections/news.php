@@ -62,7 +62,7 @@
      * Load published news from API
      */
     function loadPublishedNews() {
-        fetch(`api/news.php?action=fetch_published&limit=100`)
+        fetch(`api/News.php?action=fetch_published&limit=100`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {

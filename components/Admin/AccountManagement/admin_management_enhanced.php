@@ -198,4 +198,5 @@
   }
 </style>
 
+<script src="Components/Admin/Shared/admin-badge-utils.js"></script>
 <script src="Components/Admin/AccountManagement/admin-management-enhanced.js"></script>

@@ -284,7 +284,7 @@ function updateBookingStatus(bookingId, newStatus) {
 
 function viewBookingDetails(bookingId) {
   // Fetch booking details and show in a modal
-  fetch(`api/get_booking_details.php?id=${bookingId}`)
+  fetch(`api/GetBookingDetails.php?id=${bookingId}`)
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {

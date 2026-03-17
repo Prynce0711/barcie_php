@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/Bootstrap.php';
 
 function normalize_item_image_path($path) {
     if (!is_string($path) || trim($path) === '') {

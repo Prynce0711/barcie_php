@@ -435,7 +435,7 @@
       `, 'info', 0);
       
       // Generate PDF URL
-      const pdfUrl = `api/generate_booking_pdf.php?receipt_number=${encodeURIComponent(receiptNumber)}&type=${encodeURIComponent(bookingType)}`;
+      const pdfUrl = `api/GenerateBookingPdf.php?receipt_number=${encodeURIComponent(receiptNumber)}&type=${encodeURIComponent(bookingType)}`;
       
       // Create download link
       const link = document.createElement('a');

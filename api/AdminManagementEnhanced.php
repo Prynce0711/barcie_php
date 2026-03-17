@@ -479,7 +479,6 @@ try {
             
             $response = ['success' => true, 'stats' => $stats];
             break;
-
         default:
             $response = ['success' => false, 'message' => 'Invalid action'];
             break;

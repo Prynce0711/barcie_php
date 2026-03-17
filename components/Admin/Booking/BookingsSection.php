@@ -104,7 +104,7 @@
           ];
           include __DIR__ . '/../../Table/Table.php';
           ?>
-                <?php include 'bookings_table_content.php'; ?>
+                <?php include __DIR__ . '/BookingsTableContent.php'; ?>
           <?php $tableClose = true; include __DIR__ . '/../../Table/Table.php'; ?>
         </div>
       </div>

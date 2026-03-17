@@ -34,7 +34,7 @@
         report_type: reportType,
       });
 
-      fetch(`api/reports_data.php?${params.toString()}`)
+      fetch(`api/ReportsData.php?${params.toString()}`)
         .then((response) => response.json())
         .then((data) => {
           if (!data.success) {
@@ -138,7 +138,7 @@
         report_type: document.getElementById("reportType")?.value || "overview",
       });
 
-      window.open(`api/export_report_pdf.php?${params.toString()}`, "_blank");
+      window.open(`api/ExportReportPdf.php?${params.toString()}`, "_blank");
       utils.showToast("Generating PDF report...", "info");
     },
 
@@ -150,7 +150,7 @@
         report_type: document.getElementById("reportType")?.value || "overview",
       });
 
-      window.location.href = `api/export_report_excel.php?${params.toString()}`;
+      window.location.href = `api/ExportReportExcel.php?${params.toString()}`;
       utils.showToast("Generating Excel report...", "info");
     },
   };

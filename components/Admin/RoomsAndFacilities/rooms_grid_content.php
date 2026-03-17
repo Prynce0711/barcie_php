@@ -3,9 +3,19 @@ require_once __DIR__ . '/../item_actions.php';
 
 $res = $conn->query("SELECT * FROM items ORDER BY item_type, created_at DESC");
 while ($item = $res->fetch_assoc()):
+  $projectRoot = realpath(__DIR__ . '/../../..');
   $normalizeImagePath = function($path) {
     $path = str_replace('\\', '/', trim((string) $path));
-    return ltrim($path, '/');
+    $path = ltrim($path, '/');
+    if ($path !== '' && !str_contains($path, '/') && preg_match('/\.(jpe?g|png|gif|webp|bmp|svg)$/i', $path)) {
+      $path = 'uploads/' . $path;
+    }
+    return $path;
+  };
+  $isValidImagePath = function($path) use ($projectRoot) {
+    if (!is_string($path) || $path === '') return false;
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) return true;
+    return $projectRoot && file_exists($projectRoot . '/' . ltrim($path, '/'));
   };
   // Prepare images array for data attribute
   $imagesForData = [];
@@ -18,6 +28,7 @@ while ($item = $res->fetch_assoc()):
   if (empty($imagesForData) && !empty($item['image'])) {
     $imagesForData = [$normalizeImagePath($item['image'])];
   }
+  $imagesForData = array_values(array_filter($imagesForData, $isValidImagePath));
   ?>
   <div class="col-lg-4 col-md-6 mb-4 item-card" data-type="<?= $item['item_type'] ?>" data-item-id="<?= $item['id'] ?>"
     data-images='<?= htmlspecialchars(json_encode($imagesForData), ENT_QUOTES) ?>'
@@ -40,7 +51,7 @@ while ($item = $res->fetch_assoc()):
         }
         // Final fallback to logo
         if (empty($images)) {
-          $images = ['assets/images/imageBg/barcie_logo.jpg'];
+          $images = ['public/images/imageBg/barcie_logo.jpg'];
         }
 
         // Prepare web paths
@@ -49,8 +60,14 @@ while ($item = $res->fetch_assoc()):
           if (str_starts_with($img, 'http')) {
             $webImages[] = $img;
           } else {
-            $webImages[] = $normalizeImagePath($img);
+            $normalized = $normalizeImagePath($img);
+            if ($isValidImagePath($normalized)) {
+              $webImages[] = $normalized;
+            }
           }
+        }
+        if (empty($webImages)) {
+          $webImages[] = 'public/images/imageBg/barcie_logo.jpg';
         }
         ?>
 

@@ -334,7 +334,7 @@ if ($action === 'create_booking') {
                     $checkout_date = new DateTime($checkout);
                     $duration = $checkin_date->diff($checkout_date);
                     $nights = $duration->days;
-                    $cancelUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email);
+                    $cancelUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/CancelBooking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email);
 
                     $emailTemplate = build_booking_confirmation_email([
                         'guest_name' => $guest_name,
@@ -652,7 +652,7 @@ if ($action === 'create_booking') {
                     $conversion_link = "http://{$host}/barcie_php/components/guest/convert_pencil.php?token=" . urlencode($conversion_token);
 
                     $qrLink = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/components/guest/bank_qr.php';
-                    $cancelLink = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/cancel_booking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '&type=pencil';
+                    $cancelLink = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/barcie_php/api/CancelBooking.php?receipt=' . urlencode($receipt_no) . '&email=' . urlencode($email) . '&type=pencil';
 
                     $draftTemplate = build_draft_reservation_email([
                         'guest_name' => $guest_name,

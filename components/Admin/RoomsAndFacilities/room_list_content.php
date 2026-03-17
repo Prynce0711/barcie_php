@@ -173,28 +173,30 @@ if ($items_result && $items_result->num_rows > 0) {
 
               // Normalize web path and check file existence
               $projectRoot = realpath(__DIR__ . '/../../..');
-              $webImage = 'assets/images/imageBg/barcie_logo.jpg';
+              $webImage = 'public/images/imageBg/barcie_logo.jpg';
               if (!empty($firstImage)) {
                 if (str_starts_with($firstImage, 'http')) {
                   $webImage = $firstImage;
                 } else {
-                  $candidateFs = $projectRoot . '/' . ltrim($firstImage, '/');
+                  $normalizedFirst = str_replace('\\', '/', ltrim(trim((string)$firstImage), '/'));
+                  if ($normalizedFirst !== '' && !str_contains($normalizedFirst, '/') && preg_match('/\.(jpe?g|png|gif|webp|bmp|svg)$/i', $normalizedFirst)) {
+                    $normalizedFirst = 'uploads/' . $normalizedFirst;
+                  }
+
+                  $candidateFs = $projectRoot . '/' . $normalizedFirst;
                   if (file_exists($candidateFs)) {
-                    $webImage = ltrim($firstImage, '/');
+                    $webImage = $normalizedFirst;
                   } else {
                     $altPaths = [
-                      $projectRoot . '/uploads/' . ltrim($firstImage, '/'),
-                      $projectRoot . '/assets/images/' . ltrim($firstImage, '/'),
-                      $projectRoot . '/' . ltrim($firstImage, '/'),
+                      $projectRoot . '/uploads/' . ltrim($normalizedFirst, '/'),
+                      $projectRoot . '/assets/images/' . ltrim($normalizedFirst, '/'),
+                      $projectRoot . '/' . ltrim($normalizedFirst, '/'),
                     ];
                     foreach ($altPaths as $ap) {
                       if (file_exists($ap)) {
                         $webImage = trim(str_replace($projectRoot, '', $ap), '/');
                         break;
                       }
-                    }
-                    if ($webImage === 'assets/images/imageBg/barcie_logo.jpg' && !str_contains($firstImage, ' ')) {
-                      $webImage = ltrim($firstImage, '/');
                     }
                   }
                 }

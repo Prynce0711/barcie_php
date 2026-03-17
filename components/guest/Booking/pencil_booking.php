@@ -427,7 +427,7 @@ window.downloadPencilPDF = function() {
     `, 'info', 0);
     
     // Generate PDF URL for pencil booking
-    const pdfUrl = `api/generate_booking_pdf.php?receipt_number=${encodeURIComponent(receiptNumber)}&type=pencil_booking`;
+    const pdfUrl = `api/GenerateBookingPdf.php?receipt_number=${encodeURIComponent(receiptNumber)}&type=pencil_booking`;
     
     // Create download link
     const link = document.createElement('a');

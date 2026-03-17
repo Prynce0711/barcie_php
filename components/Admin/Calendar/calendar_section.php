@@ -582,8 +582,8 @@
           console.log('Booking action', action, 'for', bookingId);
           const details = document.getElementById('roomBookingDetailsContent');
           if (action === 'view') {
-            // open booking details API page in new tab (existing api/get_booking_details.php)
-            const url = 'api/get_booking_details.php?id=' + encodeURIComponent(bookingId.replace('booking-', ''));
+            // open booking details API page in new tab (existing api/GetBookingDetails.php)
+            const url = 'api/GetBookingDetails.php?id=' + encodeURIComponent(bookingId.replace('booking-', ''));
             window.open(url, '_blank');
             return;
           }
@@ -601,7 +601,7 @@
             );
             if (!confirmed) return;
             // call API to cancel (endpoint not defined here) - attempt to hit a sensible endpoint
-            fetch('api/cancel_booking.php', {
+            fetch('api/CancelBooking.php', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ id: bookingId.replace('booking-', '') })
@@ -844,7 +844,7 @@
         // Fetch latest room list from API and re-render cards
         async function fetchAndRefreshRoomList() {
           try {
-            const res = await fetch('api/items.php', { method: 'GET', credentials: 'same-origin' });
+            const res = await fetch('api/Items.php', { method: 'GET', credentials: 'same-origin' });
             if (!res.ok) throw new Error('Failed to fetch items: ' + res.status);
             const data = await res.json();
             const items = (data && data.items) ? data.items : [];

@@ -46,7 +46,7 @@ Admin dashboard interface components for managing bookings, rooms, and content.
 
 #### Admin Management
 
-- **`admin_management_enhanced.php`** - Enhanced admin user management
+- **`AdminManagementEnhanced.php`** - Enhanced admin user management
 
 #### Modals
 
@@ -87,7 +87,7 @@ Guest booking portal components for room reservations and inquiries.
 
 - **`overview.php`** - Booking overview and welcome section
 - **`rooms.php`** - Room selection interface
-- **`availability.php`** - Room availability checker
+- **`Availability.php`** - Room availability checker
 - **`booking.php`** - Main booking form and submission
 - **`pencil_booking.php`** - Tentative booking form
 - **`confirm_addOn.php`** - Add-on services confirmation
@@ -134,7 +134,7 @@ Landing page components for the public-facing website.
 - **`event_stylists.php`** - Event styling services
 - **`features.php`** - Key features and amenities
 - **`brochure.php`** - Downloadable brochures section
-- **`news.php`** - Latest news and announcements
+- **`News.php`** - Latest news and announcements
 - **`contact.php`** - Contact form and information
 
 ### Modals (`modals/`)

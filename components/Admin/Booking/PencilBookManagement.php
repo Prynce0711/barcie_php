@@ -2,6 +2,8 @@
 // Pencil Book Management Section
 // This section displays pencil bookings management specifically
 
+require_once __DIR__ . '/../Shared/BadgeHelper.php';
+
 // Set timezone to ensure consistent time display
 date_default_timezone_set('Asia/Manila');
 ?>
@@ -88,15 +90,7 @@ date_default_timezone_set('Asia/Manila');
                                               LEFT JOIN items i ON pb.room_id = i.id 
                                               ORDER BY pb.created_at DESC");
               while ($booking = $pencilBookings->fetch_assoc()):
-                $status_color = [
-                  'pending' => 'warning',
-                  'approved' => 'success',
-                  'confirmed' => 'info',
-                  'cancelled' => 'danger',
-                  'rejected' => 'danger',
-                  'expired' => 'secondary'
-                ];
-                $badge_color = $status_color[$booking['status']] ?? 'secondary';
+                $badge_color = admin_badge_booking_status_class($booking['status'] ?? '');
 
                 // Use direct fields from pencil_bookings table
                 $guest_name = $booking['guest_name'] ?? 'Guest';

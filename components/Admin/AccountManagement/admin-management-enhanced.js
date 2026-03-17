@@ -110,7 +110,7 @@
 
     // Send heartbeat every 30 seconds
     heartbeatInterval = setInterval(function () {
-      fetch("api/admin_heartbeat.php", {
+      fetch("api/AdminHeartbeat.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       })
@@ -126,7 +126,7 @@
     }, 30000);
 
     // Send initial heartbeat immediately
-    fetch("api/admin_heartbeat.php", { method: "POST" });
+    fetch("api/AdminHeartbeat.php", { method: "POST" });
   }
 
   function stopHeartbeat() {
@@ -163,7 +163,7 @@
   function loadAdmins(silent = false) {
     // Removed loading notification - loads silently by default
 
-    fetch("api/admin_management_enhanced.php?action=list")
+    fetch("api/AdminManagementEnhanced.php?action=list")
       .then((response) => {
         if (!response.ok) throw new Error("HTTP error " + response.status);
         return response.json();
@@ -258,13 +258,8 @@
           : '<span class="text-muted">N/A</span>';
         const rawRole = (admin.role || "staff").toString();
 
-        const roleMap = {
-          super_admin: "Super Admin",
-          admin: "Admin",
-          manager: "Manager",
-          staff: "Staff",
-        };
-        const role = roleMap[rawRole] || rawRole;
+        const badgeUtils = window.AdminBadgeUtils || null;
+        const role = badgeUtils ? badgeUtils.roleLabel(rawRole) : rawRole;
 
         const accessLevel = admin.access_level || "Unknown";
         const isActive = admin.is_active;
@@ -272,14 +267,12 @@
         const lastSeen = admin.last_seen || "Unknown";
 
         // Role badge color
-        const roleBadgeClass =
-          role === "Super Admin"
-            ? "bg-danger"
-            : role === "Manager"
-              ? "bg-warning text-dark"
-              : role === "Staff"
-                ? "bg-secondary"
-                : "bg-primary";
+        const roleBadgeClass = badgeUtils
+          ? badgeUtils.roleBadgeClass(rawRole)
+          : "bg-primary";
+        const accessBadgeClass = badgeUtils
+          ? badgeUtils.accessBadgeClass(accessLevel)
+          : "bg-info";
 
         // Last activity - show "Online now" with green pulsing indicator if currently active
         let lastActivity;
@@ -345,7 +338,7 @@
           <td>${email}</td>
           <td>${fullName}</td>
           <td><span class="badge ${roleBadgeClass}">${role}</span></td>
-          <td><span class="badge bg-info">${accessLevel}</span></td>
+          <td><span class="badge ${accessBadgeClass}">${accessLevel}</span></td>
           <td>${lastActivity}</td>
           <td class="text-nowrap">
             ${viewBtn}

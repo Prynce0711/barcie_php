@@ -401,6 +401,17 @@ if (isset($conn) && $conn instanceof mysqli) {
         let activitiesRequestInFlight = false;
         let activitiesAbortController = null;
 
+        function ensureActivitySearchInput() {
+          let input = document.getElementById('activitySearchInput');
+          if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.id = 'activitySearchInput';
+            document.body.appendChild(input);
+          }
+          return input;
+        }
+
         function loadRecentActivities() {
           // Prevent overlapping requests from piling up and keeping the page busy.
           if (activitiesRequestInFlight) {
@@ -415,7 +426,7 @@ if (isset($conn) && $conn instanceof mysqli) {
             }
           }, 12000);
 
-          fetch('api/recent_activities.php?limit=100', {
+          fetch('api/RecentActivities.php?limit=100', {
             credentials: 'same-origin',
             cache: 'no-store',
             signal: activitiesAbortController.signal
@@ -453,8 +464,10 @@ if (isset($conn) && $conn instanceof mysqli) {
         }
 
         function applyFilters() {
-          const typeFilter = document.getElementById('activityTypeFilter').value;
-          const searchTerm = document.getElementById('activitySearchInput').value.toLowerCase();
+          const typeFilterEl = document.getElementById('activityTypeFilter');
+          const searchInputEl = ensureActivitySearchInput();
+          const typeFilter = typeFilterEl ? typeFilterEl.value : 'all';
+          const searchTerm = (searchInputEl && searchInputEl.value ? searchInputEl.value : '').toLowerCase();
 
           filteredActivities = allActivities.filter(activity => {
             const typeMatch = typeFilter === 'all' || activity.activity_type === typeFilter;
@@ -470,8 +483,9 @@ if (isset($conn) && $conn instanceof mysqli) {
         }
 
         function clearActivityFilters() {
-          document.getElementById('activityTypeFilter').value = 'all';
-          document.getElementById('activitySearchInput').value = '';
+          const typeFilterEl = document.getElementById('activityTypeFilter');
+          if (typeFilterEl) typeFilterEl.value = 'all';
+          ensureActivitySearchInput().value = '';
           applyFilters();
         }
 
@@ -687,21 +701,29 @@ if (isset($conn) && $conn instanceof mysqli) {
 
 
         document.addEventListener('DOMContentLoaded', function() {
+          ensureActivitySearchInput();
  
           loadRecentActivities();
           
+          const activityTypeFilter = document.getElementById('activityTypeFilter');
+          const activitySearchInput = document.getElementById('activitySearchInput');
+          const prevPageBtn = document.getElementById('prevPageBtn');
+          const nextPageBtn = document.getElementById('nextPageBtn');
 
-          document.getElementById('activityTypeFilter').addEventListener('change', applyFilters);
-          document.getElementById('activitySearchInput').addEventListener('input', debounce(applyFilters, 300));
+          if (activityTypeFilter) activityTypeFilter.addEventListener('change', applyFilters);
+          if (activitySearchInput) activitySearchInput.addEventListener('input', debounce(applyFilters, 300));
           
-
-          document.getElementById('prevPageBtn').addEventListener('click', function() {
-            changePage(-1);
-          });
+          if (prevPageBtn) {
+            prevPageBtn.addEventListener('click', function() {
+              changePage(-1);
+            });
+          }
           
-          document.getElementById('nextPageBtn').addEventListener('click', function() {
-            changePage(1);
-          });
+          if (nextPageBtn) {
+            nextPageBtn.addEventListener('click', function() {
+              changePage(1);
+            });
+          }
           
 
           setInterval(updateTimeAgo, 1000);

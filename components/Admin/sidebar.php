@@ -31,7 +31,7 @@
 
       <ul class="submenu">
         <li>
-          <a a href="#payment-verification-section" class="nav-link">
+          <a href="#payment-verification-section" class="nav-link">
             Booking Verification
           </a>
         </li>
