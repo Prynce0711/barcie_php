@@ -92,12 +92,11 @@
   <!-- Admins Table -->
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-      <h5 class="mb-0"><i class="fas fa-users me-2"></i>Current Administrators</h5>
-      <div>
+      <!-- <div>
         <button class="btn btn-sm btn-light" onclick="exportToCSV()">
           <i class="fas fa-download me-1"></i>Export CSV
         </button>
-      </div>
+      </div> -->
     </div>
     <div class="card-body">
       <?php

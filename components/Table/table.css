@@ -1,16 +1,20 @@
 /* ============================================================
-   Unified Barcie Table & Pagination Styles
-   One design for all admin tables
+   Unified Barcie Table & Pagination Styles — v2 (Modern)
+   Matches the premium SectionHeader design language
    ============================================================ */
 
 /* ── Table Wrapper ── */
 .barcie-table-wrapper {
   position: relative;
+  border-radius: 1rem;
+  box-shadow:
+    0 20px 40px rgba(30, 58, 138, 0.12),
+    0 8px 16px rgba(37, 99, 235, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .barcie-table-wrapper .table-responsive {
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 1rem 1rem 0 0;
   overflow-x: auto;
 }
 
@@ -18,15 +22,49 @@
 .barcie-table {
   width: 100%;
   background: #fff;
-  border-radius: 10px;
-  overflow: hidden;
   font-size: 0.85rem;
   margin-bottom: 0;
+  border-radius: 0;
 }
 
 /* ── Header ── */
 .barcie-table thead {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #0ea5e9 100%);
+  position: relative;
+}
+
+/* Dot-grid texture overlay */
+.barcie-table thead::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle at 1.5px 1.5px,
+    rgba(255, 255, 255, 0.08) 1.5px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Top gloss line */
+.barcie-table thead::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 25%,
+    rgba(255, 255, 255, 0.5) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .barcie-table thead th {
@@ -34,25 +72,27 @@
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  padding: 0.8rem 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 0.85rem 0.85rem;
   border: none;
   white-space: nowrap;
   position: sticky;
   top: 0;
   z-index: 2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* ── Body Rows ── */
 .barcie-table tbody tr {
-  border-bottom: 1px solid #f0f1f3;
+  border-bottom: 1px solid #eef2f8;
   transition:
     background 0.18s ease,
-    opacity 0.22s ease;
+    box-shadow 0.15s ease;
 }
 
 .barcie-table tbody tr:hover {
-  background: #f8fafc !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%) !important;
+  box-shadow: inset 3px 0 0 #2563eb;
 }
 
 .barcie-table tbody tr:last-child {
@@ -60,17 +100,17 @@
 }
 
 .barcie-table tbody td {
-  padding: 0.7rem 0.75rem;
+  padding: 0.75rem 0.85rem;
   vertical-align: middle;
   color: #374151;
-  border-color: #f0f1f3;
+  border-color: #eef2f8;
   font-size: 0.82rem;
   line-height: 1.45;
 }
 
 /* Zebra stripe (opt-in via .barcie-table-striped) */
 .barcie-table-striped tbody tr:nth-of-type(odd) {
-  background-color: #fafbfc;
+  background-color: #f8fbff;
 }
 
 /* ── Row Hidden by Pagination ── */
@@ -81,9 +121,8 @@
 /* ── Empty State ── */
 .barcie-table tbody .barcie-table-empty td {
   text-align: center;
-  padding: 2rem 1rem;
+  padding: 3rem 1rem;
   color: #9ca3af;
-  font-style: italic;
 }
 
 /* ── Spinner Overlay ── */
@@ -93,61 +132,89 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.8);
   z-index: 60;
-  border-radius: 10px;
+  border-radius: 1rem;
+  backdrop-filter: blur(3px);
 }
 
 .barcie-table-wrapper .table-spinner-overlay .spinner-border {
   width: 2.2rem;
   height: 2.2rem;
+  color: #2563eb;
 }
 
 /* ── Pagination ── */
 .barcie-table-pagination {
-  padding: 0.5rem 0 0;
+  padding: 0.65rem 0.5rem 0.25rem;
+  border-top: 1px solid #eef2f8;
+  background: #f8fbff;
+  border-radius: 0 0 1rem 1rem;
 }
 
 .barcie-table-pagination small {
   font-size: 0.78rem;
+  color: #6b7280;
 }
 
 .barcie-table-pagination .btn-group .btn {
-  border-radius: 6px;
+  border-radius: 6px !important;
   font-size: 0.78rem;
-  padding: 0.3rem 0.65rem;
-  border-color: #e5e7eb;
-  color: #374151;
+  padding: 0.3rem 0.7rem;
+  border-color: #dbeafe;
+  color: #2563eb;
+  background: #fff;
   transition: all 0.15s ease;
+  font-weight: 500;
 }
 
-.barcie-table-pagination .btn-group .btn:not(:disabled):hover {
-  background: #2563eb;
+.barcie-table-pagination
+  .btn-group
+  .btn:not(:disabled):not([data-pagination-current]):hover {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
   color: #fff;
   border-color: #2563eb;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
+}
+
+.barcie-table-pagination .btn-group .btn[data-pagination-current] {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1d4ed8;
+  font-weight: 600;
+  cursor: default;
+  pointer-events: none;
 }
 
 .barcie-table-pagination .btn-group .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .barcie-table-pagination .btn-group .btn + .btn {
-  margin-left: -1px;
+  margin-left: 3px;
 }
 
 /* ── Action Buttons (inside table cells) ── */
 .barcie-table .btn-sm {
   font-size: 0.7rem;
-  padding: 0.28rem 0.5rem;
-  border-radius: 5px;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.barcie-table .btn-sm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Badge Consistency ── */
 .barcie-table .badge {
-  font-size: 0.68rem;
-  padding: 0.3rem 0.55rem;
-  border-radius: 4px;
+  font-size: 0.65rem;
+  padding: 0.32rem 0.6rem;
+  border-radius: 0.5rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 /* ── Responsive ── */
@@ -158,7 +225,7 @@
 
   .barcie-table thead th {
     font-size: 0.65rem;
-    padding: 0.6rem 0.5rem;
+    padding: 0.65rem 0.5rem;
   }
 
   .barcie-table tbody td {
