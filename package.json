@@ -5,7 +5,10 @@
   "main": "index.php",
   "scripts": {
     "test": "echo \"No tests specified\" && exit 0",
-    "build": "echo \"Static site - no build process required\" && exit 0"
+    "css:dev": "npx @tailwindcss/cli -i ./src/css/admin.css -o ./dist/css/admin.css --watch",
+    "css:build": "npx @tailwindcss/cli -i ./src/css/admin.css -o ./dist/css/admin.css --minify",
+    "dev": "npm run css:dev",
+    "build": "npm run css:build"
   },
   "repository": {
     "type": "git",
@@ -26,10 +29,15 @@
   },
   "homepage": "https://github.com/Prynce0711/barcie_php#readme",
   "devDependencies": {
-    "browser-sync": "^3.0.4"
+    "@tailwindcss/cli": "^4.2.1",
+    "autoprefixer": "^10.4.27",
+    "browser-sync": "^3.0.4",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1"
   },
   "dependencies": {
     "jsdom": "^27.2.0",
+    "motion": "^12.37.0",
     "node-fetch": "^2.7.0"
   }
 }

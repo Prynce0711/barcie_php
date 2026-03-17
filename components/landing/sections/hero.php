@@ -1,11 +1,11 @@
 <!-- Hero Section -->
 <section id="home" class="hero-section">
   <!-- Animated Background Elements -->
-  <!-- <div class="hero-bg-shapes">
+  <div class="hero-bg-shapes">
     <div class="shape shape-1"></div>
     <div class="shape shape-2"></div>
     <div class="shape shape-3"></div>
-  </div> -->
+  </div>
 
   <div class="container position-relative">
     <div class="row align-items-center">

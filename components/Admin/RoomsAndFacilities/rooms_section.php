@@ -1,38 +1,23 @@
 
-<!-- Rooms & Facilities Header -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-      <div class="card-body text-white">
-        <div class="text-center">
-          <h2 class="mb-1"><i class="fas fa-building me-2"></i>Rooms & Facilities Management</h2>
-          <p class="mb-0 opacity-75">Manage your property inventory and amenities</p>
-        </div>
-      </div>
+<?php ob_start(); ?>
+<div class="d-flex align-items-center gap-2 flex-wrap py-1">
+  <?php $filterScope = 'rooms-admin'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+  <div class="vr d-none d-md-block" style="height:28px;"></div>
+  <?php $searchScope = 'rooms'; $searchPlaceholder = 'Search by name, room number, or description...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+  <div class="ms-auto d-flex align-items-center gap-2">
+    <!-- Add New Button - Only for managers and super_admins -->
+    <div id="add-room-button-container">
+      <?php $addLabel = 'Add New'; $addClass = 'btn-primary'; $addSize = 'btn-sm'; $addTarget = '#addItemModal'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
     </div>
   </div>
 </div>
-
-<!-- Filter Controls -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body py-2 px-3">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <?php $filterScope = 'rooms-admin'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
-          <div class="vr d-none d-md-block" style="height:28px;"></div>
-          <?php $searchScope = 'rooms'; $searchPlaceholder = 'Search by name, room number, or description...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
-          <div class="ms-auto d-flex align-items-center gap-2">
-            <!-- Add New Button - Only for managers and super_admins -->
-            <div id="add-room-button-container">
-              <?php $addLabel = 'Add New'; $addClass = 'btn-success'; $addSize = 'btn-sm'; $addTarget = '#addItemModal'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<?php $sectionFilters = ob_get_clean(); ?>
+<?php
+$sectionTitle    = 'Rooms & Facilities Management';
+$sectionIcon     = 'fa-building';
+$sectionSubtitle = 'Manage your property inventory and amenities';
+include __DIR__ . '/../Shared/SectionHeader.php';
+?>
 <!-- Bridge: sync search component → existing search input -->
 <script>
 (function(){

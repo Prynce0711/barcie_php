@@ -16,6 +16,10 @@
 <!-- Unified Table Pagination -->
 <script src="Components/Table/table.js"></script>
 
+<!-- Motion One (vanilla JS animation library) -->
+<script src="https://cdn.jsdelivr.net/npm/motion@latest/dist/motion.min.js"></script>
+<script src="assets/js/motion-animations.js"></script>
+
 </body>
 
 </html>

@@ -2,44 +2,45 @@
 // Feedback Section - Admin-only comprehensive view
 ?>
 
-<div class="row mb-4" id="feedback-section">
+<?php
+ob_start(); ?>
+<button class="btn btn-sm btn-light" id="exportFeedbackBtn"><i class="fas fa-file-csv me-1"></i>Export CSV</button>
+<button class="btn btn-sm btn-light" id="refreshFeedbackBtn"><i class="fas fa-sync-alt me-1"></i>Refresh</button>
+<?php $sectionActions = ob_get_clean(); ?>
+<?php
+ob_start();
+if (isset($_SESSION) && !empty($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
+<div class="d-flex align-items-center gap-2 flex-wrap py-1">
+	<?php $searchScope = 'feedback'; $searchPlaceholder = 'Search messages, names, rooms...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+	<div class="vr d-none d-md-block" style="height:28px;"></div>
+	<select id="feedbackRatingFilter" class="form-select form-select-sm" style="width:auto; min-width:120px;">
+		<option value="">All ratings</option>
+		<option value="5">5 stars</option>
+		<option value="4">4 stars</option>
+		<option value="3">3 stars</option>
+		<option value="2">2 stars</option>
+		<option value="1">1 star</option>
+	</select>
+	<div class="vr d-none d-md-block" style="height:28px;"></div>
+	<?php $dateScope = 'feedback'; $dateShowRange = true; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+	<div class="ms-auto d-flex align-items-center gap-2">
+		<small id="feedbackCount" class="text-muted">Loading...</small>
+		<?php $resetScope = 'feedback'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+	</div>
+</div>
+<?php endif; ?>
+<?php $sectionFilters = ob_get_clean(); ?>
+<?php
+$sectionTitle    = 'Feedback';
+$sectionIcon     = 'fa-comments';
+$sectionSubtitle = 'Comprehensive admin feedback review';
+include __DIR__ . '/../Shared/SectionHeader.php';
+?>
+<div class="row mb-4">
 	<div class="col-12">
 		<div class="card">
-			<div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-				<div>
-					<h5 class="mb-0"><i class="fas fa-comments me-2"></i>Feedback</h5>
-					<small class="opacity-75">Comprehensive admin feedback review</small>
-				</div>
-				<div>
-					<button class="btn btn-sm btn-light" id="exportFeedbackBtn"><i class="fas fa-file-csv"></i> Export CSV</button>
-					<button class="btn btn-sm btn-light" id="refreshFeedbackBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
-				</div>
-			</div>
 			<div class="card-body">
 				<?php if (isset($_SESSION) && !empty($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
-					<!-- Filters Bar -->
-					<div class="card mb-3 border-0 bg-light">
-						<div class="card-body py-2 px-3">
-							<div class="d-flex align-items-center gap-2 flex-wrap">
-								<?php $searchScope = 'feedback'; $searchPlaceholder = 'Search messages, names, rooms...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
-								<div class="vr d-none d-md-block" style="height:28px;"></div>
-								<select id="feedbackRatingFilter" class="form-select form-select-sm" style="width:auto; min-width:120px;">
-									<option value="">All ratings</option>
-									<option value="5">5 stars</option>
-									<option value="4">4 stars</option>
-									<option value="3">3 stars</option>
-									<option value="2">2 stars</option>
-									<option value="1">1 star</option>
-								</select>
-								<div class="vr d-none d-md-block" style="height:28px;"></div>
-								<?php $dateScope = 'feedback'; $dateShowRange = true; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
-								<div class="ms-auto d-flex align-items-center gap-2">
-									<small id="feedbackCount" class="text-muted">Loading...</small>
-									<?php $resetScope = 'feedback'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
-								</div>
-							</div>
-						</div>
-					</div>
 					<!-- Bridge: sync reusable components → existing feedback filter logic -->
 					<script>
 					(function(){

@@ -418,7 +418,6 @@ function getRevenueReports($conn, $startDate, $endDate, $roomType) {
 function getGuestReports($conn, $startDate, $endDate, $roomType) {
     $roomTypeFilter = !empty($roomType) ? " AND i.name = ?" : "";
     
-    // Total guests (bookings count)
     $sql = "SELECT COUNT(*) as total FROM bookings b
             LEFT JOIN items i ON b.room_id = i.id
             WHERE b.checkin BETWEEN ? AND ?$roomTypeFilter";

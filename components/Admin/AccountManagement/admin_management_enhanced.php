@@ -26,56 +26,47 @@
 
 <!-- Main Content (After Authentication) -->
 <div id="admin-management-content" class="container-fluid d-none">
-  <!-- Header with Statistics -->
-  <div class="row mb-4">
-    <div class="col-md-12">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="dashboard-title">
-          <i class="fas fa-user-shield me-2"></i>Account Management
-          <span class="badge bg-success ms-2">
-            <i class="fas fa-check-circle me-1"></i>Verified
-          </span>
-        </h2>
-        <div>
-          <button class="btn btn-secondary me-2" onclick="loadAdmins()" title="Refresh">
-            <i class="fas fa-sync-alt me-2"></i>Refresh
-          </button>
-          <?php $addLabel = 'Add New Admin'; $addClass = 'btn-primary'; $addSize = ''; $addTarget = '#addAdminModal'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
-        </div>
-      </div>
+  <?php
+  ob_start(); ?>
+  <button class="btn btn-sm btn-light me-1" onclick="loadAdmins()" title="Refresh">
+    <i class="fas fa-sync-alt me-1"></i>Refresh
+  </button>
+  <?php $addLabel = 'Add New Admin'; $addClass = 'btn-sm btn-light'; $addSize = ''; $addTarget = '#addAdminModal'; include __DIR__ . '/../../ActionButton/Add.php'; ?>
+  <?php $sectionActions = ob_get_clean(); ?>
+  <?php ob_start(); ?>
+  <div class="d-flex align-items-center gap-2 flex-wrap py-1">
+    <?php $searchScope = 'admins'; $searchPlaceholder = 'Search by username, email, or name...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+    <div class="vr d-none d-md-block" style="height:28px;"></div>
+    <select class="form-select form-select-sm" id="admin-role-filter" style="width:auto; min-width:130px;">
+      <option value="">All Roles</option>
+      <option value="super_admin">Super Admin</option>
+      <option value="manager">Manager</option>
+      <option value="admin">Admin</option>
+      <option value="staff">Staff</option>
+    </select>
+    <select class="form-select form-select-sm" id="admin-status-filter" style="width:auto; min-width:120px;">
+      <option value="">All Status</option>
+      <option value="active">Active</option>
+      <option value="inactive">Inactive</option>
+      <option value="online">Online Now</option>
+    </select>
+    <div class="ms-auto">
+      <?php $resetScope = 'admins'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
     </div>
   </div>
+  <?php $sectionFilters = ob_get_clean(); ?>
+  <?php
+  $sectionTitle    = 'Account Management';
+  $sectionIcon     = 'fa-user-shield';
+  $sectionSubtitle = 'Manage administrator accounts and permissions';
+  $sectionBadge    = '<span class="badge bg-success bg-opacity-75 ms-1"><i class="fas fa-check-circle me-1"></i>Verified</span>';
+  include __DIR__ . '/../Shared/SectionHeader.php';
+  ?>
 
   <!-- Alerts -->
   <div id="admin-alert" class="alert alert-dismissible fade d-none" role="alert">
     <span id="admin-alert-message"></span>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-
-  <!-- Search and Filter Section -->
-  <div class="card shadow-sm mb-3">
-    <div class="card-body py-2 px-3">
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <?php $searchScope = 'admins'; $searchPlaceholder = 'Search by username, email, or name...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
-        <div class="vr d-none d-md-block" style="height:28px;"></div>
-        <select class="form-select form-select-sm" id="admin-role-filter" style="width:auto; min-width:130px;">
-          <option value="">All Roles</option>
-          <option value="super_admin">Super Admin</option>
-          <option value="manager">Manager</option>
-          <option value="admin">Admin</option>
-          <option value="staff">Staff</option>
-        </select>
-        <select class="form-select form-select-sm" id="admin-status-filter" style="width:auto; min-width:120px;">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="online">Online Now</option>
-        </select>
-        <div class="ms-auto">
-          <?php $resetScope = 'admins'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
-        </div>
-      </div>
-    </div>
   </div>
   <!-- Bridge: sync reusable components → existing admin filter logic -->
   <script>

@@ -5,48 +5,45 @@
 
 <!-- Bookings Management Section -->
 <div id="bookings-tab" class="booking-tab-content" style="display:block;">
+  <?php ob_start(); ?>
+  <div class="d-flex align-items-center gap-2 flex-wrap py-1">
+    <?php $dateScope = 'bookings'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
+    <div class="vr d-none d-md-block" style="height:28px;"></div>
+    <?php $searchScope = 'bookings'; $searchPlaceholder = 'Search guest or booking...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+    <div class="vr d-none d-md-block" style="height:28px;"></div>
+    <select class="form-select form-select-sm" id="statusFilter" style="width:auto; min-width:130px;">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="confirmed">Confirmed</option>
+      <option value="checked_in">Checked In</option>
+      <option value="checked_out">Checked Out</option>
+      <option value="cancelled">Cancelled</option>
+      <option value="rejected">Rejected</option>
+    </select>
+    <?php $filterScope = 'bookings'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+    <select class="form-select d-none" id="typeFilter"><option value="">All Types</option><option value="room">Room</option><option value="facility">Facility</option></select>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <?php $resetScope = 'bookings'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadBookingsExcel()">
+        <i class="fas fa-file-excel me-1"></i>Excel
+      </button>
+      <button type="button" class="btn btn-sm btn-success" onclick="downloadBookingsPDF()">
+        <i class="fas fa-file-alt me-1"></i>Text
+      </button>
+    </div>
+  </div>
+  <?php $sectionFilters = ob_get_clean(); ?>
+  <?php
+  $sectionTitle    = 'Bookings Management';
+  $sectionIcon     = 'fa-calendar-alt';
+  $sectionSubtitle = 'Manage all guest reservations and bookings';
+  include __DIR__ . '/../Shared/SectionHeader.php';
+  ?>
   <div class="row mb-4">
     <div class="col-12">
       <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">
-            <i class="fas fa-calendar-alt me-2"></i>Bookings Management
-          </h5>
-          <small class="opacity-75">Manage all guest reservations and bookings</small>
-        </div>
         <div class="card-body">
-          <!-- Filters Bar -->
-          <div class="card mb-3 border-0 bg-light">
-            <div class="card-body py-2 px-3">
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <?php $dateScope = 'bookings'; include __DIR__ . '/../../Filter/DateFilter.php'; ?>
-                <div class="vr d-none d-md-block" style="height:28px;"></div>
-                <?php $searchScope = 'bookings'; $searchPlaceholder = 'Search guest or booking...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
-                <div class="vr d-none d-md-block" style="height:28px;"></div>
-                <select class="form-select form-select-sm" id="statusFilter" style="width:auto; min-width:130px;">
-                  <option value="">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="checked_in">Checked In</option>
-                  <option value="checked_out">Checked Out</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-                <?php $filterScope = 'bookings'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
-                <select class="form-select d-none" id="typeFilter"><option value="">All Types</option><option value="room">Room</option><option value="facility">Facility</option></select>
-                <div class="ms-auto d-flex align-items-center gap-2">
-                  <?php $resetScope = 'bookings'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
-                  <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadBookingsExcel()">
-                    <i class="fas fa-file-excel me-1"></i>Excel
-                  </button>
-                  <button type="button" class="btn btn-sm btn-success" onclick="downloadBookingsPDF()">
-                    <i class="fas fa-file-alt me-1"></i>Text
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
           <!-- Bridge: sync reusable components → existing filter logic -->
           <script>
           (function(){
