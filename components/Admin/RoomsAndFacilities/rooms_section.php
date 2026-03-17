@@ -19,7 +19,7 @@
     <div class="card border-0 shadow-sm">
       <div class="card-body py-2 px-3">
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+          <?php $filterScope = 'rooms-admin'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
           <div class="vr d-none d-md-block" style="height:28px;"></div>
           <?php $searchScope = 'rooms'; $searchPlaceholder = 'Search by name, room number, or description...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
           <div class="ms-auto d-flex align-items-center gap-2">
@@ -36,18 +36,42 @@
 <!-- Bridge: sync search component → existing search input -->
 <script>
 (function(){
+  function applyRoomsFilters(){
+    var selectedType = 'all';
+    if (window.FilterTypes && window.FilterTypes['rooms-admin'] && typeof window.FilterTypes['rooms-admin'].getFilter === 'function') {
+      selectedType = window.FilterTypes['rooms-admin'].getFilter() || 'all';
+    }
+
+    var searchEl = document.getElementById('searchItems');
+    var term = searchEl ? (searchEl.value || '').toLowerCase() : '';
+
+    document.querySelectorAll('#items-container .item-card').forEach(function(card){
+      var type = (card.getAttribute('data-type') || '').toLowerCase();
+      var hay = (card.getAttribute('data-searchable') || '').toLowerCase();
+      var typeOk = selectedType === 'all' || type === selectedType;
+      var searchOk = !term || hay.indexOf(term) !== -1;
+      card.style.display = (typeOk && searchOk) ? '' : 'none';
+    });
+
+    try { if (typeof window.updateVisibleCounts === 'function') window.updateVisibleCounts(); } catch (e) { }
+  }
+
   document.addEventListener('search-changed', function(e){
     if(e.detail.scope!=='rooms') return;
     var el=document.getElementById('searchItems');
     if(!el){el=document.createElement('input');el.type='hidden';el.id='searchItems';document.body.appendChild(el);}
     el.value=e.detail.value||'';
-    el.dispatchEvent(new Event('input',{bubbles:true}));
+    applyRoomsFilters();
   });
   document.addEventListener('filter-changed', function(e){
+    if(e.detail.scope!=='rooms-admin') return;
     var f=e.detail&&e.detail.filter||'all';
     var radios=document.querySelectorAll('input.type-filter[name="type_filter"]');
     radios.forEach(function(r){if(r.value===f) r.checked=true;});
+    applyRoomsFilters();
   });
+
+  document.addEventListener('DOMContentLoaded', applyRoomsFilters);
 })();
 </script>
 <script>

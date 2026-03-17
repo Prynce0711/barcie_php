@@ -1,0 +1,174 @@
+/* ============================================================
+   Unified Barcie Table & Pagination Styles
+   One design for all admin tables
+   ============================================================ */
+
+/* ── Table Wrapper ── */
+.barcie-table-wrapper {
+  position: relative;
+}
+
+.barcie-table-wrapper .table-responsive {
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+}
+
+/* ── Table Base ── */
+.barcie-table {
+  width: 100%;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
+
+/* ── Header ── */
+.barcie-table thead {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+.barcie-table thead th {
+  color: #fff !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.8rem 0.75rem;
+  border: none;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* ── Body Rows ── */
+.barcie-table tbody tr {
+  border-bottom: 1px solid #f0f1f3;
+  transition:
+    background 0.18s ease,
+    opacity 0.22s ease;
+}
+
+.barcie-table tbody tr:hover {
+  background: #f8fafc !important;
+}
+
+.barcie-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.barcie-table tbody td {
+  padding: 0.7rem 0.75rem;
+  vertical-align: middle;
+  color: #374151;
+  border-color: #f0f1f3;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+/* Zebra stripe (opt-in via .barcie-table-striped) */
+.barcie-table-striped tbody tr:nth-of-type(odd) {
+  background-color: #fafbfc;
+}
+
+/* ── Row Hidden by Pagination ── */
+.barcie-table tbody tr[data-hidden-by-page="true"] {
+  display: none !important;
+}
+
+/* ── Empty State ── */
+.barcie-table tbody .barcie-table-empty td {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ── Spinner Overlay ── */
+.barcie-table-wrapper .table-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.75);
+  z-index: 60;
+  border-radius: 10px;
+}
+
+.barcie-table-wrapper .table-spinner-overlay .spinner-border {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+/* ── Pagination ── */
+.barcie-table-pagination {
+  padding: 0.5rem 0 0;
+}
+
+.barcie-table-pagination small {
+  font-size: 0.78rem;
+}
+
+.barcie-table-pagination .btn-group .btn {
+  border-radius: 6px;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.65rem;
+  border-color: #e5e7eb;
+  color: #374151;
+  transition: all 0.15s ease;
+}
+
+.barcie-table-pagination .btn-group .btn:not(:disabled):hover {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.barcie-table-pagination .btn-group .btn:disabled {
+  opacity: 0.45;
+}
+
+.barcie-table-pagination .btn-group .btn + .btn {
+  margin-left: -1px;
+}
+
+/* ── Action Buttons (inside table cells) ── */
+.barcie-table .btn-sm {
+  font-size: 0.7rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 5px;
+}
+
+/* ── Badge Consistency ── */
+.barcie-table .badge {
+  font-size: 0.68rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .barcie-table {
+    font-size: 0.78rem;
+  }
+
+  .barcie-table thead th {
+    font-size: 0.65rem;
+    padding: 0.6rem 0.5rem;
+  }
+
+  .barcie-table tbody td {
+    padding: 0.55rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .barcie-table-pagination .d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+}

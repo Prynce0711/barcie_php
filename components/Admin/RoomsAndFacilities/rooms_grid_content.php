@@ -3,16 +3,20 @@ require_once __DIR__ . '/../item_actions.php';
 
 $res = $conn->query("SELECT * FROM items ORDER BY item_type, created_at DESC");
 while ($item = $res->fetch_assoc()):
+  $normalizeImagePath = function($path) {
+    $path = str_replace('\\', '/', trim((string) $path));
+    return ltrim($path, '/');
+  };
   // Prepare images array for data attribute
   $imagesForData = [];
   if (!empty($item['images'])) {
     $decoded = json_decode($item['images'], true);
     if (is_array($decoded)) {
-      $imagesForData = $decoded;
+      $imagesForData = array_map($normalizeImagePath, $decoded);
     }
   }
   if (empty($imagesForData) && !empty($item['image'])) {
-    $imagesForData = [$item['image']];
+    $imagesForData = [$normalizeImagePath($item['image'])];
   }
   ?>
   <div class="col-lg-4 col-md-6 mb-4 item-card" data-type="<?= $item['item_type'] ?>" data-item-id="<?= $item['id'] ?>"
@@ -45,7 +49,7 @@ while ($item = $res->fetch_assoc()):
           if (str_starts_with($img, 'http')) {
             $webImages[] = $img;
           } else {
-            $webImages[] = ltrim($img, '/');
+            $webImages[] = $normalizeImagePath($img);
           }
         }
         ?>
@@ -399,13 +403,13 @@ while ($item = $res->fetch_assoc()):
                   ?>
                   <div class="mb-2 d-flex flex-wrap gap-2" id="currentImages<?= $item['id'] ?>">
                     <?php foreach ($images as $idx => $imgPath):
-                      $displayImagePath = $imgPath;
+                      $displayImagePath = str_replace('\\', '/', trim((string) $imgPath));
                       $projectRoot = realpath(__DIR__ . '/../../..');
                       $imageFullPath = $projectRoot . '/' . ltrim($displayImagePath, '/');
 
                       if (file_exists($imageFullPath)) {
-                        if (!str_starts_with($displayImagePath, '/') && !str_starts_with($displayImagePath, 'http')) {
-                          $displayImagePath = '/' . $displayImagePath;
+                        if (!str_starts_with($displayImagePath, 'http')) {
+                          $displayImagePath = ltrim($displayImagePath, '/');
                         }
                         ?>
                         <div class="position-relative image-entry" data-image-path="<?= htmlspecialchars($imgPath) ?>"

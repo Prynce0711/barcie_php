@@ -1,6 +1,38 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
+function normalize_item_image_path($path) {
+    if (!is_string($path) || trim($path) === '') {
+        return '';
+    }
+    if (preg_match('/^https?:\/\//i', $path)) {
+        return $path;
+    }
+    $path = str_replace('\\', '/', trim($path));
+    return ltrim($path, '/');
+}
+
+function normalize_item_row_images(array $item) {
+    $item['image'] = normalize_item_image_path($item['image'] ?? '');
+
+    if (!empty($item['images'])) {
+        $decoded = json_decode($item['images'], true);
+        if (is_array($decoded)) {
+            $normalized = array_values(array_filter(array_map('normalize_item_image_path', $decoded)));
+            $item['images'] = json_encode($normalized);
+            if (empty($item['image']) && !empty($normalized)) {
+                $item['image'] = $normalized[0];
+            }
+        } else {
+            $item['images'] = json_encode([]);
+        }
+    } else {
+        $item['images'] = json_encode([]);
+    }
+
+    return $item;
+}
+
 try {
     if (!table_exists($conn, 'items')) {
         json_error('Items table does not exist', 500);
@@ -21,6 +53,7 @@ try {
         
         if ($res && $res->num_rows > 0) {
             $item = $res->fetch_assoc();
+            $item = normalize_item_row_images($item);
             json_ok(['item' => $item]);
         } else {
             json_error('Item not found', 404);
@@ -39,7 +72,9 @@ try {
     }
 
     $items = [];
-    while ($r = $res->fetch_assoc()) { $items[] = $r; }
+    while ($r = $res->fetch_assoc()) {
+        $items[] = normalize_item_row_images($r);
+    }
 
     json_ok(['items' => $items, 'count' => count($items)]);
 } catch (Throwable $e) {

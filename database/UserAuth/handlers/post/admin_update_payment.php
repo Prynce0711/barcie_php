@@ -4,7 +4,7 @@
    --------------------------- */
 if ($action === 'admin_update_payment') {
     // Require login and roles: Front Desk (admin) and above can verify payments
-    require_once __DIR__ . '/role_check.php';
+    require_once __DIR__ . '/../../../role_check.php';
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
         handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
     }

@@ -4,7 +4,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="user-id" content="<?php echo $user_id; ?>">
 <link rel="icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
-<link rel="shortcut icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
 <link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
 
 
@@ -34,9 +33,6 @@
   <?php include __DIR__ . '/Components/Landing/sections/contact.php'; ?>
 
   <?php include __DIR__ . '/Components/Landing/footer.php'; ?>
-
-
-
 
   <?php
 

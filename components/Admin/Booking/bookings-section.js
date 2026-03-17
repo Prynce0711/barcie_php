@@ -8,52 +8,9 @@
 // });
 
 function filterBookings() {
-  const statusFilterEl = document.getElementById("statusFilter");
-  const typeFilterEl = document.getElementById("typeFilter");
-  const guestSearchEl = document.getElementById("guestSearch");
-  const table = document.getElementById("bookingsTable");
-
-  // If elements don't exist (e.g., not on bookings section), exit early
-  if (!statusFilterEl || !typeFilterEl || !guestSearchEl || !table) {
-    return;
-  }
-
-  const statusFilter = statusFilterEl.value.toLowerCase();
-  const typeFilter = typeFilterEl.value.toLowerCase();
-  const guestSearch = guestSearchEl.value.toLowerCase();
-  const rows = table
-    .getElementsByTagName("tbody")[0]
-    .getElementsByTagName("tr");
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const status = row.cells[6].textContent.toLowerCase().trim();
-    const type = row.cells[2].textContent.toLowerCase().trim();
-    const guest = row.cells[1].textContent.toLowerCase().trim();
-    const details = row.cells[3].textContent.toLowerCase().trim();
-
-    let showRow = true;
-
-    // Status filter
-    if (statusFilter && !status.includes(statusFilter)) {
-      showRow = false;
-    }
-
-    // Type filter
-    if (typeFilter && !type.includes(typeFilter)) {
-      showRow = false;
-    }
-
-    // Guest search
-    if (
-      guestSearch &&
-      !guest.includes(guestSearch) &&
-      !details.includes(guestSearch)
-    ) {
-      showRow = false;
-    }
-
-    row.style.display = showRow ? "" : "none";
+  // Refresh unified BarcieTable pagination (filter function is registered via setFilter)
+  if (window.BarcieTable && window.BarcieTable.bookings) {
+    window.BarcieTable.bookings.refresh();
   }
 }
 
@@ -229,9 +186,6 @@ function initializeBookingsFiltering() {
   if (guestSearch) {
     guestSearch.addEventListener("input", filterBookings);
   }
-
-  // Type filter button wiring moved to central dashboard bootstrap to ensure
-  // other dashboard modules (discounts, payments) are notified when type changes.
 }
 
 function initializeBookingsActions() {

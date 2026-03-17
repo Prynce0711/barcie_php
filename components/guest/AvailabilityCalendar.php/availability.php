@@ -37,7 +37,7 @@
   <div class="card mb-3 border-0 bg-light">
     <div class="card-body py-2 px-3">
       <div class="d-flex align-items-center gap-2 flex-wrap">
-        <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+        <?php $filterScope = 'availability'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
         <div class="vr d-none d-md-block" style="height:28px;"></div>
         <?php $searchScope = 'availability'; $searchPlaceholder = 'Search rooms & facilities...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
       </div>
@@ -57,7 +57,14 @@
       function initIfVisible() {
         const isVisible = sectionEl.offsetParent !== null && window.getComputedStyle(sectionEl).display !== 'none';
         if (isVisible && typeof window.renderRoomFacilityList === 'function') {
-          try { window.renderRoomFacilityList(window._availabilityFilter); } catch (e) { window.renderRoomFacilityList(); }
+          try {
+            const current = (window.FilterTypes && window.FilterTypes['availability'] && typeof window.FilterTypes['availability'].getFilter === 'function')
+              ? window.FilterTypes['availability'].getFilter()
+              : (window._availabilityFilter || 'all');
+            window.renderRoomFacilityList(current);
+          } catch (e) {
+            window.renderRoomFacilityList();
+          }
         }
       }
 

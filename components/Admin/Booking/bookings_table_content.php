@@ -5,7 +5,7 @@
 // Set timezone to ensure consistent time display
 date_default_timezone_set('Asia/Manila');
 
-$bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number,
+$bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number, i.item_type,
                           IFNULL(b.discount_status, 'none') as discount_status
                           FROM bookings b 
                           LEFT JOIN items i ON b.room_id = i.id 
@@ -49,8 +49,12 @@ while ($booking = $bookings->fetch_assoc()):
   // Use payment_verified_at if available, otherwise fall back to created_at
   $filter_date = !empty($booking['payment_verified_at']) ? $booking['payment_verified_at'] : $booking['created_at'];
   $booking_date = date('Y-m-d', strtotime($filter_date));
+  $row_item_type = strtolower((string)($booking['item_type'] ?? ''));
+  if ($row_item_type !== 'room' && $row_item_type !== 'facility') {
+    $row_item_type = 'room';
+  }
   ?>
-  <tr data-type="<?= htmlspecialchars($booking['type'] ?? '') ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
+  <tr data-type="<?= htmlspecialchars($row_item_type) ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
     <!-- Reservation No. -->
     <td data-label="Reservation No.">
       <strong style="font-size: 0.7rem;"><?= htmlspecialchars($booking['receipt_no'] ?: 'BARCIE-' . date('Ymd', strtotime($booking['created_at'] ?: 'now')) . '-' . str_pad($booking['id'], 4, '0', STR_PAD_LEFT)) ?></strong>

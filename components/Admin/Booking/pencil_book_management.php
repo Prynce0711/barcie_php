@@ -64,23 +64,22 @@ date_default_timezone_set('Asia/Manila');
 
         <!-- Pencil Bookings Table -->
         <div id="pencil_alert" class="mb-2"></div>
-        <!-- Top pagination controls -->
-        <div id="pencilPaginationTop" class="mb-2"></div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle" id="pencilTable">
-            <thead class="table-dark">
-              <tr>
-                <th style="font-size: 0.75rem;">Pencil Book No.</th>
-                <th style="font-size: 0.75rem;">Room/Facility</th>
-                <th style="font-size: 0.75rem;">Guest Details</th>
-                <th style="font-size: 0.75rem;">Schedule</th>
-                <th style="font-size: 0.75rem;">Status</th>
-                <th style="font-size: 0.75rem;">Expires</th>
-                <th style="font-size: 0.75rem;">Created</th>
-                <th style="font-size: 0.75rem;">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <?php
+        $tableId = 'pencilTable';
+        $tableScope = 'pencil';
+        $tablePageSize = 10;
+        $tableColumns = [
+            ['label' => 'Pencil Book No.'],
+            ['label' => 'Room/Facility'],
+            ['label' => 'Guest Details'],
+            ['label' => 'Schedule'],
+            ['label' => 'Status'],
+            ['label' => 'Expires'],
+            ['label' => 'Created'],
+            ['label' => 'Actions'],
+        ];
+        include __DIR__ . '/../../Table/Table.php';
+        ?>
               <?php
               // Query pencil bookings from dedicated table
               $pencilBookings = $conn->query("SELECT pb.*, i.name as room_name, i.room_number,
@@ -221,11 +220,7 @@ date_default_timezone_set('Asia/Manila');
                   </td>
                 </tr>
               <?php endwhile; ?>
-            </tbody>
-          </table>
-        </div>
-        <!-- Bottom pagination -->
-        <div id="pencilPagination" class="mt-2"></div>
+        <?php $tableClose = true; include __DIR__ . '/../../Table/Table.php'; ?>
       </div>
     </div>
   </div>
@@ -233,19 +228,6 @@ date_default_timezone_set('Asia/Manila');
 
 <script>
   (function () {
-    // Styling for pagination animations
-    const styleId = 'pencil-pagination-animations';
-    if (!document.getElementById(styleId)) {
-      const css = `
-      .pagination { opacity: 0; transition: opacity 200ms ease-in; }
-      .pagination.show { opacity: 1; }
-      .table-spinner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 10; }
-      .table-spinner-overlay .spinner-border { width: 2.4rem; height: 2.4rem; }
-    `;
-      const s = document.createElement('style'); s.id = styleId; s.appendChild(document.createTextNode(css));
-      document.head.appendChild(s);
-    }
-
     // Hide pencil booking action buttons for staff (except view)
     function hideStaffPencilActions() {
       const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
@@ -270,189 +252,39 @@ date_default_timezone_set('Asia/Manila');
       observer.observe(pencilTable, { childList: true, subtree: true });
     }
 
-    // Client-side filtering implementation
-    // This basic filter doesn't manipulate display - pagination handles that
-    window.filterPencilBookings = function () {
-      // Filter logic is handled by doesRowMatchFilter() used in pagination
-      // This function exists as a trigger to recalc pagination
-    };
-
-    // Client-side pagination
-    const PER_PAGE = 10;
-    let state = { perPage: PER_PAGE, currentPage: 1, totalPages: 1 };
-    let fadeToken = 0;
-
-    function getAllRows() {
-      return Array.from(document.querySelectorAll('#pencilTable tbody tr')).filter(r => r.id !== 'pencil-no-results');
-    }
-
+    // Register filter function with unified BarcieTable pagination
     function doesRowMatchFilter(row) {
-      const status = (document.getElementById('pencilStatusFilter')?.value || '').toLowerCase();
-      const dateFilter = document.getElementById('pencilDateFilter')?.value || '';
-      const rstatus = (row.dataset.status || '').toLowerCase();
-      const rdate = row.dataset.date || '';
+      var status = (document.getElementById('pencilStatusFilter')?.value || '').toLowerCase();
+      var dateFilter = document.getElementById('pencilDateFilter')?.value || '';
+      // Fallback: read from DateFilter API
+      if (!dateFilter && window.DateFilter && window.DateFilter['pencil']) {
+        var vals = window.DateFilter['pencil'].getValues();
+        dateFilter = vals.from || '';
+      }
+      var rstatus = (row.dataset.status || '').toLowerCase();
+      var rdate = row.dataset.date || '';
 
       if (status && rstatus.indexOf(status) === -1) return false;
       if (dateFilter && rdate !== dateFilter) return false;
       return true;
     }
 
-    function fadeOutRows(rows, timeout = 300) {
-      return new Promise(resolve => {
-        if (!rows || rows.length === 0) return resolve();
-        let remaining = rows.length;
-        const finishOne = (r) => {
-          try { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination', 'true'); } catch (e) { }
-          if (--remaining <= 0) resolve();
-        };
-        const onEnd = (e) => {
-          const r = e.currentTarget;
-          r.removeEventListener('transitionend', onEnd);
-          finishOne(r);
-        };
-        rows.forEach(r => {
-          r.style.transition = r.style.transition || 'opacity 220ms ease-in-out';
-          r.addEventListener('transitionend', onEnd);
-          requestAnimationFrame(() => { r.style.opacity = 0; });
-          setTimeout(() => { try { r.removeEventListener('transitionend', onEnd); } catch (e) { }; finishOne(r); }, timeout);
-        });
-      });
-    }
-
-    function showTableSpinner(container) {
-      try {
-        const parent = container && container.closest && container.closest('.table-responsive') ? container.closest('.table-responsive') : (container || document.body);
-        const prevPos = parent.style.position || '';
-        const computed = window.getComputedStyle(parent).position;
-        if (computed === 'static') parent.style.position = 'relative';
-        const overlay = document.createElement('div');
-        overlay.className = 'table-spinner-overlay';
-        overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-        parent.appendChild(overlay);
-        return function () {
-          try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch (e) { }
-          try { if (computed === 'static') parent.style.position = prevPos || ''; } catch (e) { }
-        };
-      } catch (err) { return function () { }; }
-    }
-
-    async function recalcPagination() {
-      const rows = getAllRows();
-      const visibleRows = rows.filter(r => doesRowMatchFilter(r));
-      const totalVisible = visibleRows.length;
-      state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
-      if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
-
-      // Hide all rows first
-      rows.forEach(r => {
-        r.style.display = 'none';
-        r.setAttribute('data-hidden-by-pagination', 'true');
-      });
-
-      // Show only the current page slice
-      const start = (state.currentPage - 1) * state.perPage;
-      const end = start + state.perPage;
-      visibleRows.slice(start, end).forEach(r => {
-        r.removeAttribute('data-hidden-by-pagination');
-        r.style.display = '';
-      });
-
-      renderPaginationControls();
-    }
-
-    function renderPaginationControls() {
-      const container = document.getElementById('pencilPagination');
-      if (!container) return;
-      const topContainer = document.getElementById('pencilPaginationTop');
-      [container, topContainer].forEach(c => { if (c) c.innerHTML = ''; });
-      if (state.totalPages <= 1) return;
-
-      // Helper to create pagination for a specific container
-      const createPaginationFor = (targetContainer) => {
-        if (!targetContainer) return;
-
-        const nav = document.createElement('nav');
-        const ul = document.createElement('ul');
-        ul.className = 'pagination justify-content-center mb-0';
-
-        const createPageItem = (label, page, disabled, active) => {
-          const li = document.createElement('li');
-          li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-          const btn = document.createElement('button');
-          btn.className = 'page-link';
-          btn.type = 'button';
-          btn.textContent = label;
-          btn.addEventListener('click', e => { e.preventDefault(); if (disabled) return; state.currentPage = page; recalcPagination(); });
-          li.appendChild(btn);
-          return li;
-        };
-
-        ul.appendChild(createPageItem('«', Math.max(1, state.currentPage - 1), state.currentPage === 1, false));
-
-        const maxButtons = 7;
-        let start = Math.max(1, state.currentPage - 3);
-        let end = Math.min(state.totalPages, start + maxButtons - 1);
-        if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
-
-        if (start > 1) {
-          ul.appendChild(createPageItem('1', 1, false, state.currentPage === 1));
-          if (start > 2) {
-            const gap = document.createElement('li');
-            gap.className = 'page-item disabled';
-            gap.innerHTML = '<span class="page-link">…</span>';
-            ul.appendChild(gap);
-          }
-        }
-
-        for (let p = start; p <= end; p++) {
-          ul.appendChild(createPageItem(String(p), p, false, p === state.currentPage));
-        }
-
-        if (end < state.totalPages) {
-          if (end < state.totalPages - 1) {
-            const gap = document.createElement('li');
-            gap.className = 'page-item disabled';
-            gap.innerHTML = '<span class="page-link">…</span>';
-            ul.appendChild(gap);
-          }
-          ul.appendChild(createPageItem(String(state.totalPages), state.totalPages, false, state.currentPage === state.totalPages));
-        }
-
-        ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
-
-        nav.appendChild(ul);
-        targetContainer.appendChild(nav);
-
-        // animate pagination controls into view
-        requestAnimationFrame(() => {
-          const p = targetContainer.querySelector('.pagination');
-          if (p) p.classList.add('show');
-        });
-      };
-
-      // Create pagination for both containers
-      createPaginationFor(container);
-      createPaginationFor(topContainer);
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      const orig = window.filterPencilBookings;
-      if (typeof orig === 'function') {
-        window.filterPencilBookings = function () {
-          orig();
-          state.currentPage = 1;
-          recalcPagination();
-        };
+    function registerFilter() {
+      if (window.BarcieTable && window.BarcieTable.pencil) {
+        window.BarcieTable.pencil.setFilter(doesRowMatchFilter);
+      } else {
+        setTimeout(registerFilter, 50);
       }
-      recalcPagination();
-    });
+    }
 
-    window._pencilPagination = {
-      setPerPage: function (n) { state.perPage = Math.max(1, Number(n) || PER_PAGE); state.currentPage = 1; recalcPagination(); },
-      goToPage: function (p) { state.currentPage = Math.min(Math.max(1, Number(p) || 1), state.totalPages); recalcPagination(); },
-      next: function () { if (state.currentPage < state.totalPages) { state.currentPage++; recalcPagination(); } },
-      prev: function () { if (state.currentPage > 1) { state.currentPage--; recalcPagination(); } }
+    window.filterPencilBookings = function () {
+      if (window.BarcieTable && window.BarcieTable.pencil) {
+        window.BarcieTable.pencil.refresh();
+      }
     };
+
+    // Register immediately if BarcieTable is ready, otherwise retry
+    registerFilter();
   })();
 
   // Pencil Booking Management Functions
@@ -598,15 +430,8 @@ date_default_timezone_set('Asia/Manila');
     }
   };
 
-  // Set default filter to today on page load
-  document.addEventListener('DOMContentLoaded', function () {
-    const today = new Date().toISOString().split('T')[0];
-    const dateInput = document.getElementById('pencilDateFilter');
-    if (dateInput && !dateInput.value) {
-      dateInput.value = today;
-      filterPencilBookings();
-    }
-  });
+  // DateFilter component handles initialization (localStorage restore + dispatch).
+  // No manual DOMContentLoaded override needed.
 
   // Download pencil bookings as text backup
   function downloadPencilBookingsPDF() {

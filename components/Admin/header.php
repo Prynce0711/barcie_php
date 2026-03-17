@@ -15,6 +15,8 @@
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="Components/Admin/dashboard.css">
+  <!-- Unified Table Styles -->
+  <link rel="stylesheet" href="Components/Table/table.css">
 </head>
 
 <body>

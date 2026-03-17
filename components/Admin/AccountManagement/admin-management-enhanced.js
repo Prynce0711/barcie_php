@@ -232,11 +232,12 @@
   }
 
   function displayAdmins() {
-    const tbody = document.getElementById("adminsTableBody");
+    const table = document.getElementById("adminsTable");
+    const tbody = table ? table.querySelector("tbody") : null;
+    if (!tbody) return;
     if (!filteredAdmins || filteredAdmins.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="10" class="text-center">No administrators found</td></tr>';
-      updateShowingInfo(0, 0);
+        '<tr><td colspan="8" class="text-center">No administrators found</td></tr>';
       return;
     }
 
@@ -244,12 +245,8 @@
       (window.currentAdmin && window.currentAdmin.role) || "staff";
     const currentId = (window.currentAdmin && window.currentAdmin.id) || 0;
 
-    // Pagination
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const endIdx = startIdx + itemsPerPage;
-    const pageAdmins = filteredAdmins.slice(startIdx, endIdx);
-
-    tbody.innerHTML = pageAdmins
+    // Render ALL rows — unified pagination handles paging
+    tbody.innerHTML = filteredAdmins
       .map((admin) => {
         const adminId = admin.id || 0;
         const username = escapeHtml(admin.username || "");
@@ -364,9 +361,10 @@
     // Attach event listeners
     attachTableEventListeners();
 
-    // Update pagination
-    renderPagination();
-    updateShowingInfo(startIdx + 1, Math.min(endIdx, filteredAdmins.length));
+    // Let unified BarcieTable pagination handle paging
+    if (window.BarcieTable && window.BarcieTable.admins) {
+      window.BarcieTable.admins.refresh();
+    }
   }
 
   function attachTableEventListeners() {
@@ -409,52 +407,6 @@
         if (window.viewAdminDetails) window.viewAdminDetails(adminId);
       });
     });
-  }
-
-  function renderPagination() {
-    const totalPages = Math.ceil(filteredAdmins.length / itemsPerPage);
-    const pagination = document.getElementById("pagination");
-
-    if (!pagination || totalPages <= 1) {
-      if (pagination) pagination.innerHTML = "";
-      return;
-    }
-
-    let html = "";
-
-    // Previous button
-    html += `<li class="page-item ${currentPage === 1 ? "disabled" : ""}">
-      <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">Previous</a>
-    </li>`;
-
-    // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
-      if (
-        i === 1 ||
-        i === totalPages ||
-        (i >= currentPage - 2 && i <= currentPage + 2)
-      ) {
-        html += `<li class="page-item ${i === currentPage ? "active" : ""}">
-          <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
-        </li>`;
-      } else if (i === currentPage - 3 || i === currentPage + 3) {
-        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-      }
-    }
-
-    // Next button
-    html += `<li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
-      <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">Next</a>
-    </li>`;
-
-    pagination.innerHTML = html;
-  }
-
-  function updateShowingInfo(start, end) {
-    const info = document.getElementById("showing-info");
-    if (info) {
-      info.textContent = `Showing ${start} to ${end} of ${filteredAdmins.length} admins`;
-    }
   }
 
   function escapeHtml(text) {
@@ -662,13 +614,6 @@
     document.getElementById("admin-role-filter").value = "";
     document.getElementById("admin-status-filter").value = "";
     applyFilters();
-  };
-
-  window.changePage = function (page) {
-    const totalPages = Math.ceil(filteredAdmins.length / itemsPerPage);
-    if (page < 1 || page > totalPages) return;
-    currentPage = page;
-    displayAdmins();
   };
 
   window.requestAdminAccess = function () {

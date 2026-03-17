@@ -2,13 +2,24 @@
     // Rooms & Facilities filter logic (moved from guest-booking-filters.js)
 
     function getSelectedItemType() {
+        const scope = "guest-rooms";
+
+        if (
+            window.FilterTypes &&
+            window.FilterTypes[scope] &&
+            typeof window.FilterTypes[scope].getFilter === "function"
+        ) {
+            const scoped = window.FilterTypes[scope].getFilter();
+            if (scoped) return scoped;
+        }
+
         // 1) Legacy radio group
         const radioValue = document.querySelector('input[name="type"]:checked')?.value;
         if (radioValue) return radioValue;
 
         // 2) Shared global set by FilterTypes.php
         if (window.FilterTypes && typeof window.FilterTypes.getFilter === "function") {
-            const current = window.FilterTypes.getFilter();
+            const current = window.FilterTypes.getFilter(scope);
             if (current) return current;
         }
 
@@ -87,7 +98,8 @@
         });
 
         // New FilterTypes component emits this when buttons are clicked.
-        document.addEventListener("filter-changed", () => {
+        document.addEventListener("filter-changed", (e) => {
+            if (!e || !e.detail || e.detail.scope !== "guest-rooms") return;
             filterItems();
             syncOverviewWithRooms();
         });

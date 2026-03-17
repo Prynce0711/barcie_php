@@ -4,7 +4,7 @@
    --------------------------- */
 if ($action === 'update_pencil_booking_status') {
     // Only Front Desk (admin), managers and super_admin can update pencil booking status - staff CANNOT
-    require_once __DIR__ . '/role_check.php';
+    require_once __DIR__ . '/../../../role_check.php';
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
         echo json_encode(['success' => false, 'message' => 'Access denied. Admin login required.']);
         exit;
