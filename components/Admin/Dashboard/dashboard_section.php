@@ -109,287 +109,315 @@ if (isset($conn) && $conn instanceof mysqli) {
 }
 ?>
 
-<!-- Dashboard Section Content -->
+<!-- ═══════════════════════════════════════════════
+     Dashboard Section
+═══════════════════════════════════════════════ -->
 
-        <!-- Welcome Header -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="card border-0 shadow-lg overflow-hidden" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
-              <div class="card-body p-4">
-                <div class="row align-items-center">
-                  <div class="col-md-8">
-                    <div class="d-flex align-items-center mb-3">
-                      <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                           style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);">
-                        <i class="fas fa-tachometer-alt fa-2x text-white"></i>
-                      </div>
-                      <div>
-                        <h3 class="text-white mb-1 fw-bold">Admin Dashboard </h3>
-                        <p class="text-white-50 mb-0 small">BarCIE International Center Management</p>
-                      </div>
-                    </div>
-                    <p class="text-white mb-2" style="font-size: 0.95rem;">
-                      <i class="fas fa-chart-line me-2"></i>Real-time overview of your hotel operations and performance metrics
-                    </p>
-                    <div class="d-flex align-items-center text-white-50">
-                      <i class="fas fa-clock me-2"></i>
-                      <small>Last updated: <?php echo date('M d, Y - H:i'); ?></small>
-                    </div>
-                  </div>
-                  <div class="col-md-4 text-end">
-                    <?php if ($admin_display_name): ?>
-                      <div class="d-inline-flex align-items-center" style="gap:12px; background:rgba(255,255,255,0.1); padding:12px 20px; border-radius:12px; backdrop-filter: blur(10px);">
-                        <div style="width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center;">
-                          <i class="fas fa-user-shield text-white" style="font-size:1.1rem;"></i>
-                        </div>
-                        <div class="text-start">
-                          <div style="color:#ffffff; font-size:1.05rem; font-weight:700; line-height:1.2;"><?php echo htmlspecialchars($greeting . ', ' . $admin_display_name); ?></div>
-                          <?php if ($admin_role): ?><small class="text-white-50" style="opacity:0.9; text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px;"><?php echo htmlspecialchars($admin_role); ?></small><?php endif; ?>
-                        </div>
-                      </div>
-                    <?php endif; ?>
-                  </div>
-                </div>
+<!-- Welcome Bar -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 px-4 py-3"
+         style="background:#fff;border-radius:.875rem;
+                border-left:4px solid #2563eb;
+                box-shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(37,99,235,.1);">
+      <!-- Left: page title -->
+      <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center justify-content-center flex-shrink-0"
+             style="width:46px;height:46px;background:linear-gradient(135deg,#1e3a8a,#2563eb);
+                    border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,.35);">
+          <i class="fas fa-tachometer-alt text-white" style="font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <h5 class="mb-0 fw-bold" style="color:#0f172a;letter-spacing:-.02em;">Admin Dashboard</h5>
+          <small style="color:#64748b;">BarCIE International Center &nbsp;·&nbsp;
+            <i class="fas fa-clock me-1" style="font-size:.65rem;"></i><?php echo date('M d, Y — H:i'); ?>
+          </small>
+        </div>
+      </div>
+      <!-- Right: greeting -->
+      <?php if ($admin_display_name): ?>
+      <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center justify-content-center flex-shrink-0"
+             style="width:38px;height:38px;border-radius:50%;background:#eff6ff;border:2px solid #bfdbfe;">
+          <i class="fas fa-user-shield" style="color:#2563eb;font-size:.9rem;"></i>
+        </div>
+        <div>
+          <div class="fw-semibold" style="color:#0f172a;font-size:.9rem;line-height:1.2;">
+            <?php echo htmlspecialchars($greeting . ', ' . $admin_display_name); ?>
+          </div>
+          <?php if ($admin_role): ?>
+          <small style="color:#64748b;text-transform:uppercase;font-size:.65rem;letter-spacing:.07em;font-weight:600;">
+            <?php echo htmlspecialchars($admin_role); ?>
+          </small>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+
+  <!-- Room Status -->
+  <div class="col-xl-3 col-md-6">
+    <div class="h-100" style="background:#fff;border-radius:.875rem;
+                border-top:3px solid #2563eb;
+                box-shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.06);">
+      <div class="px-3 pt-3 pb-1 d-flex align-items-center justify-content-between">
+        <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;">
+          Room Status
+        </span>
+        <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;
+                    display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-door-open" style="color:#2563eb;font-size:.8rem;"></i>
+        </div>
+      </div>
+      <div class="px-3 pb-3">
+        <div class="row g-2 mt-1">
+          <div class="col-6">
+            <div style="background:#fef2f2;border-radius:.5rem;padding:.75rem .875rem;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block;flex-shrink:0;"></span>
+                <span style="font-size:.65rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Occupied</span>
               </div>
+              <span style="font-size:1.75rem;font-weight:800;color:#dc2626;line-height:1;letter-spacing:-.03em;"><?php echo $occupied_rooms; ?></span>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="background:#f0fdf4;border-radius:.5rem;padding:.75rem .875rem;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;flex-shrink:0;"></span>
+                <span style="font-size:.65rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Available</span>
+              </div>
+              <span style="font-size:1.75rem;font-weight:800;color:#16a34a;line-height:1;letter-spacing:-.03em;"><?php echo $available_rooms; ?></span>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <!-- Dashboard Metrics Grid -->
-        <div class="row g-3 mb-4">
-          <!-- Room Status Section -->
-          <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 3px solid #2a5298 !important;">
-              <div class="card-body p-3">
-                <h6 class="fw-bold mb-3" style="color: #2a5298; font-size: 0.9rem;">
-                  <i class="fas fa-door-open me-2"></i>ROOM STATUS
-                </h6>
-                <div class="row g-2">
-                  <div class="col-6">
-                    <div class="p-3 rounded" style="background-color: #fff5f5; border: 1px solid #ffe0e0;">
-                      <div class="d-flex align-items-center mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" 
-                             style="width: 36px; height: 36px; background-color: #dc3545;">
-                          <i class="fas fa-door-closed text-white" style="font-size: 0.85rem;"></i>
-                        </div>
-                        <div>
-                          <small class="text-muted d-block" style="font-size: 0.7rem;">OCCUPIED</small>
-                          <h4 class="mb-0 fw-bold" style="color: #dc3545;"><?php echo $occupied_rooms; ?></h4>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <div class="p-3 rounded" style="background-color: #f0fdf4; border: 1px solid #dcfce7;">
-                      <div class="d-flex align-items-center mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" 
-                             style="width: 36px; height: 36px; background-color: #28a745;">
-                          <i class="fas fa-door-open text-white" style="font-size: 0.85rem;"></i>
-                        </div>
-                        <div>
-                          <small class="text-muted d-block" style="font-size: 0.7rem;">AVAILABLE</small>
-                          <h4 class="mb-0 fw-bold" style="color: #28a745;"><?php echo $available_rooms; ?></h4>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+  <!-- Today -->
+  <div class="col-xl-3 col-md-6">
+    <div class="h-100" style="background:#fff;border-radius:.875rem;
+                border-top:3px solid #0891b2;
+                box-shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.06);">
+      <div class="px-3 pt-3 pb-1 d-flex align-items-center justify-content-between">
+        <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;">
+          Today
+        </span>
+        <div style="width:32px;height:32px;border-radius:8px;background:#ecfeff;
+                    display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-calendar-day" style="color:#0891b2;font-size:.8rem;"></i>
+        </div>
+      </div>
+      <div class="px-3 pb-3">
+        <div class="row g-2 mt-1">
+          <div class="col-6">
+            <div style="background:#f0f9ff;border-radius:.5rem;padding:.75rem .875rem;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span style="width:8px;height:8px;border-radius:50%;background:#0891b2;display:inline-block;flex-shrink:0;"></span>
+                <span style="font-size:.65rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Check-ins</span>
               </div>
-            </div>
-          </div>  
-
-          <!-- Today Section -->
-          <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 3px solid #17a2b8 !important;">
-              <div class="card-body p-3">
-                <h6 class="fw-bold mb-3" style="color: #17a2b8; font-size: 0.9rem;">
-                  <i class="fas fa-calendar-day me-2"></i>TODAY
-                </h6>
-                <div class="row g-2">
-                  <div class="col-6">
-                    <div class="p-3 rounded" style="background-color: #f0f9ff; border: 1px solid #e0f2fe;">
-                      <div class="d-flex align-items-center mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" 
-                             style="width: 36px; height: 36px; background-color: #17a2b8;">
-                          <i class="fas fa-sign-in-alt text-white" style="font-size: 0.85rem;"></i>
-                        </div>
-                        <div>
-                          <small class="text-muted d-block" style="font-size: 0.7rem;">CHECK-INS</small>
-                          <h4 class="mb-0 fw-bold" style="color: #17a2b8;"><?php echo $today_checkins; ?></h4>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <div class="p-3 rounded" style="background-color: #f8f9fa; border: 1px solid #e9ecef;">
-                      <div class="d-flex align-items-center mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" 
-                              style="width: 36px; height: 36px; background-color: #6c757d;">
-                          <i class="fas fa-sign-out-alt text-white" style="font-size: 0.85rem;"></i>
-                        </div>
-                        <div>
-                          <small class="text-muted d-block" style="font-size: 0.7rem;">CHECK-OUTS</small>
-                          <h4 class="mb-0 fw-bold" style="color: #6c757d;"><?php echo $today_checkouts; ?></h4>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <span style="font-size:1.75rem;font-weight:800;color:#0891b2;line-height:1;letter-spacing:-.03em;"><?php echo $today_checkins; ?></span>
             </div>
           </div>
-
-          <!-- Bookings Section -->
-          <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 3px solid #007bff !important;">
-              <div class="card-body p-3">
-                <h6 class="fw-bold mb-3" style="color: #007bff; font-size: 0.9rem;">
-                  <i class="fas fa-clipboard-list me-2"></i>BOOKINGS
-                </h6>
-                <div class="row g-2">
-                  <div class="col-6">
-                    <div class="p-3 rounded" style="background-color: #eff6ff; border: 1px solid #dbeafe;">
-                      <div class="d-flex align-items-center mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" 
-                             style="width: 36px; height: 36px; background-color: #007bff;">
-                          <i class="fas fa-list-alt text-white" style="font-size: 0.85rem;"></i>
-                        </div>
-                        <div>
-                          <small class="text-muted d-block" style="font-size: 0.7rem;">TOTAL</small>
-                          <h4 class="mb-0 fw-bold" style="color: #007bff;"><?php echo $total_bookings; ?></h4>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <div class="p-3 rounded" style="background-color: #fffbeb; border: 1px solid #fef3c7;">
-                      <div class="d-flex align-items-center mb-2">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" 
-                             style="width: 36px; height: 36px; background-color: #ffc107;">
-                          <i class="fas fa-times-circle text-white" style="font-size: 0.85rem;"></i>
-                        </div>
-                        <div>
-                          <small class="text-muted d-block" style="font-size: 0.7rem;">CANCELLED</small>
-                          <h4 class="mb-0 fw-bold" style="color: #ffc107;"><?php echo $cancelled_bookings; ?></h4>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          <div class="col-6">
+            <div style="background:#f8fafc;border-radius:.5rem;padding:.75rem .875rem;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span style="width:8px;height:8px;border-radius:50%;background:#64748b;display:inline-block;flex-shrink:0;"></span>
+                <span style="font-size:.65rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Check-outs</span>
               </div>
-            </div>
-          </div>
-
-          <!-- Revenue Section -->
-          <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 3px solid #20c997 !important;">
-              <div class="card-body p-3">
-                <h6 class="fw-bold mb-3" style="color: #20c997; font-size: 0.9rem;">
-                  <i class="fas fa-money-bill-wave me-2"></i>REVENUE
-                </h6>
-                <div class="p-3 rounded text-center" style="background: linear-gradient(135deg, #20c997 0%, #17a085 100%);">
-                  <div class="d-flex align-items-center justify-content-center mb-2">
-                    <i class="fas fa-peso-sign text-white me-2" style="font-size: 1.5rem;"></i>
-                    <h2 class="mb-0 fw-bold text-white" style="font-size: 2rem;">₱<?php echo number_format($today_revenue, 2); ?></h2>
-                  </div>
-                  <small class="text-white" style="opacity: 0.9; font-size: 0.75rem;">TODAY'S REVENUE</small>
-                </div>
-              </div>
+              <span style="font-size:1.75rem;font-weight:800;color:#475569;line-height:1;letter-spacing:-.03em;"><?php echo $today_checkouts; ?></span>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <!-- Recent Activities Section -->
-        <div class="row mt-4">
-          <div class="col-12">
-            <div class="card border-0 shadow-sm" style="border-left: 3px solid #6f42c1 !important;">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                  <div class="d-flex align-items-center">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                         style="width: 48px; height: 48px; background-color: #6f42c1;">
-                      <i class="fas fa-history text-white" style="font-size: 1.2rem;"></i>
-                    </div>
-                    <div>
-                      <h5 class="mb-0 fw-bold" style="color: #2d3748;">Recent Activities</h5>
-                      <small class="text-muted">Latest system events and actions</small>
-                    </div>
-                  </div>
-                  <span class="badge bg-primary px-3 py-2" style="font-size: 0.75rem; font-weight: 600;">LIVE</span>
-                </div>
-
-                <!-- Filter Controls -->
-                <div class="card mb-3 border-0 bg-light">
-                  <div class="card-body py-2 px-3">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                      <select id="activityTypeFilter" class="form-select form-select-sm" style="width:auto; min-width:150px;">
-                        <option value="all">All Activities</option>
-                        <option value="booking_approved">Bookings Approved</option>
-                        <option value="payment_approved">Payments Approved</option>
-                        <option value="booking_cancelled">Bookings Cancelled</option>
-                        <option value="guest_checkin">Check-ins</option>
-                        <option value="guest_checkout">Check-outs</option>
-                        <option value="feedback_submitted">Feedback</option>
-                        <option value="pencil_created">Pencil Bookings</option>
-                      </select>
-                      <div class="vr d-none d-md-block" style="height:28px;"></div>
-                      <?php $searchScope = 'activities'; $searchPlaceholder = 'Search by guest name or booking ID...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
-                      <div class="ms-auto d-flex align-items-center gap-2">
-                        <button class="btn btn-sm btn-light" onclick="loadRecentActivities()">
-                          <i class="fas fa-sync-alt me-1"></i>Refresh
-                        </button>
-                        <?php $resetScope = 'activities'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Bridge: sync search component → existing activity search -->
-                <script>
-                (function(){
-                  document.addEventListener('search-changed', function(e){
-                    if(e.detail.scope!=='activities') return;
-                    var el=document.getElementById('activitySearchInput');
-                    if(!el){el=document.createElement('input');el.type='hidden';el.id='activitySearchInput';document.body.appendChild(el);}
-                    el.value=e.detail.value||'';
-                    if(typeof applyFilters==='function') applyFilters();
-                  });
-                  document.addEventListener('filters-reset', function(e){
-                    if(e.detail&&e.detail.scope&&e.detail.scope!=='activities') return;
-                    var t=document.getElementById('activityTypeFilter');if(t)t.value='all';
-                    if(typeof clearActivityFilters==='function') clearActivityFilters();
-                  });
-                })();
-                </script>
-
-                <!-- Activities List -->
-                <div id="recentActivitiesList" class="activity-timeline" style="max-height: 600px; overflow-y: auto;">
-                  <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                      <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-muted mt-2 mb-0">Loading recent activities...</p>
-                  </div>
-                </div>
-
-                <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
-                  <div>
-                    <small class="text-muted">Showing <span id="activityCount">0</span> of <span id="totalActivityCount">0</span> activities</small>
-                  </div>
-                  <div class="d-flex gap-2" id="activityPagination">
-                    <button class="btn btn-sm btn-outline-secondary" id="prevPageBtn" disabled>
-                      <i class="fas fa-chevron-left"></i> Prev
-                    </button>
-                    <span class="align-self-center px-2 text-muted" id="pageInfo">Page 1</span>
-                    <button class="btn btn-sm btn-outline-secondary" id="nextPageBtn" disabled>
-                      Next <i class="fas fa-chevron-right"></i>
-                    </button>
-                  </div>
-                </div>
+  <!-- Bookings -->
+  <div class="col-xl-3 col-md-6">
+    <div class="h-100" style="background:#fff;border-radius:.875rem;
+                border-top:3px solid #4f46e5;
+                box-shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.06);">
+      <div class="px-3 pt-3 pb-1 d-flex align-items-center justify-content-between">
+        <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;">
+          Bookings
+        </span>
+        <div style="width:32px;height:32px;border-radius:8px;background:#eef2ff;
+                    display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-clipboard-list" style="color:#4f46e5;font-size:.8rem;"></i>
+        </div>
+      </div>
+      <div class="px-3 pb-3">
+        <div class="row g-2 mt-1">
+          <div class="col-6">
+            <div style="background:#eef2ff;border-radius:.5rem;padding:.75rem .875rem;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span style="width:8px;height:8px;border-radius:50%;background:#4f46e5;display:inline-block;flex-shrink:0;"></span>
+                <span style="font-size:.65rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Total</span>
               </div>
+              <span style="font-size:1.75rem;font-weight:800;color:#4f46e5;line-height:1;letter-spacing:-.03em;"><?php echo $total_bookings; ?></span>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="background:#fffbeb;border-radius:.5rem;padding:.75rem .875rem;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span style="width:8px;height:8px;border-radius:50%;background:#d97706;display:inline-block;flex-shrink:0;"></span>
+                <span style="font-size:.65rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Cancelled</span>
+              </div>
+              <span style="font-size:1.75rem;font-weight:800;color:#d97706;line-height:1;letter-spacing:-.03em;"><?php echo $cancelled_bookings; ?></span>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Revenue -->
+  <div class="col-xl-3 col-md-6">
+    <div class="h-100 d-flex flex-column" style="background:#fff;border-radius:.875rem;
+                border-top:3px solid #059669;
+                box-shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.06);">
+      <div class="px-3 pt-3 pb-1 d-flex align-items-center justify-content-between">
+        <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;">
+          Today's Revenue
+        </span>
+        <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;
+                    display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-money-bill-wave" style="color:#059669;font-size:.8rem;"></i>
+        </div>
+      </div>
+      <div class="px-3 pb-3 flex-grow-1 d-flex align-items-center">
+        <div class="w-100 mt-2" style="background:linear-gradient(135deg,#047857,#059669,#10b981);
+                    border-radius:.625rem;padding:1.1rem 1.25rem;
+                    box-shadow:0 4px 14px rgba(4,120,87,.25);">
+          <div class="d-flex align-items-baseline gap-1">
+            <span class="text-white fw-bold" style="font-size:.85rem;opacity:.85;">₱</span>
+            <span class="text-white fw-black" style="font-size:1.6rem;letter-spacing:-.03em;line-height:1;">
+              <?php echo number_format($today_revenue, 2); ?>
+            </span>
+          </div>
+          <p class="mb-0 text-white mt-1" style="font-size:.68rem;opacity:.75;text-transform:uppercase;letter-spacing:.07em;font-weight:600;">
+            Verified payments
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Recent Activities -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div style="background:#fff;border-radius:.875rem;
+                box-shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.06);overflow:hidden;">
+
+      <!-- Card header -->
+      <div class="d-flex align-items-center justify-content-between px-4 py-3"
+           style="border-bottom:1px solid #f1f5f9;">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:38px;height:38px;border-radius:10px;background:#f5f3ff;
+                      display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-history" style="color:#7c3aed;font-size:.95rem;"></i>
+          </div>
+          <div>
+            <h6 class="mb-0 fw-bold" style="color:#0f172a;letter-spacing:-.01em;">Recent Activities</h6>
+            <small style="color:#94a3b8;">Latest system events and actions</small>
+          </div>
+        </div>
+        <span style="display:inline-flex;align-items:center;gap:6px;
+                     background:#f0fdf4;color:#16a34a;font-size:.68rem;font-weight:700;
+                     text-transform:uppercase;letter-spacing:.08em;
+                     padding:.3rem .75rem;border-radius:2rem;border:1px solid #bbf7d0;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;
+                       box-shadow:0 0 0 2px rgba(34,197,94,.3);display:inline-block;"></span>
+          Live
+        </span>
+      </div>
+
+      <!-- Filters -->
+      <div class="px-4 py-2" style="background:#f8fafc;border-bottom:1px solid #f1f5f9;">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <select id="activityTypeFilter" class="form-select form-select-sm" style="width:auto;min-width:160px;">
+            <option value="all">All Activities</option>
+            <option value="booking_approved">Bookings Approved</option>
+            <option value="payment_approved">Payments Approved</option>
+            <option value="booking_cancelled">Bookings Cancelled</option>
+            <option value="guest_checkin">Check-ins</option>
+            <option value="guest_checkout">Check-outs</option>
+            <option value="feedback_submitted">Feedback</option>
+            <option value="pencil_created">Pencil Bookings</option>
+          </select>
+          <div class="vr d-none d-md-block" style="height:26px;"></div>
+          <?php $searchScope = 'activities'; $searchPlaceholder = 'Search guest or booking ID...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="loadRecentActivities()" style="font-size:.78rem;">
+              <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+            <?php $resetScope = 'activities'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bridge script -->
+      <script>
+      (function(){
+        document.addEventListener('search-changed', function(e){
+          if(e.detail.scope!=='activities') return;
+          var el=document.getElementById('activitySearchInput');
+          if(!el){el=document.createElement('input');el.type='hidden';el.id='activitySearchInput';document.body.appendChild(el);}
+          el.value=e.detail.value||'';
+          if(typeof applyFilters==='function') applyFilters();
+        });
+        document.addEventListener('filters-reset', function(e){
+          if(e.detail&&e.detail.scope&&e.detail.scope!=='activities') return;
+          var t=document.getElementById('activityTypeFilter');if(t)t.value='all';
+          if(typeof clearActivityFilters==='function') clearActivityFilters();
+        });
+      })();
+      </script>
+
+      <!-- Activity feed -->
+      <div id="recentActivitiesList" style="max-height:560px;overflow-y:auto;">
+        <div class="d-flex flex-column align-items-center justify-content-center py-5">
+          <div class="spinner-border" role="status"
+               style="width:1.8rem;height:1.8rem;color:#2563eb;border-width:2px;">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted mt-3 mb-0" style="font-size:.85rem;">Loading activities…</p>
+        </div>
+      </div>
+
+      <!-- Pagination footer -->
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 px-4 py-2"
+           style="border-top:1px solid #f1f5f9;background:#f8fafc;">
+        <small style="color:#94a3b8;font-size:.78rem;">
+          Showing <strong id="activityCount" style="color:#374151;">0</strong>
+          of <strong id="totalActivityCount" style="color:#374151;">0</strong> activities
+        </small>
+        <div class="d-flex align-items-center gap-1">
+          <button class="btn btn-sm btn-outline-secondary" id="prevPageBtn" disabled style="font-size:.78rem;padding:.25rem .6rem;">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo"
+                style="font-size:.78rem;font-weight:600;color:#374151;padding:.25rem .75rem;
+                       background:#fff;border:1px solid #e2e8f0;border-radius:.375rem;min-width:90px;text-align:center;">
+            Page 1
+          </span>
+          <button class="btn btn-sm btn-outline-secondary" id="nextPageBtn" disabled style="font-size:.78rem;padding:.25rem .6rem;">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
         <script>
         // Fetch and display recent activities
@@ -471,10 +499,10 @@ if (isset($conn) && $conn instanceof mysqli) {
 
           filteredActivities = allActivities.filter(activity => {
             const typeMatch = typeFilter === 'all' || activity.activity_type === typeFilter;
-            const searchMatch = searchTerm === '' || 
+            const searchMatch = searchTerm === '' ||
               (activity.guest_name && activity.guest_name.toLowerCase().includes(searchTerm)) ||
               (activity.receipt_no && activity.receipt_no.toLowerCase().includes(searchTerm));
-            
+
             return typeMatch && searchMatch;
           });
 
@@ -493,23 +521,23 @@ if (isset($conn) && $conn instanceof mysqli) {
           console.log('changePage called with direction:', direction);
           console.log('Current page:', currentPage);
           console.log('Filtered activities:', filteredActivities.length);
-          
+
           const totalPages = Math.ceil(filteredActivities.length / activitiesPerPage);
           const newPage = currentPage + direction;
-          
+
           console.log('Total pages:', totalPages);
           console.log('New page would be:', newPage);
-          
+
           // Validate page bounds
           if (newPage < 1 || newPage > totalPages) {
             console.log('Page out of bounds, returning');
             return;
           }
-          
+
           currentPage = newPage;
           console.log('Setting current page to:', currentPage);
           displayActivities();
-          
+
           // Scroll to top of activities list
           const container = document.getElementById('recentActivitiesList');
           if (container) {
@@ -519,9 +547,13 @@ if (isset($conn) && $conn instanceof mysqli) {
 
         function displayActivities() {
           const container = document.getElementById('recentActivitiesList');
-          
+
           if (!filteredActivities || filteredActivities.length === 0) {
-            container.innerHTML = '<div class="text-center py-4"><p class="text-muted mb-0">No activities found matching your filters</p></div>';
+            container.innerHTML = `
+              <div class="d-flex flex-column align-items-center justify-content-center py-5">
+                <i class="fas fa-inbox" style="font-size:2rem;color:#cbd5e1;"></i>
+                <p class="text-muted mt-3 mb-0" style="font-size:.875rem;">No activities match your filters</p>
+              </div>`;
             updatePaginationInfo(0, 0);
             return;
           }
@@ -534,24 +566,29 @@ if (isset($conn) && $conn instanceof mysqli) {
           pageActivities.forEach((activity, index) => {
             const { icon, color, bgColor, text } = getActivityDisplay(activity);
             const timeAgo = formatTimeAgo(activity.activity_date);
-            
+            const isLast = index === pageActivities.length - 1;
+
             html += `
-              <div class="activity-item d-flex align-items-start p-3 border-bottom" style="transition: background 0.2s;" data-timestamp="${activity.activity_date}">
-                <div class="activity-icon me-3">
-                  <div class="icon-circle rounded-circle d-flex align-items-center justify-content-center" 
-                       style="width: 42px; height: 42px; background-color: ${bgColor}; flex-shrink: 0;">
-                    <i class="${icon}" style="color: ${color}; font-size: 1rem;"></i>
+              <div class="activity-item d-flex align-items-start px-4 py-3"
+                   style="${!isLast ? 'border-bottom:1px solid #f1f5f9;' : ''}transition:background .15s;"
+                   onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''"
+                   data-timestamp="${activity.activity_date}">
+                <div class="flex-shrink-0 me-3">
+                  <div class="d-flex align-items-center justify-content-center"
+                       style="width:38px;height:38px;border-radius:50%;background-color:${bgColor};">
+                    <i class="${icon}" style="color:${color};font-size:.875rem;"></i>
                   </div>
                 </div>
-                <div class="flex-grow-1" style="min-width: 0;">
-                  <div class="d-flex align-items-start justify-content-between">
-                    <p class="mb-1" style="color: #4a5568; font-size: 0.95rem; line-height: 1.5;">
-                      ${text}
-                      ${activity.receipt_no ? `<span class="badge bg-secondary ms-2" style="font-size: 0.7rem; padding: 3px 8px;">${activity.receipt_no}</span>` : ''}
-                    </p>
-                    <small class="activity-time text-muted text-nowrap ms-3" style="font-size: 0.8rem; font-weight: 600;">${timeAgo}</small>
-                  </div>
+                <div class="flex-grow-1 min-width-0">
+                  <p class="mb-1" style="color:#374151;font-size:.875rem;line-height:1.5;">
+                    ${text}
+                    ${activity.receipt_no ? `<span class="badge bg-light text-secondary ms-1" style="font-size:.65rem;font-weight:600;border:1px solid #e2e8f0;">${activity.receipt_no}</span>` : ''}
+                  </p>
                 </div>
+                <small class="activity-time flex-shrink-0 ms-3"
+                       style="color:#94a3b8;font-size:.75rem;font-weight:600;white-space:nowrap;">
+                  ${timeAgo}
+                </small>
               </div>
             `;
           });
@@ -562,15 +599,15 @@ if (isset($conn) && $conn instanceof mysqli) {
 
         function updatePaginationInfo(showing, total) {
           const totalPages = Math.max(1, Math.ceil(total / activitiesPerPage));
-          
+
           document.getElementById('activityCount').textContent = showing;
           document.getElementById('totalActivityCount').textContent = total;
           document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
-          
+
           // Update button states
           const prevBtn = document.getElementById('prevPageBtn');
           const nextBtn = document.getElementById('nextPageBtn');
-          
+
           if (prevBtn && nextBtn) {
             prevBtn.disabled = currentPage <= 1;
             nextBtn.disabled = currentPage >= totalPages || total === 0;
@@ -678,33 +715,32 @@ if (isset($conn) && $conn instanceof mysqli) {
           const diffHours = Math.floor(diffMins / 60);
           const diffDays = Math.floor(diffHours / 24);
 
-          if (diffSecs < 60) return 'JUST NOW';
-          if (diffMins < 60) return diffMins + 'M AGO';
-          if (diffHours < 24) return diffHours + 'H AGO';
-          if (diffDays === 1) return '1D AGO';
-          if (diffDays < 7) return diffDays + 'D AGO';
+          if (diffSecs < 60) return 'Just now';
+          if (diffMins < 60) return diffMins + 'm ago';
+          if (diffHours < 24) return diffHours + 'h ago';
+          if (diffDays === 1) return '1d ago';
+          if (diffDays < 7) return diffDays + 'd ago';
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
         function showActivitiesError(message) {
           const container = document.getElementById('recentActivitiesList');
           container.innerHTML = `
-            <div class="text-center py-4">
-              <i class="fas fa-exclamation-circle text-warning mb-2" style="font-size: 2rem;"></i>
-              <p class="text-muted mb-0">${message || 'Failed to load recent activities'}</p>
-              <button class="btn btn-sm btn-primary mt-2" onclick="loadRecentActivities()">
-                <i class="fas fa-refresh me-1"></i>Retry
+            <div class="d-flex flex-column align-items-center justify-content-center py-5">
+              <i class="fas fa-exclamation-circle" style="font-size:2rem;color:#fbbf24;"></i>
+              <p class="text-muted mt-3 mb-2" style="font-size:.875rem;">${message || 'Failed to load recent activities'}</p>
+              <button class="btn btn-sm btn-outline-primary" onclick="loadRecentActivities()" style="font-size:.8rem;">
+                <i class="fas fa-redo me-1"></i>Retry
               </button>
             </div>
           `;
         }
 
-
         document.addEventListener('DOMContentLoaded', function() {
           ensureActivitySearchInput();
- 
+
           loadRecentActivities();
-          
+
           const activityTypeFilter = document.getElementById('activityTypeFilter');
           const activitySearchInput = document.getElementById('activitySearchInput');
           const prevPageBtn = document.getElementById('prevPageBtn');
@@ -712,23 +748,20 @@ if (isset($conn) && $conn instanceof mysqli) {
 
           if (activityTypeFilter) activityTypeFilter.addEventListener('change', applyFilters);
           if (activitySearchInput) activitySearchInput.addEventListener('input', debounce(applyFilters, 300));
-          
+
           if (prevPageBtn) {
             prevPageBtn.addEventListener('click', function() {
               changePage(-1);
             });
           }
-          
+
           if (nextPageBtn) {
             nextPageBtn.addEventListener('click', function() {
               changePage(1);
             });
           }
-          
 
           setInterval(updateTimeAgo, 1000);
-          
-   
           setInterval(loadRecentActivities, 30000);
         });
 
