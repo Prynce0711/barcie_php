@@ -143,6 +143,11 @@ if ($action === 'create_booking') {
         // Check if this is a conversion from pencil booking
         $converted_from_pencil_id = isset($_POST['converted_from_pencil_id']) ? (int) $_POST['converted_from_pencil_id'] : 0;
 
+        $requested_room_id = $room_id;
+        $requested_room_name = $room_data['name'] ?? '';
+        $requested_room_number = $room_data['room_number'] ?? '';
+        $auto_transfer_note = '';
+
         // Validate dates
         if (empty($checkin) || empty($checkout)) {
             handleResponse("Please provide check-in and check-out dates.", false, '../Guest.php');
@@ -161,7 +166,57 @@ if ($action === 'create_booking') {
 
         if ($conflict_result->num_rows > 0) {
             $conflict_stmt->close();
-            handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../Guest.php');
+
+            // Auto-transfer is only attempted for normal new reservations, not pencil conversions.
+            if ($converted_from_pencil_id <= 0) {
+                $requested_type = (string) ($room_data['item_type'] ?? 'room');
+                $requested_price = (float) ($room_data['price'] ?? 0);
+                $alt_stmt = $conn->prepare("SELECT i.id, i.name, i.room_number, i.item_type, i.capacity, i.price
+                                            FROM items i
+                                            WHERE i.id <> ?
+                                              AND i.item_type = ?
+                                              AND i.capacity >= ?
+                                              AND NOT EXISTS (
+                                                SELECT 1 FROM bookings b
+                                                WHERE b.room_id = i.id
+                                                  AND b.status IN ('confirmed', 'approved', 'pending', 'checked_in')
+                                                  AND b.checkin < ?
+                                                  AND b.checkout > ?
+                                              )
+                                            ORDER BY ABS(i.price - ?) ASC, i.capacity ASC, i.room_number ASC, i.id ASC
+                                            LIMIT 1");
+
+                if ($alt_stmt) {
+                    $alt_stmt->bind_param("isissd", $room_id, $requested_type, $occupants, $checkout, $checkin, $requested_price);
+                    $alt_stmt->execute();
+                    $alt_result = $alt_stmt->get_result();
+                    $alt_room = $alt_result ? $alt_result->fetch_assoc() : null;
+                    $alt_stmt->close();
+
+                    if ($alt_room) {
+                        $room_id = (int) $alt_room['id'];
+                        $room_data = $alt_room;
+
+                        $requested_label = $requested_room_name;
+                        if (!empty($requested_room_number)) {
+                            $requested_label .= ' #' . $requested_room_number;
+                        }
+
+                        $assigned_label = (string) ($room_data['name'] ?? 'Alternative');
+                        if (!empty($room_data['room_number'])) {
+                            $assigned_label .= ' #' . $room_data['room_number'];
+                        }
+
+                        $auto_transfer_note = 'Requested ' . $requested_label . ' was already booked for your selected dates. We automatically transferred your reservation to ' . $assigned_label . '.';
+                    } else {
+                        handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates and no matching alternative is currently available.", false, '../Guest.php');
+                    }
+                } else {
+                    handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../Guest.php');
+                }
+            } else {
+                handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../Guest.php');
+            }
         }
         $conflict_stmt->close();
 
@@ -225,7 +280,12 @@ if ($action === 'create_booking') {
             error_log("Discount not applied: No proof uploaded for discount type $discount_type");
         }
 
-        $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Email: $email | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info;
+        $transfer_details = '';
+        if (!empty($auto_transfer_note)) {
+            $transfer_details = " | Auto-Transfer: " . $auto_transfer_note;
+        }
+
+        $details = "Receipt: $receipt_no | " . ucfirst($room_data['item_type']) . ": " . $room_data['name'] . " | Guest: $guest_name | Email: $email | Contact: $contact | Check-in: $checkin | Check-out: $checkout | Occupants: $occupants | Company: $company" . $discount_info . $transfer_details;
 
         // Try to insert with room_id and receipt_no columns
         try {
@@ -289,6 +349,7 @@ if ($action === 'create_booking') {
                         'discount_percentage' => $discount_percentage,
                         'discount_amount' => $discount_amount,
                         'cancel_url' => $cancelUrl,
+                        'transfer_note' => $auto_transfer_note,
                     ]);
 
                     $emailBody = create_email_template($emailTemplate['title'], $emailTemplate['content'], $emailTemplate['footer']);
@@ -334,7 +395,12 @@ if ($action === 'create_booking') {
                     }
                 }
 
-                handleResponse("Reservation saved successfully with receipt number: $receipt_no for " . $room_data['name'], true, '../Guest.php');
+                $success_message = "Reservation saved successfully with receipt number: $receipt_no for " . $room_data['name'];
+                if (!empty($auto_transfer_note)) {
+                    $success_message .= ". " . $auto_transfer_note;
+                }
+
+                handleResponse($success_message, true, '../Guest.php');
             } else {
                 handleResponse("Error saving reservation: " . $stmt->error, false, '../Guest.php');
                 error_log("Booking insert error: " . $stmt->error);

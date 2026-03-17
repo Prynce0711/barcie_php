@@ -28,8 +28,22 @@ $dateShowRange = $dateShowRange ?? false;
 
 <script>
 (function () {
-    const scriptEl = document.currentScript;
-    const root = scriptEl ? scriptEl.previousElementSibling : null;
+    var scriptEl = document.currentScript;
+    // Walk backwards from script to find the closest .date-filter-wrapper sibling
+    var root = null;
+    if (scriptEl) {
+        var prev = scriptEl.previousElementSibling;
+        // Walk up to 3 siblings back to find the wrapper (handles whitespace/text nodes)
+        for (var i = 0; i < 3 && prev; i++) {
+            if (prev.hasAttribute && prev.hasAttribute('data-date-filter')) { root = prev; break; }
+            prev = prev.previousElementSibling;
+        }
+        // Fallback: search parent for the last date-filter-wrapper before this script
+        if (!root && scriptEl.parentNode) {
+            var all = scriptEl.parentNode.querySelectorAll('[data-date-filter]');
+            if (all.length) root = all[all.length - 1];
+        }
+    }
     if (!root) return;
 
     const scope = root.getAttribute('data-scope') || 'default';
@@ -54,15 +68,19 @@ $dateShowRange = $dateShowRange ?? false;
     }
 
     function getValues() {
-        return { from: dateFrom ? dateFrom.value : '', to: dateTo ? dateTo.value : '' };
+        var f = dateFrom ? dateFrom.value : '';
+        var t = dateTo ? dateTo.value : '';
+        // If no dateTo input exists (non-range mode), mirror from into to
+        if (!dateTo && f) t = f;
+        return { from: f, to: t };
     }
-
+            
     function dispatch() {
         var vals = getValues();
         writeStored(STORAGE_FROM, vals.from);
         writeStored(STORAGE_TO, vals.to);
 
-        todayBtn.classList.toggle('active', vals.from === todayStr() && !vals.to);
+        todayBtn.classList.toggle('active', vals.from === todayStr() && vals.to === todayStr());
         clearBtn.classList.toggle('active', !vals.from && !vals.to);
 
         document.dispatchEvent(new CustomEvent('date-filter-changed', {
@@ -73,7 +91,7 @@ $dateShowRange = $dateShowRange ?? false;
     function setToday() {
         var t = todayStr();
         if (dateFrom) dateFrom.value = t;
-        if (dateTo) dateTo.value = '';
+        if (dateTo) dateTo.value = t;
         dispatch();
     }
 

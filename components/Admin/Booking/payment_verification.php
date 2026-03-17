@@ -58,19 +58,20 @@ date_default_timezone_set('Asia/Manila');
 				})();
 				</script>
 
-				<div class="table-responsive">
-					<table class="table table-hover align-middle" id="paymentsTable">
-						<thead class="table-light">
-							<tr>
-								<th>Receipt #</th>
-								<th>Guest</th>
-								<th>Amount / Details</th>
-								<th>View Details</th>
-								<th>Submitted</th>
-								<th>Actions</th>
-							</tr>
-						</thead>
-						<tbody>
+				<?php
+				$tableId = 'paymentsTable';
+				$tableScope = 'payments';
+				$tablePageSize = 10;
+				$tableColumns = [
+					['label' => 'Receipt #'],
+					['label' => 'Guest'],
+					['label' => 'Amount / Details'],
+					['label' => 'View Details'],
+					['label' => 'Submitted'],
+					['label' => 'Actions'],
+				];
+				include __DIR__ . '/../../Table/Table.php';
+				?>
 							<?php
 							$stmt = $conn->prepare("SELECT b.id, b.receipt_no, b.details, b.proof_of_payment, b.proof_of_id, b.guest_age, b.amount, b.created_at, b.payment_date, b.checkin, i.name as room_name FROM bookings b LEFT JOIN items i ON b.room_id = i.id WHERE b.payment_status = 'pending' ORDER BY COALESCE(b.payment_date, b.created_at) DESC");
 							if ($stmt) {
@@ -122,11 +123,7 @@ date_default_timezone_set('Asia/Manila');
 								echo '<tr><td colspan="6">Failed to load payment verifications.</td></tr>';
 							}
 							?>
-						</tbody>
-					</table>
-				</div>
-				<!-- Pagination for Payments -->
-				<div id="paymentsPagination" class="mt-2"></div>
+				<?php $tableClose = true; include __DIR__ . '/../../Table/Table.php'; ?>
 			</div>
 		</div>
 	</div>
@@ -293,116 +290,43 @@ date_default_timezone_set('Asia/Manila');
 			}
 		});
 
-		// Client-side pagination for #paymentsTable
+		// Register filter function with unified BarcieTable pagination
 		(function () {
-			const PER_PAGE_P = 8;
-			let pstate = { perPage: PER_PAGE_P, currentPage: 1, totalPages: 1 };
-
-			function pGetAllRows() {
-				const dateFilter = document.getElementById('paymentDateFilter')?.value || '';
-				const searchFilter = (document.getElementById('paymentSearchFilter')?.value || '').toLowerCase();
-				return Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => {
-					if (r.id === 'payments-no-results') return false;
-					const rdate = r.dataset.date || '';
-					if (dateFilter && rdate !== dateFilter) return false;
-					if (searchFilter && r.textContent.toLowerCase().indexOf(searchFilter) === -1) return false;
-					return true;
-				});
+			function doesPaymentMatch(row) {
+				if (row.id === 'payments-no-results') return false;
+				var dateFilter = document.getElementById('paymentDateFilter')?.value || '';
+				var searchFilter = (document.getElementById('paymentSearchFilter')?.value || '').toLowerCase();
+				// Fallback: read from component APIs
+				if (!dateFilter && window.DateFilter && window.DateFilter['payments']) {
+					var vals = window.DateFilter['payments'].getValues();
+					dateFilter = vals.from || '';
+				}
+				if (!searchFilter && window.Searchbar && window.Searchbar['payments']) {
+					searchFilter = (window.Searchbar['payments'].getValue() || '').toLowerCase();
+				}
+				var rdate = row.dataset.date || '';
+				if (dateFilter && rdate !== dateFilter) return false;
+				if (searchFilter && row.textContent.toLowerCase().indexOf(searchFilter) === -1) return false;
+				return true;
 			}
 
-			let paymentsFadeToken = 0;
-
-			// helper: fade out rows (local copy) to keep this module self-contained
-			function fadeOutRows(rows, timeout = 300) {
-				return new Promise(resolve => {
-					if (!rows || rows.length === 0) return resolve();
-					let remaining = rows.length;
-					const finishOne = (r) => {
-						try { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination', 'true'); } catch (e) { }
-						if (--remaining <= 0) resolve();
-					};
-
-					const onEnd = (e) => {
-						const r = e.currentTarget;
-						r.removeEventListener('transitionend', onEnd);
-						finishOne(r);
-					};
-
-					rows.forEach(r => {
-						// ensure transition is set
-						r.style.transition = r.style.transition || 'opacity 220ms ease-in-out';
-						// listen for transition end
-						r.addEventListener('transitionend', onEnd);
-						// start fade
-						requestAnimationFrame(() => { r.style.opacity = 0; });
-						// safety timeout in case transitionend doesn't fire
-						setTimeout(() => { try { r.removeEventListener('transitionend', onEnd); } catch (e) { }; finishOne(r); }, timeout);
-					});
-				});
+			function registerFilter() {
+				if (window.BarcieTable && window.BarcieTable.payments) {
+					window.BarcieTable.payments.setFilter(doesPaymentMatch);
+				} else {
+					setTimeout(registerFilter, 50);
+				}
 			}
 
-			function pRecalc() {
-				const allRows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(r => r.id !== 'payments-no-results');
-				const matchingRows = pGetAllRows();
-
-				const total = matchingRows.length;
-				pstate.totalPages = Math.max(1, Math.ceil(total / pstate.perPage));
-				if (pstate.currentPage > pstate.totalPages) pstate.currentPage = pstate.totalPages;
-
-				// Hide all rows first
-				allRows.forEach(r => {
-					r.style.display = 'none';
-					r.setAttribute('data-hidden-by-pagination', 'true');
-				});
-
-				// Show only matching rows for current page
-				const start = (pstate.currentPage - 1) * pstate.perPage;
-				const end = start + pstate.perPage;
-				matchingRows.slice(start, end).forEach(r => {
-					r.removeAttribute('data-hidden-by-pagination');
-					r.style.display = '';
-				});
-
-				pRender();
-			}
-
-			function pRender() {
-				const container = document.getElementById('paymentsPagination'); if (!container) return; container.innerHTML = '';
-				if (pstate.totalPages <= 1) return;
-				const nav = document.createElement('nav'); const ul = document.createElement('ul'); ul.className = 'pagination justify-content-center mb-0';
-				const make = (label, page, disabled, active) => { const li = document.createElement('li'); li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : ''); const btn = document.createElement('button'); btn.className = 'page-link'; btn.type = 'button'; btn.textContent = label; btn.addEventListener('click', e => { e.preventDefault(); if (disabled) return; pstate.currentPage = page; pRecalc(); }); li.appendChild(btn); return li; };
-				ul.appendChild(make('«', Math.max(1, pstate.currentPage - 1), pstate.currentPage === 1, false));
-				const maxButtons = 7; let s = Math.max(1, pstate.currentPage - 3); let e = Math.min(pstate.totalPages, s + maxButtons - 1); if (e - s < maxButtons - 1) s = Math.max(1, e - maxButtons + 1);
-				if (s > 1) { ul.appendChild(make('1', 1, false, pstate.currentPage === 1)); if (s > 2) { const gap = document.createElement('li'); gap.className = 'page-item disabled'; gap.innerHTML = '<span class="page-link">…</span>'; ul.appendChild(gap); } }
-				for (let p = s; p <= e; p++) { ul.appendChild(make(String(p), p, false, p === pstate.currentPage)); }
-				if (e < pstate.totalPages) { if (e < pstate.totalPages - 1) { const gap = document.createElement('li'); gap.className = 'page-item disabled'; gap.innerHTML = '<span class="page-link">…</span>'; ul.appendChild(gap); } ul.appendChild(make(String(pstate.totalPages), pstate.totalPages, false, pstate.currentPage === pstate.totalPages)); }
-				ul.appendChild(make('»', Math.min(pstate.totalPages, pstate.currentPage + 1), pstate.currentPage === pstate.totalPages, false));
-				nav.appendChild(ul); container.appendChild(nav); requestAnimationFrame(() => { const p = container.querySelector('.pagination'); if (p) p.classList.add('show'); });
-			}
-
-			document.addEventListener('DOMContentLoaded', function () { pRecalc(); });
-
-			window._paymentsPagination = { setPerPage: function (n) { pstate.perPage = Math.max(1, Number(n) || PER_PAGE_P); pstate.currentPage = 1; pRecalc(); }, goToPage: function (p) { pstate.currentPage = Math.min(Math.max(1, Number(p) || 1), pstate.totalPages); pRecalc(); } };
-
-			// Helper functions for date filter
 			window.filterPayments = function () {
-				try {
-					pstate.currentPage = 1;
-					pRecalc();
-				} catch (err) { console.error('filterPayments error', err); }
+				if (window.BarcieTable && window.BarcieTable.payments) {
+					window.BarcieTable.payments.refresh();
+				}
 			};
 
-			// Set DateFilter component default to today on page load
-			document.addEventListener('DOMContentLoaded', function () {
-				if (window.DateFilter && window.DateFilter['payments']) {
-					var vals = window.DateFilter['payments'].getValues();
-					if (!vals.from) {
-						window.DateFilter['payments'].setToday();
-					}
-				}
-			});
+			// Register immediately if BarcieTable is ready, otherwise retry
+			registerFilter();
 
-			// Download payment verifications as text backup
 			window.downloadPaymentsPDF = function () {
 				const rows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(row => {
 					return row.style.display !== 'none' && !row.id;
@@ -460,7 +384,6 @@ ${'-'.repeat(80)}
 				showToast('Payment verifications backup downloaded successfully', 'success');
 			};
 
-			// Download payment verifications as Excel
 			window.downloadPaymentsExcel = function () {
 				const rows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).filter(row => {
 					return row.style.display !== 'none' && !row.id;
@@ -640,7 +563,6 @@ ${'-'.repeat(80)}
 					const bsModal = new bootstrap.Modal(modalEl);
 					bsModal.show();
 
-					// Clean up after modal is hidden
 					modalEl.addEventListener('hidden.bs.modal', function () {
 						modalEl.remove();
 					});
@@ -651,15 +573,12 @@ ${'-'.repeat(80)}
 				});
 		};
 
-		// Function to show image in full-size modal
 		window.showImageModal = function (imageSrc, title) {
 			const imageModalId = 'image-viewer-modal';
 
-			// Remove existing image modal if any
 			const existingImageModal = document.getElementById(imageModalId);
 			if (existingImageModal) existingImageModal.remove();
 
-			// Create full-size image modal
 			const imageModalHTML = `
 			<div class="modal fade" id="${imageModalId}" tabindex="-1">
 				<div class="modal-dialog modal-dialog-centered modal-xl">
@@ -680,38 +599,30 @@ ${'-'.repeat(80)}
 			</div>
 		`;
 
-			// Add modal to body and show
 			document.body.insertAdjacentHTML('beforeend', imageModalHTML);
 			const imageModalEl = document.getElementById(imageModalId);
 			const bsImageModal = new bootstrap.Modal(imageModalEl);
 			bsImageModal.show();
 
-			// Clean up after modal is hidden
 			imageModalEl.addEventListener('hidden.bs.modal', function () {
 				imageModalEl.remove();
 			});
 		};
 	})();
 
-	// Role-based access control for Payment Verification
-	// Staff: CANNOT approve/verify payments (❌)
-	// Admin/Manager/Super Admin: Full access (✓)
 	(function () {
 		function applyPaymentRoleRestrictions() {
 			const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
 			console.log('Applying payment verification restrictions for role:', role);
 
 			if (role === 'staff') {
-				// Hide verify/reject action buttons
 				document.querySelectorAll('.payment-action').forEach(btn => {
 					btn.style.display = 'none';
 				});
 
-				// Disable export buttons
 				const exportBtns = document.querySelectorAll('[onclick*="downloadPayments"]');
 				exportBtns.forEach(btn => btn.style.display = 'none');
 
-				// Add read-only notice
 				const cardBody = document.querySelector('.card-header.bg-info')?.parentElement;
 				if (cardBody && !document.getElementById('payment-readonly-notice')) {
 					const notice = document.createElement('div');

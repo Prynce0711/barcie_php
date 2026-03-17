@@ -144,7 +144,7 @@
     <a href="#admin-management-section" class="nav-link nav-link-custom manage-roles-link"
       data-section="admin-management-section">
       <i class="fas fa-user-shield"></i>
-      <span>Manage Roles</span>
+      <span>Account Management</span>
     </a>
 
   </div>

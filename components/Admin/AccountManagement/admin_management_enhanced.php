@@ -109,21 +109,22 @@
       </div>
     </div>
     <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-hover" id="adminsTable">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th><i class="fas fa-user me-1"></i>Username</th>
-              <th><i class="fas fa-envelope me-1"></i>Email</th>
-              <th><i class="fas fa-id-badge me-1"></i>Full Name</th>
-              <th><i class="fas fa-shield-alt me-1"></i>Role</th>
-              <th><i class="fas fa-key me-1"></i>Access Level</th>
-              <th><i class="fas fa-clock me-1"></i>Last Seen</th>
-              <th><i class="fas fa-cogs me-1"></i>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="adminsTableBody">
+      <?php
+      $tableId = 'adminsTable';
+      $tableScope = 'admins';
+      $tablePageSize = 10;
+      $tableColumns = [
+          ['label' => 'ID'],
+          ['label' => '<i class="fas fa-user me-1"></i>Username'],
+          ['label' => '<i class="fas fa-envelope me-1"></i>Email'],
+          ['label' => '<i class="fas fa-id-badge me-1"></i>Full Name'],
+          ['label' => '<i class="fas fa-shield-alt me-1"></i>Role'],
+          ['label' => '<i class="fas fa-key me-1"></i>Access Level'],
+          ['label' => '<i class="fas fa-clock me-1"></i>Last Seen'],
+          ['label' => '<i class="fas fa-cogs me-1"></i>Actions'],
+      ];
+      include __DIR__ . '/../../Table/Table.php';
+      ?>
             <tr>
               <td colspan="8" class="text-center">
                 <div class="spinner-border text-primary" role="status">
@@ -131,21 +132,7 @@
                 </div>
               </td>
             </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>
-          <span id="showing-info">Showing 0 of 0 admins</span>
-        </div>
-        <nav>
-          <ul class="pagination pagination-sm mb-0" id="pagination">
-            <!-- Pagination will be inserted here -->
-          </ul>
-        </nav>
-      </div>
+      <?php $tableClose = true; include __DIR__ . '/../../Table/Table.php'; ?>
     </div>
   </div>
 </div>

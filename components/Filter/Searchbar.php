@@ -13,8 +13,19 @@ $searchPlaceholder = $searchPlaceholder ?? 'Search...';
 
 <script>
 (function () {
-    const scriptEl = document.currentScript;
-    const root = scriptEl ? scriptEl.previousElementSibling : null;
+    var scriptEl = document.currentScript;
+    var root = null;
+    if (scriptEl) {
+        var prev = scriptEl.previousElementSibling;
+        for (var i = 0; i < 3 && prev; i++) {
+            if (prev.hasAttribute && prev.hasAttribute('data-searchbar')) { root = prev; break; }
+            prev = prev.previousElementSibling;
+        }
+        if (!root && scriptEl.parentNode) {
+            var all = scriptEl.parentNode.querySelectorAll('[data-searchbar]');
+            if (all.length) root = all[all.length - 1];
+        }
+    }
     if (!root) return;
 
     const scope = root.getAttribute('data-scope') || 'default';
@@ -50,7 +61,7 @@ $searchPlaceholder = $searchPlaceholder ?? 'Search...';
         document.addEventListener('filters-reset', function (e) {
             if (e.detail && e.detail.scope && e.detail.scope !== scope) return;
             input.value = '';
-            writeStored('');
+            dispatch('');
         });
 
         window.Searchbar = window.Searchbar || {};

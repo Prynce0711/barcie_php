@@ -234,6 +234,12 @@
     let currentItemId = null;
     const MAX_IMAGES = 10;
 
+    function normalizeImagePath(path) {
+      if (!path) return '';
+      if (/^https?:\/\//i.test(path)) return path;
+      return String(path).replace(/\\/g, '/').replace(/^\/+/, '');
+    }
+
     // Function to open edit modal with item data
     window.openEditModal = function (itemId) {
       currentItemId = itemId;
@@ -300,13 +306,9 @@
             const imagesArray = JSON.parse(imagesData);
             if (Array.isArray(imagesArray) && imagesArray.length > 0) {
               imagesArray.forEach((imgPath, index) => {
-                // Convert to web path
-                let webPath = imgPath;
-                if (!webPath.startsWith('http') && !webPath.startsWith('/')) {
-                  webPath = '/' + webPath;
-                }
-                currentImages.push(imgPath); // Store original path
-                addImageToGallery(imgPath, webPath, index);
+                const normalized = normalizeImagePath(imgPath);
+                currentImages.push(normalized);
+                addImageToGallery(normalized, normalized, index);
               });
             }
           } catch (e) {
@@ -326,9 +328,10 @@
             if (!imgElement) return;
 
             const imgSrc = imgElement.src;
-            currentImages.push(imgPath);
+            const normalizedPath = normalizeImagePath(imgPath);
+            currentImages.push(normalizedPath);
 
-            addImageToGallery(imgPath, imgSrc, index);
+            addImageToGallery(normalizedPath, imgSrc, index);
           });
         }
       }
@@ -341,7 +344,7 @@
             const imgSrc = img.src;
             // Extract relative path from full URL
             let imgPath = imgSrc.replace(window.location.origin, '');
-            if (imgPath.startsWith('/')) imgPath = imgPath.substring(1);
+            imgPath = normalizeImagePath(imgPath);
 
             currentImages.push(imgPath);
             addImageToGallery(imgPath, imgSrc, index);
@@ -384,14 +387,12 @@
       </div>
     `;
 
-      // Add click handler for selection
       const galleryItem = col.querySelector('.gallery-image-item');
       galleryItem.addEventListener('click', function (e) {
         if (e.target.closest('.zoom-icon') || e.target.closest('.remove-icon')) return;
         toggleImageSelection(this);
       });
 
-      // Add click handler for remove button
       const removeBtn = col.querySelector('.remove-icon');
       removeBtn.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -401,17 +402,14 @@
       imageGallery.appendChild(col);
     }
 
-    // Toggle image selection for deletion
     function toggleImageSelection(galleryItem) {
       const imgPath = galleryItem.getAttribute('data-image-path');
       const isSelected = galleryItem.classList.contains('selected');
 
       if (isSelected) {
-        // Deselect
         galleryItem.classList.remove('selected');
         removedImages = removedImages.filter(path => path !== imgPath);
       } else {
-        // Select
         galleryItem.classList.add('selected');
         if (!removedImages.includes(imgPath)) {
           removedImages.push(imgPath);
@@ -423,21 +421,18 @@
       updateSelectAllButton();
     }
 
-    // Select All Images functionality
     const selectAllBtn = document.getElementById('selectAllImagesBtn');
     selectAllBtn.addEventListener('click', function () {
       const galleryItems = imageGallery.querySelectorAll('.gallery-image-item');
       const allSelected = Array.from(galleryItems).every(item => item.classList.contains('selected'));
 
       if (allSelected) {
-        // Deselect all
         galleryItems.forEach(item => {
           item.classList.remove('selected');
         });
         removedImages = [];
         this.innerHTML = '<i class="fas fa-check-double me-1"></i>Select All';
       } else {
-        // Select all
         galleryItems.forEach(item => {
           const imgPath = item.getAttribute('data-image-path');
           item.classList.add('selected');

@@ -43,7 +43,7 @@
 					<!-- Bridge: sync reusable components → existing feedback filter logic -->
 					<script>
 					(function(){
-						function sync(){ if(typeof applyFilters==='function') applyFilters(); }
+						function sync(){ if(typeof window.applyFeedbackFilters==='function') window.applyFeedbackFilters(); }
 						document.addEventListener('search-changed', function(e){
 							if(e.detail.scope!=='feedback') return;
 							var el=document.getElementById('feedbackSearch');
@@ -53,11 +53,11 @@
 						});
 						document.addEventListener('date-filter-changed', function(e){
 							if(e.detail.scope!=='feedback') return;
-							var from=document.getElementById('dateFrom');
-							if(!from){from=document.createElement('input');from.type='hidden';from.id='dateFrom';document.body.appendChild(from);}
+							var from=document.getElementById('feedbackDateFrom');
+							if(!from){from=document.createElement('input');from.type='hidden';from.id='feedbackDateFrom';document.body.appendChild(from);}
 							from.value=e.detail.from||'';
-							var to=document.getElementById('dateTo');
-							if(!to){to=document.createElement('input');to.type='hidden';to.id='dateTo';document.body.appendChild(to);}
+							var to=document.getElementById('feedbackDateTo');
+							if(!to){to=document.createElement('input');to.type='hidden';to.id='feedbackDateTo';document.body.appendChild(to);}
 							to.value=e.detail.to||'';
 							sync();
 						});
@@ -71,27 +71,23 @@
 					})();
 					</script>
 
-					<div class="table-responsive" style="max-height:520px; overflow:auto;">
-						<table class="table table-striped table-hover align-middle" id="feedbackTable">
-							<thead class="table-light sticky-top">
-								<tr>
-									<th style="width:4%">#</th>
-									<th style="width:12%">Guest</th>
-									<th style="width:15%">Room</th>
-									<th style="width:8%">Rating</th>
-									<th>Message</th>
-									<th style="width:12%">Created</th>
-								</tr>
-							</thead>
-							<tbody>
+					<?php
+					$tableId = 'feedbackTable';
+					$tableScope = 'feedback';
+					$tablePageSize = 10;
+					$tableClass = 'barcie-table-striped';
+					$tableColumns = [
+						['label' => '#',       'width' => '4%'],
+						['label' => 'Guest',   'width' => '12%'],
+						['label' => 'Room',    'width' => '15%'],
+						['label' => 'Rating',  'width' => '8%'],
+						['label' => 'Message'],
+						['label' => 'Created', 'width' => '12%'],
+					];
+					include __DIR__ . '/../../Table/Table.php';
+					?>
 								<tr><td colspan="6" class="text-center">Loading...</td></tr>
-							</tbody>
-						</table>
-					</div>
-
-					<nav class="mt-2" aria-label="Feedback pagination">
-						<ul class="pagination pagination-sm" id="feedbackPager"></ul>
-					</nav>
+					<?php $tableClose = true; include __DIR__ . '/../../Table/Table.php'; ?>
 
 				<?php else: ?>
 					<div class="alert alert-warning">You must be an administrator to view feedback.</div>
@@ -115,19 +111,13 @@
 		// Admin-only comprehensive feedback UI with approval system
 		const apiUrl = 'database/user_auth.php?action=get_feedback_data';
 		const tableBody = document.querySelector('#feedbackTable tbody');
-		const searchInput = document.getElementById('feedbackSearch');
 		const ratingFilter = document.getElementById('feedbackRatingFilter');
-		const statusFilter = document.getElementById('feedbackStatusFilter');
-		const dateFrom = document.getElementById('dateFrom');
-		const dateTo = document.getElementById('dateTo');
 		const refreshBtn = document.getElementById('refreshFeedbackBtn');
 		const exportBtn = document.getElementById('exportFeedbackBtn');
 		const countEl = document.getElementById('feedbackCount');
-		const pager = document.getElementById('feedbackPager');
 
 		let allData = [];
 		let filtered = [];
-		const pageSize = 10;
 
 		async function fetchData(){
 			setLoading();
@@ -136,7 +126,7 @@
 				const json = await res.json();
 				if (!json.success) {
 					console.error('API returned error:', json);
-					tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Failed to load feedback: ' + (json.error || 'Unknown error') + '</td></tr>';
+					tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load feedback: ' + (json.error || 'Unknown error') + '</td></tr>';
 					if (countEl) countEl.innerText = '';
 					return;
 				}
@@ -146,22 +136,32 @@
 				applyFilters();
 			} catch (err) {
 				console.error('Fetch error:', err);
-				tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading feedback: ' + err.message + '</td></tr>';
+				tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading feedback: ' + err.message + '</td></tr>';
 				if (countEl) countEl.innerText = '';
 			}
 		}
 
 		function setLoading(){
-			tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+			tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
 			if (countEl) countEl.innerText = 'Loading...';
 		}
 
 		function applyFilters(){
+			const searchInput = document.getElementById('feedbackSearch');
+			const dateFrom = document.getElementById('feedbackDateFrom');
+			const dateTo = document.getElementById('feedbackDateTo');
 			const q = (searchInput?.value || '').toLowerCase().trim();
 			const r = (ratingFilter?.value || '').trim();
 			// status removed; all feedbacks are shown without approval filter
-			const from = dateFrom?.value ? new Date(dateFrom.value) : null;
-			const to = dateTo?.value ? new Date(dateTo.value) : null;
+			let fromVal = dateFrom?.value || '';
+			let toVal = dateTo?.value || '';
+			if ((!fromVal && !toVal) && window.DateFilter && window.DateFilter['feedback']) {
+				const vals = window.DateFilter['feedback'].getValues();
+				fromVal = vals.from || '';
+				toVal = vals.to || '';
+			}
+			const from = fromVal ? new Date(fromVal) : null;
+			const to = toVal ? new Date(toVal) : null;
 
 			filtered = allData.filter(item => {
 				// search across message, name, room name
@@ -177,60 +177,41 @@
 				return true;
 			});
 
-			renderPage(1);
+			renderAllRows();
 		}
 
-		function renderPage(page){
-			const total = filtered.length;
-			const pages = Math.max(1, Math.ceil(total / pageSize));
-			page = Math.min(Math.max(1, page), pages);
-			const start = (page - 1) * pageSize;
-			const slice = filtered.slice(start, start + pageSize);
+		// Expose for bridge events from reusable filter components.
+		window.applyFeedbackFilters = applyFilters;
 
-			if (slice.length === 0) {
+		function renderAllRows(){
+			const total = filtered.length;
+			if (total === 0) {
 				tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No feedback found</td></tr>';
 			} else {
 				tableBody.innerHTML = '';
-				slice.forEach((r, idx) => {
+				filtered.forEach((r, idx) => {
 					const tr = document.createElement('tr');
 					const stars = Number(r.rating) || 0;
 					const starHtml = Array.from({length: stars}).map(()=>'<span class="feedback-star">★</span>').join('') + (stars===0?'<span class="text-muted">—</span>':'' );
 					const msg = (r.message || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 					const guestName = r.username || 'Anonymous Guest';
-					const roomInfo = r.room_name ? `${r.room_name} <small class="text-muted">(${r.room_type||''})</small>` : '<span class="text-muted">—</span>';
-					tr.innerHTML = `
-						<td>${start + idx + 1}</td>
-						<td><small>${guestName}</small></td>
-						<td><small>${roomInfo}</small></td>
-						<td>${starHtml}</td>
-						<td class="feedback-message"><small>${msg}</small></td>
-						<td><small>${r.created_at || ''}</small></td>
-					`;
+					const roomInfo = r.room_name ? r.room_name + ' <small class="text-muted">(' + (r.room_type||'') + ')</small>' : '<span class="text-muted">—</span>';
+					tr.innerHTML =
+						'<td>' + (idx + 1) + '</td>' +
+						'<td><small>' + guestName + '</small></td>' +
+						'<td><small>' + roomInfo + '</small></td>' +
+						'<td>' + starHtml + '</td>' +
+						'<td class="feedback-message"><small>' + msg + '</small></td>' +
+						'<td><small>' + (r.created_at || '') + '</small></td>';
 					tableBody.appendChild(tr);
 				});
 			}
 
-			renderPager(page, pages);
 			if (countEl) countEl.innerText = total + ' feedback';
-		}
-
-		function renderPager(active, pages){
-			pager.innerHTML = '';
-			if (pages <= 1) return;
-			const createLi = (p, label, cls='') => {
-				const li = document.createElement('li'); li.className = 'page-item ' + (p===active? 'active':'');
-				const a = document.createElement('a'); a.className = 'page-link'; a.href = '#'; a.dataset.page = p; a.innerText = label;
-				a.addEventListener('click', (e)=>{ e.preventDefault(); renderPage(Number(e.target.dataset.page)); });
-				li.appendChild(a); return li;
-			};
-			// prev
-			pager.appendChild(createLi(Math.max(1, active-1), '‹'));
-			// pages (show up to 7)
-			const start = Math.max(1, active-3);
-			const end = Math.min(pages, start + 6);
-			for (let p = start; p <= end; p++) pager.appendChild(createLi(p, p));
-			// next
-			pager.appendChild(createLi(Math.min(pages, active+1), '›'));
+			// Let unified pagination handle paging
+			if (window.BarcieTable && window.BarcieTable.feedback) {
+				window.BarcieTable.feedback.refresh();
+			}
 		}
 
 		function exportCSV(){
@@ -250,11 +231,8 @@
 		}
 
 		// Event wiring
-		if (searchInput) searchInput.addEventListener('input', ()=> applyFilters());
 		if (ratingFilter) ratingFilter.addEventListener('change', ()=> applyFilters());
 		// status filter removed
-		if (dateFrom) dateFrom.addEventListener('change', ()=> applyFilters());
-		if (dateTo) dateTo.addEventListener('change', ()=> applyFilters());
 		if (refreshBtn) refreshBtn.addEventListener('click', ()=> fetchData());
 		if (exportBtn) exportBtn.addEventListener('click', ()=> exportCSV());
 

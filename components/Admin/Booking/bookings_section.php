@@ -33,7 +33,7 @@
                   <option value="cancelled">Cancelled</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+                <?php $filterScope = 'bookings'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
                 <select class="form-select d-none" id="typeFilter"><option value="">All Types</option><option value="room">Room</option><option value="facility">Facility</option></select>
                 <div class="ms-auto d-flex align-items-center gap-2">
                   <?php $resetScope = 'bookings'; include __DIR__ . '/../../Filter/ResetFilter.php'; ?>
@@ -56,6 +56,9 @@
               var el=document.getElementById('bookingDateFilter');
               if(!el){el=document.createElement('input');el.type='hidden';el.id='bookingDateFilter';document.body.appendChild(el);}
               el.value=e.detail.from||'';
+              var elTo=document.getElementById('bookingDateFilterTo');
+              if(!elTo){elTo=document.createElement('input');elTo.type='hidden';elTo.id='bookingDateFilterTo';document.body.appendChild(elTo);}
+              elTo.value=e.detail.to||'';
               sync();
             });
             document.addEventListener('search-changed', function(e){
@@ -66,6 +69,7 @@
               sync();
             });
             document.addEventListener('filter-changed', function(e){
+              if(e.detail.scope!=='bookings') return;
               var f=e.detail&&e.detail.filter||'';
               var el=document.getElementById('typeFilter');
               if(el) el.value=(f==='all'?'':f);
@@ -83,56 +87,31 @@
 
           <!-- Bookings Table -->
           <div id="admin_discount_alert" class="mb-2"></div>
-          <!-- Top pagination controls for bookings table -->
-          <div id="bookingsPaginationTop" class="mb-2"></div>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle" id="bookingsTable">
-              <thead class="table-dark">
-                <tr>
-                  <th style="width: 8%;">Reservation No.</th>
-                  <th style="width: 11%;">Room/Facility</th>
-                  <th style="width: 5%;">Type</th>
-                  <th style="width: 15%;">Guest Details</th>
-                  <th style="width: 12%;">Schedule</th>
-                  <th style="width: 9%;">Booking Status</th>
-                  <th style="width: 9%;">Discount Status</th>
-                  <th style="width: 8%;">Approved</th>
-                  <th style="width: 9%;">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+          <?php
+          $tableId = 'bookingsTable';
+          $tableScope = 'bookings';
+          $tablePageSize = 10;
+          $tableColumns = [
+              ['label' => 'Reservation No.', 'width' => '8%'],
+              ['label' => 'Room/Facility',   'width' => '11%'],
+              ['label' => 'Type',            'width' => '5%'],
+              ['label' => 'Guest Details',   'width' => '15%'],
+              ['label' => 'Schedule',        'width' => '12%'],
+              ['label' => 'Booking Status',  'width' => '9%'],
+              ['label' => 'Discount Status', 'width' => '9%'],
+              ['label' => 'Approved',        'width' => '8%'],
+              ['label' => 'Actions',         'width' => '9%'],
+          ];
+          include __DIR__ . '/../../Table/Table.php';
+          ?>
                 <?php include 'bookings_table_content.php'; ?>
-              </tbody>
-            </table>
-          </div>
-          <!-- Pagination controls for bookings table -->
-          <div id="bookingsPagination" class="mt-2"></div>
+          <?php $tableClose = true; include __DIR__ . '/../../Table/Table.php'; ?>
         </div>
       </div>
     </div>
   </div>
   <script>
     (function () {
-      // Small animations for pagination and row transitions
-      const styleId = 'bookings-pagination-animations';
-      if (!document.getElementById(styleId)) {
-        const css = `
-          /* fade rows when shown */
-          #bookingsTable tbody tr { transition: opacity 220ms ease-in-out; }
-          /* initial hidden state used by JS */
-          #bookingsTable tbody tr[data-hidden-by-pagination="true"] { display: none !important; opacity: 0 !important; }
-          /* pagination nav slide/fade */
-          #bookingsPagination .pagination { opacity: 0; transform: translateY(6px); transition: opacity 180ms ease-out, transform 180ms ease-out; }
-          #bookingsPagination .pagination.show { opacity: 1; transform: translateY(0); }
-          /* small hover transition for page links */
-          #bookingsPagination .page-link { transition: background-color 120ms ease, color 120ms ease; }
-          /* table spinner overlay used between page transitions */
-          .table-spinner-overlay { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.7); z-index: 60; }
-          .table-spinner-overlay .spinner-border { width: 2.4rem; height: 2.4rem; }
-        `;
-        const s = document.createElement('style'); s.id = styleId; s.appendChild(document.createTextNode(css));
-        document.head.appendChild(s);
-      }
       // Delegated handler for approve/reject buttons
       document.addEventListener('click', function (e) {
         const btn = e.target.closest('.discount-action');
@@ -249,16 +228,15 @@
       // Client-side filtering implementation
       try {
         if (typeof window.filterBookings === 'function') {
-          // preserve previous implementation if any
           window._serverFilterBookings = window.filterBookings;
         }
       } catch (e) { console.warn(e); }
 
-      // This basic filter doesn't manipulate display - pagination handles that
-      // It only exists to provide a hook for the pagination wrapper
+      // filterBookings is a trigger to recalc the unified BarcieTable pagination
       window.filterBookings = function () {
-        // Filter logic is handled by doesRowMatchFilter() used in pagination
-        // This function just exists as a trigger point
+        if (window.BarcieTable && window.BarcieTable.bookings) {
+          window.BarcieTable.bookings.refresh();
+        }
       };
 
       // Helper functions for date filter
@@ -293,15 +271,8 @@
         }
       };
 
-      // Set default filter to today on page load
-      document.addEventListener('DOMContentLoaded', function () {
-        const today = new Date().toISOString().split('T')[0];
-        const dateInput = document.getElementById('bookingDateFilter');
-        if (dateInput && !dateInput.value) {
-          dateInput.value = today;
-          filterBookings();
-        }
-      });
+      // DateFilter component handles initialization (localStorage restore + dispatch).
+      // No manual DOMContentLoaded override needed.
 
     })();
   </script>
@@ -487,230 +458,52 @@
 
   <script>
     (function () {
-      // Simple client-side pagination for #bookingsTable
-      const PER_PAGE = 10;
-      let state = { perPage: PER_PAGE, currentPage: 1, totalPages: 1 };
-      // token to avoid overlapping fade animations
-      let bookingsFadeToken = 0;
-
-      function getAllRows() {
-        return Array.from(document.querySelectorAll('#bookingsTable tbody tr')).filter(r => r.id !== 'bookings-no-results');
-      }
-
-      // Determine whether a row matches the current filter controls (independent of its current style)
+      // Register filter function with unified BarcieTable pagination
       function doesRowMatchFilter(row) {
-        const status = (document.getElementById('statusFilter')?.value || '').toLowerCase();
-        const type = (document.getElementById('typeFilter')?.value || '').toLowerCase();
-        const dateFilter = document.getElementById('bookingDateFilter')?.value || '';
-        const rstatus = (row.dataset.status || '').toLowerCase();
-        const rtype = (row.dataset.type || '').toLowerCase();
-        const rdate = row.dataset.date || '';
+        var status = (document.getElementById('statusFilter')?.value || '').toLowerCase();
+        var type = (document.getElementById('typeFilter')?.value || '').toLowerCase();
+        // Read date from hidden bridge elements first, fallback to DateFilter API
+        var dateFilter = document.getElementById('bookingDateFilter')?.value || '';
+        var dateFilterTo = document.getElementById('bookingDateFilterTo')?.value || '';
+        if (!dateFilter && !dateFilterTo && window.DateFilter && window.DateFilter['bookings']) {
+          var vals = window.DateFilter['bookings'].getValues();
+          dateFilter = vals.from || '';
+          dateFilterTo = vals.to || '';
+        }
+        // Read search from hidden bridge element first, fallback to Searchbar API
+        var guestSearch = (document.getElementById('guestSearch')?.value || '').toLowerCase();
+        if (!guestSearch && window.Searchbar && window.Searchbar['bookings']) {
+          guestSearch = (window.Searchbar['bookings'].getValue() || '').toLowerCase();
+        }
+        var rstatus = (row.dataset.status || '').toLowerCase();
+        var rtype = (row.dataset.type || '').toLowerCase();
+        var rdate = row.dataset.date || '';
 
         if (status && rstatus.indexOf(status) === -1) return false;
         if (type && rtype.indexOf(type) === -1) return false;
-        if (dateFilter && rdate !== dateFilter) return false;
+        if (dateFilter && rdate < dateFilter) return false;
+        if (dateFilterTo && rdate > dateFilterTo) return false;
+        if (guestSearch && row.textContent.toLowerCase().indexOf(guestSearch) === -1) return false;
         return true;
       }
 
-      // helper: returns a promise that resolves when the provided rows finish fading out (or after timeout)
-      function fadeOutRows(rows, timeout = 300) {
-        return new Promise(resolve => {
-          if (!rows || rows.length === 0) return resolve();
-          let remaining = rows.length;
-          const finishOne = (r) => {
-            try { r.style.display = 'none'; r.setAttribute('data-hidden-by-pagination', 'true'); } catch (e) { }
-            if (--remaining <= 0) resolve();
-          };
-
-          const onEnd = (e) => {
-            const r = e.currentTarget;
-            r.removeEventListener('transitionend', onEnd);
-            finishOne(r);
-          };
-
-          rows.forEach(r => {
-            // ensure transition is set
-            r.style.transition = r.style.transition || 'opacity 220ms ease-in-out';
-            // listen for transition end
-            r.addEventListener('transitionend', onEnd);
-            // start fade
-            requestAnimationFrame(() => { r.style.opacity = 0; });
-            // safety timeout in case transitionend doesn't fire
-            setTimeout(() => { try { r.removeEventListener('transitionend', onEnd); } catch (e) { }; finishOne(r); }, timeout);
-          });
-        });
-      }
-
-      // show a small overlay spinner over a table container; returns a remover function
-      function showTableSpinner(container) {
-        try {
-          if (!container) return function () { };
-          // find table-responsive ancestor if a table element was passed
-          let parent = container.closest && container.closest('.table-responsive') ? container.closest('.table-responsive') : container;
-          // ensure positioned parent so absolute overlay is positioned correctly
-          const prevPos = parent.style.position || '';
-          const computed = window.getComputedStyle(parent).position;
-          if (computed === 'static') parent.style.position = 'relative';
-
-          const overlay = document.createElement('div');
-          overlay.className = 'table-spinner-overlay';
-          overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-          parent.appendChild(overlay);
-
-          return function removeSpinner() {
-            try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch (e) { }
-            try { if (computed === 'static') parent.style.position = prevPos || ''; } catch (e) { }
-          };
-        } catch (err) { return function () { }; }
-      }
-
-      async function recalcPagination() {
-        const rows = getAllRows();
-        // Compute visibleRows based on filter criteria (not current style.display which pagination modifies)
-        const visibleRows = rows.filter(r => doesRowMatchFilter(r));
-        const totalVisible = visibleRows.length;
-        state.totalPages = Math.max(1, Math.ceil(totalVisible / state.perPage));
-        if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
-
-        // Hide all rows first
-        rows.forEach(r => {
-          r.style.display = 'none';
-          r.setAttribute('data-hidden-by-pagination', 'true');
-        });
-
-        // Show only the current page slice
-        const start = (state.currentPage - 1) * state.perPage;
-        const end = start + state.perPage;
-        visibleRows.slice(start, end).forEach(r => {
-          r.removeAttribute('data-hidden-by-pagination');
-          r.style.display = '';
-        });
-
-        renderPaginationControls();
-      }
-
-      function renderPaginationControls() {
-        const container = document.getElementById('bookingsPagination');
-        if (!container) return;
-        // render into both top and bottom containers
-        const topContainer = document.getElementById('bookingsPaginationTop');
-        [container, topContainer].forEach(c => { if (c) c.innerHTML = ''; });
-        if (state.totalPages <= 1) return; // no controls needed  
-
-        // Helper to create pagination for a specific container
-        const createPaginationFor = (targetContainer) => {
-          if (!targetContainer) return;
-
-          const nav = document.createElement('nav');
-          const ul = document.createElement('ul');
-          ul.className = 'pagination justify-content-center mb-0';
-
-          const createPageItem = (label, page, disabled, active) => {
-            const li = document.createElement('li');
-            li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-            const btn = document.createElement('button');
-            btn.className = 'page-link';
-            btn.type = 'button';
-            btn.textContent = label;
-            btn.addEventListener('click', function (e) {
-              e.preventDefault();
-              if (disabled) return;
-              state.currentPage = page;
-              recalcPagination();
-            });
-            li.appendChild(btn);
-            return li;
-          };
-
-          // Prev
-          ul.appendChild(createPageItem('«', Math.max(1, state.currentPage - 1), state.currentPage === 1, false));
-
-          // page window
-          const maxButtons = 7;
-          let start = Math.max(1, state.currentPage - 3);
-          let end = Math.min(state.totalPages, start + maxButtons - 1);
-          if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
-
-          if (start > 1) {
-            ul.appendChild(createPageItem('1', 1, false, state.currentPage === 1));
-            if (start > 2) {
-              const gap = document.createElement('li'); gap.className = 'page-item disabled'; gap.innerHTML = '<span class="page-link">…</span>'; ul.appendChild(gap);
-            }
-          }
-
-          for (let p = start; p <= end; p++) {
-            ul.appendChild(createPageItem(String(p), p, false, p === state.currentPage));
-          }
-
-          if (end < state.totalPages) {
-            if (end < state.totalPages - 1) {
-              const gap = document.createElement('li'); gap.className = 'page-item disabled'; gap.innerHTML = '<span class="page-link">…</span>'; ul.appendChild(gap);
-            }
-            ul.appendChild(createPageItem(String(state.totalPages), state.totalPages, false, state.currentPage === state.totalPages));
-          }
-
-          // Next
-          ul.appendChild(createPageItem('»', Math.min(state.totalPages, state.currentPage + 1), state.currentPage === state.totalPages, false));
-
-          nav.appendChild(ul);
-          targetContainer.appendChild(nav);
-
-          // animate pagination controls into view
-          requestAnimationFrame(() => {
-            const p = targetContainer.querySelector('.pagination');
-            if (p) p.classList.add('show');
-          });
-        };
-
-        // Create pagination for both containers
-        createPaginationFor(container);
-        createPaginationFor(topContainer);
-      }
-
-      // Wrap existing filterBookings so pagination recalculates after filters run
-      document.addEventListener('DOMContentLoaded', function () {
-        // Insert pagination container if not present (fallback)
-        const tableResp = document.querySelector('#bookingsTable')?.closest('.table-responsive');
-        if (tableResp) {
-          let container = document.getElementById('bookingsPagination');
-          if (!container) {
-            container = document.createElement('div');
-            container.id = 'bookingsPagination';
-            container.className = 'mt-2';
-            tableResp.parentNode.insertBefore(container, tableResp.nextSibling);
-          }
-          // ensure a top pagination container is present above the table
-          let topContainer = document.getElementById('bookingsPaginationTop');
-          if (!topContainer) {
-            topContainer = document.createElement('div');
-            topContainer.id = 'bookingsPaginationTop';
-            topContainer.className = 'mb-2';
-            tableResp.parentNode.insertBefore(topContainer, tableResp);
-          }
+      function registerFilter() {
+        if (window.BarcieTable && window.BarcieTable.bookings) {
+          window.BarcieTable.bookings.setFilter(doesRowMatchFilter);
+        } else {
+          setTimeout(registerFilter, 50);
         }
+      }
 
-        const orig = window.filterBookings;
-        if (typeof orig === 'function') {
-          window.filterBookings = function () {
-            // run original filter (which sets display on rows)
-            try { orig(); } catch (e) { console.error('filterBookings error', e); }
-            // reset to first page and recalc pagination
-            state.currentPage = 1;
-            recalcPagination();
-          };
+      // filterBookings = trigger for filter changes → refresh pagination
+      window.filterBookings = function () {
+        if (window.BarcieTable && window.BarcieTable.bookings) {
+          window.BarcieTable.bookings.refresh();
         }
-
-        // initial pagination run
-        recalcPagination();
-      });
-
-      // Expose API in case other scripts want to change page size or navigate
-      window._bookingsPagination = {
-        setPerPage: function (n) { state.perPage = Math.max(1, Number(n) || PER_PAGE); state.currentPage = 1; recalcPagination(); },
-        goToPage: function (p) { state.currentPage = Math.min(Math.max(1, Number(p) || 1), state.totalPages); recalcPagination(); },
-        next: function () { if (state.currentPage < state.totalPages) { state.currentPage++; recalcPagination(); } },
-        prev: function () { if (state.currentPage > 1) { state.currentPage--; recalcPagination(); } }
       };
+
+      // Register immediately if BarcieTable is ready, otherwise retry
+      registerFilter();
     })();
   </script>
 </div>

@@ -177,6 +177,15 @@ if (!function_exists('build_booking_confirmation_email')) {
                 </p>';
         }
 
+        $transferNote = trim((string) ($data['transfer_note'] ?? ''));
+        $transferBlock = '';
+        if ($transferNote !== '') {
+            $transferBlock = '
+                <p style="margin:10px 0 0 0; color:#0c5460; background:#d1ecf1; padding:10px 12px; border-radius:6px;">
+                    <strong>Room Update:</strong> ' . email_safe($transferNote) . '
+                </p>';
+        }
+
         $cancelBlock = '';
         if ($cancelUrl !== '') {
             $cancelBlock = '
@@ -202,6 +211,7 @@ if (!function_exists('build_booking_confirmation_email')) {
                         <p style="margin:0 0 8px 0;"><strong>Duration:</strong> ' . $nights . ' ' . ($nights === 1 ? 'Night' : 'Nights') . '</p>
                         <p style="margin:0;"><strong>Occupants:</strong> ' . $occupants . ' ' . ($occupants === 1 ? 'Guest' : 'Guests') . '</p>
                         ' . $discountBlock . '
+                        ' . $transferBlock . '
                     </td></tr>
                 </table>
                 <p>Once payment is verified, you will receive a final approval email.</p>

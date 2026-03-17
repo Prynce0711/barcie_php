@@ -273,7 +273,7 @@
   <div class="card mb-3 border-0 bg-light">
     <div class="card-body py-2 px-3">
       <div class="d-flex align-items-center gap-2 flex-wrap">
-        <?php include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
+        <?php $filterScope = 'guest-rooms'; include __DIR__ . '/../../Filter/FilterTypes.php'; ?>
         <div class="vr d-none d-md-block" style="height:28px;"></div>
         <?php $searchScope = 'guest-rooms'; $searchPlaceholder = 'Search rooms & facilities...'; include __DIR__ . '/../../Filter/Searchbar.php'; ?>
       </div>

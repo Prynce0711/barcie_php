@@ -9,8 +9,19 @@ $resetScope = $resetScope ?? 'default';
 
 <script>
 (function () {
-    const scriptEl = document.currentScript;
-    const root = scriptEl ? scriptEl.previousElementSibling : null;
+    var scriptEl = document.currentScript;
+    var root = null;
+    if (scriptEl) {
+        var prev = scriptEl.previousElementSibling;
+        for (var i = 0; i < 3 && prev; i++) {
+            if (prev.hasAttribute && prev.hasAttribute('data-reset-filter')) { root = prev; break; }
+            prev = prev.previousElementSibling;
+        }
+        if (!root && scriptEl.parentNode) {
+            var all = scriptEl.parentNode.querySelectorAll('[data-reset-filter]');
+            if (all.length) root = all[all.length - 1];
+        }
+    }
     if (!root) return;
 
     const scope = root.getAttribute('data-scope') || 'default';

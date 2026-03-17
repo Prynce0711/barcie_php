@@ -24,8 +24,30 @@ function log_addons_debug($msg) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
 
-  $uploadDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/items';
+  $projectRoot = dirname(__DIR__, 2);
+  $uploadDir = $projectRoot . '/uploads/items';
   if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+  $normalizeImagePath = function($path) {
+    $path = str_replace('\\', '/', trim((string)$path));
+    return ltrim($path, '/');
+  };
+
+  $resolveImageFullPath = function($storedPath) use ($projectRoot) {
+    $normalized = str_replace('\\', '/', trim((string)$storedPath));
+    $normalized = ltrim($normalized, '/');
+    $primary = $projectRoot . '/' . $normalized;
+    if (file_exists($primary)) {
+      return $primary;
+    }
+
+    // Legacy fallback for previously stored absolute root uploads.
+    $legacy = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\') . '/' . $normalized;
+    if ($legacy && file_exists($legacy)) {
+      return $legacy;
+    }
+    return $primary;
+  };
 
 
   $allowedExt = ['jpg','jpeg','png','gif','webp'];
@@ -44,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newName = uniqid('it_') . '.' . $ext;
     $dest = $uploadDir . '/' . $newName;
     if (move_uploaded_file($tmpPath, $dest)) {
-      return '/uploads/items/' . $newName;
+      return 'uploads/items/' . $newName;
     }
     return false;
   };
@@ -87,22 +109,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $row = $q->fetch_assoc();
       if (!empty($row['images'])) {
         $decoded = json_decode($row['images'], true);
-        if (is_array($decoded)) $existing = $decoded;
+        if (is_array($decoded)) $existing = array_map($normalizeImagePath, $decoded);
       } elseif (!empty($row['image'])) {
-        $existing = [$row['image']];
+        $existing = [$normalizeImagePath($row['image'])];
       }
     }
 
     if (empty($existing) && !empty($_POST['existing_images'])) {
       $decoded = json_decode($_POST['existing_images'], true);
-      if (is_array($decoded)) $existing = $decoded;
+      if (is_array($decoded)) $existing = array_map($normalizeImagePath, $decoded);
     }
 
     
     $removed = [];
     if (!empty($_POST['removed_images'])) {
       $parts = array_filter(array_map('trim', explode(',', $_POST['removed_images'])));
-      $removed = $parts;
+      $removed = array_map($normalizeImagePath, $parts);
     }
 
    
@@ -113,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $moved = $validateAndMove($tmp, $origName);
         if ($moved) {
           if (isset($existing[$idx])) {
-            $origPath = $existing[$idx];
+            $origPath = $normalizeImagePath($existing[$idx]);
             $existing[$idx] = $moved;
             if ($origPath && !in_array($origPath, $removed)) $removed[] = $origPath;
           } else {
@@ -126,8 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   
     if (!empty($removed)) {
       foreach ($removed as $r) {
-        $existing = array_values(array_filter($existing, function($v) use ($r){ return $v !== $r; }));
-        $full = $_SERVER['DOCUMENT_ROOT'] . '/' . ltrim($r, '/');
+        $r = $normalizeImagePath($r);
+        $existing = array_values(array_filter($existing, function($v) use ($r, $normalizeImagePath){ return $normalizeImagePath($v) !== $r; }));
+        $full = $resolveImageFullPath($r);
         if (file_exists($full)) @unlink($full);
       }
     }
@@ -142,10 +165,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
-    $addonsJson = $conn->real_escape_string(json_encode($addonsList));
-    $imagesJson = $conn->real_escape_string(json_encode(array_values($existing)));
+    $existing = array_values(array_map($normalizeImagePath, $existing));
+    $primaryImage = !empty($existing) ? $existing[0] : '';
 
-    $sql = "UPDATE items SET name = '$name', item_type = '$item_type', room_number = '$room_number', description = '$description', capacity = $capacity, price = $price, addons = '$addonsJson', images = '$imagesJson' WHERE id = $id";
+    $addonsJson = $conn->real_escape_string(json_encode($addonsList));
+    $imagesJson = $conn->real_escape_string(json_encode($existing));
+    $primaryImageEsc = $conn->real_escape_string($primaryImage);
+
+    $sql = "UPDATE items SET name = '$name', item_type = '$item_type', room_number = '$room_number', description = '$description', capacity = $capacity, price = $price, addons = '$addonsJson', image = '$primaryImageEsc', images = '$imagesJson' WHERE id = $id";
     if ($conn->query($sql) === false) error_log('Items update failed: ' . $conn->error);
 
     header('Location: ' . $_SERVER['REQUEST_URI']);
@@ -181,9 +208,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
+    $existing = array_values(array_map($normalizeImagePath, $existing));
+    $primaryImage = !empty($existing) ? $existing[0] : '';
+
     $addonsJson = $conn->real_escape_string(json_encode($addonsList));
     $imagesJson = $conn->real_escape_string(json_encode($existing));
-    $sql = "INSERT INTO items (name, item_type, room_number, description, capacity, price, addons, images, created_at) VALUES ('$name', '$item_type', '$room_number', '$description', $capacity, $price, '$addonsJson', '$imagesJson', NOW())";
+    $primaryImageEsc = $conn->real_escape_string($primaryImage);
+    $sql = "INSERT INTO items (name, item_type, room_number, description, capacity, price, addons, image, images, created_at) VALUES ('$name', '$item_type', '$room_number', '$description', $capacity, $price, '$addonsJson', '$primaryImageEsc', '$imagesJson', NOW())";
     if ($conn->query($sql) === false) error_log('Items insert failed: ' . $conn->error);
     header('Location: ' . $_SERVER['REQUEST_URI']);
     exit;
@@ -199,10 +230,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $decoded = json_decode($row['images'], true);
           if (is_array($decoded)) $toDelete = array_merge($toDelete, $decoded);
         } elseif (!empty($row['image'])) {
-          $toDelete[] = $row['image'];
+          $toDelete[] = $normalizeImagePath($row['image']);
         }
         foreach ($toDelete as $p) {
-          $full = $_SERVER['DOCUMENT_ROOT'] . '/' . ltrim($p, '/');
+          $full = $resolveImageFullPath($p);
           if (file_exists($full)) @unlink($full); 
         }
       }
