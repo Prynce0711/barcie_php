@@ -180,12 +180,12 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
       <!-- Bookings Management -->
       <section id="bookings-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/bookings_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Booking/BookingsSection.php'; ?>
       </section>
 
       <!-- Pencil Bookings Management (independent from bookings) -->
       <section id="pencil-bookings-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/pencil_book_management.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Booking/PencilBookManagement.php'; ?>
       </section>
 
 
@@ -201,7 +201,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
       <!-- Payment Verification Section -->
       <section id="payment-verification-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/payment_verification.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Booking/PaymentVerification.php'; ?>
       </section>
 
       <!-- Reports & Analytics Section -->
@@ -389,7 +389,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
                 formData.append('action', 'delete');
                 formData.append('admin_id', adminToDelete.id);
 
-                fetch('api/admin_management_enhanced.php', {
+                fetch('api/AdminManagementEnhanced.php', {
                   method: 'POST',
                   body: formData
                 })
@@ -446,6 +446,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
       <script src="Components/Popup/popup-manager.js"></script>
+      <script src="Components/Table/table.js"></script>
 
       <!-- Page State Manager - Load FIRST -->
       <script src="assets/js/page-state-manager.js"></script>
@@ -467,7 +468,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       <!-- Initialize dashboard with data after all scripts are loaded -->
       <script>
         console.log('📦 All scripts loaded, checking functions...');
-        console.log('  - setDashboardData:', typeof setDashboardData);
+        console.log('  - setDashboardData:', typeof window.setDashboardData);
         console.log('  - initializeCalendarNavigation:', typeof initializeCalendarNavigation);
         console.log('  - initializeRoomSearch:', typeof initializeRoomSearch);
         console.log('  - initializeRoomsFiltering:', typeof initializeRoomsFiltering);
@@ -475,10 +476,10 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         console.log('  - Chart:', typeof Chart);
 
         // Call setDashboardData if available
-        if (typeof setDashboardData === 'function') {
+        if (typeof window.setDashboardData === 'function') {
           console.log("✅ setDashboardData function found - initializing dashboard data");
           try {
-            setDashboardData(
+            window.setDashboardData(
               window.calendarEvents,
               window.monthlyBookingsData,
               window.statusDistributionData,
@@ -531,6 +532,9 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
           const toggleBtn = document.querySelector('.mobile-menu-toggle');
 
           if (window.innerWidth < 992) {
+            if (!sidebar || !toggleBtn) {
+              return;
+            }
             if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
               sidebar.classList.remove('open');
               const overlay = document.querySelector('.sidebar-overlay');

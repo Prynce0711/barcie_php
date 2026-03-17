@@ -1,8 +1,8 @@
 ﻿(function () {
   var basePath = "Components/Admin/Dashboard/modules/";
   var modules = [
-    "core-init-bootstrap.js",
     "core-navigation-sections.js",
+    "core-init-bootstrap.js",
     "core-section-display-calendar.js",
     "ui-forms-theme-tables.js",
     "ui-sorting-toast-items.js",

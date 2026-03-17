@@ -70,25 +70,64 @@
     return null;
   }
 
-  function navigateToSection(sectionName, updateHash = true) {
-    console.log("🧭 Navigating to section:", sectionName);
-    if (updateHash) {
-      window.location.hash = sectionName;
-    }
-    const possibleIds = [
-      sectionName,
-      sectionName + "-section",
-      sectionName + "Section",
+  function normalizeSectionName(sectionName) {
+    const raw = String(sectionName || "")
+      .trim()
+      .replace(/^#+/, "");
+
+    const aliases = {
+      "Pencil-Bookings": "pencil-bookings-section",
+      "pencil-bookings": "pencil-bookings-section",
+      "payment-verification": "payment-verification-section",
+      reports: "reports-section",
+      bookings: "bookings-section",
+      calendar: "calendar-section",
+      rooms: "rooms-section",
+      feedback: "feedback-section",
+      news: "news-section",
+      dashboard: "dashboard-section",
+      "admin-management": "admin-management-section",
+    };
+
+    return aliases[raw] || raw;
+  }
+
+  function resolveTargetSection(sectionName) {
+    const normalized = normalizeSectionName(sectionName);
+    const base = normalized.replace(/-section$/, "");
+    const candidates = [
+      normalized,
+      base,
+      base + "-section",
+      normalized + "Section",
     ];
 
-    let targetSection = null;
-    for (const id of possibleIds) {
-      targetSection = document.getElementById(id);
-      if (targetSection) break;
+    for (const id of [...new Set(candidates)]) {
+      const section = document.getElementById(id);
+      if (section) return section;
     }
 
+    return null;
+  }
+
+  function navigateToSection(sectionName, updateHash = true, retryCount = 0) {
+    const normalizedSection = normalizeSectionName(sectionName);
+    console.log("🧭 Navigating to section:", normalizedSection);
+    if (updateHash) {
+      window.location.hash = normalizedSection;
+    }
+
+    const targetSection = resolveTargetSection(normalizedSection);
+
     if (!targetSection) {
-      console.warn("Section not found:", sectionName);
+      // During initial restore/hash sync, sections can be temporarily unavailable.
+      if (retryCount < 1) {
+        setTimeout(function () {
+          navigateToSection(normalizedSection, false, retryCount + 1);
+        }, 50);
+        return false;
+      }
+      console.warn("Section not found:", normalizedSection);
       return false;
     }
     document.querySelectorAll(".content-section").forEach((section) => {
@@ -99,10 +138,10 @@
     targetSection.classList.add("active");
     targetSection.style.display = "block";
 
-    updateSidebarNavigation(sectionName);
+    updateSidebarNavigation(normalizedSection);
     const pageType = detectPageType();
     if (pageType === "admin" || pageType === "guest") {
-      savePageState(sectionName, pageType);
+      savePageState(normalizedSection, pageType);
     }
 
     return true;
@@ -138,7 +177,6 @@
           console.log("💾 Restoring saved section:", savedState.section);
           navigateToSection(savedState.section, true);
         } else {
-          e;
           const defaultSection = DEFAULT_SECTIONS[pageType];
           console.log("🏠 Using default section:", defaultSection);
           navigateToSection(defaultSection, true);

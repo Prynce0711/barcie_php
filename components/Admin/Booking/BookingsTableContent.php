@@ -1,29 +1,22 @@
 <?php
 // Bookings Table Content
-// Only show bookings where payment has been verified (payment_status = 'verified')
+// Show reservation bookings that are already out of payment-verification queue.
+
+require_once __DIR__ . '/../Shared/BadgeHelper.php';
 
 // Set timezone to ensure consistent time display
 date_default_timezone_set('Asia/Manila');
 
 $bookings = $conn->query("SELECT b.*, i.name as room_name, i.room_number, i.item_type,
                           IFNULL(b.discount_status, 'none') as discount_status
-                          FROM bookings b 
-                          LEFT JOIN items i ON b.room_id = i.id 
+                          FROM bookings b
+                          LEFT JOIN items i ON b.room_id = i.id
                           WHERE (b.type = 'reservation' OR b.type IS NULL)
-                          AND (b.payment_status = 'verified' OR b.payment_status IS NULL OR b.payment_status = 'none')
                           ORDER BY b.created_at DESC");
+
+if ($bookings && $bookings->num_rows > 0):
 while ($booking = $bookings->fetch_assoc()):
-  // Determine status badge color - each status has unique color
-  $status_color = [
-    'pending' => 'warning',     // Yellow #ffc107
-    'approved' => 'success',    // Green #28a745
-    'confirmed' => 'info',      // Cyan #17a2b8
-    'checked_in' => 'primary',  // Blue #0d6efd
-    'checked_out' => 'secondary', // Gray #6c757d
-    'cancelled' => 'warning',   // Orange-Yellow (will style differently)
-    'rejected' => 'danger'      // Red #dc3545
-  ];
-  $badge_color = $status_color[$booking['status']] ?? 'secondary';
+  $badge_color = admin_badge_booking_status_class($booking['status'] ?? '');
   
   // Extract guest info from details
   $guest_name = 'Guest';
@@ -49,10 +42,8 @@ while ($booking = $bookings->fetch_assoc()):
   // Use payment_verified_at if available, otherwise fall back to created_at
   $filter_date = !empty($booking['payment_verified_at']) ? $booking['payment_verified_at'] : $booking['created_at'];
   $booking_date = date('Y-m-d', strtotime($filter_date));
-  $row_item_type = strtolower((string)($booking['item_type'] ?? ''));
-  if ($row_item_type !== 'room' && $row_item_type !== 'facility') {
-    $row_item_type = 'room';
-  }
+  $row_item_type = admin_badge_item_type($booking['item_type'] ?? '');
+  $type_badge = admin_badge_booking_type($booking['type'] ?? '');
   ?>
   <tr data-type="<?= htmlspecialchars($row_item_type) ?>" data-status="<?= htmlspecialchars($booking['status'] ?? '') ?>" data-date="<?= htmlspecialchars($booking_date) ?>" data-guest="<?= htmlspecialchars(($guest_name ?? '') . ' ' . ($guest_phone ?? '') . ' ' . ($guest_email ?? '') . ' ' . ($room_facility ?? '') . ' ' . ($booking['details'] ?? '')) ?>">
     <!-- Reservation No. -->
@@ -69,8 +60,8 @@ while ($booking = $bookings->fetch_assoc()):
     
     <!-- Type -->
     <td data-label="Type">
-      <span class="badge bg-<?= $booking['type'] === 'reservation' ? 'primary' : 'warning' ?>" style="font-size: 0.6rem; padding: 0.25rem 0.4rem; white-space: nowrap;">
-        <?= $booking['type'] === 'reservation' ? 'Reserve' : 'Pencil' ?>
+      <span class="badge bg-<?= $type_badge['class'] ?>" style="font-size: 0.6rem; padding: 0.25rem 0.4rem; white-space: nowrap;">
+        <?= $type_badge['label'] ?>
       </span>
     </td>
     
@@ -106,15 +97,9 @@ while ($booking = $bookings->fetch_assoc()):
     
     <!-- Discount Status -->
     <td data-label="Discount">
-      <?php 
-      $discount_badge_colors = [
-        'pending' => 'warning',
-        'approved' => 'success',
-        'rejected' => 'danger',
-        'none' => 'secondary'
-      ];
+      <?php
       $discount_display = $booking['discount_status'] ? $booking['discount_status'] : 'none';
-      $discount_color = $discount_badge_colors[$discount_display] ?? 'secondary';
+      $discount_color = admin_badge_discount_status_class($discount_display);
       ?>
       <span class="badge bg-<?= $discount_color ?>" style="font-size: 0.65rem; padding: 0.35rem 0.6rem;">
         <?= ucfirst($discount_display) ?>
@@ -165,3 +150,12 @@ while ($booking = $bookings->fetch_assoc()):
     </td>
   </tr>
 <?php endwhile; ?>
+<?php elseif ($bookings && $bookings->num_rows === 0): ?>
+  <tr>
+    <td colspan="9" class="text-center text-muted py-4">No bookings found.</td>
+  </tr>
+<?php else: ?>
+  <tr>
+    <td colspan="9" class="text-center text-danger py-4">Failed to load bookings data.</td>
+  </tr>
+<?php endif; ?>

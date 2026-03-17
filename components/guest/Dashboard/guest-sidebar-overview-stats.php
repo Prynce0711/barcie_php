@@ -105,7 +105,7 @@ async function fetchRealAvailability() {
   availableElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
   try {
-    const response = await fetch("api/available_count.php");
+    const response = await fetch("api/AvailableCount.php");
     const data = await response.json();
 
     if (data && data.success) {

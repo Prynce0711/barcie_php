@@ -88,7 +88,7 @@
         console.log("Guest: Loading items from API...");
 
         try {
-            const res = await fetch("api/items.php");
+            const res = await fetch("api/Items.php");
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
             const response = await res.json();

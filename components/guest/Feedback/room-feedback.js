@@ -389,7 +389,7 @@ function submitRoomFeedback() {
 }
 
 function openRoomDetailsModal(roomId) {
-  fetch(`api/items.php?id=${roomId}`)
+  fetch(`api/Items.php?id=${roomId}`)
     .then((response) => response.json())
     .then((data) => {
       if (data.success && data.item) {

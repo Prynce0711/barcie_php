@@ -191,9 +191,9 @@
           submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
           submitBtn.disabled = true;
 
-          console.log('Sending POST request to: api/admin_management.php');
+          console.log('Sending POST request to: api/AdminManagementEnhanced.php');
 
-          fetch('api/admin_management.php', {
+          fetch('api/AdminManagementEnhanced.php', {
             method: 'POST',
             body: formData
           })

@@ -511,7 +511,7 @@ include __DIR__ . '/confirm_addOn.php';
     // Fetch occupied dates if not cached
     if (!occupiedDatesCache[cacheKey]) {
       try {
-        let url = `api/room_availability.php?room_id=${roomId}`;
+        let url = `api/RoomAvailability.php?room_id=${roomId}`;
 
         // If this date input belongs to the pencil booking form, include other pencil bookings
         // in availability checks (so pencil-to-pencil conflicts are detected). For regular

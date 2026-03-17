@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/Bootstrap.php';
 
 header('Content-Type: application/json');
 

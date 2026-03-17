@@ -4,7 +4,7 @@
     console.log("Guest: Loading items from API...");
 
     try {
-      const res = await fetch("api/items.php");
+      const res = await fetch("api/Items.php");
       console.log("Guest: Response status:", res.status);
 
       if (!res.ok) {

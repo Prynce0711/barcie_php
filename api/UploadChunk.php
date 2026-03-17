@@ -1,5 +1,5 @@
 <?php
-// api/upload_chunk.php
+// api/UploadChunk.php
 // Accepts chunked uploads and assembles them into a single file in /uploads/
 // Expected POST fields:
 // - upload_id: client generated identifier for the upload session

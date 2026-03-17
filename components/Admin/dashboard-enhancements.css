@@ -1206,7 +1206,6 @@ img {
 }
 
 .badge.bg-primary {
-  animation: pulse 2s ease-in-out infinite;
   box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
 }
 

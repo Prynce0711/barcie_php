@@ -237,7 +237,11 @@
     function normalizeImagePath(path) {
       if (!path) return '';
       if (/^https?:\/\//i.test(path)) return path;
-      return String(path).replace(/\\/g, '/').replace(/^\/+/, '');
+      let normalized = String(path).replace(/\\/g, '/').replace(/^\/+/, '');
+      if (normalized && !normalized.includes('/') && /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(normalized)) {
+        normalized = 'uploads/' + normalized;
+      }
+      return normalized;
     }
 
     // Function to open edit modal with item data

@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/Bootstrap.php';
 
 try {
     if (!table_exists($conn, 'bookings')) {

@@ -18,40 +18,12 @@ api/
 
 ## 🔐 Admin Management APIs
 
-### `admin_management.php`
-**Purpose**: Basic admin user management operations
+### `AdminManagementEnhanced.php`
 
-**Methods**: 
-- `POST` - Create new admin user
-- `PUT` - Update admin user details
-- `DELETE` - Remove admin user
-- `GET` - Fetch admin user list
-
-**Request Example**:
-```json
-{
-  "action": "create",
-  "username": "admin123",
-  "password": "secure_password",
-  "role": "admin"
-}
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "message": "Admin user created successfully",
-  "admin_id": 123
-}
-```
-
----
-
-### `admin_management_enhanced.php`
 **Purpose**: Enhanced admin management with additional features
 
 **Features**:
+
 - Role-based permissions
 - Activity logging
 - Bulk operations
@@ -59,7 +31,8 @@ api/
 
 ---
 
-### `admin_heartbeat.php`
+### `AdminHeartbeat.php`
+
 **Purpose**: Track admin online status and activity
 
 **Method**: `POST`
@@ -67,6 +40,7 @@ api/
 **Usage**: Called periodically to update admin's last active timestamp
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -78,17 +52,20 @@ api/
 
 ## 📅 Booking Operations
 
-### `availability.php`
+### `Availability.php`
+
 **Purpose**: Check room availability for specified dates
 
 **Method**: `GET`
 
 **Parameters**:
+
 - `check_in` - Check-in date (YYYY-MM-DD)
 - `check_out` - Check-out date (YYYY-MM-DD)
 - `room_type` - (Optional) Filter by room type
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -97,7 +74,7 @@ api/
       "room_id": 1,
       "room_type": "Standard Room",
       "capacity": 2,
-      "price": 1500.00
+      "price": 1500.0
     }
   ]
 }
@@ -105,12 +82,14 @@ api/
 
 ---
 
-### `available_count.php`
+### `AvailableCount.php`
+
 **Purpose**: Get count of available rooms per type
 
 **Method**: `GET`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -124,12 +103,14 @@ api/
 
 ---
 
-### `cancel_booking.php`
+### `CancelBooking.php`
+
 **Purpose**: Cancel an existing booking
 
 **Method**: `POST`
 
 **Request**:
+
 ```json
 {
   "booking_id": 123,
@@ -138,17 +119,19 @@ api/
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
   "message": "Booking cancelled successfully",
-  "refund_amount": 1500.00
+  "refund_amount": 1500.0
 }
 ```
 
 ---
 
-### `get_booking_details.php`
+### `GetBookingDetails.php`
+
 **Purpose**: Retrieve detailed information about a specific booking
 
 **Method**: `GET`
@@ -156,6 +139,7 @@ api/
 **Parameters**: `booking_id`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -165,7 +149,7 @@ api/
     "room_type": "Deluxe Room",
     "check_in": "2025-12-20",
     "check_out": "2025-12-22",
-    "total_amount": 3000.00,
+    "total_amount": 3000.0,
     "status": "confirmed"
   }
 }
@@ -175,16 +159,19 @@ api/
 
 ## 🏨 Room Management
 
-### `room_availability.php`
+### `room_Availability.php`
+
 **Purpose**: Comprehensive room availability calendar data
 
 **Method**: `GET`
 
 **Parameters**:
+
 - `start_date` - Start of date range
 - `end_date` - End of date range
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -192,8 +179,8 @@ api/
     {
       "date": "2025-12-20",
       "rooms": {
-        "standard": {"total": 10, "available": 7},
-        "deluxe": {"total": 5, "available": 3}
+        "standard": { "total": 10, "available": 7 },
+        "deluxe": { "total": 5, "available": 3 }
       }
     }
   ]
@@ -204,28 +191,32 @@ api/
 
 ## 🍽️ Items Management
 
-### `items.php`
+### `Items.php`
+
 **Purpose**: Manage catering items and services
 
 **Methods**:
+
 - `GET` - Fetch all items or specific item
 - `POST` - Create new item
 - `PUT` - Update existing item
 - `DELETE` - Remove item
 
 **Request (Create)**:
+
 ```json
 {
   "action": "create",
   "name": "Wedding Package",
   "description": "Complete wedding catering",
-  "price": 25000.00,
+  "price": 25000.0,
   "category": "catering",
   "image": "base64_image_data"
 }
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -238,16 +229,19 @@ api/
 
 ## 📰 Content Management
 
-### `news.php`
+### `News.php`
+
 **Purpose**: Manage news and announcements
 
 **Methods**:
+
 - `GET` - Fetch news articles
 - `POST` - Create new article
 - `PUT` - Update article
 - `DELETE` - Remove article
 
 **Request (Create)**:
+
 ```json
 {
   "action": "create",
@@ -262,24 +256,27 @@ api/
 
 ## 📊 Reports & Analytics
 
-### `reports_data.php`
+### `ReportsData.php`
+
 **Purpose**: Generate comprehensive reports and analytics
 
 **Method**: `GET`
 
 **Parameters**:
+
 - `type` - Report type (bookings, revenue, occupancy)
 - `start_date` - Report start date
 - `end_date` - Report end date
 - `format` - Output format (json, csv)
 
 **Response**:
+
 ```json
 {
   "success": true,
   "report": {
     "total_bookings": 150,
-    "total_revenue": 450000.00,
+    "total_revenue": 450000.0,
     "occupancy_rate": 85.5,
     "average_stay": 2.5
   }
@@ -288,19 +285,14 @@ api/
 
 ---
 
-### `reports_data_mysqli.php`
-**Purpose**: Reports using MySQLi implementation (alternative version)
+### `ExportReportPdf.php`
 
-**Features**: Same as `reports_data.php` but using MySQLi instead of PDO
-
----
-
-### `export_report_pdf.php`
 **Purpose**: Export reports as PDF documents
 
 **Method**: `POST`
 
 **Request**:
+
 ```json
 {
   "report_type": "monthly_summary",
@@ -313,7 +305,8 @@ api/
 
 ---
 
-### `export_report_excel.php`
+### `ExportReportExcel.php`
+
 **Purpose**: Export reports as Excel spreadsheets
 
 **Method**: `POST`
@@ -324,7 +317,8 @@ api/
 
 ## 🧾 Document Generation
 
-### `generate_booking_pdf.php`
+### `GenerateBookingPdf.php`
+
 **Purpose**: Generate booking confirmation PDF
 
 **Method**: `POST`
@@ -335,16 +329,8 @@ api/
 
 ---
 
-### `generate_elegant_bookings_pdf.php`
-**Purpose**: Generate elegant formatted booking report
+### `Receipt.php`
 
-**Method**: `POST`
-
-**Response**: Professionally formatted PDF report
-
----
-
-### `receipt.php`
 **Purpose**: Generate payment receipt
 
 **Method**: `GET`
@@ -357,12 +343,14 @@ api/
 
 ## 🤖 AI & Automation
 
-### `chatbot_answer.php`
+### `ChatbotAnswer.php`
+
 **Purpose**: Process chatbot queries and return AI-generated responses
 
 **Method**: `POST`
 
 **Request**:
+
 ```json
 {
   "question": "What are your room rates?",
@@ -371,6 +359,7 @@ api/
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -383,14 +372,17 @@ api/
 
 ## 📝 Activity Tracking
 
-### `recent_activities.php`
+### `RecentActivities.php`
+
 **Purpose**: Log and retrieve recent system activities
 
 **Methods**:
+
 - `GET` - Fetch recent activities
 - `POST` - Log new activity
 
 **Response (GET)**:
+
 ```json
 {
   "success": true,
@@ -409,18 +401,21 @@ api/
 
 ## 📤 File Operations
 
-### `upload_chunk.php`
+### `UploadChunk.php`
+
 **Purpose**: Handle large file uploads using chunked upload
 
 **Method**: `POST`
 
 **Parameters**:
+
 - `chunk` - File chunk data
 - `chunk_number` - Current chunk index
 - `total_chunks` - Total number of chunks
 - `filename` - Original filename
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -433,23 +428,26 @@ api/
 
 ## 🔧 Utilities
 
-### `bootstrap.php`
+### `Bootstrap.php`
+
 **Purpose**: Initialize application environment and dependencies
 
 **Usage**: Include at the start of API endpoints
 
 ```php
-require_once 'api/bootstrap.php';
+require_once 'api/Bootstrap.php';
 ```
 
 ---
 
-### `health.php`
+### `Health.php`
+
 **Purpose**: System health check endpoint
 
 **Method**: `GET`
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -464,6 +462,7 @@ require_once 'api/bootstrap.php';
 ## 🛡️ Security
 
 ### Authentication
+
 All API endpoints (except public ones) require authentication:
 
 ```php
@@ -476,19 +475,21 @@ if (!isset($_SESSION['admin_id'])) {
 ```
 
 ### CSRF Protection
+
 Include CSRF token in requests:
 
 ```javascript
-fetch('api/endpoint.php', {
-    method: 'POST',
-    headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-    },
-    body: JSON.stringify(data)
+fetch("api/endpoint.php", {
+  method: "POST",
+  headers: {
+    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+  },
+  body: JSON.stringify(data),
 });
 ```
 
 ### Input Validation
+
 All inputs are sanitized and validated:
 
 ```php
@@ -500,6 +501,7 @@ $input = filter_input(INPUT_POST, 'field', FILTER_SANITIZE_STRING);
 ## 📋 Response Format
 
 ### Success Response
+
 ```json
 {
   "success": true,
@@ -509,6 +511,7 @@ $input = filter_input(INPUT_POST, 'field', FILTER_SANITIZE_STRING);
 ```
 
 ### Error Response
+
 ```json
 {
   "success": false,
@@ -525,10 +528,10 @@ $input = filter_input(INPUT_POST, 'field', FILTER_SANITIZE_STRING);
 
 ```bash
 # GET request
-curl -X GET "http://localhost/barcie_php/api/availability.php?check_in=2025-12-20&check_out=2025-12-22"
+curl -X GET "http://localhost/barcie_php/api/Availability.php?check_in=2025-12-20&check_out=2025-12-22"
 
 # POST request
-curl -X POST "http://localhost/barcie_php/api/cancel_booking.php" \
+curl -X POST "http://localhost/barcie_php/api/CancelBooking.php" \
   -H "Content-Type: application/json" \
   -d '{"booking_id": 123}'
 ```
@@ -544,18 +547,18 @@ curl -X POST "http://localhost/barcie_php/api/cancel_booking.php" \
 
 ```javascript
 // GET request
-fetch('api/availability.php?check_in=2025-12-20&check_out=2025-12-22')
-  .then(response => response.json())
-  .then(data => console.log(data));
+fetch("api/Availability.php?check_in=2025-12-20&check_out=2025-12-22")
+  .then((response) => response.json())
+  .then((data) => console.log(data));
 
 // POST request
-fetch('api/cancel_booking.php', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify({booking_id: 123})
+fetch("api/CancelBooking.php", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ booking_id: 123 }),
 })
-  .then(response => response.json())
-  .then(data => console.log(data));
+  .then((response) => response.json())
+  .then((data) => console.log(data));
 ```
 
 ---
@@ -569,7 +572,7 @@ fetch('api/cancel_booking.php', {
 // api/your_endpoint.php
 
 // Bootstrap and dependencies
-require_once 'bootstrap.php';
+require_once 'Bootstrap.php';
 require_once '../database/db_connect.php';
 
 // Set JSON response header
@@ -604,13 +607,13 @@ try {
         default:
             throw new Exception('Method not allowed');
     }
-    
+
     // Success response
     echo json_encode([
         'success' => true,
         'data' => $result
     ]);
-    
+
 } catch (Exception $e) {
     // Error response
     http_response_code(500);
