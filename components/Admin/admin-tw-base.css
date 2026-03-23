@@ -36,27 +36,6 @@
   background: #94a3b8;
 }
 
-/* Footer Shimmer */
-.footer::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #3b82f6 100%);
-  animation: shimmer 3s infinite;
-}
-@keyframes shimmer {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
 /* Focus States */
 *:focus {
   outline: none;

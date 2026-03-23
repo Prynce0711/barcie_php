@@ -218,10 +218,12 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
 
 
-      <!-- Footer -->
+      <!-- Footer
       <div class="footer">
         <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
-      </div>
+      </div> -->
+
+      <?php require_once __DIR__ . '/Components/Admin/footer.php'; ?>
 
 
 
