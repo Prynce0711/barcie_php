@@ -1053,22 +1053,6 @@ table tr:last-child td:last-child {
   border-bottom-right-radius: 15px;
 }
 
-/* ---------------- FOOTER ---------------- */
-.footer {
-  background: linear-gradient(180deg, #1e3c72, #2a5298);
-  color: #f1f1f1;
-  text-align: center;
-  padding: 20px 10px;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 2000;
-  box-shadow: 0 -10px 40px rgba(52, 152, 219, 0.4);
-  backdrop-filter: blur(10px);
-  animation: footerGlow 3s infinite alternate;
-}
-
 /* ---------------- ANIMATIONS ---------------- */
 @keyframes fadeInDown {
   0% {
