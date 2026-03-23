@@ -646,11 +646,16 @@
 <?php include __DIR__ . '/RoomsAndFacilities.php/guest-item-buttons.php'; ?>
 <?php include __DIR__ . '/RoomsAndFacilities.php/guest-item-modal.php'; ?>
 <?php include __DIR__ . '/Booking/guest-booking-flow.php'; ?>
-<?php include __DIR__ . '/guest-ui-forms-toast.php'; ?>
+<?php include __DIR__ . '/Booking/guest-ui-forms-toast.php'; ?>
 <?php include __DIR__ . '/Dashboard/guest-sidebar-overview-stats.php'; ?>
 <?php include __DIR__ . '/Dashboard/guest-overview-chat.php'; ?>
 <?php include __DIR__ . '/AvailabilityCalendar.php/guest-rating-calendar.php'; ?>
 <?php include __DIR__ . '/RoomsAndFacilities.php/guest-gallery-core.php'; ?>
 <?php include __DIR__ . '/RoomsAndFacilities.php/guest-gallery-bindings.php'; ?>
-<?php include __DIR__ . '/guest-debug-init.php'; ?>
-<script src="Components/Guest/guest-inline.js" defer></script>
+<?php
+$guestDebugInitPath = __DIR__ . '/guest-debug-init.php';
+if (file_exists($guestDebugInitPath)) {
+  include $guestDebugInitPath;
+}
+?>
+<script src="Components/Guest/Booking/guest-inline.js" defer></script>

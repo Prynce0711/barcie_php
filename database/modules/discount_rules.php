@@ -91,3 +91,48 @@ if (!function_exists('discount_rule_accepts_id_type')) {
         return in_array($idType, $accepted, true);
     }
 }
+
+if (!function_exists('discount_get_id_type_options_from_rules')) {
+    function discount_get_id_type_options_from_rules(array $rules): array
+    {
+        $catalog = discount_allowed_id_types_catalog();
+        $allowedSet = [];
+
+        foreach ($rules as $rule) {
+            $accepted = $rule['accepted_id_types'] ?? [];
+            if (!is_array($accepted)) {
+                continue;
+            }
+
+            foreach ($accepted as $idType) {
+                $idType = trim((string) $idType);
+                if ($idType !== '') {
+                    $allowedSet[$idType] = true;
+                }
+            }
+        }
+
+        // If rules do not define accepted types, fall back to full catalog.
+        if (count($allowedSet) === 0) {
+            return $catalog;
+        }
+
+        $options = [];
+
+        // Keep known types in catalog order.
+        foreach ($catalog as $code => $label) {
+            if (isset($allowedSet[$code])) {
+                $options[$code] = $label;
+            }
+        }
+
+        // Include unknown custom types from DB with a readable fallback label.
+        foreach (array_keys($allowedSet) as $code) {
+            if (!isset($options[$code])) {
+                $options[$code] = ucwords(str_replace('_', ' ', $code));
+            }
+        }
+
+        return $options;
+    }
+}

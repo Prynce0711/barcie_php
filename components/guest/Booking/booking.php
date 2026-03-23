@@ -1,184 +1,209 @@
 <style>
   /* Booking form scoped styles */
+  #booking {
+    --book-primary: #0e7bcf;
+    --book-primary-strong: #0a67ae;
+    --book-primary-soft: rgba(14, 123, 207, 0.12);
+    --book-ink: #1f3448;
+    --book-muted: #5b7085;
+    --book-border: rgba(14, 123, 207, 0.26);
+    --book-surface: rgba(255, 255, 255, 0.92);
+    --book-shadow: 0 16px 36px rgba(16, 39, 69, 0.12);
+  }
+
+  #booking>h2 {
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+
   #booking>label {
-    display: inline-block;
-    margin: 10px 15px 20px 0;
-    padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 2px solid rgba(52, 152, 219, 0.4);
-    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0.65rem 0.6rem 1rem 0;
+    padding: 0.78rem 1.05rem;
+    background: linear-gradient(180deg, #ffffff, #f6fbff);
+    border: 1px solid var(--book-border);
+    border-radius: 999px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    font-size: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--book-ink);
   }
 
   #booking>label:hover {
-    background: rgba(52, 152, 219, 0.1);
-    border-color: #3498db;
+    transform: translateY(-1px);
+    border-color: rgba(14, 123, 207, 0.42);
+    box-shadow: 0 8px 16px rgba(14, 123, 207, 0.14);
   }
 
   #booking>label input[type="radio"] {
     width: auto;
-    margin: 0 8px 0 0;
-    accent-color: #3498db;
+    margin: 0;
+    accent-color: var(--book-primary);
   }
 
   #booking>label:has(input[type="radio"]:checked) {
-    background: #3498db;
-    color: white;
-    border-color: #2980b9;
+    background: linear-gradient(135deg, var(--book-primary), var(--book-primary-strong));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 10px 22px rgba(14, 123, 207, 0.34);
   }
 
-  form {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid rgba(52, 152, 219, 0.3);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    margin: 20px 0;
+  #booking form {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(14, 123, 207, 0.08), transparent 42%),
+      var(--book-surface);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    padding: 1.6rem;
+    border-radius: 16px;
+    border: 1px solid var(--book-border);
+    box-shadow: var(--book-shadow);
+    margin: 1.15rem 0 2.4rem;
     max-width: 100%;
     overflow: hidden;
   }
 
-  form h3 {
-    color: #2c3e50;
-    margin-bottom: 25px;
+  #booking form h3 {
+    color: var(--book-ink);
+    margin-bottom: 1.35rem;
     text-align: center;
-    font-size: 1.4rem;
-    font-weight: 600;
-    padding-bottom: 15px;
-    border-bottom: 2px solid rgba(52, 152, 219, 0.2);
+    font-size: clamp(1.15rem, 1.7vw, 1.42rem);
+    font-weight: 700;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid rgba(14, 123, 207, 0.22);
   }
 
-  .form-grid {
+  #booking .form-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 20px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem 1.15rem;
+    margin-top: 1rem;
   }
 
-  .form-grid.two-column {
-    grid-template-columns: repeat(2, 1fr);
+  #booking .form-grid.two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .form-grid.single-column {
+  #booking .form-grid.single-column {
     grid-template-columns: 1fr;
   }
 
-  form label {
+  #booking form label {
     display: flex;
     flex-direction: column;
     font-weight: 600;
-    color: #34495e;
-    font-size: 1rem;
-    margin-bottom: 15px;
+    color: var(--book-ink);
+    font-size: 0.97rem;
+    margin-bottom: 0;
   }
 
-  form label .label-text {
-    margin-bottom: 8px;
-    font-size: 0.95rem;
+  #booking form label .label-text {
+    margin-bottom: 0.42rem;
+    font-size: 0.88rem;
+    color: var(--book-muted);
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
-  form input,
-  form select,
-  form textarea {
+  #booking form input,
+  #booking form select,
+  #booking form textarea {
     width: 100%;
-    padding: 12px 15px;
-    border-radius: 6px;
-    border: 2px solid rgba(52, 152, 219, 0.3);
-    font-size: 1rem;
-    background: rgba(255, 255, 255, 0.95);
-    transition: all 0.3s ease;
+    padding: 0.7rem 0.82rem;
+    border-radius: 10px;
+    border: 1px solid rgba(14, 123, 207, 0.3);
+    font-size: 0.96rem;
+    background: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
     font-family: inherit;
+    color: #1a2b3c;
   }
 
-  form input:focus,
-  form select:focus,
-  form textarea:focus {
+  #booking form input::placeholder,
+  #booking form textarea::placeholder {
+    color: #8a9aac;
+  }
+
+  #booking form input:focus,
+  #booking form select:focus,
+  #booking form textarea:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
-    background: rgba(255, 255, 255, 1);
+    border-color: var(--book-primary);
+    box-shadow: 0 0 0 4px rgba(14, 123, 207, 0.14);
   }
 
-  form input[readonly] {
-    background: rgba(248, 249, 250, 0.9);
-    border-color: rgba(108, 117, 125, 0.4);
-    color: #6c757d;
+  #booking form input[readonly] {
+    background: linear-gradient(180deg, #f7f9fc, #f1f4f8);
+    border-color: rgba(104, 123, 142, 0.35);
+    color: #5e7184;
     cursor: not-allowed;
   }
 
-  .full-width {
+  #booking .full-width {
     grid-column: 1 / -1;
   }
 
-  .half-width {
+  #booking .half-width {
     grid-column: span 1;
   }
 
-  .two-thirds {
+  #booking .two-thirds {
     grid-column: span 2;
   }
 
-  .form-row {
+  #booking .form-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin: 15px 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0.8rem 0;
   }
 
-  .form-row.two-column {
-    grid-template-columns: repeat(2, 1fr);
+  #booking .form-row.two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .form-row.single {
+  #booking .form-row.single {
     grid-template-columns: 1fr;
   }
 
-  form button {
+  #booking form button {
     width: 100%;
-    background: linear-gradient(135deg, #3498db, #2980b9);
+    background: linear-gradient(135deg, #0f89e6 0%, #0b6cb6 100%);
     color: #fff;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     border: none;
-    margin-top: 25px;
-    padding: 14px 20px;
-    border-radius: 6px;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
+    margin-top: 0.9rem;
+    padding: 0.82rem 1.05rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
     grid-column: 1 / -1;
   }
 
-  form button:hover {
-    background: linear-gradient(135deg, #2980b9, #1f618d);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
+  #booking form button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(11, 108, 182, 0.28);
+    filter: brightness(1.03);
   }
 
-  form button:active {
+  #booking form button:active {
     transform: translateY(0);
   }
 
-  .compact-form {
-    padding: 25px;
-    margin-bottom: 30px;
+  #booking .compact-form {
+    padding: 1.45rem;
   }
 
-  .compact-form label {
-    margin-bottom: 12px;
+  #booking .compact-form .form-grid {
+    gap: 0.95rem;
   }
 
-  .compact-form .form-grid {
-    gap: 15px;
-  }
-
-  #booking form {
-    margin-bottom: 40px;
-  }
-
-  .booking-form-highlight {
+  #booking .booking-form-highlight {
     animation: tw-pulse 2s infinite;
   }
 
@@ -196,47 +221,77 @@
     }
   }
 
+  #booking .booking-time-notice {
+    margin: 0.1rem 0 0.2rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(225, 242, 255, 0.9), rgba(255, 255, 255, 0.8));
+    border-left: 4px solid var(--book-primary);
+    border-radius: 10px;
+    border: 1px solid rgba(14, 123, 207, 0.2);
+  }
+
+  #booking .booking-time-notice i {
+    color: var(--book-primary);
+    font-size: 1.1rem;
+    margin-right: 10px;
+  }
+
+  #booking .booking-time-notice strong {
+    color: #0b61a2;
+  }
+
+  #booking .booking-time-notice .time-caption {
+    font-size: 0.85rem;
+    color: #3f556a;
+    margin-top: 2px;
+  }
+
   @media (max-width: 1200px) {
 
-    .form-grid,
-    .form-row {
+    #booking .form-grid,
+    #booking .form-row {
       grid-template-columns: repeat(2, 1fr);
-      gap: 18px;
+      gap: 0.9rem;
     }
   }
 
   @media (max-width: 768px) {
 
-    .form-grid,
-    .form-row {
+    #booking .form-grid,
+    #booking .form-row {
       grid-template-columns: 1fr;
-      gap: 15px;
+      gap: 0.8rem;
     }
 
-    form {
-      padding: 25px 20px;
+    #booking form {
+      padding: 1.1rem 0.95rem;
+      border-radius: 12px;
     }
 
     #booking>label {
       display: block;
-      margin: 8px 0;
+      margin: 0.35rem 0;
       text-align: center;
     }
 
-    .full-width,
-    .half-width,
-    .two-thirds {
+    #booking .full-width,
+    #booking .half-width,
+    #booking .two-thirds {
       grid-column: 1;
     }
   }
 
   @media (max-width: 480px) {
-    form {
-      padding: 20px 15px;
+    #booking form {
+      padding: 0.95rem 0.8rem;
     }
 
-    .form-grid {
-      gap: 12px;
+    #booking .form-grid {
+      gap: 0.7rem;
+    }
+
+    #booking form button {
+      font-size: 0.95rem;
     }
   }
 </style>
@@ -271,61 +326,8 @@
 
     <?php include __DIR__ . '/../Discount/discount_application.php'; ?>
 
-    <!-- ID Upload Section -->
-    <div class="card mb-3" id="reservationIdUploadCard">
-      <div class="card-header bg-info text-white">
-        <strong><i class="fas fa-id-card me-2"></i>Valid ID Upload</strong>
-      </div>
-      <div class="card-body">
-        <div class="mb-3">
-          <label for="reservation_id_type" class="form-label">ID Type (for discount only)</label>
-          <select name="id_type" id="reservation_id_type" class="form-control">
-            <option value="">-- Select ID Type (Optional) --</option>
-            <option value="national_id">National ID (PhilSys ID / ePhilID)</option>
-            <option value="passport">Passport (Philippine or foreign, if applicable)</option>
-            <option value="drivers_license">Driver's License (LTO)</option>
-            <option value="umid">UMID Card (SSS / GSIS)</option>
-            <option value="prc_id">PRC ID (Professional Regulation Commission)</option>
-            <option value="voters_id">Voter's ID/Certification (COMELEC)</option>
-            <option value="postal_id">Postal ID</option>
-            <option value="philhealth_id">PhilHealth ID</option>
-            <option value="tin_id">TIN ID (BIR)</option>
-            <option value="school_id">School ID</option>
-            <option value="alumni_id">Alumni ID</option>
-            <option value="personnel_id">Personnel ID</option>
-          </select>
-          <small class="form-text text-muted">Optional. Select this only when applying a discount.</small>
-        </div>
-        <div class="mb-2">
-          <label for="reservation_id_upload" class="form-label">Upload Valid ID <span class="text-danger"
-              id="reservation_id_required"></span></label>
-          <input type="file" name="id_upload" id="reservation_id_upload" class="form-control" accept="image/*">
-          <input type="hidden" name="id_upload_cropped" id="reservation_id_upload_cropped">
-          <input type="hidden" name="id_upload_validated" id="reservation_id_upload_validated" value="0">
-          <small class="form-text text-muted">Optional: Upload ID if you want discount validation support.</small>
-
-          <!-- Validation status -->
-          <div id="reservation_id_validation" style="margin-top:8px;display:none;"></div>
-
-          <!-- Preview area -->
-          <div id="reservation_id_preview" style="margin-top:10px;display:none;">
-            <div id="reservation_id_thumb" style="margin-top:8px;max-width:160px;"></div>
-          </div>
-        </div>
-        <div class="alert alert-info mb-0" style="font-size: 0.9rem;">
-          <i class="fas fa-info-circle me-2"></i>If you apply for a discount above, the discount ID proof will be used
-          and this upload becomes optional.
-        </div>
-      </div>
-    </div>
-
     <!-- Inline alert area for form-level validation messages -->
     <div class="form-alert mb-2" id="reservation_form_alert" style="display:none;"></div>
-
-    <!-- ID Required Notice -->
-    <div class="alert alert-info" id="reservation_id_notice" style="display:none;">
-      <i class="fas fa-info-circle me-2"></i><strong>Optional:</strong> ID upload is only used for discount validation.
-    </div>
 
     <div class="form-grid" id="reservation_form_fields">
       <label class="full-width">
@@ -400,13 +402,13 @@
       </label>
 
       <!-- Booking Time Notice -->
-      <div class="full-width"
+      <div class="full-width booking-time-notice"
         style="margin: 0.5rem 0; padding: 0.75rem; background-color: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
         <div style="display: flex; align-items: center;">
           <i class="fas fa-clock" style="color: #2196F3; font-size: 1.2rem; margin-right: 10px;"></i>
           <div>
             <strong style="color: #1976D2;">Standard Booking Hours:</strong>
-            <div style="font-size: 0.9rem; color: #424242; margin-top: 2px;">
+            <div class="time-caption" style="font-size: 0.9rem; color: #424242; margin-top: 2px;">
               Check-in: <strong>2:00 PM</strong> | Check-out: <strong>12:00 Noon</strong>
             </div>
           </div>
@@ -455,34 +457,35 @@ include __DIR__ . '/confirm_addOn.php';
 
 <style>
   /* Date availability styling */
-  input[type="datetime-local"].date-occupied {
+  #booking input[type="date"].date-occupied {
     border: 2px solid #dc3545 !important;
-    background-color: #ffe5e5 !important;
+    background-color: #fff2f2 !important;
   }
 
-  input[type="datetime-local"].date-available {
+  #booking input[type="date"].date-available {
     border: 2px solid #28a745 !important;
-    background-color: #e8f5e9 !important;
+    background-color: #edf9ef !important;
   }
 
-  .availability-info {
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-    padding: 0.5rem;
-    border-radius: 4px;
+  #booking .availability-info {
+    font-size: 0.82rem;
+    margin-top: 0.35rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 8px;
     display: none;
+    line-height: 1.35;
   }
 
-  .availability-info.occupied {
-    background-color: #ffe5e5;
-    color: #dc3545;
-    border: 1px solid #dc3 545;
+  #booking .availability-info.occupied {
+    background-color: #fff1f1;
+    color: #b3273b;
+    border: 1px solid #dc3545;
     display: block;
   }
 
-  .availability-info.available {
-    background-color: #e8f5e9;
-    color: #28a745;
+  #booking .availability-info.available {
+    background-color: #ecf8ef;
+    color: #1f8b44;
     border: 1px solid #28a745;
     display: block;
   }

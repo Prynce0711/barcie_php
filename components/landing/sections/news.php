@@ -40,94 +40,94 @@
 </div>
 
 <script>
-/**
- * Landing Page News Display
- */
-(function() {
-    'use strict';
-
-    let currentPage = 1;
-    let newsPerPage = 6;
-    let allNews = [];
-    let hasMoreNews = false;
-
     /**
-     * Initialize news section on landing page
+     * Landing Page News Display
      */
-    function initializeLandingNews() {
-        loadPublishedNews();
-    }
+    (function () {
+        'use strict';
 
-    /**
-     * Load published news from API
-     */
-    function loadPublishedNews() {
-        fetch(`api/News.php?action=fetch_published&limit=100`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    allNews = data.data;
-                    displayNews();
-                } else {
-                    showNoNewsMessage();
-                }
-            })
-            .catch(error => {
-                console.error('Error loading news:', error);
-                showErrorMessage();
-            });
-    }
+        let currentPage = 1;
+        let newsPerPage = 6;
+        let allNews = [];
+        let hasMoreNews = false;
 
-    /**
-     * Display news items
-     */
-    function displayNews() {
-        const container = document.getElementById('newsContainer');
-        if (!container) return;
-
-        const startIndex = 0;
-        const endIndex = currentPage * newsPerPage;
-        const newsToShow = allNews.slice(startIndex, endIndex);
-
-        if (newsToShow.length === 0) {
-            showNoNewsMessage();
-            return;
+        /**
+         * Initialize news section on landing page
+         */
+        function initializeLandingNews() {
+            loadPublishedNews();
         }
 
-        container.innerHTML = newsToShow.map(news => createNewsCard(news)).join('');
-
-        // Show/hide "Load More" button
-        const viewMoreBtn = document.getElementById('viewMoreNewsBtn');
-        if (viewMoreBtn) {
-            hasMoreNews = endIndex < allNews.length;
-            viewMoreBtn.style.display = hasMoreNews ? 'block' : 'none';
+        /**
+         * Load published news from API
+         */
+        function loadPublishedNews() {
+            fetch(`api/News.php?action=fetch_published&limit=100`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allNews = data.data;
+                        displayNews();
+                    } else {
+                        showNoNewsMessage();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading news:', error);
+                    showErrorMessage();
+                });
         }
-    }
 
-    /**
-     * Create news card HTML for landing page
-     */
-    function createNewsCard(news) {
-        const excerpt = news.content.length > 150 ? 
-            news.content.substring(0, 150) + '...' : news.content;
+        /**
+         * Display news items
+         */
+        function displayNews() {
+            const container = document.getElementById('newsContainer');
+            if (!container) return;
 
-        const dateStr = news.published_date ? 
-            new Date(news.published_date).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }) : '';
+            const startIndex = 0;
+            const endIndex = currentPage * newsPerPage;
+            const newsToShow = allNews.slice(startIndex, endIndex);
 
-        const imageUrl = news.image_path || 'assets/images/imageBg/barcie_logo.jpg';
+            if (newsToShow.length === 0) {
+                showNoNewsMessage();
+                return;
+            }
 
-        return `
+            container.innerHTML = newsToShow.map(news => createNewsCard(news)).join('');
+
+            // Show/hide "Load More" button
+            const viewMoreBtn = document.getElementById('viewMoreNewsBtn');
+            if (viewMoreBtn) {
+                hasMoreNews = endIndex < allNews.length;
+                viewMoreBtn.style.display = hasMoreNews ? 'block' : 'none';
+            }
+        }
+
+        /**
+         * Create news card HTML for landing page
+         */
+        function createNewsCard(news) {
+            const excerpt = news.content.length > 150 ?
+                news.content.substring(0, 150) + '...' : news.content;
+
+            const dateStr = news.published_date ?
+                new Date(news.published_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }) : '';
+
+            const imageUrl = news.image_path || 'public/images/imageBg/barcie_logo.jpg';
+
+            return `
             <div class="col-md-6 col-lg-4">
                 <div class="card news-card-landing h-100 shadow-sm hover-lift">
                     <div class="news-image-wrapper">
                         <img src="${escapeHtml(imageUrl)}" 
                              class="card-img-top" 
                              alt="${escapeHtml(news.title)}"
-                             onerror="this.src='assets/images/imageBg/barcie_logo.jpg'">
+                             onerror="this.src='public/images/imageBg/barcie_logo.jpg'">
                         <div class="news-date-badge">
                             <span class="date-day">${new Date(news.published_date || news.created_at).getDate()}</span>
                             <span class="date-month">${new Date(news.published_date || news.created_at).toLocaleDateString('en-US', { month: 'short' })}</span>
@@ -150,26 +150,26 @@
                 </div>
             </div>
         `;
-    }
+        }
 
-    /**
-     * Show news detail in modal
-     */
-    window.showNewsDetail = function(newsId) {
-        const news = allNews.find(n => n.id === newsId);
-        if (!news) return;
+        /**
+         * Show news detail in modal
+         */
+        window.showNewsDetail = function (newsId) {
+            const news = allNews.find(n => n.id === newsId);
+            if (!news) return;
 
-        const dateStr = news.published_date ? 
-            new Date(news.published_date).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }) : '';
+            const dateStr = news.published_date ?
+                new Date(news.published_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }) : '';
 
-        const imageHtml = news.image_path ? 
-            `<img src="${escapeHtml(news.image_path)}" class="img-fluid rounded mb-4" alt="${escapeHtml(news.title)}">` : '';
+            const imageHtml = news.image_path ?
+                `<img src="${escapeHtml(news.image_path)}" class="img-fluid rounded mb-4" alt="${escapeHtml(news.title)}">` : '';
 
-        document.getElementById('newsDetailContent').innerHTML = `
+            document.getElementById('newsDetailContent').innerHTML = `
             ${imageHtml}
             <h2 class="mb-3">${escapeHtml(news.title)}</h2>
             <div class="news-meta mb-4">
@@ -185,67 +185,67 @@
             </div>
         `;
 
-        const modal = new bootstrap.Modal(document.getElementById('newsDetailModal'));
-        modal.show();
-    };
+            const modal = new bootstrap.Modal(document.getElementById('newsDetailModal'));
+            modal.show();
+        };
 
-    /**
-     * Load more news
-     */
-    window.loadMoreNews = function() {
-        currentPage++;
-        displayNews();
-    };
+        /**
+         * Load more news
+         */
+        window.loadMoreNews = function () {
+            currentPage++;
+            displayNews();
+        };
 
-    /**
-     * Show no news message
-     */
-    function showNoNewsMessage() {
-        const container = document.getElementById('newsContainer');
-        if (container) {
-            container.innerHTML = `
+        /**
+         * Show no news message
+         */
+        function showNoNewsMessage() {
+            const container = document.getElementById('newsContainer');
+            if (container) {
+                container.innerHTML = `
                 <div class="col-12 text-center py-5">
                     <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
                     <h4 class="text-muted">No news available at the moment</h4>
                     <p class="text-muted">Check back later for updates!</p>
                 </div>
             `;
+            }
+            const viewMoreBtn = document.getElementById('viewMoreNewsBtn');
+            if (viewMoreBtn) viewMoreBtn.style.display = 'none';
         }
-        const viewMoreBtn = document.getElementById('viewMoreNewsBtn');
-        if (viewMoreBtn) viewMoreBtn.style.display = 'none';
-    }
 
-    /**
-     * Show error message
-     */
-    function showErrorMessage() {
-        const container = document.getElementById('newsContainer');
-        if (container) {
-            container.innerHTML = `
+        /**
+         * Show error message
+         */
+        function showErrorMessage() {
+            const container = document.getElementById('newsContainer');
+            if (container) {
+                container.innerHTML = `
                 <div class="col-12 text-center py-5">
                     <i class="fas fa-exclamation-triangle fa-4x text-warning mb-3"></i>
                     <h4 class="text-muted">Unable to load news</h4>
                     <p class="text-muted">Please try again later</p>
                 </div>
             `;
+            }
         }
-    }
 
-    /**
-     * Escape HTML
-     */
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+        /**
+         * Escape HTML
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeLandingNews);
-    } else {
-        initializeLandingNews();
-    }
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeLandingNews);
+        } else {
+            initializeLandingNews();
+        }
 
-})();
+    })();
 </script>

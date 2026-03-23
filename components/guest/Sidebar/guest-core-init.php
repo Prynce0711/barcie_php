@@ -52,8 +52,12 @@
     }
 
     try {
-      loadItems();
-      console.log("Guest: Items loading started");
+      if (typeof window.loadItems === "function") {
+        window.loadItems();
+        console.log("Guest: Items loading started");
+      } else {
+        console.warn("Guest: loadItems is not available yet");
+      }
     } catch (error) {
       console.error("Guest: Items loading failed:", error);
     }
