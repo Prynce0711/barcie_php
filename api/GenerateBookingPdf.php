@@ -14,14 +14,14 @@ try {
     $bookingId = isset($_GET['booking_id']) ? $_GET['booking_id'] : '';
     $receiptNumber = isset($_GET['receipt_number']) ? $_GET['receipt_number'] : '';
     $type = isset($_GET['type']) ? $_GET['type'] : 'reservation'; // reservation or pencil_booking
-    
+
     if (empty($bookingId) && empty($receiptNumber)) {
         throw new Exception('Booking ID or receipt number is required');
     }
-    
+
     // Determine the correct table based on type
     $table = ($type === 'pencil_booking') ? 'pencil_bookings' : 'bookings';
-    
+
     // Build query
     $whereClause = '';
     $param = '';
@@ -32,7 +32,7 @@ try {
         $whereClause = 'b.receipt_number = ?';
         $param = $receiptNumber;
     }
-    
+
     // Fetch booking details
     if ($type === 'pencil_booking') {
         $query = "SELECT 
@@ -85,26 +85,26 @@ try {
         LEFT JOIN items i ON b.room_id = i.id
         WHERE {$whereClause}";
     }
-    
+
     $stmt = $pdo->prepare($query);
     $stmt->execute([$param]);
     $booking = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$booking) {
         throw new Exception('Booking not found');
     }
-    
+
     // Configure DomPDF options
     $options = new Options();
     $options->set('isRemoteEnabled', true);
     $options->set('isHtml5ParserEnabled', true);
     $options->set('isPhpEnabled', true);
     $options->set('defaultFont', 'Arial');
-    
+
     $dompdf = new Dompdf($options);
-    
+
     // Get logo path and convert to base64 - use absolute path
-    $logoPath = __DIR__ . '/../assets/images/imageBg/barcie_logo.jpg';
+    $logoPath = __DIR__ . '/../public/images/imageBg/barcie_logo.jpg';
     $logoBase64 = '';
     if (file_exists($logoPath)) {
         $logoData = base64_encode(file_get_contents($logoPath));
@@ -113,17 +113,17 @@ try {
     } else {
         error_log("PDF Logo NOT FOUND at: " . $logoPath);
     }
-    
+
     // Generate current date and time
     $currentDateTime = date('F j, Y \a\t g:i A');
-    
+
     // Format dates with validation
     $checkInFormatted = $booking['check_in_date'] ? date('F j, Y \a\t g:i A', strtotime($booking['check_in_date'])) : 'Not set';
     $checkOutFormatted = $booking['check_out_date'] ? date('F j, Y \a\t g:i A', strtotime($booking['check_out_date'])) : 'Not set';
     $createdFormatted = $booking['created_at'] ? date('F j, Y \a\t g:i A', strtotime($booking['created_at'])) : 'Not available';
-    
+
     error_log('PDF Date Debug - check_in_date: ' . $booking['check_in_date'] . ', check_out_date: ' . $booking['check_out_date'] . ', created_at: ' . $booking['created_at']);
-    
+
     // Calculate duration
     $checkInDate = new DateTime($booking['check_in_date']);
     $checkOutDate = new DateTime($booking['check_out_date']);
@@ -131,14 +131,15 @@ try {
     $durationText = $duration->days . ' day(s)';
     if ($duration->h > 0 || $duration->i > 0) {
         $durationText .= ', ' . $duration->h . ' hour(s)';
-        if ($duration->i > 0) $durationText .= ', ' . $duration->i . ' minute(s)';
+        if ($duration->i > 0)
+            $durationText .= ', ' . $duration->i . ' minute(s)';
     }
-    
+
     // Determine booking type and status
     $bookingTypeText = ($type === 'pencil_booking') ? 'Draft Reservation (Pencil Booking)' : 'Confirmed Reservation';
     $statusBadgeClass = 'status-pending';
     $statusIcon = 'fas fa-clock';
-    
+
     if (stripos($booking['status'], 'confirmed') !== false) {
         $statusBadgeClass = 'status-confirmed';
         $statusIcon = 'fas fa-check-circle';
@@ -149,15 +150,16 @@ try {
         $statusBadgeClass = 'status-completed';
         $statusIcon = 'fas fa-flag-checkered';
     }
-    
+
     // Room/facility details
     $roomDetails = $booking['room_name'];
-    if ($booking['room_number']) $roomDetails .= ' (Room #' . $booking['room_number'] . ')';
+    if ($booking['room_number'])
+        $roomDetails .= ' (Room #' . $booking['room_number'] . ')';
     $roomDetails .= ' - ' . $booking['capacity'] . ' persons capacity';
-    
+
     // Payment method display
     $paymentMethod = ucfirst($booking['payment_method'] ?? 'Not specified');
-    
+
     // Create elegant HTML template
     $html = '<!DOCTYPE html>
 <html>
@@ -580,7 +582,7 @@ try {
                     </div>
                 </div>
                 <div>';
-    
+
     if (!empty($booking['company'])) {
         $html .= '
                     <div class="detail-item">
@@ -588,7 +590,7 @@ try {
                         <span class="detail-value">' . htmlspecialchars($booking['company']) . '</span>
                     </div>';
     }
-    
+
     if (!empty($booking['company_contact'])) {
         $html .= '
                     <div class="detail-item">
@@ -596,7 +598,7 @@ try {
                         <span class="detail-value">' . htmlspecialchars($booking['company_contact']) . '</span>
                     </div>';
     }
-    
+
     $html .= '
                     <div class="detail-item">
                         <span class="detail-label">Payment Method</span>
@@ -605,7 +607,7 @@ try {
                 </div>
             </div>
         </div>';
-    
+
     if (!empty($booking['total_amount']) && $booking['total_amount'] > 0) {
         $html .= '
         <div class="amount-section">
@@ -613,7 +615,7 @@ try {
             <div class="amount-value">₱' . number_format($booking['total_amount'], 2) . '</div>
         </div>';
     }
-    
+
     if ($type === 'pencil_booking') {
         $html .= '
         <div class="terms-section">
@@ -637,7 +639,7 @@ try {
             </div>
         </div>';
     }
-    
+
     $html .= '
     </div>
     
@@ -653,24 +655,24 @@ try {
 
     // Load HTML to DomPDF
     $dompdf->loadHtml($html);
-    
+
     // Set paper size and orientation
     $dompdf->setPaper('A4', 'portrait');
-    
+
     // Render PDF
     $dompdf->render();
-    
+
     // Generate filename
     $filename = 'BarCIE_' . ($type === 'pencil_booking' ? 'Pencil_Booking' : 'Booking_Confirmation') . '_' . $booking['receipt_number'] . '_' . date('Y-m-d') . '.pdf';
-    
+
     // Output PDF
     $dompdf->stream($filename, array('Attachment' => true));
-    
+
 } catch (Exception $e) {
     error_log("Booking PDF Generation Error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'message' => 'Failed to generate PDF: ' . $e->getMessage()
     ]);
 }

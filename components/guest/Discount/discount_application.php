@@ -1,9 +1,14 @@
 <?php
-require_once __DIR__ . '/../../../database/config.php';
+if (!isset($conn) || !($conn instanceof mysqli)) {
+    require_once __DIR__ . '/../../../database/db_connect.php';
+}
+
 require_once __DIR__ . '/../../../database/modules/discount_rules.php';
 
 $discountRules = discount_get_rules($conn, true);
 $discountKeywords = [];
+$discountIdTypeOptions = discount_get_id_type_options_from_rules($discountRules);
+
 foreach ($discountRules as $rule) {
     $discountKeywords[$rule['code']] = $rule['keywords'];
 }
@@ -31,20 +36,11 @@ foreach ($discountRules as $rule) {
             <select id="discount_id_type_reference" name="discount_id_type_reference"
                 class="w-full border rounded px-3 py-2">
                 <option value="">Select ID type (optional)</option>
-                <option value="national_id">National ID (PhilSys ID / ePhilID)</option>
-                <option value="passport">Passport</option>
-                <option value="drivers_license">Driver's License</option>
-                <option value="umid">UMID</option>
-                <option value="prc_id">PRC ID</option>
-                <option value="voters_id">Voter's ID</option>
-                <option value="postal_id">Postal ID</option>
-                <option value="philhealth_id">PhilHealth ID</option>
-                <option value="tin_id">TIN ID</option>
-                <option value="school_id">School ID</option>
-                <option value="alumni_id">Alumni ID</option>
-                <option value="personnel_id">Personnel ID</option>
-                <option value="senior_id">Senior Citizen ID</option>
-                <option value="pwd_id">PWD ID</option>
+                <?php foreach ($discountIdTypeOptions as $idTypeCode => $idTypeLabel): ?>
+                    <option value="<?php echo htmlspecialchars($idTypeCode); ?>">
+                        <?php echo htmlspecialchars($idTypeLabel); ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
         </div>
     </div>

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../../database/config.php';
+require_once __DIR__ . '/../../../database/db_connect.php';
 
 $partners = [];
 $result = $conn->query("SELECT name, facebook_url, phones, image_path FROM landing_partners WHERE category = 'catering' AND is_active = 1 ORDER BY sort_order ASC, id ASC");

@@ -1,9 +1,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
-  <link rel="shortcut icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
-  <link rel="apple-touch-icon" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
+  <link rel="shortcut icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
+  <link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
   <title>BarCIE International Center - Your Gateway to Hospitality Excellence</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -92,8 +92,7 @@
     /* Hero Section */
     .hero-section {
       height: 100vh;
-      background: linear-gradient(135deg, rgba(30, 60, 114, 0.8), rgba(42, 82, 152, 0.8)),
-        url('assets/images/imageBg/BarCIE-0.jpg') center/cover;
+      background: linear-gradient(135deg, rgba(30, 60, 114, 0.78), rgba(42, 82, 152, 0.72));
       display: flex;
       align-items: center;
       position: relative;

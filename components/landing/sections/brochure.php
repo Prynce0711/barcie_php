@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../../database/config.php';
+require_once __DIR__ . '/../../../database/db_connect.php';
 
 $brochures = [];
 $result = $conn->query("SELECT title, image_path, download_name FROM landing_brochures WHERE is_active = 1 ORDER BY sort_order ASC, id ASC");

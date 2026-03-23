@@ -6,61 +6,8 @@
 
   <?php include __DIR__ . '/../Discount/discount_application.php'; ?>
 
-  <!-- ID Upload Section -->
-  <div class="card mb-3" id="pencilIdUploadCard">
-    <div class="card-header bg-info text-white">
-      <strong><i class="fas fa-id-card me-2"></i>Valid ID Upload</strong>
-    </div>
-    <div class="card-body">
-      <div class="mb-3">
-        <label for="pencil_id_type" class="form-label">ID Type (for discount only)</label>
-        <select name="id_type" id="pencil_id_type" class="form-control">
-          <option value="">-- Select ID Type (Optional) --</option>
-          <option value="national_id">National ID (PhilSys ID / ePhilID)</option>
-          <option value="passport">Passport (Philippine or foreign, if applicable)</option>
-          <option value="drivers_license">Driver's License (LTO)</option>
-          <option value="umid">UMID Card (SSS / GSIS)</option>
-          <option value="prc_id">PRC ID (Professional Regulation Commission)</option>
-          <option value="voters_id">Voter's ID/Certification (COMELEC)</option>
-          <option value="postal_id">Postal ID</option>
-          <option value="philhealth_id">PhilHealth ID</option>
-          <option value="tin_id">TIN ID (BIR)</option>
-          <option value="school_id">School ID</option>
-          <option value="alumni_id">Alumni ID</option>
-          <option value="personnel_id">Personnel ID</option>
-        </select>
-        <small class="form-text text-muted">Optional. Select this only when applying a discount.</small>
-      </div>
-      <div class="mb-2">
-        <label for="pencil_id_upload" class="form-label">Upload Valid ID <span class="text-danger"
-            id="pencil_id_required"></span></label>
-        <input type="file" name="id_upload" id="pencil_id_upload" class="form-control" accept="image/*">
-        <input type="hidden" name="id_upload_cropped" id="pencil_id_upload_cropped">
-        <input type="hidden" name="id_upload_validated" id="pencil_id_upload_validated" value="0">
-        <small class="form-text text-muted">Optional: Upload ID if you want discount validation support.</small>
-
-        <!-- Validation status -->
-        <div id="pencil_id_validation" style="margin-top:8px;display:none;"></div>
-
-        <!-- Preview area -->
-        <div id="pencil_id_preview" style="margin-top:10px;display:none;">
-          <div id="pencil_id_thumb" style="margin-top:8px;max-width:160px;"></div>
-        </div>
-      </div>
-      <div class="alert alert-info mb-0" style="font-size: 0.9rem;">
-        <i class="fas fa-info-circle me-2"></i>If you apply for a discount above, the discount ID proof will be used and
-        this upload becomes optional.
-      </div>
-    </div>
-  </div>
-
   <!-- Inline alert area for form-level validation messages -->
   <div class="form-alert mb-2" id="pencil_form_alert" style="display:none;"></div>
-
-  <!-- ID Required Notice -->
-  <div class="alert alert-info" id="pencil_id_notice" style="display:none;">
-    <i class="fas fa-info-circle me-2"></i><strong>Optional:</strong> ID upload is only used for discount validation.
-  </div>
 
   <div class="form-grid" id="pencil_form_fields">
     <label class="full-width">
@@ -137,13 +84,13 @@
     </label>
 
     <!-- Booking Time Notice -->
-    <div class="full-width"
+    <div class="full-width booking-time-notice"
       style="margin: 0.5rem 0; padding: 0.75rem; background-color: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
       <div style="display: flex; align-items: center;">
         <i class="fas fa-clock" style="color: #2196F3; font-size: 1.2rem; margin-right: 10px;"></i>
         <div>
           <strong style="color: #1976D2;">Standard Booking Hours:</strong>
-          <div style="font-size: 0.9rem; color: #424242; margin-top: 2px;">
+          <div class="time-caption" style="font-size: 0.9rem; color: #424242; margin-top: 2px;">
             Check-in: <strong>2:00 PM</strong> | Check-out: <strong>12:00 Noon</strong>
           </div>
         </div>
