@@ -137,7 +137,7 @@
         <div class="card-image position-relative" style="cursor: pointer;" data-item-id="${item.id}">
           <img src="${previewImage}" class="room-card-img" 
             style="width:100%;height:200px;object-fit:cover;border-radius:15px 15px 0 0;" 
-            onerror="this.onerror=null; this.src='public  /images/imageBg/barcie_logo.jpg';"
+            onerror="this.onerror=null; this.src='public/images/imageBg/barcie_logo.jpg';"
             alt="${item.name}">
           ${images.length > 1
             ? `

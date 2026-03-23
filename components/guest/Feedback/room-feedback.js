@@ -422,7 +422,7 @@ function openRoomDetailsModal(roomId) {
         const imageSrc =
           images.length > 0
             ? images[0]
-            : "assets/images/imageBg/barcie_logo.jpg";
+            : "public/images/imageBg/barcie_logo.jpg";
         document.getElementById("modalRoomImage").src = imageSrc;
         document.getElementById("modalRoomImage").alt = item.name;
 
