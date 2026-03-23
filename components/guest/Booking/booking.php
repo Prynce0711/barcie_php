@@ -269,7 +269,7 @@
     <input type="hidden" name="action" value="create_booking">
     <input type="hidden" name="booking_type" value="reservation">
 
-    <?php include __DIR__ . '/discount_application.php'; ?>
+    <?php include __DIR__ . '/../Discount/discount_application.php'; ?>
 
     <!-- ID Upload Section -->
     <div class="card mb-3" id="reservationIdUploadCard">
@@ -278,9 +278,9 @@
       </div>
       <div class="card-body">
         <div class="mb-3">
-          <label for="reservation_id_type" class="form-label">ID Type <span class="text-danger">*</span></label>
-          <select name="id_type" id="reservation_id_type" class="form-control" required>
-            <option value="">-- Select ID Type --</option>
+          <label for="reservation_id_type" class="form-label">ID Type (for discount only)</label>
+          <select name="id_type" id="reservation_id_type" class="form-control">
+            <option value="">-- Select ID Type (Optional) --</option>
             <option value="national_id">National ID (PhilSys ID / ePhilID)</option>
             <option value="passport">Passport (Philippine or foreign, if applicable)</option>
             <option value="drivers_license">Driver's License (LTO)</option>
@@ -290,17 +290,19 @@
             <option value="postal_id">Postal ID</option>
             <option value="philhealth_id">PhilHealth ID</option>
             <option value="tin_id">TIN ID (BIR)</option>
+            <option value="school_id">School ID</option>
+            <option value="alumni_id">Alumni ID</option>
+            <option value="personnel_id">Personnel ID</option>
           </select>
-          <small class="form-text text-muted">Select the type of valid ID you will upload.</small>
+          <small class="form-text text-muted">Optional. Select this only when applying a discount.</small>
         </div>
         <div class="mb-2">
           <label for="reservation_id_upload" class="form-label">Upload Valid ID <span class="text-danger"
-              id="reservation_id_required">*</span></label>
-          <input type="file" name="id_upload" id="reservation_id_upload" class="form-control" accept="image/*" disabled>
+              id="reservation_id_required"></span></label>
+          <input type="file" name="id_upload" id="reservation_id_upload" class="form-control" accept="image/*">
           <input type="hidden" name="id_upload_cropped" id="reservation_id_upload_cropped">
           <input type="hidden" name="id_upload_validated" id="reservation_id_upload_validated" value="0">
-          <small class="form-text text-muted">Required: Clear photo of your government-issued ID. Not needed if discount
-            with ID is applied.</small>
+          <small class="form-text text-muted">Optional: Upload ID if you want discount validation support.</small>
 
           <!-- Validation status -->
           <div id="reservation_id_validation" style="margin-top:8px;display:none;"></div>
@@ -321,9 +323,8 @@
     <div class="form-alert mb-2" id="reservation_form_alert" style="display:none;"></div>
 
     <!-- ID Required Notice -->
-    <div class="alert alert-warning" id="reservation_id_notice" style="display:block;">
-      <i class="fas fa-lock me-2"></i><strong>ID Upload Required:</strong> Please upload a valid ID above to unlock and
-      fill out the booking form.
+    <div class="alert alert-info" id="reservation_id_notice" style="display:none;">
+      <i class="fas fa-info-circle me-2"></i><strong>Optional:</strong> ID upload is only used for discount validation.
     </div>
 
     <div class="form-grid" id="reservation_form_fields">
@@ -674,29 +675,15 @@ include __DIR__ . '/confirm_addOn.php';
     // ID Upload Management - Update requirement based on discount selection
     function updateIdUploadRequirement(formType) {
       const isReservation = formType === 'reservation';
-      const discountTypeSelect = document.getElementById('discount_type');
-      const discountProof = document.getElementById('discount_proof');
       const idUpload = document.getElementById(isReservation ? 'reservation_id_upload' : 'pencil_id_upload');
       const idRequired = document.getElementById(isReservation ? 'reservation_id_required' : 'pencil_id_required');
-
-      if (!discountTypeSelect || !idUpload || !idRequired) return;
-
-      // If discount is selected, ID upload becomes optional (discount proof is used)
-      const hasDiscount = discountTypeSelect.value && discountTypeSelect.value !== '';
-
-      if (hasDiscount) {
-        // Discount selected - ID upload is optional
+      if (idUpload) {
         idUpload.removeAttribute('required');
+      }
+      if (idRequired) {
         idRequired.style.display = 'none';
         idRequired.textContent = '';
-      } else {
-        // No discount - ID upload is required
-        idUpload.setAttribute('required', 'required');
-        idRequired.style.display = 'inline';
-        idRequired.textContent = '*';
       }
-
-      // Check if form fields should be enabled
       checkAndEnableFormFields(formType);
     }
 
@@ -706,84 +693,27 @@ include __DIR__ . '/confirm_addOn.php';
     // Enable or disable form fields based on ID upload status
     function checkAndEnableFormFields(formType) {
       const isReservation = formType === 'reservation';
-      const discountTypeSelect = document.getElementById('discount_type');
-      const discountProof = document.getElementById('discount_proof');
-      const idUpload = document.getElementById(isReservation ? 'reservation_id_upload' : 'pencil_id_upload');
-      const idValidated = document.getElementById(isReservation ? 'reservation_id_upload_validated' : 'pencil_id_upload_validated');
       const formFields = document.getElementById(isReservation ? 'reservation_form_fields' : 'pencil_form_fields');
       const idNotice = document.getElementById(isReservation ? 'reservation_id_notice' : 'pencil_id_notice');
       const submitBtn = document.getElementById(isReservation ? 'reservationSubmitBtn' : 'pencilSubmitBtn');
 
       if (!formFields) return;
 
-      // Check if either discount proof OR ID upload is provided AND validated
-      const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
-      const hasDiscountProofFile = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
-      const isDiscountProofValid = hasDiscountProofFile && discountProof.dataset.validProof === '1';
-      const hasIdUpload = idUpload && idUpload.files && idUpload.files.length > 0;
-      const isIdValidated = idValidated && idValidated.value === '1';
-
-      // Form is unlocked only if: (discount proof uploaded AND validated) OR (ID uploaded AND validated)
-      const hasValidId = isDiscountProofValid || (hasIdUpload && isIdValidated);
-
       // Get all input, select, and button elements within the form fields
       const allInputs = formFields.querySelectorAll('input:not([type=\"hidden\"]):not([readonly]), select, textarea, button');
 
-      if (hasValidId) {
-        // Enable all fields
-        allInputs.forEach(field => {
-          field.removeAttribute('disabled');
-          field.style.opacity = '1';
-          field.style.cursor = 'auto';
-          if (field.tagName === 'SELECT') {
-            field.style.cursor = 'pointer';
-          }
-          if (field.tagName === 'BUTTON') {
-            field.style.cursor = 'pointer';
-          }
-        });
+      allInputs.forEach(field => {
+        field.removeAttribute('disabled');
+        field.style.opacity = '1';
+        field.style.cursor = field.tagName === 'BUTTON' || field.tagName === 'SELECT' ? 'pointer' : 'auto';
+      });
 
-        // Hide notice
-        if (idNotice) idNotice.style.display = 'none';
+      if (idNotice) idNotice.style.display = 'none';
 
-        // Enable submit button (for reservation) or check terms for pencil
-        if (submitBtn) {
-          if (isReservation) {
-            submitBtn.removeAttribute('disabled');
-            submitBtn.style.opacity = '1';
-            submitBtn.style.cursor = 'pointer';
-          } else {
-            // For pencil, check terms checkbox requirement
-            const termsCheckbox = document.getElementById('pencil_terms_checkbox');
-            if (termsCheckbox && termsCheckbox.checked) {
-              submitBtn.removeAttribute('disabled');
-              submitBtn.style.opacity = '1';
-              submitBtn.style.cursor = 'pointer';
-            } else {
-              // Keep button disabled until terms are checked
-              submitBtn.setAttribute('disabled', 'disabled');
-              submitBtn.style.opacity = '0.6';
-              submitBtn.style.cursor = 'not-allowed';
-            }
-          }
-        }
-      } else {
-        // Disable all fields (including terms checkbox for pencil)
-        allInputs.forEach(field => {
-          field.setAttribute('disabled', 'disabled');
-          field.style.opacity = '0.5';
-          field.style.cursor = 'not-allowed';
-        });
-
-        // Show notice
-        if (idNotice) idNotice.style.display = 'block';
-
-        // Disable submit button
-        if (submitBtn) {
-          submitBtn.setAttribute('disabled', 'disabled');
-          submitBtn.style.opacity = '0.6';
-          submitBtn.style.cursor = 'not-allowed';
-        }
+      if (submitBtn && isReservation) {
+        submitBtn.removeAttribute('disabled');
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
       }
     }
 
@@ -983,7 +913,7 @@ include __DIR__ . '/confirm_addOn.php';
             console.log(`Matched ${matchedKeywords} keywords:`, matchedTexts);
             console.log('Text preview:', textPreview);
 
-            
+
             if (matchedKeywords >= 2) {
               resolve({
                 isValid: true,
@@ -1019,14 +949,14 @@ include __DIR__ . '/confirm_addOn.php';
       });
     }
 
-   
+
     async function performBasicImageChecks(file) {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = function (e) {
           const img = new Image();
           img.onload = function () {
-         
+
             if (img.width < 300 || img.height < 200) {
               resolve({
                 isValid: false,
@@ -1035,7 +965,7 @@ include __DIR__ . '/confirm_addOn.php';
               return;
             }
 
-           
+
             const fileSizeKB = file.size / 1024;
             if (fileSizeKB < 20) {
               resolve({
@@ -1053,7 +983,7 @@ include __DIR__ . '/confirm_addOn.php';
               return;
             }
 
-          
+
             resolve({ isValid: true });
           };
           img.onerror = function () {
@@ -1068,40 +998,40 @@ include __DIR__ . '/confirm_addOn.php';
       });
     }
 
-  
+
     const reservationIdTypeSelect = document.getElementById('reservation_id_type');
     const reservationIdUpload = document.getElementById('reservation_id_upload');
 
     if (reservationIdTypeSelect && reservationIdUpload) {
       reservationIdTypeSelect.addEventListener('change', function () {
         if (this.value) {
-         
+
           reservationIdUpload.removeAttribute('disabled');
           reservationIdUpload.style.opacity = '1';
           reservationIdUpload.style.cursor = 'pointer';
 
-         
+
           const idTypeText = this.options[this.selectedIndex].text;
           const helpText = reservationIdUpload.parentElement.querySelector('.form-text');
           if (helpText) {
             helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
           }
         } else {
-          
+
           reservationIdUpload.setAttribute('disabled', 'disabled');
           reservationIdUpload.style.opacity = '0.5';
           reservationIdUpload.style.cursor = 'not-allowed';
           reservationIdUpload.value = '';
 
-        
+
           const validatedInput = document.getElementById('reservation_id_upload_validated');
           if (validatedInput) validatedInput.value = '0';
 
-         
+
           const preview = document.getElementById('reservation_id_preview');
           if (preview) preview.style.display = 'none';
 
-         
+
           const validationElement = document.getElementById('reservation_id_validation');
           if (validationElement) validationElement.style.display = 'none';
 
@@ -1110,7 +1040,7 @@ include __DIR__ . '/confirm_addOn.php';
       });
     }
 
- 
+
     if (reservationIdUpload) {
       reservationIdUpload.addEventListener('change', async function (e) {
         const file = e.target.files[0];
@@ -1126,12 +1056,12 @@ include __DIR__ . '/confirm_addOn.php';
           return;
         }
 
-       
+
         const idType = idTypeSelect ? idTypeSelect.value : null;
 
         if (!preview || !thumb) return;
 
-       
+
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
           reader.onload = function (e) {
@@ -1169,25 +1099,25 @@ include __DIR__ . '/confirm_addOn.php';
     if (pencilIdTypeSelect && pencilIdUpload) {
       pencilIdTypeSelect.addEventListener('change', function () {
         if (this.value) {
-        
+
           pencilIdUpload.removeAttribute('disabled');
           pencilIdUpload.style.opacity = '1';
           pencilIdUpload.style.cursor = 'pointer';
 
-       
+
           const idTypeText = this.options[this.selectedIndex].text;
           const helpText = pencilIdUpload.parentElement.querySelector('.form-text');
           if (helpText) {
             helpText.textContent = `Upload your ${idTypeText} (image or PDF format).`;
           }
         } else {
-       
+
           pencilIdUpload.setAttribute('disabled', 'disabled');
           pencilIdUpload.style.opacity = '0.5';
           pencilIdUpload.style.cursor = 'not-allowed';
           pencilIdUpload.value = '';
 
-    
+
           const validatedInput = document.getElementById('pencil_id_upload_validated');
           if (validatedInput) validatedInput.value = '0';
 
@@ -1254,7 +1184,7 @@ include __DIR__ . '/confirm_addOn.php';
               field.style.cursor = 'not-allowed';
             });
           }
-         
+
           this.value = '';
         }
       });

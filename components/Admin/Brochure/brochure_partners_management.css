@@ -1,0 +1,377 @@
+/* ========================================
+   Brochure & Partners Management Styling
+   Reuses admin design system variables & patterns
+   ======================================== */
+
+/* Section Container */
+.brochure-partners-section {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.brochure-partners-section:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Form Wrapper */
+.brochure-partners-form-wrapper {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+
+.brochure-partners-form-wrapper:focus-within {
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Form Grid */
+.brochure-partners-form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+@media (min-width: 768px) {
+  .brochure-partners-form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+/* Form Group */
+.brochure-form-group,
+.partners-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.brochure-form-group.full-width,
+.partners-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Form Label */
+.brochure-partners-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.01em;
+}
+
+.brochure-partners-label.required::after {
+  content: " *";
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Form Inputs */
+.brochure-partners-input,
+.brochure-partners-select,
+.brochure-partners-textarea {
+  padding: 0.65rem 0.875rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+  color: #1f2937;
+}
+
+.brochure-partners-input::placeholder,
+.brochure-partners-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.brochure-partners-input:focus,
+.brochure-partners-select:focus,
+.brochure-partners-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: white;
+}
+
+.brochure-partners-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Form Button Container */
+.brochure-partners-btn-group {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  margin-top: 0.5rem;
+}
+
+/* Buttons */
+.btn-brochure-add,
+.btn-partner-add {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 0.65rem 1.5rem;
+  border-radius: 0.625rem;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-brochure-add:hover,
+.btn-partner-add:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-brochure-add:active,
+.btn-partner-add:active {
+  transform: translateY(0);
+}
+
+/* Table Wrapper */
+.brochure-partners-table-wrapper {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Table */
+.brochure-partners-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.brochure-partners-table thead {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-bottom: 2px solid #d1d5db;
+}
+
+.brochure-partners-table thead th {
+  padding: 0.875rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: inherit;
+}
+
+.brochure-partners-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.brochure-partners-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.brochure-partners-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.brochure-partners-table td {
+  padding: 0.875rem;
+  font-size: 0.9375rem;
+  color: #1f2937;
+}
+
+/* Table Form Inputs (inside table) */
+.brochure-partners-table input,
+.brochure-partners-table select,
+.brochure-partners-table textarea {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+.brochure-partners-table input:focus,
+.brochure-partners-table select:focus,
+.brochure-partners-table textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  background: white;
+}
+
+/* Checkbox */
+.brochure-partners-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+  accent-color: #3b82f6;
+  transition: all 0.2s ease;
+}
+
+.brochure-partners-checkbox:hover {
+  transform: scale(1.1);
+}
+
+.brochure-partners-checkbox:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Action Buttons in Table */
+.btn-table-save,
+.btn-table-delete {
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.375rem;
+  border: none;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.btn-table-save {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+}
+
+.btn-table-save:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-table-delete {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+}
+
+.btn-table-delete:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-table-save:active,
+.btn-table-delete:active {
+  transform: translateY(0);
+}
+
+/* Status Badge */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-status.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-status.inactive {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+/* Input Number (for sort order) */
+.input-number-sm {
+  max-width: 80px;
+}
+
+/* Empty State */
+.brochure-partners-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.brochure-partners-empty-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.brochure-partners-empty-text {
+  font-size: 1rem;
+  color: #9ca3af;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .brochure-partners-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brochure-partners-form-group.full-width {
+    grid-column: 1;
+  }
+
+  .brochure-partners-table {
+    font-size: 0.8125rem;
+  }
+
+  .brochure-partners-table th,
+  .brochure-partners-table td {
+    padding: 0.675rem;
+  }
+
+  .btn-table-save,
+  .btn-table-delete {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.75rem;
+  }
+
+  .brochure-partners-btn-group {
+    flex-wrap: wrap;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.brochure-partners-section {
+  animation: fadeIn 0.3s ease;
+}

@@ -70,10 +70,24 @@
       <ul class="submenu">
         <li>
           <a href="#news-section" class="nav-link">
-           News and Updates
+            News and Updates
           </a>
         </li>
-        <!-- Todo: Add here the Partner And Brochure -->
+        <li>
+          <a href="#partners-management-section" class="nav-link" data-section="partners-management-section">
+            Partners Management
+          </a>
+        </li>
+        <li>
+          <a href="#brochure-management-section" class="nav-link" data-section="brochure-management-section">
+            Brochure Management
+          </a>
+        </li>
+        <li>
+          <a href="#discount-management-section" class="nav-link" data-section="discount-management-section">
+            Discount Management
+          </a>
+        </li>
 
 
       </ul>

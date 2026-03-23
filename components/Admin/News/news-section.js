@@ -137,7 +137,7 @@
 
     const imageHtml = news.image_path
       ? `<img src="${escapeHtml(news.image_path)}" class="card-img-top news-card-image" 
-                  alt="${escapeHtml(news.title)}" onerror="this.src='assets/images/imageBg/barcie_logo.jpg'">`
+                  alt="${escapeHtml(news.title)}" onerror="this.src='public/images/imageBg/barcie_logo.jpg'">`
       : "";
 
     const excerpt =

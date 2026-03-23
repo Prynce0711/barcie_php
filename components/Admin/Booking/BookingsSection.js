@@ -18,7 +18,7 @@ function resetFilters() {
   // Show table overlay spinners for bookings/discounts/payments (if available)
   const tableIds = ["bookingsTable", "discountsTable", "paymentsTable"];
   const removers = [];
-
+  
   // Show a full-section loading overlay for the entire bookings section
   let removeSectionSpinner = function () {};
   try {

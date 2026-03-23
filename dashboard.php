@@ -26,7 +26,11 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
   <link rel="stylesheet" href="Components/Admin/dashboard.css">
 
   <!-- Tailwind CSS (compiled via CLI from src/css/admin.css) -->
-  <link rel="stylesheet" href="dist/css/admin.css">
+  <?php if (file_exists(__DIR__ . '/dist/css/admin.css')): ?>
+    <link rel="stylesheet" href="dist/css/admin.css">
+  <?php else: ?>
+    <link rel="stylesheet" href="Components/Admin/admin-tw-base.css">
+  <?php endif; ?>
   <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
   <link rel="stylesheet" href="Components/Admin/News/news.css">
@@ -199,6 +203,18 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       <!-- News & Updates Section -->
       <section id="news-section" class="content-section">
         <?php include __DIR__ . '/Components/Admin/News/news_section.php'; ?>
+      </section>
+
+      <section id="partners-management-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/Partners/partners_management_section.php'; ?>
+      </section>
+
+      <section id="brochure-management-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/Brochure/brochure_management_section.php'; ?>
+      </section>
+
+      <section id="discount-management-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/DiscountManagement/discount_management_section.php'; ?>
       </section>
 
       <!-- Payment Verification Section -->
@@ -462,7 +478,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         onerror="console.error('❌ Failed to load calendar-section.js')"></script>
       <script src="Components/Admin/RoomsAndFacilities/rooms-section.js"
         onerror="console.error('❌ Failed to load rooms-section.js')"></script>
-      <script src="Components/Admin/Booking/bookings-section.js"
+      <script src="Components/Admin/Booking/BookingsSection.js"
         onerror="console.error('❌ Failed to load bookings-section.js')"></script>
       <script src="Components/Admin/News/news-section.js"
         onerror="console.error('❌ Failed to load news-section.js')"></script>

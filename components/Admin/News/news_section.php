@@ -12,7 +12,11 @@ if ($news_result && $news_result->num_rows > 0) {
 
 <?php
 ob_start();
-$addLabel = 'Add News'; $addClass = 'btn-light'; $addSize = 'btn-sm'; $addTarget = ''; $addOnclick = 'openAddNewsModal()';
+$addLabel = 'Add News';
+$addClass = 'btn-light';
+$addSize = 'btn-sm';
+$addTarget = '';
+$addOnclick = 'openAddNewsModal()';
 include __DIR__ . '/../../ActionButton/Add.php';
 $sectionActions = ob_get_clean();
 ob_start(); ?>
@@ -34,8 +38,8 @@ ob_start(); ?>
     </select>
 </div>
 <?php $sectionFilters = ob_get_clean();
-$sectionTitle   = 'News & Updates';
-$sectionIcon    = 'fa-newspaper';
+$sectionTitle = 'News & Updates';
+$sectionIcon = 'fa-newspaper';
 include __DIR__ . '/../Shared/SectionHeader.php';
 ?>
 
@@ -52,22 +56,27 @@ include __DIR__ . '/../Shared/SectionHeader.php';
                         </div>
                     <?php else: ?>
                         <?php foreach ($news_items as $news): ?>
-                            <div class="col-md-6 col-lg-4 news-card-item" 
-                                 data-status="<?php echo htmlspecialchars($news['status']); ?>"
-                                 data-title="<?php echo htmlspecialchars($news['title']); ?>"
-                                 data-content="<?php echo htmlspecialchars($news['content']); ?>">
+                            <div class="col-md-6 col-lg-4 news-card-item"
+                                data-status="<?php echo htmlspecialchars($news['status']); ?>"
+                                data-title="<?php echo htmlspecialchars($news['title']); ?>"
+                                data-content="<?php echo htmlspecialchars($news['content']); ?>">
                                 <div class="card h-100 news-card">
-                                    <?php if (!empty($news['image_path'])): ?>
-                                        <img src="<?php echo htmlspecialchars($news['image_path']); ?>" 
-                                             class="card-img-top news-card-image" 
-                                             alt="<?php echo htmlspecialchars($news['title']); ?>"
-                                             onerror="this.src='assets/images/imageBg/barcie_logo.jpg'">
+                                    <?php
+                                    $newsImage = trim((string) ($news['image_path'] ?? ''));
+                                    $newsImageAbs = $newsImage !== '' ? (__DIR__ . '/../../../' . ltrim($newsImage, '/\\')) : '';
+                                    $newsImageSafe = ($newsImage !== '' && file_exists($newsImageAbs)) ? $newsImage : 'public/images/imageBg/barcie_logo.jpg';
+                                    ?>
+                                    <?php if (!empty($newsImageSafe)): ?>
+                                        <img src="<?php echo htmlspecialchars($newsImageSafe); ?>"
+                                            class="card-img-top news-card-image"
+                                            alt="<?php echo htmlspecialchars($news['title']); ?>"
+                                            onerror="this.onerror=null;this.src='public/images/imageBg/barcie_logo.jpg'">
                                     <?php endif; ?>
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <span class="badge bg-<?php 
-                                                echo $news['status'] === 'published' ? 'success' : 
-                                                    ($news['status'] === 'draft' ? 'warning' : 'secondary'); 
+                                            <span class="badge bg-<?php
+                                            echo $news['status'] === 'published' ? 'success' :
+                                                ($news['status'] === 'draft' ? 'warning' : 'secondary');
                                             ?>">
                                                 <?php echo ucfirst($news['status']); ?>
                                             </span>
@@ -84,11 +93,24 @@ include __DIR__ . '/../Shared/SectionHeader.php';
                                                 <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($news['author']); ?>
                                             </small>
                                             <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-primary barcie-action-btn" onclick="viewNews(<?php echo $news['id']; ?>)" title="View">
+                                                <button class="btn btn-outline-primary barcie-action-btn"
+                                                    onclick="viewNews(<?php echo $news['id']; ?>)" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <?php $editLabel = ''; $editIcon = 'fa-edit'; $editClass = 'btn-outline-warning'; $editSize = ''; $editOnclick = 'editNews(' . $news['id'] . ')'; $editTitle = 'Edit'; include __DIR__ . '/../../ActionButton/Edit.php'; ?>
-                                                <?php $deleteLabel = ''; $deleteIcon = 'fa-trash'; $deleteClass = 'btn-outline-danger'; $deleteSize = ''; $deleteOnclick = 'deleteNews(' . $news['id'] . ')'; $deleteTitle = 'Delete'; include __DIR__ . '/../../ActionButton/Delete.php'; ?>
+                                                <?php $editLabel = '';
+                                                $editIcon = 'fa-edit';
+                                                $editClass = 'btn-outline-warning';
+                                                $editSize = '';
+                                                $editOnclick = 'editNews(' . $news['id'] . ')';
+                                                $editTitle = 'Edit';
+                                                include __DIR__ . '/../../ActionButton/Edit.php'; ?>
+                                                <?php $deleteLabel = '';
+                                                $deleteIcon = 'fa-trash';
+                                                $deleteClass = 'btn-outline-danger';
+                                                $deleteSize = '';
+                                                $deleteOnclick = 'deleteNews(' . $news['id'] . ')';
+                                                $deleteTitle = 'Delete';
+                                                include __DIR__ . '/../../ActionButton/Delete.php'; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -113,17 +135,17 @@ include __DIR__ . '/../Shared/SectionHeader.php';
             <form id="newsForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" id="newsId" name="news_id">
-                    
+
                     <div class="mb-3">
                         <label for="newsTitle" class="form-label">Title <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="newsTitle" name="title" required>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="newsContent" class="form-label">Content <span class="text-danger">*</span></label>
                         <textarea class="form-control" id="newsContent" name="content" rows="6" required></textarea>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="newsImage" class="form-label">Featured Image</label>
                         <input type="file" class="form-control" id="newsImage" name="image" accept="image/*">
@@ -135,13 +157,13 @@ include __DIR__ . '/../Shared/SectionHeader.php';
                             </button>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="newsAuthor" class="form-label">Author</label>
                             <input type="text" class="form-control" id="newsAuthor" name="author" value="Admin">
                         </div>
-                        
+
                         <div class="col-md-6 mb-3">
                             <label for="newsStatus" class="form-label">Status</label>
                             <select class="form-select" id="newsStatus" name="status">
@@ -151,11 +173,11 @@ include __DIR__ . '/../Shared/SectionHeader.php';
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="newsPublishedDate" class="form-label">Published Date</label>
-                        <input type="date" class="form-control" id="newsPublishedDate" name="published_date" 
-                               value="<?php echo date('Y-m-d'); ?>">
+                        <input type="date" class="form-control" id="newsPublishedDate" name="published_date"
+                            value="<?php echo date('Y-m-d'); ?>">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -190,54 +212,54 @@ include __DIR__ . '/../Shared/SectionHeader.php';
 
 
 <script>
-// Role-based access control for News & Updates
-// Staff: CANNOT edit/delete content (❌)
-// Admin/Manager/Super Admin: Full access (✓)
-(function() {
-  function applyNewsRoleRestrictions() {
-    const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
-    console.log('Applying news restrictions for role:', role);
-    
-    if (role === 'staff') {
-      // Hide Add News button
-      const addBtn = document.querySelector('.barcie-action-add[onclick="openAddNewsModal()"]');
-      if (addBtn) addBtn.style.display = 'none';
-      
-      // Hide edit and delete buttons on news cards
-      document.querySelectorAll('.barcie-action-edit, .barcie-action-delete').forEach(btn => {
-        const onclick = btn.getAttribute('onclick');
-        const isEditOrDelete = onclick && (onclick.includes('editNews') || onclick.includes('deleteNews'));
-        if (isEditOrDelete) {
-          btn.style.display = 'none';
+    // Role-based access control for News & Updates
+    // Staff: CANNOT edit/delete content (❌)
+    // Admin/Manager/Super Admin: Full access (✓)
+    (function () {
+        function applyNewsRoleRestrictions() {
+            const role = (window.currentAdmin && window.currentAdmin.role) || 'staff';
+            console.log('Applying news restrictions for role:', role);
+
+            if (role === 'staff') {
+                // Hide Add News button
+                const addBtn = document.querySelector('.barcie-action-add[onclick="openAddNewsModal()"]');
+                if (addBtn) addBtn.style.display = 'none';
+
+                // Hide edit and delete buttons on news cards
+                document.querySelectorAll('.barcie-action-edit, .barcie-action-delete').forEach(btn => {
+                    const onclick = btn.getAttribute('onclick');
+                    const isEditOrDelete = onclick && (onclick.includes('editNews') || onclick.includes('deleteNews'));
+                    if (isEditOrDelete) {
+                        btn.style.display = 'none';
+                    }
+                });
+
+                // Add read-only notice
+                const header = document.querySelector('.section-header');
+                if (header && !document.getElementById('news-readonly-notice')) {
+                    const notice = document.createElement('div');
+                    notice.id = 'news-readonly-notice';
+                    notice.className = 'alert alert-info mb-3';
+                    notice.innerHTML = '<i class="fas fa-info-circle me-2"></i>You have view-only access to news and updates.';
+                    header.insertAdjacentElement('afterend', notice);
+                }
+
+                console.log('News: Staff restricted to view-only');
+            }
         }
-      });
-      
-      // Add read-only notice
-      const header = document.querySelector('.section-header');
-      if (header && !document.getElementById('news-readonly-notice')) {
-        const notice = document.createElement('div');
-        notice.id = 'news-readonly-notice';
-        notice.className = 'alert alert-info mb-3';
-        notice.innerHTML = '<i class="fas fa-info-circle me-2"></i>You have view-only access to news and updates.';
-        header.insertAdjacentElement('afterend', notice);
-      }
-      
-      console.log('News: Staff restricted to view-only');
-    }
-  }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyNewsRoleRestrictions);
-  } else {
-    applyNewsRoleRestrictions();
-  }
-  
-  const observer = new MutationObserver(applyNewsRoleRestrictions);
-  const newsGrid = document.getElementById('newsGrid');
-  if (newsGrid) {
-    observer.observe(newsGrid, { childList: true, subtree: true });
-  }
-  
-  setTimeout(applyNewsRoleRestrictions, 200);
-})();
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyNewsRoleRestrictions);
+        } else {
+            applyNewsRoleRestrictions();
+        }
+
+        const observer = new MutationObserver(applyNewsRoleRestrictions);
+        const newsGrid = document.getElementById('newsGrid');
+        if (newsGrid) {
+            observer.observe(newsGrid, { childList: true, subtree: true });
+        }
+
+        setTimeout(applyNewsRoleRestrictions, 200);
+    })();
 </script>

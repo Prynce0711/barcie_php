@@ -88,7 +88,7 @@
       function hideSpinner() { try { spinner.style.display = 'none'; } catch (e) { } }
 
       function choosePreviewImage(item) {
-        const defaultImg = 'assets/images/imageBg/barcie_logo.jpg';
+        const defaultImg = 'public/images/imageBg/barcie_logo.jpg';
 
         function normalize(path) {
           if (!path) return null;

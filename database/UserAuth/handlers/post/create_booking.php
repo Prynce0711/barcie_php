@@ -3,6 +3,7 @@
    CREATE BOOKING
    --------------------------- */
 if ($action === 'create_booking') {
+    require_once __DIR__ . '/../../../modules/discount_rules.php';
 
     // No user_id needed for guest bookings
     $type = $_POST['booking_type'] ?? '';
@@ -254,26 +255,29 @@ if ($action === 'create_booking') {
         // Use id_upload_path for proof_of_id column, fallback to discount proof if ID not uploaded
         $proof_of_id = !empty($id_upload_path) ? $id_upload_path : (!empty($discount_proof_path) ? $discount_proof_path : null);
 
-        if (!empty($discount_type) && !empty($proof_of_id)) {
+        $selected_id_type = trim((string) ($_POST['id_type'] ?? ''));
+        $discount_map = discount_get_rule_map($conn, true);
+
+        if (!empty($discount_type) && !empty($proof_of_id) && isset($discount_map[$discount_type])) {
             // Automatically approve discount when proof is uploaded
             $discount_status = 'approved';
 
-            // Calculate discount percentage based on discount type
-            if ($discount_type === 'pwd_senior') {
-                $discount_percentage = 20; // 20% for PWD/Senior
-            } elseif ($discount_type === 'lcuppersonnel') {
-                $discount_percentage = 10; // 10% for LCUP Personnel
-            } elseif ($discount_type === 'lcupstudent') {
-                $discount_percentage = 7; // 7% for LCUP Student/Alumni
+            $rule = $discount_map[$discount_type];
+            if (!discount_rule_accepts_id_type($rule, $selected_id_type)) {
+                $discount_status = 'none';
+                $discount_info = " | Discount not applied: selected ID type is not allowed for $discount_type";
+                error_log("Discount not applied due to ID type mismatch. Type=$discount_type, IDType=$selected_id_type");
+            } else {
+                $discount_percentage = (float) $rule['percentage'];
+
+                // Calculate discount amount
+                $discount_amount = ($amount * $discount_percentage) / 100;
+                $amount = $amount - $discount_amount; // Apply discount to total amount
+
+                $discount_info = " | Discount: $discount_type ($discount_percentage%) | Discount Amount: ₱" . number_format($discount_amount, 2) . " | Discount Details: $discount_details | Proof: $discount_proof_path";
+
+                error_log("Auto-approved discount: Type=$discount_type, Percentage=$discount_percentage%, Amount=₱$discount_amount, New Total=₱$amount");
             }
-
-            // Calculate discount amount
-            $discount_amount = ($amount * $discount_percentage) / 100;
-            $amount = $amount - $discount_amount; // Apply discount to total amount
-
-            $discount_info = " | Discount: $discount_type ($discount_percentage%) | Discount Amount: ₱" . number_format($discount_amount, 2) . " | Discount Details: $discount_details | Proof: $discount_proof_path";
-
-            error_log("Auto-approved discount: Type=$discount_type, Percentage=$discount_percentage%, Amount=₱$discount_amount, New Total=₱$amount");
         } elseif (!empty($discount_type) && empty($proof_of_id)) {
             // If discount type is selected but no proof uploaded, don't apply discount
             $discount_status = 'none';
@@ -570,13 +574,13 @@ if ($action === 'create_booking') {
             if (move_uploaded_file($file_tmp, $target_path)) {
                 $discount_proof_path = 'uploads/discount_proofs/' . $file_name;
 
-                // Calculate discount percentage based on discount type
-                if ($discount_code === 'pwd_senior') {
-                    $discount_percentage = 20; // 20% for PWD/Senior
-                } elseif ($discount_code === 'lcuppersonnel') {
-                    $discount_percentage = 10; // 10% for LCUP Personnel
-                } elseif ($discount_code === 'lcupstudent') {
-                    $discount_percentage = 7; // 7% for LCUP Student/Alumni
+                $selected_id_type = trim((string) ($_POST['id_type'] ?? ''));
+                $discount_map = discount_get_rule_map($conn, true);
+                if (isset($discount_map[$discount_code])) {
+                    $rule = $discount_map[$discount_code];
+                    if (discount_rule_accepts_id_type($rule, $selected_id_type)) {
+                        $discount_percentage = (float) $rule['percentage'];
+                    }
                 }
 
                 // Calculate discount amount automatically
