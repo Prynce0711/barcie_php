@@ -145,6 +145,10 @@ while ($booking = $bookings->fetch_assoc()):
           <button class="btn btn-secondary btn-sm booking-action-btn" onclick="updateBookingStatus(<?= $booking['id'] ?>, 'cancelled')" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
             Cancel
           </button>
+        <?php elseif ($booking['status'] === 'need to change room'): ?>
+          <button class="btn btn-warning btn-sm booking-action-btn" onclick="resendChangeRoomEmail(<?= $booking['id'] ?>)" style="font-size: 0.65rem; padding: 0.3rem 0.5rem;">
+            <i class="fas fa-envelope"></i> Resend Email
+          </button>
         <?php endif; ?>
       </div>
     </td>

@@ -537,6 +537,33 @@ function enableAutoRefresh() {
   }, 30000);
 }
 
+function resendChangeRoomEmail(bookingId) {
+  showConfirmModal(
+    "Resend the 'Need to Change Room' email to this guest?",
+  ).then((confirmed) => {
+    if (!confirmed) return;
+
+    // Create a form and submit it
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "database/user_auth.php";
+    form.style.display = "none";
+
+    const actionInput = document.createElement("input");
+    actionInput.name = "action";
+    actionInput.value = "resend_change_room_email";
+    form.appendChild(actionInput);
+
+    const idInput = document.createElement("input");
+    idInput.name = "booking_id";
+    idInput.value = bookingId;
+    form.appendChild(idInput);
+
+    document.body.appendChild(form);
+    form.submit();
+  });
+}
+
 // Export functions for global access
 window.filterBookings = filterBookings;
 window.resetFilters = resetFilters;
@@ -544,3 +571,4 @@ window.updateBookingStatus = updateBookingStatus;
 window.viewBookingDetails = viewBookingDetails;
 window.deleteBooking = deleteBooking;
 window.processDiscount = processDiscount;
+window.resendChangeRoomEmail = resendChangeRoomEmail;

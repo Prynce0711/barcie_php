@@ -218,6 +218,7 @@ if ($action === 'admin_update_booking') {
         ) {
             $checkin = (string) $targetBooking['checkin'];
             $checkout = (string) $targetBooking['checkout'];
+            $roomId = (int) ($targetBooking['room_id'] ?? 0);
 
             $blockingStmt = $conn->prepare(
                 "SELECT b.id, b.receipt_no, b.details, b.checkin, b.checkout, b.room_id,
@@ -225,6 +226,7 @@ if ($action === 'admin_update_booking') {
                  FROM bookings b
                  LEFT JOIN items i ON b.room_id = i.id
                  WHERE b.id <> ?
+                   AND b.room_id = ?
                    AND DATE(b.checkin) <= DATE(?)
                    AND DATE(b.checkout) >= DATE(?)
                    AND LOWER(TRIM(COALESCE(b.status, ''))) = 'approved'
@@ -235,7 +237,7 @@ if ($action === 'admin_update_booking') {
                 throw new Exception('Failed to prepare approved-overlap lookup.');
             }
 
-            $blockingStmt->bind_param('iss', $bookingId, $checkout, $checkin);
+            $blockingStmt->bind_param('iiss', $bookingId, $roomId, $checkout, $checkin);
             $blockingStmt->execute();
             $blockingRes = $blockingStmt->get_result();
             $blockingApprovedBooking = $blockingRes ? $blockingRes->fetch_assoc() : null;
@@ -277,7 +279,7 @@ if ($action === 'admin_update_booking') {
         }
         $updateStmt->close();
 
-        // Auto-mark other overlapping same-date bookings when this booking is approved.
+        // Auto-mark other overlapping same-room bookings when this booking is approved.
         if (
             $newStatus === 'approved'
             && !empty($targetBooking['checkin'])
@@ -285,6 +287,7 @@ if ($action === 'admin_update_booking') {
         ) {
             $checkin = (string) $targetBooking['checkin'];
             $checkout = (string) $targetBooking['checkout'];
+            $roomId = (int) ($targetBooking['room_id'] ?? 0);
 
             $overlapStmt = $conn->prepare(
                 "SELECT b.id, b.receipt_no, b.details, b.checkin, b.checkout, b.room_id,
@@ -292,6 +295,7 @@ if ($action === 'admin_update_booking') {
                  FROM bookings b
                  LEFT JOIN items i ON b.room_id = i.id
                  WHERE b.id <> ?
+                   AND b.room_id = ?
                    AND DATE(b.checkin) <= DATE(?)
                    AND DATE(b.checkout) >= DATE(?)
                     AND (
@@ -305,7 +309,7 @@ if ($action === 'admin_update_booking') {
                 throw new Exception('Failed to prepare overlap lookup.');
             }
 
-            $overlapStmt->bind_param('iss', $bookingId, $checkout, $checkin);
+            $overlapStmt->bind_param('iiss', $bookingId, $roomId, $checkout, $checkin);
             $overlapStmt->execute();
             $overlapRes = $overlapStmt->get_result();
 
