@@ -18,3 +18,4 @@ require_once __DIR__ . '/../handlers/post/update_pencil_booking_status.php';
 require_once __DIR__ . '/../handlers/post/request_cancellation.php';
 require_once __DIR__ . '/../handlers/post/checkout_booking.php';
 require_once __DIR__ . '/../handlers/post/change_conflict_room.php';
+require_once __DIR__ . '/../handlers/post/resend_change_room_email.php';

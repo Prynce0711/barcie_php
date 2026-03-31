@@ -132,9 +132,7 @@ function logMessage($message, $level = 'INFO')
     @file_put_contents($logFile, $logEntry, FILE_APPEND);
 }
 
-/**
- * Helper function to get config value
- */
+
 function config($key, $default = null)
 {
     $key = strtoupper($key);
