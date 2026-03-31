@@ -153,6 +153,86 @@ if (!function_exists('build_admin_payment_update_email')) {
     }
 }
 
+if (!function_exists('build_conflict_auto_reject_email')) {
+    function build_conflict_auto_reject_email(array $data): array
+    {
+        $guestName = email_safe($data['guest_name'] ?? 'Guest');
+        $receiptNo = email_safe($data['receipt_no'] ?? '');
+        $roomName = email_safe($data['room_name'] ?? 'N/A');
+        $roomNumber = email_safe((string) ($data['room_number'] ?? ''));
+        $checkin = email_format_date($data['checkin'] ?? null, 'l, F j, Y g:i A');
+        $checkout = email_format_date($data['checkout'] ?? null, 'l, F j, Y g:i A');
+        $changeRoomUrl = email_safe($data['change_room_url'] ?? '');
+
+        $suggestedRooms = $data['suggested_rooms'] ?? [];
+        $suggestionsHtml = '';
+
+        if (!empty($suggestedRooms) && is_array($suggestedRooms)) {
+            $rows = '';
+            foreach ($suggestedRooms as $room) {
+                $label = email_safe((string) ($room['name'] ?? 'Room'));
+                $num = email_safe((string) ($room['room_number'] ?? ''));
+                $cap = (int) ($room['capacity'] ?? 0);
+                $price = (float) ($room['price'] ?? 0);
+                $display = $label . ($num !== '' ? ' #' . $num : '');
+                $rows .= '<tr>'
+                    . '<td style="padding:10px 12px; border-bottom:1px solid #e9ecef;">' . $display . '</td>'
+                    . '<td style="padding:10px 12px; border-bottom:1px solid #e9ecef; text-align:center;">' . $cap . '</td>'
+                    . '<td style="padding:10px 12px; border-bottom:1px solid #e9ecef; text-align:right;">PHP ' . number_format($price, 2) . '</td>'
+                    . '</tr>';
+            }
+
+            $suggestionsHtml = '
+                <h3 style="margin:22px 0 10px 0; color:#0c5460;">Suggested Alternatives (Same Room Type)</h3>
+                <table role="presentation" style="width:100%; border-collapse:collapse; background:#f8f9fa; border-radius:8px; overflow:hidden;" cellpadding="0" cellspacing="0">
+                    <thead>
+                        <tr style="background:#e9f7ff;">
+                            <th style="padding:10px 12px; text-align:left; border-bottom:1px solid #d6e9f5;">Room</th>
+                            <th style="padding:10px 12px; text-align:center; border-bottom:1px solid #d6e9f5;">Capacity</th>
+                            <th style="padding:10px 12px; text-align:right; border-bottom:1px solid #d6e9f5;">Rate / Night</th>
+                        </tr>
+                    </thead>
+                    <tbody>' . $rows . '</tbody>
+                </table>';
+        } else {
+            $suggestionsHtml = '
+                <div style="margin:16px 0; padding:12px 14px; background:#fff3cd; border-radius:8px; color:#856404;">
+                    No same-room alternatives are currently available for your selected dates. You may still click the button below to check live availability.
+                </div>';
+        }
+
+        $buttonHtml = '';
+        if ($changeRoomUrl !== '') {
+            $buttonHtml = '
+                <p style="margin:20px 0 0 0;">
+                    <a href="' . $changeRoomUrl . '" style="display:inline-block; padding:12px 18px; border-radius:8px; background:#2a5298; color:#ffffff; text-decoration:none; font-weight:600;">Choose Another Room Number</a>
+                </p>';
+        }
+
+        $roomLabel = $roomName . ($roomNumber !== '' ? ' #' . $roomNumber : '');
+
+        return [
+            'subject' => 'Booking Update: Room Conflict Detected - BarCIE International Center',
+            'title' => 'Room Reassignment Needed',
+            'footer' => 'This is an automated message. Please do not reply directly to this email.',
+            'content' => '
+                <h2 style="margin:0 0 14px 0; color:#dc3545;">Your booking needs a room-number change</h2>
+                <p>Dear <strong>' . $guestName . '</strong>,</p>
+                <p>Your booking for <strong>' . $roomLabel . '</strong> with receipt <strong>' . $receiptNo . '</strong> overlaps with another booking that has already been approved by the admin.</p>
+                <p>To continue, please choose another available room number under the same room type.</p>
+                <table role="presentation" style="width:100%; border-collapse:collapse; background:#f8f9fa; border-radius:8px; margin:16px 0;" cellpadding="0" cellspacing="0">
+                    <tr><td style="padding:14px 16px;">
+                        <p style="margin:0 0 6px 0;"><strong>Requested Room:</strong> ' . $roomLabel . '</p>
+                        <p style="margin:0 0 6px 0;"><strong>Check-in:</strong> ' . $checkin . '</p>
+                        <p style="margin:0;"><strong>Check-out:</strong> ' . $checkout . '</p>
+                    </td></tr>
+                </table>
+                ' . $suggestionsHtml . '
+                ' . $buttonHtml
+        ];
+    }
+}
+
 if (!function_exists('build_booking_confirmation_email')) {
     function build_booking_confirmation_email(array $data): array
     {
