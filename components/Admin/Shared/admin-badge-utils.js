@@ -79,6 +79,7 @@ window.AdminBadgeUtils =
         checked_out: "bg-secondary",
         cancelled: "bg-warning",
         rejected: "bg-danger",
+        "need to change room": "bg-danger",
         expired: "bg-secondary",
       };
       var key = normalize(status);

@@ -144,7 +144,7 @@ while ($item = $res->fetch_assoc()):
         <!-- Action Buttons -->
         <div class="d-flex gap-2 room-action-buttons">
           <?php $editOnclick = 'openEditModal(' . $item['id'] . ')'; $editDataId = $item['id']; $editClass = 'btn-outline-primary flex-fill'; include __DIR__ . '/../../ActionButton/Edit.php'; ?>
-          <?php $deleteOnclick = 'confirmDeleteItem(' . $item['id'] . ', ' . htmlspecialchars(json_encode($item['name']), ENT_QUOTES) . ')'; $deleteDataId = $item['id']; $deleteItemName = $item['name']; include __DIR__ . '/../../ActionButton/Delete.php'; ?>
+          <?php $deleteOnclick = 'confirmDeleteItem(' . (int) $item['id'] . ', ' . json_encode((string) $item['name']) . ')'; $deleteDataId = $item['id']; $deleteItemName = $item['name']; include __DIR__ . '/../../ActionButton/Delete.php'; ?>
         </div>
         <script>
           // Hide edit/delete buttons for staff
@@ -537,13 +537,37 @@ while ($item = $res->fetch_assoc()):
 </form>
 <script>
 window.confirmDeleteItem = async function(itemId, itemName) {
-  const confirmed = await window.showConfirm(
-    'Are you sure you want to delete <strong>' + itemName + '</strong>?<br><small class="text-muted">This action cannot be undone.</small>',
-    { title: 'Confirm Deletion', confirmText: 'Delete', confirmClass: 'btn-danger', cancelText: 'Cancel', allowHtml: true }
-  );
-  if (!confirmed) return;
-  document.getElementById('deleteItemId').value = itemId;
-  document.getElementById('deleteItemForm').submit();
+  let confirmed = false;
+  const safeName = String(itemName || 'this item');
+
+  if (typeof window.showConfirm === 'function') {
+    try {
+      confirmed = await window.showConfirm(
+        'Are you sure you want to delete <strong>' + safeName + '</strong>?<br><small class="text-muted">This action cannot be undone.</small>',
+        { title: 'Confirm Deletion', confirmText: 'Delete', confirmClass: 'btn-danger', cancelText: 'Cancel', allowHtml: true }
+      );
+    } catch (e) {
+      confirmed = window.confirm('Delete ' + safeName + '? This action cannot be undone.');
+    }
+  } else {
+    confirmed = window.confirm('Delete ' + safeName + '? This action cannot be undone.');
+  }
+
+  if (!confirmed) {
+    return;
+  }
+
+  const idInput = document.getElementById('deleteItemId');
+  const form = document.getElementById('deleteItemForm');
+  if (!idInput || !form) {
+    return;
+  }
+
+  idInput.value = String(itemId);
+  if (typeof window.showLoadingPopup === 'function') {
+    window.showLoadingPopup('Deleting item...');
+  }
+  form.submit();
 };
 </script>
 

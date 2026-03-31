@@ -94,8 +94,8 @@ if ($bookingId <= 0) {
                    WHERE b2.room_id = i.id
                      AND b2.id <> ?
                      AND b2.status IN ('confirmed', 'approved', 'pending', 'checked_in')
-                     AND b2.checkin < ?
-                     AND b2.checkout > ?
+                                         AND DATE(b2.checkin) <= DATE(?)
+                                         AND DATE(b2.checkout) >= DATE(?)
                )
              ORDER BY i.room_number ASC, i.id ASC
              LIMIT 10"

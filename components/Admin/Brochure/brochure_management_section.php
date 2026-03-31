@@ -27,7 +27,8 @@ $sectionSubtitle = 'Manage brochure files for the landing page';
 
     <div style="padding: 2rem;">
         <!-- Add Brochure Form -->
-        <form method="POST" action="Components/Admin/data_processing.php" class="brochure-partners-form-wrapper">
+        <form method="POST" action="Components/Admin/data_processing.php" enctype="multipart/form-data"
+            class="brochure-partners-form-wrapper" data-popup-action="true">
             <input type="hidden" name="action" value="add_brochure">
             <div class="brochure-partners-form-grid">
                 <div class="brochure-form-group">
@@ -36,9 +37,8 @@ $sectionSubtitle = 'Manage brochure files for the landing page';
                         required>
                 </div>
                 <div class="brochure-form-group">
-                    <label class="brochure-partners-label required">Image Path</label>
-                    <input type="text" name="image_path" class="brochure-partners-input"
-                        placeholder="public/images/brochure/..." required>
+                    <label class="brochure-partners-label required">Image</label>
+                    <input type="file" name="image_file" class="brochure-partners-input" accept="image/*" required>
                 </div>
                 <div class="brochure-form-group">
                     <label class="brochure-partners-label">Download Name</label>
@@ -67,7 +67,7 @@ $sectionSubtitle = 'Manage brochure files for the landing page';
                     <thead>
                         <tr>
                             <th>Title</th>
-                            <th>Image Path</th>
+                            <th>Image</th>
                             <th>Download Name</th>
                             <th>Order</th>
                             <th>Status</th>
@@ -77,16 +77,24 @@ $sectionSubtitle = 'Manage brochure files for the landing page';
                     <tbody>
                         <?php foreach ($brochures as $brochure): ?>
                             <tr>
-                                <form method="POST" action="Components/Admin/data_processing.php" style="display: contents;">
+                                <form method="POST" action="Components/Admin/data_processing.php" enctype="multipart/form-data"
+                                    style="display: contents;" data-popup-action="true">
                                     <input type="hidden" name="action" value="update_brochure">
                                     <input type="hidden" name="id" value="<?php echo (int) $brochure['id']; ?>">
+                                    <input type="hidden" name="existing_image_path"
+                                        value="<?php echo htmlspecialchars((string) ($brochure['image_path'] ?? '')); ?>">
                                     <td>
                                         <input type="text" name="title" class="brochure-partners-input"
                                             value="<?php echo htmlspecialchars($brochure['title']); ?>" required>
                                     </td>
                                     <td>
-                                        <input type="text" name="image_path" class="brochure-partners-input"
-                                            value="<?php echo htmlspecialchars($brochure['image_path']); ?>" required>
+                                        <?php if (!empty($brochure['image_path'])): ?>
+                                            <a href="<?php echo htmlspecialchars($brochure['image_path']); ?>" target="_blank"
+                                                rel="noopener"
+                                                style="display: inline-block; margin-bottom: 0.35rem; font-size: 0.8rem;">Current
+                                                image</a>
+                                        <?php endif; ?>
+                                        <input type="file" name="image_file" class="brochure-partners-input" accept="image/*">
                                     </td>
                                     <td>
                                         <input type="text" name="download_name" class="brochure-partners-input"
@@ -112,8 +120,8 @@ $sectionSubtitle = 'Manage brochure files for the landing page';
                                             <i class="fas fa-save"></i> Save
                                         </button>
                                 </form>
-                                <form method="POST" action="Components/Admin/data_processing.php"
-                                    onsubmit="return confirm('Delete this brochure?');" style="display: contents;">
+                                <form method="POST" action="Components/Admin/data_processing.php" data-popup-action="true"
+                                    data-confirm-message="Delete this brochure?" style="display: contents;">
                                     <input type="hidden" name="action" value="delete_brochure">
                                     <input type="hidden" name="id" value="<?php echo (int) $brochure['id']; ?>">
                                     <button type="submit" class="btn-table-delete">

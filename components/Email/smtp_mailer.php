@@ -2,16 +2,79 @@
 
 declare(strict_types=1);
 
-if (!function_exists('send_smtp_mail')) {
-    function send_smtp_mail(string $to, string $subject, string $body, string $altBody = ''): bool
+if (!function_exists('barcie_load_phpmailer')) {
+    function barcie_load_phpmailer(): bool
     {
-        $vendorAutoload = __DIR__ . '/../../vendor/autoload.php';
-        if (!file_exists($vendorAutoload)) {
-            error_log('Email skipped: Vendor folder not available');
+        static $loaded = false;
+        if ($loaded) {
             return true;
         }
 
-        require_once $vendorAutoload;
+        if (class_exists('\\PHPMailer\\PHPMailer\\PHPMailer', false)) {
+            $loaded = true;
+            return true;
+        }
+
+        $vendorAutoload = __DIR__ . '/../../vendor/autoload.php';
+        if (file_exists($vendorAutoload)) {
+            $autoloadFilesPath = __DIR__ . '/../../vendor/composer/autoload_files.php';
+            $autoloadUsable = true;
+
+            if (file_exists($autoloadFilesPath)) {
+                $autoloadFiles = @include $autoloadFilesPath;
+                if (!is_array($autoloadFiles)) {
+                    $autoloadUsable = false;
+                } else {
+                    foreach ($autoloadFiles as $autoloadFile) {
+                        if (!file_exists((string) $autoloadFile)) {
+                            $autoloadUsable = false;
+                            error_log('Email warning: Composer autoload dependency missing: ' . $autoloadFile . '. Falling back to direct PHPMailer include.');
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($autoloadUsable) {
+                try {
+                    require_once $vendorAutoload;
+                } catch (\Throwable $e) {
+                    error_log('Email warning: Composer autoload failed. Falling back to direct PHPMailer include. Error: ' . $e->getMessage());
+                }
+            }
+        }
+
+        if (class_exists('\\PHPMailer\\PHPMailer\\PHPMailer', false)) {
+            $loaded = true;
+            return true;
+        }
+
+        $phpmailerSrc = __DIR__ . '/../../vendor/phpmailer/phpmailer/src/';
+        $requiredFiles = ['Exception.php', 'PHPMailer.php', 'SMTP.php'];
+        foreach ($requiredFiles as $file) {
+            $fullPath = $phpmailerSrc . $file;
+            if (!file_exists($fullPath)) {
+                error_log('Email warning: Missing PHPMailer source file: ' . $fullPath);
+                return false;
+            }
+            require_once $fullPath;
+        }
+
+        $loaded = class_exists('\\PHPMailer\\PHPMailer\\PHPMailer', false);
+        if (!$loaded) {
+            error_log('Email warning: PHPMailer class is unavailable after fallback load.');
+        }
+        return $loaded;
+    }
+}
+
+if (!function_exists('send_smtp_mail')) {
+    function send_smtp_mail(string $to, string $subject, string $body, string $altBody = ''): bool
+    {
+        if (!barcie_load_phpmailer()) {
+            error_log('Email skipped: PHPMailer dependencies are unavailable.');
+            return true;
+        }
 
         $configPath = __DIR__ . '/../../database/mail_config.php';
         if (!file_exists($configPath)) {

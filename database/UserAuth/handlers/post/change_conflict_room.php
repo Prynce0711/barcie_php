@@ -19,7 +19,7 @@ if ($action === 'change_conflict_room') {
     $guestEmail = trim((string) ($_POST['email'] ?? ''));
     $receiptNo = trim((string) ($_POST['receipt'] ?? ''));
 
-    $redirectUrl = '../Components/Guest/Booking/ChangeRoom.php?booking_id=' . urlencode((string) $bookingId)
+    $redirectUrl = '../components/guest/Booking/ChangeRoom.php?booking_id=' . urlencode((string) $bookingId)
         . '&receipt=' . urlencode($receiptNo)
         . '&email=' . urlencode($guestEmail);
 
@@ -107,8 +107,8 @@ if ($action === 'change_conflict_room') {
              WHERE id <> ?
                AND room_id = ?
                AND status IN ('confirmed', 'approved', 'pending', 'checked_in')
-               AND checkin < ?
-               AND checkout > ?
+                             AND DATE(checkin) <= DATE(?)
+                             AND DATE(checkout) >= DATE(?)
              LIMIT 1"
         );
         if (!$overlapStmt) {

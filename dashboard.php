@@ -41,6 +41,12 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
 <body>
 
+  <?php
+  $flashSuccessMessage = $_SESSION['success_message'] ?? null;
+  $flashErrorMessage = $_SESSION['error_message'] ?? null;
+  unset($_SESSION['success_message'], $_SESSION['error_message']);
+  ?>
+
   <button class="mobile-menu-toggle d-lg-none" onclick="toggleSidebar()">
     <i class="fas fa-bars"></i>
   </button>
@@ -49,27 +55,6 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
   <div class="main-content">
     <div class="container-fluid px-2" style="max-width: 100%;">
-      <div class="row">
-        <div class="col-12">
-          <?php if (isset($_SESSION['success_message'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-              <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($_SESSION['success_message']) ?>
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['success_message']); ?>
-          <?php endif; ?>
-
-          <?php if (isset($_SESSION['error_message'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-              <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($_SESSION['error_message']) ?>
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['error_message']); ?>
-          <?php endif; ?>
-        </div>
-      </div>
-
-
       <section id="dashboard-section" class="content-section active d-block">
         <?php include __DIR__ . '/Components/Admin/Dashboard/dashboard_section.php'; ?>
       </section>
@@ -466,6 +451,61 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
       <script src="Components/Popup/popup-manager.js"></script>
+      <script>
+        (function () {
+          const flashSuccessMessage = <?php echo json_encode($flashSuccessMessage); ?>;
+          const flashErrorMessage = <?php echo json_encode($flashErrorMessage); ?>;
+
+          if (flashSuccessMessage) {
+            if (typeof window.showSuccessPopup === 'function') {
+              window.showSuccessPopup(flashSuccessMessage, { title: 'Success' });
+            } else if (typeof window.showToast === 'function') {
+              window.showToast(flashSuccessMessage, 'success');
+            }
+          }
+
+          if (flashErrorMessage) {
+            if (typeof window.showErrorPopup === 'function') {
+              window.showErrorPopup(flashErrorMessage, { title: 'Error' });
+            } else if (typeof window.showToast === 'function') {
+              window.showToast(flashErrorMessage, 'error');
+            }
+          }
+
+          document.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if (form.dataset.popupAction !== 'true') return;
+            if (form.dataset.submitting === 'true') return;
+
+            const confirmMessage = form.dataset.confirmMessage || '';
+            if (confirmMessage) {
+              event.preventDefault();
+              if (typeof window.showConfirm === 'function') {
+                window.showConfirm(confirmMessage, {
+                  title: 'Confirm Action',
+                  confirmText: 'Yes, continue',
+                  cancelText: 'Cancel',
+                  confirmClass: 'btn-danger'
+                }).then(function (confirmed) {
+                  if (!confirmed) return;
+                  form.dataset.confirmMessage = '';
+                  form.requestSubmit();
+                });
+              } else if (window.confirm(confirmMessage)) {
+                form.dataset.confirmMessage = '';
+                form.requestSubmit();
+              }
+              return;
+            }
+
+            form.dataset.submitting = 'true';
+            if (typeof window.showLoadingPopup === 'function') {
+              window.showLoadingPopup('Processing your request...');
+            }
+          }, true);
+        })();
+      </script>
       <script src="Components/Table/table.js"></script>
 
       <!-- Page State Manager - Load FIRST -->

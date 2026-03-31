@@ -22,7 +22,7 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
 
   <div style="padding: 2rem;">
     <!-- Add Discount Rule Form -->
-    <form method="POST" action="Components/Admin/data_processing.php" class="brochure-partners-form-wrapper">
+    <form method="POST" action="Components/Admin/data_processing.php" class="brochure-partners-form-wrapper" data-popup-action="true">
       <input type="hidden" name="action" value="add_discount_rule">
       <div class="brochure-partners-form-grid">
         <div class="partners-form-group">
@@ -85,7 +85,7 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
           <tbody>
             <?php foreach ($rules as $rule): ?>
               <tr>
-                <form method="POST" action="Components/Admin/data_processing.php" style="display: contents;">
+                <form method="POST" action="Components/Admin/data_processing.php" style="display: contents;" data-popup-action="true">
                   <input type="hidden" name="action" value="update_discount_rule">
                   <input type="hidden" name="id" value="<?php echo (int) $rule['id']; ?>">
                   <td>
@@ -132,8 +132,8 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
                       <i class="fas fa-save"></i> Save
                     </button>
                 </form>
-                <form method="POST" action="Components/Admin/data_processing.php"
-                  onsubmit="return confirm('Delete this discount rule?');" style="display: contents;">
+                <form method="POST" action="Components/Admin/data_processing.php" data-popup-action="true" data-confirm-message="Delete this discount rule?"
+                  style="display: contents;">
                   <input type="hidden" name="action" value="delete_discount_rule">
                   <input type="hidden" name="id" value="<?php echo (int) $rule['id']; ?>">
                   <button type="submit" class="btn-table-delete">

@@ -41,6 +41,7 @@ if (!function_exists('admin_badge_booking_status_class')) {
             'checked_out' => 'secondary',
             'cancelled' => 'warning',
             'rejected' => 'danger',
+            'need to change room' => 'danger',
             'expired' => 'secondary',
         ];
 
