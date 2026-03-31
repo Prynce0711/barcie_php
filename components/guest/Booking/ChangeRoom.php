@@ -337,12 +337,14 @@ if ($booking) {
     <main class="wrapper">
         <section class="hero">
             <h1>Choose Another Room Number</h1>
-            <p>Your original room number became unavailable because another booking for the same schedule was approved first. Select a new room number below to continue your booking.</p>
+            <p>Your original room number became unavailable because another booking for the same schedule was approved
+                first. Select a new room number below to continue your booking.</p>
         </section>
 
         <section class="content">
             <?php if ($flashMessage !== ''): ?>
-                <div class="alert <?php echo $flashSuccess ? 'success' : 'error'; ?>"><?php echo htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                <div class="alert <?php echo $flashSuccess ? 'success' : 'error'; ?>">
+                    <?php echo htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
 
             <?php if ($errorMessage !== ''): ?>
@@ -376,13 +378,15 @@ if ($booking) {
                 </div>
 
                 <?php if (empty($suggestedRooms)): ?>
-                    <div class="alert error">No same-room alternatives are available right now for your selected dates. Please contact the admin for assistance.</div>
+                    <div class="alert error">No same-room alternatives are available right now for your selected dates. Please
+                        contact the admin for assistance.</div>
                 <?php else: ?>
                     <form method="POST" action="../../../database/user_auth.php">
                         <input type="hidden" name="action" value="change_conflict_room">
                         <input type="hidden" name="booking_id" value="<?php echo (int) $bookingId; ?>">
                         <input type="hidden" name="email" value="<?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="receipt" value="<?php echo htmlspecialchars($receipt, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="receipt"
+                            value="<?php echo htmlspecialchars($receipt, ENT_QUOTES, 'UTF-8'); ?>">
 
                         <div class="rooms">
                             <?php foreach ($suggestedRooms as $idx => $room): ?>
@@ -394,10 +398,13 @@ if ($booking) {
                                 ?>
                                 <div class="room-option">
                                     <label>
-                                        <input type="radio" name="selected_room_id" value="<?php echo (int) ($room['id'] ?? 0); ?>" <?php echo $idx === 0 ? 'checked' : ''; ?> required>
+                                        <input type="radio" name="selected_room_id" value="<?php echo (int) ($room['id'] ?? 0); ?>"
+                                            <?php echo $idx === 0 ? 'checked' : ''; ?> required>
                                         <div>
-                                            <div class="room-main"><?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?></div>
-                                            <div class="room-meta">Capacity: <?php echo (int) ($room['capacity'] ?? 0); ?> | Rate: PHP <?php echo number_format((float) ($room['price'] ?? 0), 2); ?></div>
+                                            <div class="room-main">
+                                                <?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?></div>
+                                            <div class="room-meta">Capacity: <?php echo (int) ($room['capacity'] ?? 0); ?> | Rate:
+                                                PHP <?php echo number_format((float) ($room['price'] ?? 0), 2); ?></div>
                                         </div>
                                     </label>
                                 </div>
