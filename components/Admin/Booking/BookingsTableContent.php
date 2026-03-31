@@ -78,7 +78,7 @@ while ($booking = $bookings->fetch_assoc()):
       </div>
     </td>
     
-    <!-- Schedule -->
+    <!-- Schedule
     <td data-label="Schedule">
       <div style="line-height: 1.3; font-size: 0.7rem;">
         <strong>In:</strong> <?= date('M j, Y', strtotime($booking['checkin'])) ?><br>
@@ -86,7 +86,16 @@ while ($booking = $bookings->fetch_assoc()):
         <strong>Out:</strong> <?= date('M j, Y', strtotime($booking['checkout'])) ?><br>
         <small class="text-muted" style="font-size: 0.65rem;"><?= date('H:i', strtotime($booking['checkout'])) ?></small>
       </div>
-    </td>
+    </td> -->
+
+
+    <!-- Schedule -->
+<td data-label="Schedule">
+  <div style="line-height: 1.3; font-size: 0.7rem;">
+    <strong>In:</strong> <?= date('M j, Y', strtotime($booking['checkin'])) ?><br>
+    <strong>Out:</strong> <?= date('M j, Y', strtotime($booking['checkout'])) ?>
+  </div>
+</td>
     
     <!-- Booking Status -->
     <td data-label="Status">
