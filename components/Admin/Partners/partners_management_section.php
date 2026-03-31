@@ -27,7 +27,7 @@ $sectionSubtitle = 'Manage catering and event styling partners';
 
     <div style="padding: 2rem;">
         <!-- Add Partner Form -->
-        <form method="POST" action="Components/Admin/data_processing.php" class="brochure-partners-form-wrapper">
+        <form method="POST" action="Components/Admin/data_processing.php" enctype="multipart/form-data" class="brochure-partners-form-wrapper" data-popup-action="true">
             <input type="hidden" name="action" value="add_partner">
             <div class="brochure-partners-form-grid">
                 <div class="partners-form-group">
@@ -53,9 +53,8 @@ $sectionSubtitle = 'Manage catering and event styling partners';
                         placeholder="Comma or newline separated">
                 </div>
                 <div class="partners-form-group">
-                    <label class="brochure-partners-label">Image Path</label>
-                    <input type="text" name="image_path" class="brochure-partners-input"
-                        placeholder="public/images/partners/...">
+                    <label class="brochure-partners-label required">Image</label>
+                    <input type="file" name="image_file" class="brochure-partners-input" accept="image/*" required>
                 </div>
                 <div class="partners-form-group">
                     <label class="brochure-partners-label">Sort Order</label>
@@ -82,7 +81,7 @@ $sectionSubtitle = 'Manage catering and event styling partners';
                             <th>Name</th>
                             <th>Facebook</th>
                             <th>Phones</th>
-                            <th>Image Path</th>
+                            <th>Image</th>
                             <th>Order</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -91,9 +90,11 @@ $sectionSubtitle = 'Manage catering and event styling partners';
                     <tbody>
                         <?php foreach ($partners as $partner): ?>
                             <tr>
-                                <form method="POST" action="Components/Admin/data_processing.php" style="display: contents;">
+                                <form method="POST" action="Components/Admin/data_processing.php" enctype="multipart/form-data" style="display: contents;" data-popup-action="true">
                                     <input type="hidden" name="action" value="update_partner">
                                     <input type="hidden" name="id" value="<?php echo (int) $partner['id']; ?>">
+                                    <input type="hidden" name="existing_image_path"
+                                        value="<?php echo htmlspecialchars((string) ($partner['image_path'] ?? '')); ?>">
                                     <td>
                                         <select name="category" class="brochure-partners-select" required>
                                             <option value="catering" <?php echo $partner['category'] === 'catering' ? 'selected' : ''; ?>>Catering</option>
@@ -113,8 +114,11 @@ $sectionSubtitle = 'Manage catering and event styling partners';
                                             value="<?php echo htmlspecialchars($partner['phones'] ?? ''); ?>">
                                     </td>
                                     <td>
-                                        <input type="text" name="image_path" class="brochure-partners-input"
-                                            value="<?php echo htmlspecialchars($partner['image_path'] ?? ''); ?>">
+                                        <?php if (!empty($partner['image_path'])): ?>
+                                            <a href="<?php echo htmlspecialchars($partner['image_path']); ?>" target="_blank"
+                                                rel="noopener" style="display: inline-block; margin-bottom: 0.35rem; font-size: 0.8rem;">Current image</a>
+                                        <?php endif; ?>
+                                        <input type="file" name="image_file" class="brochure-partners-input" accept="image/*">
                                     </td>
                                     <td>
                                         <input type="number" name="sort_order" class="brochure-partners-input input-number-sm"
@@ -136,8 +140,8 @@ $sectionSubtitle = 'Manage catering and event styling partners';
                                             <i class="fas fa-save"></i> Save
                                         </button>
                                 </form>
-                                <form method="POST" action="Components/Admin/data_processing.php"
-                                    onsubmit="return confirm('Delete this partner?');" style="display: contents;">
+                                <form method="POST" action="Components/Admin/data_processing.php" data-popup-action="true" data-confirm-message="Delete this partner?"
+                                    style="display: contents;">
                                     <input type="hidden" name="action" value="delete_partner">
                                     <input type="hidden" name="id" value="<?php echo (int) $partner['id']; ?>">
                                     <button type="submit" class="btn-table-delete">

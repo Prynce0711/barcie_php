@@ -44,17 +44,16 @@
           <a href="#pencil-bookings-section" class="nav-link" data-section="pencil-bookings-section">
             Pencil Management
           </a>
-
-
         </li>
-
-
+        <li>
+          <a href="#discount-management-section" class="nav-link" data-section="discount-management-section">
+            Discount Management
+          </a>
+        </li>
         <li>
           <a href="#reports-section" class="nav-link">
-
             <span>Reports & Analytics</span>
           </a>
-
         </li>
       </ul>
     </li>
@@ -83,11 +82,7 @@
             Brochure Management
           </a>
         </li>
-        <li>
-          <a href="#discount-management-section" class="nav-link" data-section="discount-management-section">
-            Discount Management
-          </a>
-        </li>
+
 
 
       </ul>

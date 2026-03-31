@@ -41,6 +41,8 @@ if ($action === 'admin_update_payment') {
 
     $autoRejectedRows = [];
     $verifiedBooking = null;
+    $blockingApprovedBooking = null;
+    $blockedByExistingApproval = false;
 
     try {
         $conn->begin_transaction();
@@ -64,6 +66,43 @@ if ($action === 'admin_update_payment') {
 
         if (!$verifiedBooking) {
             throw new Exception('Booking not found.');
+        }
+
+        if (
+            $paymentAction === 'verify'
+            && !empty($verifiedBooking['checkin'])
+            && !empty($verifiedBooking['checkout'])
+        ) {
+            $checkin = (string) $verifiedBooking['checkin'];
+            $checkout = (string) $verifiedBooking['checkout'];
+
+            $blockingStmt = $conn->prepare(
+                "SELECT b.id, b.receipt_no, b.details, b.checkin, b.checkout, b.room_id,
+                        i.name AS room_name, i.room_number
+                 FROM bookings b
+                 LEFT JOIN items i ON b.room_id = i.id
+                 WHERE b.id <> ?
+                   AND DATE(b.checkin) <= DATE(?)
+                   AND DATE(b.checkout) >= DATE(?)
+                   AND LOWER(TRIM(COALESCE(b.status, ''))) = 'approved'
+                 ORDER BY b.id ASC
+                 LIMIT 1"
+            );
+            if (!$blockingStmt) {
+                throw new Exception('Failed to prepare approved-overlap lookup.');
+            }
+
+            $blockingStmt->bind_param('iss', $bookingId, $checkout, $checkin);
+            $blockingStmt->execute();
+            $blockingRes = $blockingStmt->get_result();
+            $blockingApprovedBooking = $blockingRes ? $blockingRes->fetch_assoc() : null;
+            $blockingStmt->close();
+
+            if ($blockingApprovedBooking) {
+                $blockedByExistingApproval = true;
+                $newPaymentStatus = 'rejected';
+                $newBookingStatus = 'need to change room';
+            }
         }
 
         // Update booking payment and status fields.
@@ -99,31 +138,39 @@ if ($action === 'admin_update_payment') {
 
         if (
             $paymentAction === 'verify'
-            && !empty($verifiedBooking['room_id'])
+            && !$blockedByExistingApproval
             && !empty($verifiedBooking['checkin'])
             && !empty($verifiedBooking['checkout'])
         ) {
-            $roomId = (int) $verifiedBooking['room_id'];
             $checkin = (string) $verifiedBooking['checkin'];
             $checkout = (string) $verifiedBooking['checkout'];
 
-            // Find other overlapping bookings for the same room that are still awaiting decision.
+            // Mark other overlapping same-date bookings that are still awaiting decision.
             $overlapStmt = $conn->prepare(
                 "SELECT b.id, b.receipt_no, b.details, b.checkin, b.checkout, b.room_id,
                         i.name AS room_name, i.room_number
                  FROM bookings b
                  LEFT JOIN items i ON b.room_id = i.id
                  WHERE b.id <> ?
-                   AND b.room_id = ?
-                   AND b.checkin < ?
-                   AND b.checkout > ?
-                   AND b.payment_status IN ('pending', 'none')
-                   AND b.status IN ('pending', 'approved')"
+                   AND DATE(b.checkin) <= DATE(?)
+                   AND DATE(b.checkout) >= DATE(?)
+                    AND (
+                        b.payment_status IN ('pending', 'none')
+                        OR b.payment_status IS NULL
+                        OR TRIM(b.payment_status) = ''
+                        OR b.payment_status = '0'
+                    )
+                    AND (
+                        b.status IS NULL
+                        OR TRIM(b.status) = ''
+                        OR b.status = '0'
+                        OR LOWER(b.status) IN ('pending', 'confirmed')
+                    )"
             );
             if (!$overlapStmt) {
                 throw new Exception('Failed to prepare overlap lookup.');
             }
-            $overlapStmt->bind_param('iiss', $bookingId, $roomId, $checkout, $checkin);
+            $overlapStmt->bind_param('iss', $bookingId, $checkout, $checkin);
             $overlapStmt->execute();
             $overlapRes = $overlapStmt->get_result();
 
@@ -136,7 +183,7 @@ if ($action === 'admin_update_payment') {
             if (!empty($overlapping)) {
                 $rejectStmt = $conn->prepare(
                     "UPDATE bookings
-                     SET status = 'rejected',
+                     SET status = 'need to change room',
                          payment_status = 'rejected',
                          updated_at = NOW()
                      WHERE id = ?"
@@ -173,7 +220,7 @@ if ($action === 'admin_update_payment') {
         $roomStmt->close();
 
         if ($roomId && $roomId > 0) {
-            if ($paymentAction === 'verify') {
+            if ($paymentAction === 'verify' && !$blockedByExistingApproval) {
                 $itemStmt = $conn->prepare("UPDATE items SET room_status = 'occupied' WHERE id = ?");
             } else {
                 $itemStmt = $conn->prepare("UPDATE items SET room_status = 'available' WHERE id = ?");
@@ -188,12 +235,66 @@ if ($action === 'admin_update_payment') {
 
         $conn->commit();
 
+        // Notify the target guest for this admin action.
+        if ($paymentAction === 'verify' && $blockedByExistingApproval && $blockingApprovedBooking) {
+            if (function_exists('booking_send_conflict_auto_reject_email')) {
+                booking_send_conflict_auto_reject_email($conn, $blockingApprovedBooking, $verifiedBooking);
+            }
+        } elseif ($paymentAction === 'verify') {
+            if (function_exists('booking_send_admin_action_email')) {
+                booking_send_admin_action_email('approve', $verifiedBooking);
+            } else {
+                $details = (string) ($verifiedBooking['details'] ?? '');
+                $guestEmail = booking_extract_detail_value($details, 'Email');
+                $guestName = booking_extract_detail_value($details, 'Guest');
+
+                if ($guestEmail !== '') {
+                    $roomDisplay = (string) ($verifiedBooking['room_name'] ?? 'Room');
+                    if (!empty($verifiedBooking['room_number'])) {
+                        $roomDisplay .= ' #' . (string) $verifiedBooking['room_number'];
+                    }
+
+                    $tpl = build_admin_booking_update_email('approve', [
+                        'guest_name' => $guestName,
+                        'room_name' => $roomDisplay,
+                        'checkin' => (string) ($verifiedBooking['checkin'] ?? ''),
+                        'checkout' => (string) ($verifiedBooking['checkout'] ?? ''),
+                    ]);
+                    if ($tpl) {
+                        $body = create_email_template($tpl['title'], $tpl['content'], $tpl['footer']);
+                        $sent = send_smtp_mail($guestEmail, (string) $tpl['subject'], $body);
+                        error_log('Payment verify action email for booking #' . (int) ($verifiedBooking['id'] ?? 0) . ': ' . ($sent ? 'sent' : 'failed'));
+                    }
+                }
+            }
+        } elseif ($paymentAction === 'reject') {
+            $details = (string) ($verifiedBooking['details'] ?? '');
+            $guestEmail = booking_extract_detail_value($details, 'Email');
+            $guestName = booking_extract_detail_value($details, 'Guest');
+
+            if ($guestEmail !== '') {
+                $tpl = build_admin_payment_update_email('reject', [
+                    'guest_name' => $guestName,
+                    'receipt_no' => (string) ($verifiedBooking['receipt_no'] ?? ''),
+                ]);
+                if ($tpl) {
+                    $body = create_email_template($tpl['title'], $tpl['content'], $tpl['footer']);
+                    $sent = send_smtp_mail($guestEmail, (string) $tpl['subject'], $body);
+                    error_log('Payment reject action email for booking #' . (int) ($verifiedBooking['id'] ?? 0) . ': ' . ($sent ? 'sent' : 'failed'));
+                }
+            }
+        }
+
         // Send conflict emails after commit so guest notifications only happen on durable updates.
         if ($paymentAction === 'verify' && !empty($autoRejectedRows)) {
-            $baseUrl = booking_base_url();
-            $approvedRoomName = (string) ($verifiedBooking['room_name'] ?? 'Room');
-
             foreach ($autoRejectedRows as $dup) {
+                if (function_exists('booking_send_conflict_auto_reject_email')) {
+                    booking_send_conflict_auto_reject_email($conn, $verifiedBooking, $dup);
+                    continue;
+                }
+
+                $baseUrl = booking_base_url();
+                $approvedRoomName = (string) ($verifiedBooking['room_name'] ?? 'Room');
                 $dupDetails = (string) ($dup['details'] ?? '');
                 $guestEmail = booking_extract_detail_value($dupDetails, 'Email');
                 $guestName = booking_extract_detail_value($dupDetails, 'Guest');
@@ -203,7 +304,6 @@ if ($action === 'admin_update_payment') {
                     continue;
                 }
 
-                // Suggest same room type/name but different room number, excluding conflicting occupied/approved ranges.
                 $suggestions = [];
                 $suggestStmt = $conn->prepare(
                     "SELECT i.id, i.name, i.room_number, i.capacity, i.price
@@ -216,11 +316,11 @@ if ($action === 'admin_update_payment') {
                            FROM bookings b2
                            WHERE b2.room_id = i.id
                              AND b2.id <> ?
-                             AND b2.checkin < ?
-                             AND b2.checkout > ?
+                             AND DATE(b2.checkin) <= DATE(?)
+                             AND DATE(b2.checkout) >= DATE(?)
                              AND (
                                  b2.payment_status = 'verified'
-                                 OR b2.status IN ('approved', 'confirmed', 'checked_in')
+                                 OR b2.status IN ('pending', 'approved', 'confirmed', 'checked_in')
                              )
                        )
                      ORDER BY i.room_number ASC, i.id ASC
@@ -242,7 +342,7 @@ if ($action === 'admin_update_payment') {
                 }
 
                 $changeRoomUrl = $baseUrl
-                    . '/Components/Guest/Booking/ChangeRoom.php?booking_id=' . urlencode((string) ($dup['id'] ?? '0'))
+                    . '/components/guest/Booking/ChangeRoom.php?booking_id=' . urlencode((string) ($dup['id'] ?? '0'))
                     . '&receipt=' . urlencode($receiptNo)
                     . '&email=' . urlencode($guestEmail);
 
@@ -263,9 +363,13 @@ if ($action === 'admin_update_payment') {
             }
         }
 
-        $message = $paymentAction === 'verify'
-            ? 'Payment verified successfully.' . (!empty($autoRejectedRows) ? ' Conflicting overlapping bookings were auto-rejected and notified.' : '')
-            : 'Payment rejected successfully.';
+        if ($paymentAction === 'verify' && $blockedByExistingApproval) {
+            $message = 'Payment verify blocked because another booking on the same date is already approved. This booking was marked as need to change room and the guest was notified.';
+        } else {
+            $message = $paymentAction === 'verify'
+                ? 'Payment verified successfully.' . (!empty($autoRejectedRows) ? ' Conflicting overlapping bookings were marked as need to change room and notified.' : '')
+                : 'Payment rejected successfully.';
+        }
 
         handleResponse($message, true);
     } catch (Throwable $e) {

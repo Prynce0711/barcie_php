@@ -17,6 +17,7 @@ if ($action === 'create_booking') {
 
     // Payment proof (e.g., bank transfer receipt) path
     $payment_proof_path = '';
+    $payment_method = strtolower(trim((string) ($_POST['payment_method'] ?? 'cash')));
 
     // Handle file upload for discount proof
     // NOTE: Client-side validation (filename heuristics) is performed in the browser, but
@@ -56,6 +57,11 @@ if ($action === 'create_booking') {
             $payment_proof_path = 'uploads/' . $file_name;
             error_log("Payment proof uploaded to: " . $payment_proof_path);
         }
+    }
+
+    $is_bank_transfer = in_array($payment_method, ['bank', 'bank_transfer', 'bank transfer'], true);
+    if ($is_bank_transfer && $payment_proof_path === '') {
+        handleResponse('Please upload your payment receipt when choosing Bank Transfer.', false, '../Guest.php');
     }
 
     // Handle file upload for ID upload (separate from discount proof)

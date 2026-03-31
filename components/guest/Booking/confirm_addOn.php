@@ -1255,6 +1255,7 @@
       try {
         const modalPay = document.getElementById('modal_payment_method');
         const modalBank = document.getElementById('modal_bank_details');
+        const modalPaymentProof = document.getElementById('modal_payment_proof');
         if (modalPay) {
           const orig = currentForm.querySelector('[name="payment_method"]');
           if (orig) modalPay.value = orig.value || 'cash';
@@ -1268,11 +1269,23 @@
             }
             const proofWrap = document.getElementById('modal_payment_proof_wrap');
             if (proofWrap) proofWrap.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
+            if (modalPaymentProof) {
+              modalPaymentProof.required = (modalPay.value === 'bank');
+              if (modalPay.value !== 'bank') {
+                modalPaymentProof.classList.remove('is-invalid');
+              }
+            }
           });
           // set initial visibility
           if (modalBank) modalBank.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
           const proofWrapInit = document.getElementById('modal_payment_proof_wrap');
           if (proofWrapInit) proofWrapInit.style.display = (modalPay.value === 'bank') ? 'block' : 'none';
+          if (modalPaymentProof) {
+            modalPaymentProof.required = (modalPay.value === 'bank');
+            if (modalPay.value !== 'bank') {
+              modalPaymentProof.classList.remove('is-invalid');
+            }
+          }
 
           // Generate QR code if bank is initially selected
           if (modalPay.value === 'bank') {
@@ -1528,6 +1541,38 @@
           return;
         }
         if (!currentForm) return;
+
+        // Bank transfer requires uploaded payment receipt before proceeding.
+        const modalPayMethod = document.getElementById('modal_payment_method');
+        const modalPaymentProof = document.getElementById('modal_payment_proof');
+        if (modalPaymentProof) {
+          modalPaymentProof.classList.remove('is-invalid');
+        }
+
+        if (modalPayMethod && modalPayMethod.value === 'bank') {
+          const proofFile = (modalPaymentProof && modalPaymentProof.files && modalPaymentProof.files.length > 0)
+            ? modalPaymentProof.files[0]
+            : null;
+
+          if (!proofFile) {
+            notify('Please upload proof of payment for Bank Transfer before confirming.', 'warning');
+            if (modalPaymentProof) {
+              modalPaymentProof.classList.add('is-invalid');
+              try { modalPaymentProof.focus(); } catch (e) { }
+            }
+            return;
+          }
+
+          if (proofFile.size > MAX_UPLOAD_BYTES) {
+            notify('Payment receipt exceeds ' + MAX_UPLOAD_MB + 'MB. Please upload a smaller file.', 'warning');
+            if (modalPaymentProof) {
+              modalPaymentProof.classList.add('is-invalid');
+              try { modalPaymentProof.focus(); } catch (e) { }
+            }
+            return;
+          }
+        }
+
         // remove previous addon inputs
         currentForm.querySelectorAll('[data-addon-input]').forEach(n => n.remove());
 

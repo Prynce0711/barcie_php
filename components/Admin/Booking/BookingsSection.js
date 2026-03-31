@@ -18,7 +18,7 @@ function resetFilters() {
   // Show table overlay spinners for bookings/discounts/payments (if available)
   const tableIds = ["bookingsTable", "discountsTable", "paymentsTable"];
   const removers = [];
-  
+
   // Show a full-section loading overlay for the entire bookings section
   let removeSectionSpinner = function () {};
   try {
@@ -277,6 +277,11 @@ function updateBookingStatus(bookingId, newStatus) {
     adminActionInput.value = adminAction;
     form.appendChild(adminActionInput);
 
+    const newStatusInput = document.createElement("input");
+    newStatusInput.name = "new_status";
+    newStatusInput.value = newStatus;
+    form.appendChild(newStatusInput);
+
     document.body.appendChild(form);
     form.submit();
   });
@@ -422,6 +427,7 @@ function getStatusGradient(status) {
     checked_out: "linear-gradient(135deg, #b2bec3 0%, #636e72 100%)",
     cancelled: "linear-gradient(135deg, #ff7675 0%, #d63031 100%)",
     rejected: "linear-gradient(135deg, #ff7675 0%, #d63031 100%)",
+    "need to change room": "linear-gradient(135deg, #ff9f43 0%, #ee5253 100%)",
   };
   return (
     gradients[status] || "linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%)"
