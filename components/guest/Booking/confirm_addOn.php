@@ -857,7 +857,7 @@
 
       if (isReservation || isPencil) {
         const discountTypeSelect = document.getElementById('discount_type');
-        const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
+        const hasDiscount = !!(discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '' && discountTypeSelect.value !== 'none');
         const discountProof = document.getElementById('discount_proof');
         const idUpload = document.getElementById(isReservation ? 'reservation_id_upload' : 'pencil_id_upload');
         const idValidated = document.getElementById(isReservation ? 'reservation_id_upload_validated' : 'pencil_id_upload_validated');
@@ -867,7 +867,7 @@
         const hasIdUpload = idUpload && idUpload.files && idUpload.files.length > 0;
         const isIdValidated = idValidated && idValidated.value === '1';
 
-        if (!hasDiscountProof && !hasIdUpload) {
+        if (hasDiscount && !hasDiscountProof && !hasIdUpload) {
           return {
             field: idUpload || discountProof,
             message: 'Please upload a valid ID. If you have a discount with ID proof, that can be used instead.'
@@ -892,7 +892,7 @@
         // Skip ID upload validation if discount with proof exists
         if ((f.id === 'reservation_id_upload' || f.id === 'pencil_id_upload')) {
           const discountTypeSelect = document.getElementById('discount_type');
-          const hasDiscount = discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '';
+          const hasDiscount = !!(discountTypeSelect && discountTypeSelect.value && discountTypeSelect.value !== '' && discountTypeSelect.value !== 'none');
           const discountProof = document.getElementById('discount_proof');
           const hasDiscountProof = hasDiscount && discountProof && discountProof.files && discountProof.files.length > 0;
           if (hasDiscountProof) continue; // Skip ID validation, discount proof is sufficient
@@ -1208,7 +1208,8 @@
       try {
         const discountTypeField = currentForm.querySelector('[name="discount_type"]');
         const proofField = currentForm.querySelector('[name="discount_proof"]');
-        if (discountTypeField && discountTypeField.value) {
+        const hasDiscountSelected = !!(discountTypeField && discountTypeField.value && discountTypeField.value !== '' && discountTypeField.value !== 'none');
+        if (hasDiscountSelected) {
           const hasFile = proofField && proofField.files && proofField.files.length > 0;
           if (!hasFile) {
             // Show inline alert in the discount card (if available) instead of native alert()
