@@ -120,7 +120,7 @@ $assetUrl = static function (string $path) use ($appBasePath): string {
   return ($appBasePath !== '' ? $appBasePath : '') . '/' . $normalizedPath;
 };
 
-$includeComponent = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath): void {
+$includeComponent = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath, $assetUrl, $appBasePath): void {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
   $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
 

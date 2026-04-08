@@ -1,11 +1,13 @@
 <head>
   <?php
   $css_version = time() . '_' . rand(1000, 9999);
-  $basePath = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
-  $assetUrl = static function (string $path) use ($basePath): string {
-    $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
-    return ($basePath !== '' ? $basePath : '') . '/' . $normalizedPath;
-  };
+  if (!isset($assetUrl) || !is_callable($assetUrl)) {
+    $basePath = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
+    $assetUrl = static function (string $path) use ($basePath): string {
+      $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+      return ($basePath !== '' ? $basePath : '') . '/' . $normalizedPath;
+    };
+  }
   ?>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
