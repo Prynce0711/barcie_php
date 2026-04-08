@@ -89,7 +89,7 @@
    * Load news from API
    */
   function loadNews(status = "all") {
-    fetch(`api/News.php?action=fetch&status=${status}`)
+    fetch(`api/news.php?action=fetch&status=${status}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
@@ -260,7 +260,7 @@
    * View news details
    */
   window.viewNews = function (newsId) {
-    fetch(`api/News.php?action=fetch_single&id=${newsId}`)
+    fetch(`api/news.php?action=fetch_single&id=${newsId}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
@@ -329,7 +329,7 @@
    * Edit news
    */
   window.editNews = function (newsId) {
-    fetch(`api/News.php?action=fetch_single&id=${newsId}`)
+    fetch(`api/news.php?action=fetch_single&id=${newsId}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
@@ -400,7 +400,7 @@
     submitBtn.innerHTML =
       '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
 
-    fetch("api/News.php", {
+    fetch("api/news.php", {
       method: "POST",
       body: formData,
     })
@@ -446,7 +446,7 @@
 
       if (!confirmed) return;
 
-      const resp = await fetch("api/News.php", {
+      const resp = await fetch("api/news.php", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: `action=delete&id=${newsId}`,
