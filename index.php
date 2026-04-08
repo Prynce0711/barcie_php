@@ -1,73 +1,81 @@
 <?php
-/**
- * Check whether a directory looks like this project root.
- */
-$hasLandingHead = static function (string $root): bool {
-  $paths = [
-    $root . DIRECTORY_SEPARATOR . 'Components' . DIRECTORY_SEPARATOR . 'Landing' . DIRECTORY_SEPARATOR . 'head.php',
-    $root . DIRECTORY_SEPARATOR . 'components' . DIRECTORY_SEPARATOR . 'landing' . DIRECTORY_SEPARATOR . 'head.php',
-    $root . DIRECTORY_SEPARATOR . 'components' . DIRECTORY_SEPARATOR . 'Landing' . DIRECTORY_SEPARATOR . 'head.php',
-    $root . DIRECTORY_SEPARATOR . 'Components' . DIRECTORY_SEPARATOR . 'landing' . DIRECTORY_SEPARATOR . 'head.php',
-  ];
-
-  foreach ($paths as $path) {
-    if (is_file($path)) {
-      return true;
-    }
+$normalizeDir = static function (?string $path): string {
+  if (!is_string($path) || $path === '') {
+    return '';
   }
 
-  return false;
+  $trimmed = rtrim($path, DIRECTORY_SEPARATOR);
+  $real = realpath($trimmed);
+
+  return $real !== false ? $real : $trimmed;
 };
 
-/**
- * Breadth-first search for a root folder that contains the landing head component.
- */
-$findProjectRoot = static function (array $baseDirs, int $maxDepth = 3) use ($hasLandingHead): string {
-  $skipNames = ['.', '..', '.git', 'node_modules', 'vendor'];
-  $visited = [];
+$findComponentDirsIn = static function (string $root): array {
+  if (!is_dir($root)) {
+    return [];
+  }
 
-  foreach ($baseDirs as $baseDir) {
-    if (!is_dir($baseDir)) {
+  $dirs = [];
+  $entries = @scandir($root);
+  if ($entries === false) {
+    return [];
+  }
+
+  foreach ($entries as $entry) {
+    if ($entry === '.' || $entry === '..') {
       continue;
     }
 
-    $queue = [[$baseDir, 0]];
-    while (!empty($queue)) {
-      [$currentDir, $depth] = array_shift($queue);
+    if (strcasecmp($entry, 'Components') !== 0) {
+      continue;
+    }
 
-      $real = realpath($currentDir);
-      if ($real === false || isset($visited[$real])) {
-        continue;
-      }
-      $visited[$real] = true;
-
-      if ($hasLandingHead($real)) {
-        return $real;
-      }
-
-      if ($depth >= $maxDepth) {
-        continue;
-      }
-
-      $entries = @scandir($real);
-      if ($entries === false) {
-        continue;
-      }
-
-      foreach ($entries as $entry) {
-        if (in_array($entry, $skipNames, true)) {
-          continue;
-        }
-
-        $child = $real . DIRECTORY_SEPARATOR . $entry;
-        if (is_dir($child) && !is_link($child)) {
-          $queue[] = [$child, $depth + 1];
-        }
-      }
+    $candidate = $root . DIRECTORY_SEPARATOR . $entry;
+    if (is_dir($candidate)) {
+      $real = realpath($candidate);
+      $dirs[] = $real !== false ? $real : $candidate;
     }
   }
 
-  return '';
+  return $dirs;
+};
+
+$resolveCaseInsensitivePath = static function (string $basePath, string $relativePath): string {
+  $current = $basePath;
+  $segments = explode(DIRECTORY_SEPARATOR, $relativePath);
+
+  foreach ($segments as $segment) {
+    if ($segment === '' || $segment === '.') {
+      continue;
+    }
+
+    $direct = $current . DIRECTORY_SEPARATOR . $segment;
+    if (file_exists($direct)) {
+      $current = $direct;
+      continue;
+    }
+
+    $entries = @scandir($current);
+    if ($entries === false) {
+      return '';
+    }
+
+    $matched = null;
+    foreach ($entries as $entry) {
+      if (strcasecmp($entry, $segment) === 0) {
+        $matched = $entry;
+        break;
+      }
+    }
+
+    if ($matched === null) {
+      return '';
+    }
+
+    $current = $current . DIRECTORY_SEPARATOR . $matched;
+  }
+
+  return $current;
 };
 
 $documentRoot = isset($_SERVER['DOCUMENT_ROOT'])
@@ -87,24 +95,61 @@ $baseDirs = array_filter(array_unique([
   getcwd() ?: '',
 ]));
 
-$projectRoot = $findProjectRoot($baseDirs, 3);
-if ($projectRoot === '') {
-  $projectRoot = __DIR__;
+$candidateRoots = [];
+foreach ($baseDirs as $baseDir) {
+  $normalized = $normalizeDir($baseDir);
+  if ($normalized !== '') {
+    $candidateRoots[] = $normalized;
+  }
 }
+$candidateRoots = array_values(array_unique($candidateRoots));
 
-$componentFolder = is_dir($projectRoot . DIRECTORY_SEPARATOR . 'Components') ? 'Components' : 'components';
-$componentRoot = $projectRoot . DIRECTORY_SEPARATOR . $componentFolder;
+$skipNames = ['.', '..', '.git', 'node_modules', 'vendor'];
+$componentRoots = [];
 
-$includeComponent = static function (string $relativePath) use ($componentRoot): void {
-  $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
-  $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
+foreach ($candidateRoots as $root) {
+  $componentRoots = array_merge($componentRoots, $findComponentDirsIn($root));
 
-  if (!is_file($fullPath)) {
-    trigger_error('Missing component include: ' . $fullPath, E_USER_WARNING);
-    return;
+  $entries = @scandir($root);
+  if ($entries === false) {
+    continue;
   }
 
-  include $fullPath;
+  foreach ($entries as $entry) {
+    if (in_array($entry, $skipNames, true)) {
+      continue;
+    }
+
+    $child = $root . DIRECTORY_SEPARATOR . $entry;
+    if (!is_dir($child) || is_link($child)) {
+      continue;
+    }
+
+    $componentRoots = array_merge($componentRoots, $findComponentDirsIn($child));
+  }
+}
+
+$componentRoots = array_values(array_unique(array_filter($componentRoots)));
+
+$includeComponent = static function (string $relativePath) use ($componentRoots, $resolveCaseInsensitivePath): void {
+  $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+
+  foreach ($componentRoots as $componentRoot) {
+    $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
+    if (is_file($fullPath)) {
+      include $fullPath;
+      return;
+    }
+
+    $resolvedPath = $resolveCaseInsensitivePath($componentRoot, $normalizedRelativePath);
+    if ($resolvedPath !== '' && is_file($resolvedPath)) {
+      include $resolvedPath;
+      return;
+    }
+  }
+
+  $warningBase = $componentRoots[0] ?? (__DIR__ . DIRECTORY_SEPARATOR . 'Components');
+  trigger_error('Missing component include: ' . $warningBase . DIRECTORY_SEPARATOR . $normalizedRelativePath, E_USER_WARNING);
 };
 ?>
 
