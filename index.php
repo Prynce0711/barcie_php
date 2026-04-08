@@ -10,36 +10,6 @@ $normalizeDir = static function (?string $path): string {
   return $real !== false ? $real : $trimmed;
 };
 
-$findComponentDirsIn = static function (string $root): array {
-  if (!is_dir($root)) {
-    return [];
-  }
-
-  $dirs = [];
-  $entries = @scandir($root);
-  if ($entries === false) {
-    return [];
-  }
-
-  foreach ($entries as $entry) {
-    if ($entry === '.' || $entry === '..') {
-      continue;
-    }
-
-    if (strcasecmp($entry, 'Components') !== 0) {
-      continue;
-    }
-
-    $candidate = $root . DIRECTORY_SEPARATOR . $entry;
-    if (is_dir($candidate)) {
-      $real = realpath($candidate);
-      $dirs[] = $real !== false ? $real : $candidate;
-    }
-  }
-
-  return $dirs;
-};
-
 $resolveCaseInsensitivePath = static function (string $basePath, string $relativePath): string {
   $current = $basePath;
   $segments = explode(DIRECTORY_SEPARATOR, $relativePath);
@@ -86,70 +56,61 @@ $scriptDir = isset($_SERVER['SCRIPT_FILENAME'])
   ? dirname((string) $_SERVER['SCRIPT_FILENAME'])
   : '';
 
-$baseDirs = array_filter(array_unique([
-  __DIR__,
-  realpath(__DIR__) ?: '',
-  $scriptDir,
-  $documentRoot,
-  $documentRoot !== '' ? dirname($documentRoot) : '',
-  getcwd() ?: '',
+$componentRootCandidates = array_filter(array_unique([
+  __DIR__ . DIRECTORY_SEPARATOR . 'Components',
+  __DIR__ . DIRECTORY_SEPARATOR . 'components',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'Components' : '',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'Components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'Components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'components' : '',
+  dirname(__DIR__) . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'Components',
+  dirname(__DIR__) . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'components',
 ]));
 
-$candidateRoots = [];
-foreach ($baseDirs as $baseDir) {
-  $normalized = $normalizeDir($baseDir);
-  if ($normalized !== '') {
-    $candidateRoots[] = $normalized;
-  }
-}
-$candidateRoots = array_values(array_unique($candidateRoots));
+$componentRoot = '';
+$fallbackComponentRoot = '';
 
-$skipNames = ['.', '..', '.git', 'node_modules', 'vendor'];
-$componentRoots = [];
-
-foreach ($candidateRoots as $root) {
-  $componentRoots = array_merge($componentRoots, $findComponentDirsIn($root));
-
-  $entries = @scandir($root);
-  if ($entries === false) {
+foreach ($componentRootCandidates as $candidate) {
+  $normalized = $normalizeDir($candidate);
+  if ($normalized === '' || !is_dir($normalized)) {
     continue;
   }
 
-  foreach ($entries as $entry) {
-    if (in_array($entry, $skipNames, true)) {
-      continue;
-    }
+  if ($fallbackComponentRoot === '') {
+    $fallbackComponentRoot = $normalized;
+  }
 
-    $child = $root . DIRECTORY_SEPARATOR . $entry;
-    if (!is_dir($child) || is_link($child)) {
-      continue;
-    }
-
-    $componentRoots = array_merge($componentRoots, $findComponentDirsIn($child));
+  if (
+    is_file($normalized . DIRECTORY_SEPARATOR . 'Landing' . DIRECTORY_SEPARATOR . 'head.php') ||
+    is_file($normalized . DIRECTORY_SEPARATOR . 'landing' . DIRECTORY_SEPARATOR . 'head.php')
+  ) {
+    $componentRoot = $normalized;
+    break;
   }
 }
 
-$componentRoots = array_values(array_unique(array_filter($componentRoots)));
+if ($componentRoot === '') {
+  $componentRoot = $fallbackComponentRoot !== '' ? $fallbackComponentRoot : (__DIR__ . DIRECTORY_SEPARATOR . 'Components');
+}
 
-$includeComponent = static function (string $relativePath) use ($componentRoots, $resolveCaseInsensitivePath): void {
+$includeComponent = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath): void {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+  $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
 
-  foreach ($componentRoots as $componentRoot) {
-    $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
-    if (is_file($fullPath)) {
-      include $fullPath;
-      return;
-    }
-
-    $resolvedPath = $resolveCaseInsensitivePath($componentRoot, $normalizedRelativePath);
-    if ($resolvedPath !== '' && is_file($resolvedPath)) {
-      include $resolvedPath;
-      return;
-    }
+  if (is_file($fullPath)) {
+    include $fullPath;
+    return;
   }
 
-  $warningBase = $componentRoots[0] ?? (__DIR__ . DIRECTORY_SEPARATOR . 'Components');
-  trigger_error('Missing component include: ' . $warningBase . DIRECTORY_SEPARATOR . $normalizedRelativePath, E_USER_WARNING);
+  $resolvedPath = $resolveCaseInsensitivePath($componentRoot, $normalizedRelativePath);
+  if ($resolvedPath !== '' && is_file($resolvedPath)) {
+    include $resolvedPath;
+    return;
+  }
+
+  trigger_error('Missing component include: ' . $fullPath, E_USER_WARNING);
 };
 ?>
 
