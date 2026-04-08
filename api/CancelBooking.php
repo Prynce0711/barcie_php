@@ -75,18 +75,18 @@ if ($confirm === 'yes') {
         $update_query = "UPDATE {$table} SET status = 'cancelled', updated_at = NOW() WHERE receipt_no = ?";
         $update_stmt = $pdo->prepare($update_query);
         $update_stmt->execute([$receipt]);
-        
+
         // If it's a regular booking, update room status back to available
         if ($type !== 'pencil' && !empty($booking['room_id'])) {
             $room_update = "UPDATE items SET room_status = 'available' WHERE id = ?";
             $room_stmt = $pdo->prepare($room_update);
             $room_stmt->execute([$booking['room_id']]);
         }
-        
+
         // Send cancellation confirmation email
         if (!empty($email)) {
             $booking_type = ($type === 'pencil') ? 'Pencil Booking' : 'Booking';
-            
+
             // Extract guest name from details field or use column
             $guest_name = 'Guest';
             if ($type === 'pencil' && !empty($booking['guest_name'])) {
@@ -94,7 +94,7 @@ if ($confirm === 'yes') {
             } elseif (!empty($booking['details']) && preg_match('/Guest:\s*([^|]+)/', $booking['details'], $matches)) {
                 $guest_name = trim($matches[1]);
             }
-            
+
             $template = build_cancellation_confirmation_email([
                 'receipt_no' => $receipt,
                 'guest_name' => $guest_name,
@@ -103,7 +103,7 @@ if ($confirm === 'yes') {
             $emailBody = create_email_template($template['title'], $template['content'], $template['footer']);
             send_smtp_mail($email, $template['subject'], $emailBody);
         }
-        
+
         $success = true;
     } catch (Exception $e) {
         $success = false;
@@ -113,6 +113,7 @@ if ($confirm === 'yes') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -128,31 +129,44 @@ if ($confirm === 'yes') {
             justify-content: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         .cancel-card {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 600px;
             width: 90%;
             padding: 40px;
         }
+
         .icon-warning {
             font-size: 64px;
             color: #ffc107;
             animation: pulse 2s infinite;
         }
+
         .icon-success {
             font-size: 64px;
             color: #28a745;
         }
+
         .icon-error {
             font-size: 64px;
             color: #dc3545;
         }
+
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
         }
+
         .btn-cancel {
             background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
             border: none;
@@ -160,10 +174,12 @@ if ($confirm === 'yes') {
             font-weight: 600;
             transition: all 0.3s;
         }
+
         .btn-cancel:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(220, 53, 69, 0.4);
         }
+
         .booking-info {
             background: #f8f9fa;
             padding: 20px;
@@ -172,6 +188,7 @@ if ($confirm === 'yes') {
         }
     </style>
 </head>
+
 <body>
     <div class="cancel-card">
         <?php if (isset($success) && $success): ?>
@@ -207,7 +224,7 @@ if ($confirm === 'yes') {
                 <h2 class="mb-3">Cancel Booking</h2>
                 <p class="text-muted mb-4">Are you sure you want to cancel this booking?</p>
             </div>
-            
+
             <div class="booking-info">
                 <h5 class="mb-3"><i class="fas fa-info-circle text-primary me-2"></i>Booking Details</h5>
                 <table class="table table-borderless mb-0">
@@ -229,24 +246,24 @@ if ($confirm === 'yes') {
                     </tr>
                 </table>
             </div>
-            
+
             <?php if (!$cancellation_allowed): ?>
                 <div class="alert alert-warning mb-4">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     <?= $warning_message ?>
                 </div>
             <?php endif; ?>
-            
+
             <div class="alert alert-info mb-4">
                 <strong><i class="fas fa-info-circle me-2"></i>Cancellation Policy:</strong><br>
                 • Cancellations made 48+ hours before check-in: Full refund<br>
                 • Cancellations made within 48 hours: No refund<br>
                 • This action cannot be undone
             </div>
-            
+
             <div class="d-grid gap-2">
-                <a href="?receipt=<?= urlencode($receipt) ?>&email=<?= urlencode($email) ?>&type=<?= urlencode($type) ?>&confirm=yes" 
-                   class="btn btn-danger btn-cancel">
+                <a href="?receipt=<?= urlencode($receipt) ?>&email=<?= urlencode($email) ?>&type=<?= urlencode($type) ?>&confirm=yes"
+                    class="btn btn-danger btn-cancel">
                     <i class="fas fa-times-circle me-2"></i>Yes, Cancel This Booking
                 </a>
                 <a href="../../Guest.php" class="btn btn-outline-secondary">
@@ -256,4 +273,5 @@ if ($confirm === 'yes') {
         <?php endif; ?>
     </div>
 </body>
+
 </html>
