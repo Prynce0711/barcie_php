@@ -1,0 +1,1169 @@
+<?php
+
+date_default_timezone_set('Asia/Manila');
+
+
+session_start();
+require __DIR__ . '/../../database/db_connect.php';
+
+if (!isset($_SESSION['admin_id'])) {
+  error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access denied. Session ID: " . session_id() . ". Session data: " . print_r($_SESSION, true));
+  header("Location: index.php");
+  exit;
+} else {
+  error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access granted for admin ID: " . $_SESSION['admin_id'] . " (Username: " . ($_SESSION['admin_username'] ?? 'unknown') . ")");
+}
+
+function normalize_item_type($raw)
+{
+  $v = strtolower(trim((string) $raw));
+  $v = preg_replace('/\s+/', ' ', $v);
+  $v_singular = rtrim($v, "s \t\n\r\0\x0B");
+
+  $map = [
+    'room' => ['room', 'rooms', 'rm', 'r'],
+    'facility' => ['facility', 'facilities', 'facilitys', 'fac', 'facil']
+  ];
+
+  foreach ($map as $canonical => $variants) {
+    if (in_array($v, $variants, true) || in_array($v_singular, $variants, true)) {
+      return $canonical;
+    }
+  }
+
+  if (strpos($v, 'room') !== false)
+    return 'room';
+  if (strpos($v, 'facil') !== false)
+    return 'facility';
+
+
+  return 'room';
+}
+
+function project_root_path()
+{
+  $root = realpath(__DIR__ . '/../../');
+  return $root ?: dirname(__DIR__, 2);
+}
+
+function project_upload_dir()
+{
+  return rtrim(project_root_path(), '/\\') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR;
+}
+
+function project_file_path_from_relative($relativePath)
+{
+  $relativePath = ltrim(str_replace('\\', '/', (string) $relativePath), '/');
+  return rtrim(project_root_path(), '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+}
+
+function admin_dashboard_url($section = '')
+{
+  $script = str_replace('\\', '/', (string) ($_SERVER['PHP_SELF'] ?? ''));
+  $base = str_replace('\\', '/', dirname($script));
+  $base = rtrim($base, '/');
+
+  if (preg_match('#/components/admin$#i', $base)) {
+    $base = dirname(dirname($base));
+    $base = str_replace('\\', '/', $base);
+    $base = rtrim($base, '/');
+  }
+
+  if ($base === '' || $base === '.') {
+    $base = '';
+  }
+
+  $url = $base . '/dashboard.php';
+  if (!empty($section)) {
+    $url .= '#' . ltrim((string) $section, '#');
+  }
+
+  return $url;
+}
+
+function upload_landing_image($fieldName, $relativeDir, &$errorMessage)
+{
+  if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
+    return null;
+  }
+
+  $file = $_FILES[$fieldName];
+  $uploadError = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+  if ($uploadError === UPLOAD_ERR_NO_FILE) {
+    return null;
+  }
+
+  if ($uploadError !== UPLOAD_ERR_OK) {
+    $errorMessage = 'Image upload failed. Please try again.';
+    return false;
+  }
+
+  $maxSize = 10 * 1024 * 1024;
+  $size = (int) ($file['size'] ?? 0);
+  if ($size <= 0 || $size > $maxSize) {
+    $errorMessage = 'Image must be less than 10MB.';
+    return false;
+  }
+
+  $tmpName = (string) ($file['tmp_name'] ?? '');
+  if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+    $errorMessage = 'Invalid uploaded image.';
+    return false;
+  }
+
+  $imageInfo = @getimagesize($tmpName);
+  if ($imageInfo === false) {
+    $errorMessage = 'Uploaded file is not a valid image.';
+    return false;
+  }
+
+  $allowedMimes = [
+    'image/jpeg' => 'jpg',
+    'image/png' => 'png',
+    'image/gif' => 'gif',
+    'image/webp' => 'webp'
+  ];
+  $mime = strtolower((string) ($imageInfo['mime'] ?? ''));
+  if (!isset($allowedMimes[$mime])) {
+    $errorMessage = 'Only JPG, PNG, GIF, and WebP images are allowed.';
+    return false;
+  }
+
+  $baseName = preg_replace('/[^a-z0-9_-]+/i', '-', (string) pathinfo((string) ($file['name'] ?? 'image'), PATHINFO_FILENAME));
+  $baseName = trim((string) $baseName, '-');
+  if ($baseName === '') {
+    $baseName = 'image';
+  }
+
+  try {
+    $random = bin2hex(random_bytes(4));
+  } catch (Throwable $e) {
+    $random = substr(md5(uniqid((string) mt_rand(), true)), 0, 8);
+  }
+  $extension = $allowedMimes[$mime];
+  $fileName = $baseName . '-' . date('YmdHis') . '-' . $random . '.' . $extension;
+
+  $relativeDir = trim(str_replace('\\', '/', (string) $relativeDir), '/');
+  $relativePath = $relativeDir . '/' . $fileName;
+  $absolutePath = project_file_path_from_relative($relativePath);
+  $absoluteDir = dirname($absolutePath);
+
+  if (!is_dir($absoluteDir) && !mkdir($absoluteDir, 0755, true)) {
+    $errorMessage = 'Unable to create upload directory.';
+    return false;
+  }
+
+  if (!move_uploaded_file($tmpName, $absolutePath)) {
+    $errorMessage = 'Failed to save uploaded image.';
+    return false;
+  }
+
+  return str_replace('\\', '/', $relativePath);
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+  if (isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+
+    if ($action === "delete" && isset($_POST['id'])) {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('rooms'), 'You do not have permission to delete rooms or facilities');
+
+      $id = intval($_POST['id']);
+      $stmt = $conn->prepare("SELECT image FROM items WHERE id=?");
+      $stmt->bind_param("i", $id);
+      $stmt->execute();
+      $stmt->bind_result($img);
+      $stmt->fetch();
+      $stmt->close();
+
+
+      if ($img) {
+        $image_full_path = project_file_path_from_relative($img);
+        if (file_exists($image_full_path)) {
+          unlink($image_full_path);
+          error_log("Deleted image file: $image_full_path");
+        }
+      }
+
+      $stmt = $conn->prepare("DELETE FROM items WHERE id=?");
+      $stmt->bind_param("i", $id);
+
+      if ($stmt->execute()) {
+        error_log("Item deleted successfully: ID=$id");
+        $_SESSION['success_message'] = "Item deleted successfully!";
+      } else {
+        error_log("Failed to delete item: " . $stmt->error);
+        $_SESSION['error_message'] = "Failed to delete item: " . $stmt->error;
+      }
+
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('rooms'));
+      exit;
+    }
+
+
+    if ($action === "update" && isset($_POST['id'])) {
+
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('rooms'), 'You do not have permission to edit rooms or facilities');
+
+      $id = intval($_POST['id']);
+      $name = trim($_POST['name']);
+
+      $type = normalize_item_type($_POST['item_type'] ?? 'room');
+      $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
+      $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
+      $capacity = intval($_POST['capacity'] ?? 0);
+      $price = floatval($_POST['price'] ?? 0);
+
+
+      $addons_json = null;
+      if (!empty($_POST['addons_json'])) {
+
+        $tmp = json_decode($_POST['addons_json'], true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $addons_json = json_encode($tmp);
+        } else {
+          error_log('Invalid addons_json supplied in update: ' . $_POST['addons_json']);
+        }
+      }
+
+      $current_image_stmt = $conn->prepare("SELECT image, images FROM items WHERE id=?");
+      $current_image_stmt->bind_param("i", $id);
+      $current_image_stmt->execute();
+      $current_image_stmt->bind_result($current_image, $current_images_json);
+      $current_image_stmt->fetch();
+      $current_image_stmt->close();
+
+
+      $current_images = [];
+      if (!empty($current_images_json)) {
+        $decoded = json_decode($current_images_json, true);
+        if (is_array($decoded)) {
+          $current_images = $decoded;
+        }
+      } elseif (!empty($current_image)) {
+        $current_images = [$current_image];
+      }
+
+
+      if (!empty($_POST['removed_images'])) {
+        $removed = explode(',', $_POST['removed_images']);
+        foreach ($removed as $removed_path) {
+          $removed_path = trim($removed_path);
+          if (empty($removed_path))
+            continue;
+
+
+          $current_images = array_filter($current_images, function ($img) use ($removed_path) {
+            return $img !== $removed_path;
+          });
+
+
+          $full_path = project_file_path_from_relative($removed_path);
+          if (file_exists($full_path)) {
+            unlink($full_path);
+            error_log("Deleted removed image: $full_path");
+          }
+        }
+        $current_images = array_values($current_images);
+      }
+
+
+      if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
+        $file_count = count($_FILES['images']['name']);
+        $total_images = count($current_images) + $file_count;
+
+        if ($total_images > 10) {
+          $_SESSION['error_message'] = "Maximum 10 images allowed. You currently have " . count($current_images) . " images.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+
+        for ($i = 0; $i < $file_count; $i++) {
+          if (empty($_FILES['images']['name'][$i]) || $_FILES['images']['error'][$i] === UPLOAD_ERR_NO_FILE) {
+            continue;
+          }
+
+          if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
+            error_log("Image $i upload error code: " . $_FILES['images']['error'][$i]);
+            continue;
+          }
+
+          $max_file_size = 20 * 1024 * 1024;
+          if ($_FILES['images']['size'][$i] > $max_file_size) {
+            error_log("Image $i too large: " . $_FILES['images']['size'][$i] . " bytes");
+            continue;
+          }
+
+          $target_dir = project_upload_dir();
+          if (!file_exists($target_dir)) {
+            if (!mkdir($target_dir, 0755, true)) {
+              error_log("Failed to create uploads directory: $target_dir");
+              continue;
+            }
+            error_log("Created uploads directory: $target_dir");
+          }
+
+          $file_extension = strtolower(pathinfo($_FILES["images"]["name"][$i], PATHINFO_EXTENSION));
+          $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+          if (in_array($file_extension, $allowed_extensions)) {
+            $image_info = @getimagesize($_FILES["images"]["tmp_name"][$i]);
+            if ($image_info === false) {
+              error_log("Image $i invalid - not a real image");
+              continue;
+            }
+
+            $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!in_array($image_info['mime'], $allowed_mime_types)) {
+              error_log("Image $i invalid MIME type: " . $image_info['mime']);
+              continue;
+            }
+
+            $unique_filename = time() . "_" . uniqid() . "_$i." . $file_extension;
+            $target_file = $target_dir . $unique_filename;
+
+            if (move_uploaded_file($_FILES["images"]["tmp_name"][$i], $target_file)) {
+              chmod($target_file, 0644);
+              $current_images[] = "uploads/" . $unique_filename;
+              error_log("New image uploaded: uploads/$unique_filename");
+            } else {
+              error_log("Failed to move uploaded file to: $target_file");
+            }
+          }
+        }
+      }
+
+
+      $image_path = $current_image;
+      if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+
+
+        $max_file_size = 5 * 1024 * 1024;
+        if ($_FILES['image']['size'] > $max_file_size) {
+          error_log("File too large: " . $_FILES['image']['size'] . " bytes");
+          $_SESSION['error_message'] = "Image file is too large. Maximum size is 5MB.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+
+        // Security: Validate file size (max 20MB)
+        $max_file_size = 20 * 1024 * 1024; // 20MB in bytes
+        if ($_FILES['image']['size'] > $max_file_size) {
+          error_log("File too large: " . $_FILES['image']['size'] . " bytes");
+          $_SESSION['error_message'] = "Image file is too large. Maximum size is 20MB.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+
+        $target_dir = project_upload_dir();
+        if (!file_exists($target_dir)) {
+          if (!mkdir($target_dir, 0755, true)) {
+            error_log("Failed to create uploads directory: $target_dir");
+            $_SESSION['error_message'] = "Upload directory does not exist and could not be created. Contact administrator.";
+            header('Location: ' . admin_dashboard_url('rooms'));
+            exit;
+          }
+        }
+
+        // Generate unique filename
+        $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (in_array($file_extension, $allowed_extensions)) {
+          // Security: Verify it's actually an image using getimagesize
+          $image_info = @getimagesize($_FILES["image"]["tmp_name"]);
+          if ($image_info === false) {
+            error_log("Invalid image file - not a real image");
+            $_SESSION['error_message'] = "Invalid image file. Please upload a valid image.";
+            header('Location: ' . admin_dashboard_url('rooms'));
+            exit;
+          }
+
+          // Security: Verify MIME type
+          $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+          if (!in_array($image_info['mime'], $allowed_mime_types)) {
+            error_log("Invalid MIME type: " . $image_info['mime']);
+            $_SESSION['error_message'] = "Invalid image format. Please upload JPG, PNG, GIF, or WebP.";
+            header('Location: ' . admin_dashboard_url('rooms'));
+            exit;
+          }
+
+          $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
+          $target_file = $target_dir . $unique_filename;
+
+          if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+
+            chmod($target_file, 0644);
+
+
+            $image_path = "uploads/" . $unique_filename;
+
+            if (!empty($current_image) && $current_image !== $image_path) {
+              $old_image_full_path = project_file_path_from_relative($current_image);
+              if (file_exists($old_image_full_path)) {
+                unlink($old_image_full_path);
+                error_log("Deleted old image: $old_image_full_path");
+              }
+            }
+
+            error_log("New image uploaded: $image_path");
+          } else {
+            error_log("Failed to move uploaded file to: $target_file");
+            $_SESSION['error_message'] = "Failed to upload image. Please try again.";
+            header('Location: ' . admin_dashboard_url('rooms'));
+            exit;
+          }
+        } else {
+          error_log("Invalid file extension: $file_extension");
+          $_SESSION['error_message'] = "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+      }
+
+      // Update the database with images JSON
+      $images_json = !empty($current_images) ? json_encode($current_images) : null;
+
+      // include addons column in update if present
+      if ($addons_json !== null) {
+        // Types: name(s), item_type(s), room_number(s), description(s), capacity(i), price(d), image(s), images(s), addons(s), id(i)
+        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, images=?, addons=? WHERE id=?");
+        $stmt->bind_param("ssssidsssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $addons_json, $id);
+      } else {
+        // Types: name(s), item_type(s), room_number(s), description(s), capacity(i), price(d), image(s), images(s), id(i)
+        $stmt = $conn->prepare("UPDATE items SET name=?, item_type=?, room_number=?, description=?, capacity=?, price=?, image=?, images=? WHERE id=?");
+        $stmt->bind_param("ssssidssi", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $id);
+      }
+
+      if ($stmt->execute()) {
+        error_log("Item updated successfully: ID=$id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
+        $_SESSION['success_message'] = "Item updated successfully!";
+      } else {
+        error_log("Failed to update item: " . $stmt->error);
+        $_SESSION['error_message'] = "Failed to update item: " . $stmt->error;
+      }
+
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('rooms'));
+      exit;
+    }
+
+    // UPDATE BOOKING STATUS
+    if ($action === "update_booking_status" && isset($_POST['booking_id']) && isset($_POST['new_status'])) {
+      // Only Front Desk (admin), managers and super_admin can modify booking status - staff CANNOT
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['admin', 'manager', 'super_admin'], admin_dashboard_url('bookings'), 'You do not have permission to modify bookings');
+      $booking_id = intval($_POST['booking_id']);
+      $new_status = $_POST['new_status'];
+
+      $stmt = $conn->prepare("UPDATE bookings SET status=? WHERE id=?");
+      $stmt->bind_param("si", $new_status, $booking_id);
+      $stmt->execute();
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('bookings'));
+      exit;
+    }
+
+    // DELETE BOOKING
+    if ($action === "delete_booking" && isset($_POST['booking_id'])) {
+      // Only managers or super_admin can delete bookings (prevent staff/front desk from deleting)
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('bookings'), 'You do not have permission to delete bookings');
+      $booking_id = intval($_POST['booking_id']);
+
+      $stmt = $conn->prepare("DELETE FROM bookings WHERE id=?");
+      $stmt->bind_param("i", $booking_id);
+      $stmt->execute();
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('bookings'));
+      exit;
+    }
+
+    // PROCESS DISCOUNT APPLICATION - DEPRECATED (Auto-approval enabled)
+    // Discounts are now automatically approved when ID proof is uploaded
+    // This code is kept for backward compatibility but should not be used
+    if ($action === "process_discount" && isset($_POST['discount_id']) && isset($_POST['discount_action'])) {
+      error_log("WARNING: Manual discount processing attempted but discounts are now auto-approved");
+      header('Location: ' . admin_dashboard_url('bookings'));
+      exit;
+    }
+
+    if ($action === 'add_partner') {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('partners-management-section'), 'You do not have permission to manage landing partners');
+
+      $category = ($_POST['category'] ?? 'catering') === 'event_stylist' ? 'event_stylist' : 'catering';
+      $name = trim((string) ($_POST['name'] ?? ''));
+      $facebook_url = trim((string) ($_POST['facebook_url'] ?? ''));
+      $phones = trim((string) ($_POST['phones'] ?? ''));
+      $uploadError = '';
+      $image_path = upload_landing_image('image_file', 'public/images/partners', $uploadError);
+      $sort_order = max(0, (int) ($_POST['sort_order'] ?? 0));
+
+      if ($name === '') {
+        $_SESSION['error_message'] = 'Partner name is required.';
+        header('Location: ' . admin_dashboard_url('partners-management-section'));
+        exit;
+      }
+
+      if ($image_path === false) {
+        $_SESSION['error_message'] = $uploadError !== '' ? $uploadError : 'Partner image upload failed.';
+        header('Location: ' . admin_dashboard_url('partners-management-section'));
+        exit;
+      }
+
+      if ($image_path === null || trim((string) $image_path) === '') {
+        $_SESSION['error_message'] = 'Partner image is required.';
+        header('Location: ' . admin_dashboard_url('partners-management-section'));
+        exit;
+      }
+
+      $stmt = $conn->prepare("INSERT INTO landing_partners (category, name, facebook_url, phones, image_path, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)");
+      $stmt->bind_param('sssssi', $category, $name, $facebook_url, $phones, $image_path, $sort_order);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Partner added successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to add partner: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('partners-management-section'));
+      exit;
+    }
+
+    if ($action === 'update_partner' && isset($_POST['id'])) {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('partners-management-section'), 'You do not have permission to manage landing partners');
+
+      $id = (int) $_POST['id'];
+      $category = ($_POST['category'] ?? 'catering') === 'event_stylist' ? 'event_stylist' : 'catering';
+      $name = trim((string) ($_POST['name'] ?? ''));
+      $facebook_url = trim((string) ($_POST['facebook_url'] ?? ''));
+      $phones = trim((string) ($_POST['phones'] ?? ''));
+      $existing_image_path = trim((string) ($_POST['existing_image_path'] ?? ''));
+      $uploadError = '';
+      $uploaded_image_path = upload_landing_image('image_file', 'public/images/partners', $uploadError);
+      $sort_order = max(0, (int) ($_POST['sort_order'] ?? 0));
+      $is_active = isset($_POST['is_active']) ? 1 : 0;
+
+      if ($uploaded_image_path === false) {
+        $_SESSION['error_message'] = $uploadError !== '' ? $uploadError : 'Partner image upload failed.';
+        header('Location: ' . admin_dashboard_url('partners-management-section'));
+        exit;
+      }
+
+      $image_path = $uploaded_image_path !== null ? $uploaded_image_path : $existing_image_path;
+      if ($image_path === '') {
+        $_SESSION['error_message'] = 'Partner image is required.';
+        header('Location: ' . admin_dashboard_url('partners-management-section'));
+        exit;
+      }
+
+      $stmt = $conn->prepare("UPDATE landing_partners SET category=?, name=?, facebook_url=?, phones=?, image_path=?, sort_order=?, is_active=? WHERE id=?");
+      $stmt->bind_param('sssssiii', $category, $name, $facebook_url, $phones, $image_path, $sort_order, $is_active, $id);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Partner updated successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to update partner: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('partners-management-section'));
+      exit;
+    }
+
+    if ($action === 'delete_partner' && isset($_POST['id'])) {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('partners-management-section'), 'You do not have permission to manage landing partners');
+
+      $id = (int) $_POST['id'];
+      $stmt = $conn->prepare("DELETE FROM landing_partners WHERE id=?");
+      $stmt->bind_param('i', $id);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Partner deleted successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to delete partner: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('partners-management-section'));
+      exit;
+    }
+
+    if ($action === 'add_brochure') {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('brochure-management-section'), 'You do not have permission to manage brochures');
+
+      $title = trim((string) ($_POST['title'] ?? ''));
+      $uploadError = '';
+      $image_path = upload_landing_image('image_file', 'public/images/brochure', $uploadError);
+      $download_name = trim((string) ($_POST['download_name'] ?? ''));
+      $sort_order = max(0, (int) ($_POST['sort_order'] ?? 0));
+
+      if ($title === '') {
+        $_SESSION['error_message'] = 'Brochure title is required.';
+        header('Location: ' . admin_dashboard_url('brochure-management-section'));
+        exit;
+      }
+
+      if ($image_path === false) {
+        $_SESSION['error_message'] = $uploadError !== '' ? $uploadError : 'Brochure image upload failed.';
+        header('Location: ' . admin_dashboard_url('brochure-management-section'));
+        exit;
+      }
+
+      if ($image_path === null || trim((string) $image_path) === '') {
+        $_SESSION['error_message'] = 'Brochure image is required.';
+        header('Location: ' . admin_dashboard_url('brochure-management-section'));
+        exit;
+      }
+
+      $stmt = $conn->prepare("INSERT INTO landing_brochures (title, image_path, download_name, sort_order, is_active) VALUES (?, ?, ?, ?, 1)");
+      $stmt->bind_param('sssi', $title, $image_path, $download_name, $sort_order);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Brochure added successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to add brochure: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('brochure-management-section'));
+      exit;
+    }
+
+    if ($action === 'update_brochure' && isset($_POST['id'])) {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('brochure-management-section'), 'You do not have permission to manage brochures');
+
+      $id = (int) $_POST['id'];
+      $title = trim((string) ($_POST['title'] ?? ''));
+      $existing_image_path = trim((string) ($_POST['existing_image_path'] ?? ''));
+      $uploadError = '';
+      $uploaded_image_path = upload_landing_image('image_file', 'public/images/brochure', $uploadError);
+      $download_name = trim((string) ($_POST['download_name'] ?? ''));
+      $sort_order = max(0, (int) ($_POST['sort_order'] ?? 0));
+      $is_active = isset($_POST['is_active']) ? 1 : 0;
+
+      if ($uploaded_image_path === false) {
+        $_SESSION['error_message'] = $uploadError !== '' ? $uploadError : 'Brochure image upload failed.';
+        header('Location: ' . admin_dashboard_url('brochure-management-section'));
+        exit;
+      }
+
+      $image_path = $uploaded_image_path !== null ? $uploaded_image_path : $existing_image_path;
+      if ($image_path === '') {
+        $_SESSION['error_message'] = 'Brochure image is required.';
+        header('Location: ' . admin_dashboard_url('brochure-management-section'));
+        exit;
+      }
+
+      $stmt = $conn->prepare("UPDATE landing_brochures SET title=?, image_path=?, download_name=?, sort_order=?, is_active=? WHERE id=?");
+      $stmt->bind_param('sssiii', $title, $image_path, $download_name, $sort_order, $is_active, $id);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Brochure updated successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to update brochure: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('brochure-management-section'));
+      exit;
+    }
+
+    if ($action === 'delete_brochure' && isset($_POST['id'])) {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('brochure-management-section'), 'You do not have permission to manage brochures');
+
+      $id = (int) $_POST['id'];
+      $stmt = $conn->prepare("DELETE FROM landing_brochures WHERE id=?");
+      $stmt->bind_param('i', $id);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Brochure deleted successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to delete brochure: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('brochure-management-section'));
+      exit;
+    }
+
+    if ($action === 'add_discount_rule') {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('discount-management-section'), 'You do not have permission to manage discount rules');
+
+      $code = strtolower(trim((string) ($_POST['code'] ?? '')));
+      $label = trim((string) ($_POST['label'] ?? ''));
+      $description = trim((string) ($_POST['description'] ?? ''));
+      $percentage = max(0, min(100, (float) ($_POST['percentage'] ?? 0)));
+      $accepted = isset($_POST['accepted_id_types']) && is_array($_POST['accepted_id_types']) ? array_values(array_filter(array_map('strval', $_POST['accepted_id_types']))) : [];
+      $keywordsRaw = trim((string) ($_POST['keywords'] ?? ''));
+      $keywords = $keywordsRaw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $keywordsRaw))));
+
+      if ($code === '' || $label === '') {
+        $_SESSION['error_message'] = 'Discount code and label are required.';
+        header('Location: ' . admin_dashboard_url('discount-management-section'));
+        exit;
+      }
+
+      $accepted_json = json_encode($accepted);
+      $keywords_json = json_encode($keywords);
+      $stmt = $conn->prepare("INSERT INTO discount_rules (code, label, description, percentage, accepted_id_types, keywords, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)");
+      $stmt->bind_param('sssdss', $code, $label, $description, $percentage, $accepted_json, $keywords_json);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Discount rule added successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to add discount rule: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('discount-management-section'));
+      exit;
+    }
+
+    if ($action === 'update_discount_rule' && isset($_POST['id'])) {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('discount-management-section'), 'You do not have permission to manage discount rules');
+
+      $id = (int) $_POST['id'];
+      $code = strtolower(trim((string) ($_POST['code'] ?? '')));
+      $label = trim((string) ($_POST['label'] ?? ''));
+      $description = trim((string) ($_POST['description'] ?? ''));
+      $percentage = max(0, min(100, (float) ($_POST['percentage'] ?? 0)));
+      $accepted = isset($_POST['accepted_id_types']) && is_array($_POST['accepted_id_types']) ? array_values(array_filter(array_map('strval', $_POST['accepted_id_types']))) : [];
+      $keywordsRaw = trim((string) ($_POST['keywords'] ?? ''));
+      $keywords = $keywordsRaw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $keywordsRaw))));
+      $is_active = isset($_POST['is_active']) ? 1 : 0;
+
+      $accepted_json = json_encode($accepted);
+      $keywords_json = json_encode($keywords);
+      $stmt = $conn->prepare("UPDATE discount_rules SET code=?, label=?, description=?, percentage=?, accepted_id_types=?, keywords=?, is_active=? WHERE id=?");
+      $stmt->bind_param('sssdssii', $code, $label, $description, $percentage, $accepted_json, $keywords_json, $is_active, $id);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Discount rule updated successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to update discount rule: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('discount-management-section'));
+      exit;
+    }
+
+    if ($action === 'delete_discount_rule' && isset($_POST['id'])) {
+      require_once __DIR__ . '/../../database/role_check.php';
+      page_require_roles(['manager', 'super_admin'], admin_dashboard_url('discount-management-section'), 'You do not have permission to manage discount rules');
+
+      $id = (int) $_POST['id'];
+      $stmt = $conn->prepare("DELETE FROM discount_rules WHERE id=?");
+      $stmt->bind_param('i', $id);
+      if ($stmt->execute()) {
+        $_SESSION['success_message'] = 'Discount rule deleted successfully.';
+      } else {
+        $_SESSION['error_message'] = 'Failed to delete discount rule: ' . $stmt->error;
+      }
+      $stmt->close();
+      header('Location: ' . admin_dashboard_url('discount-management-section'));
+      exit;
+    }
+  }
+
+  // ADD ITEM
+  if (isset($_POST['add_item'])) {
+    // Only managers and super_admin can add rooms/facilities
+    require_once __DIR__ . '/../../database/role_check.php';
+    page_require_roles(['manager', 'super_admin'], admin_dashboard_url('rooms'), 'You do not have permission to add rooms or facilities');
+
+    // --- Preflight: ensure PHP ini limits allow our desired 20MB uploads ---
+    /**
+     * Convert php.ini shorthand (e.g. '2M', '512K') to bytes
+     * @param string|int $size
+     * @return int bytes
+     */
+    function php_size_to_bytes($size)
+    {
+      if (is_numeric($size))
+        return (int) $size;
+      $unit = strtolower(substr($size, -1));
+      $bytes = (float) rtrim($size, 'bBkKmMgG');
+      switch ($unit) {
+        case 'g':
+          $bytes *= 1024;
+        case 'm':
+          $bytes *= 1024;
+        case 'k':
+          $bytes *= 1024;
+      }
+      return (int) $bytes;
+    }
+
+    $required_bytes = 20 * 1024 * 1024; // 20MB
+    $ini_upload_max = ini_get('upload_max_filesize');
+    $ini_post_max = ini_get('post_max_size');
+    $upload_max_bytes = php_size_to_bytes($ini_upload_max);
+    $post_max_bytes = php_size_to_bytes($ini_post_max);
+
+    if ($upload_max_bytes < $required_bytes || $post_max_bytes < $required_bytes) {
+      // Compose friendly message with tips for sysadmin
+      $msg = "Server PHP limits prevent uploads of 20MB. " .
+        "Current settings: upload_max_filesize={$ini_upload_max}, post_max_size={$ini_post_max}. ";
+      $msg .= "Ask your host to increase both to at least 20M (php.ini: upload_max_filesize=20M; post_max_size=20M). ";
+      $msg .= "If using PHP-FPM, restart the service after changing php.ini. For shared hosts you may be able to set this via .htaccess or a .user.ini file.\n";
+
+      error_log("Upload preflight blocked: " . $msg);
+      $_SESSION['error_message'] = $msg;
+      header('Location: ' . admin_dashboard_url('rooms'));
+      exit;
+    }
+
+    // DEBUG: Log incoming POST and FILES data
+    error_log("=== ADD ITEM DEBUG START ===");
+    error_log("POST data: " . print_r($_POST, true));
+    error_log("FILES data: " . print_r($_FILES, true));
+    error_log("Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'not set'));
+
+    $name = trim($_POST['name']);
+    // Normalize item type server-side to canonical values
+    $type = normalize_item_type($_POST['item_type'] ?? 'room');
+    $room_number = !empty($_POST['room_number']) ? trim($_POST['room_number']) : null;
+    $description = !empty($_POST['description']) ? trim($_POST['description']) : null;
+    $capacity = intval($_POST['capacity'] ?? 0);
+    $price = floatval($_POST['price'] ?? 0);
+
+
+
+
+    // Handle multiple image uploads
+    $uploaded_images = [];
+    error_log("Checking for image uploads...");
+
+    if (isset($_FILES['images']) && is_array($_FILES['images']['name'])) {
+      $file_count = count($_FILES['images']['name']);
+      error_log("Multiple images detected: $file_count files");
+
+      if ($file_count > 10) {
+        $_SESSION['error_message'] = "Maximum 10 images allowed.";
+        header('Location: ' . admin_dashboard_url('rooms'));
+        exit;
+      }
+
+      for ($i = 0; $i < $file_count; $i++) {
+        if (empty($_FILES['images']['name'][$i]) || $_FILES['images']['error'][$i] === UPLOAD_ERR_NO_FILE) {
+          continue;
+        }
+
+        if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
+          $errCode = $_FILES['images']['error'][$i];
+          error_log("Image $i upload error code: " . $errCode);
+          continue;
+        }
+
+        // Validate file size (max 20MB per image)
+        $max_file_size = 20 * 1024 * 1024;
+        if ($_FILES['images']['size'][$i] > $max_file_size) {
+          error_log("Image $i too large: " . $_FILES['images']['size'][$i] . " bytes");
+          continue;
+        }
+
+        $target_dir = project_upload_dir();
+        if (!file_exists($target_dir)) {
+          mkdir($target_dir, 0755, true);
+        }
+
+        $file_extension = strtolower(pathinfo($_FILES["images"]["name"][$i], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (in_array($file_extension, $allowed_extensions)) {
+          $image_info = @getimagesize($_FILES["images"]["tmp_name"][$i]);
+          if ($image_info === false) {
+            error_log("Image $i invalid - not a real image");
+            continue;
+          }
+
+          $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+          if (!in_array($image_info['mime'], $allowed_mime_types)) {
+            error_log("Image $i invalid MIME type: " . $image_info['mime']);
+            continue;
+          }
+
+          $unique_filename = time() . "_" . uniqid() . "_$i." . $file_extension;
+          $target_file = $target_dir . $unique_filename;
+
+          if (move_uploaded_file($_FILES["images"]["tmp_name"][$i], $target_file)) {
+            chmod($target_file, 0644);
+            $uploaded_images[] = "uploads/" . $unique_filename;
+            error_log("Image $i uploaded successfully: uploads/$unique_filename");
+          }
+        }
+      }
+    }
+
+    // Legacy single image upload support (if using old form)
+    $image_path = null;
+    if (empty($uploaded_images) && !empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+      error_log("Legacy single image upload detected");
+    } elseif (!empty($_FILES['image']['name']) && $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+      $errCode = $_FILES['image']['error'];
+      error_log("Image upload error code: " . $errCode);
+      $upload_errors = [
+        UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+        UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+        UPLOAD_ERR_PARTIAL => 'File partially uploaded',
+        UPLOAD_ERR_NO_FILE => 'No file uploaded',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing temp directory',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write to disk',
+        UPLOAD_ERR_EXTENSION => 'PHP extension stopped upload'
+      ];
+      $human = ($upload_errors[$errCode] ?? 'Unknown error');
+      error_log("Upload error: " . $human);
+
+      // If the error is related to server limits, provide a clear admin-facing message
+      if (in_array($errCode, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+        $ini_upload_max = ini_get('upload_max_filesize');
+        $ini_post_max = ini_get('post_max_size');
+        $msg = "Upload failed: {$human}. Server settings: upload_max_filesize={$ini_upload_max}, post_max_size={$ini_post_max}. ";
+        $msg .= "Increase both values to at least 20M (php.ini: upload_max_filesize=20M; post_max_size=20M). " .
+          "If using PHP-FPM, restart the service after changing php.ini. For shared hosts you can try a .user.ini or .htaccess with php_value settings if allowed.";
+        error_log("Upload limit error: " . $msg);
+        $_SESSION['error_message'] = $msg;
+        header('Location: ' . admin_dashboard_url('rooms'));
+        exit;
+      }
+    }
+
+    if (!empty($_FILES['image']['name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+      error_log("Image file received: " . $_FILES['image']['name'] . " (" . $_FILES['image']['size'] . " bytes)");
+
+      // Security: Validate file size (max 20MB)
+      $max_file_size = 20 * 1024 * 1024; // 20MB in bytes
+      if ($_FILES['image']['size'] > $max_file_size) {
+        error_log("File too large: " . $_FILES['image']['size'] . " bytes");
+        $_SESSION['error_message'] = "Image file is too large. Maximum size is 20MB.";
+        header('Location: ' . admin_dashboard_url('rooms'));
+        exit;
+      }
+
+      $target_dir = project_upload_dir();
+      if (!file_exists($target_dir)) {
+        error_log("Creating uploads directory: $target_dir");
+        if (!mkdir($target_dir, 0755, true)) {
+          error_log("FAILED to create uploads directory!");
+          $_SESSION['error_message'] = "Upload directory does not exist and could not be created. Contact administrator.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+        error_log("Uploads directory created successfully");
+      }
+
+      // Verify directory is writable
+      if (!is_writable($target_dir)) {
+        error_log("Uploads directory is NOT writable: $target_dir");
+        error_log("Directory permissions: " . substr(sprintf('%o', fileperms($target_dir)), -4));
+        $_SESSION['error_message'] = "Upload directory is not writable. Contact administrator.";
+        header('Location: ' . admin_dashboard_url('rooms'));
+        exit;
+      }
+
+      // Generate unique filename
+      $file_extension = strtolower(pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION));
+      $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+      if (in_array($file_extension, $allowed_extensions)) {
+        // Security: Verify it's actually an image using getimagesize
+        $image_info = @getimagesize($_FILES["image"]["tmp_name"]);
+        if ($image_info === false) {
+          error_log("Invalid image file - not a real image");
+          $_SESSION['error_message'] = "Invalid image file. Please upload a valid image.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+
+        // Security: Verify MIME type
+        $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($image_info['mime'], $allowed_mime_types)) {
+          error_log("Invalid MIME type: " . $image_info['mime']);
+          $_SESSION['error_message'] = "Invalid image format. Please upload JPG, PNG, GIF, or WebP.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+
+        $unique_filename = time() . "_" . uniqid() . "." . $file_extension;
+        $target_file = $target_dir . $unique_filename;
+
+        error_log("Attempting to move uploaded file from: " . $_FILES["image"]["tmp_name"] . " to: " . $target_file);
+
+        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+          // Security: Set restrictive file permissions
+          chmod($target_file, 0644);
+
+          // Store relative path from root
+          $image_path = "uploads/" . $unique_filename;
+          error_log("Image uploaded successfully: $image_path (full path: $target_file)");
+        } else {
+          error_log("Failed to move uploaded file to: $target_file");
+          error_log("Target directory exists: " . (is_dir($target_dir) ? 'YES' : 'NO'));
+          error_log("Target directory writable: " . (is_writable($target_dir) ? 'YES' : 'NO'));
+          error_log("Temp file exists: " . (file_exists($_FILES["image"]["tmp_name"]) ? 'YES' : 'NO'));
+          $_SESSION['error_message'] = "Failed to upload image. Please try again.";
+          header('Location: ' . admin_dashboard_url('rooms'));
+          exit;
+        }
+      } else {
+        error_log("Invalid file extension: $file_extension");
+        $_SESSION['error_message'] = "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.";
+        header('Location: ' . admin_dashboard_url('rooms'));
+        exit;
+      }
+    }
+
+    // Insert with default room_status = 'available'
+    // Prepare images JSON
+    $images_json = null;
+    if (!empty($uploaded_images)) {
+      $images_json = json_encode($uploaded_images);
+      error_log("Preparing to insert item with " . count($uploaded_images) . " images");
+    } elseif (!empty($image_path)) {
+      // Legacy single image
+      $images_json = json_encode([$image_path]);
+      error_log("Preparing to insert item with single legacy image: " . $image_path);
+    }
+
+    // Handle addons for new item (optional)
+    $addons_json = null;
+    if (!empty($_POST['addons_json'])) {
+      $tmp = json_decode($_POST['addons_json'], true);
+      if (json_last_error() === JSON_ERROR_NONE) {
+        $addons_json = json_encode($tmp);
+      } else {
+        error_log('Invalid addons_json supplied in add: ' . $_POST['addons_json']);
+      }
+    }
+
+    if ($addons_json !== null) {
+      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, images, addons, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
+      $stmt->bind_param("ssssidsss", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json, $addons_json);
+    } else {
+      $stmt = $conn->prepare("INSERT INTO items (name, item_type, room_number, description, capacity, price, image, images, room_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available', NOW())");
+      $stmt->bind_param("ssssidss", $name, $type, $room_number, $description, $capacity, $price, $image_path, $images_json);
+    }
+
+    if ($stmt->execute()) {
+      $new_item_id = $conn->insert_id;
+      error_log("New item added successfully: ID=$new_item_id, Name=$name, Type=$type, Capacity=$capacity, Price=$price, Image=$image_path");
+      error_log("=== ADD ITEM DEBUG END (SUCCESS) ===");
+      $_SESSION['success_message'] = "Item added successfully!";
+    } else {
+      error_log("Failed to insert item: " . $stmt->error);
+      error_log("=== ADD ITEM DEBUG END (FAILED) ===");
+      $_SESSION['error_message'] = "Failed to add item: " . $stmt->error;
+    }
+
+    $stmt->close();
+    header('Location: ' . admin_dashboard_url('rooms'));
+    exit;
+  }
+}
+
+// ------------------ DASHBOARD DATA ------------------
+// Total Rooms
+$total_rooms_result = $conn->query("SELECT COUNT(*) AS count FROM items WHERE item_type='room'");
+$total_rooms = $total_rooms_result->fetch_assoc()['count'];
+
+// Total Facilities
+$total_facilities_result = $conn->query("SELECT COUNT(*) AS count FROM items WHERE item_type='facility'");
+$total_facilities = $total_facilities_result->fetch_assoc()['count'];
+
+// Active Bookings
+$active_bookings = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='approved'")->fetch_assoc()['count'];
+
+// Pending Approvals
+$pending_approvals = $conn->query("SELECT COUNT(*) AS count FROM bookings WHERE status='pending'")->fetch_assoc()['count'];
+
+// Total Revenue (only verified payments, excluding cancelled/rejected bookings)
+$total_revenue_result = $conn->query("SELECT COALESCE(SUM(COALESCE(amount, 0)), 0) as revenue FROM bookings WHERE payment_status = 'verified' AND status NOT IN ('cancelled', 'rejected')");
+$total_revenue = $total_revenue_result->fetch_assoc()['revenue'] ?? 0;
+
+// Monthly bookings for chart (last 12 months)
+$monthly_bookings = [];
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM bookings WHERE DATE_FORMAT(created_at, '%Y-%m') = ?");
+for ($i = 11; $i >= 0; $i--) {
+  $month = date('Y-m', strtotime("-$i months"));
+  $month_name = date('M Y', strtotime("-$i months"));
+  $stmt->bind_param('s', $month);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $count = $result ? $result->fetch_assoc()['count'] : 0;
+  $monthly_bookings[] = ['month' => $month_name, 'count' => (int) $count];
+}
+$stmt->close();
+
+// Booking status distribution
+$status_distribution = [];
+$statuses = ['pending', 'approved', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'rejected'];
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM bookings WHERE status = ?");
+foreach ($statuses as $status) {
+  $stmt->bind_param('s', $status);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $count = $result ? $result->fetch_assoc()['count'] : 0;
+  $status_distribution[$status] = (int) $count;
+}
+$stmt->close();
+
+// Additional booking statistics
+$total_bookings = array_sum($status_distribution);
+$active_bookings_count = $status_distribution['approved'] + $status_distribution['confirmed'] + $status_distribution['checked_in'];
+$pending_bookings_count = $status_distribution['pending'];
+$completed_bookings_count = $status_distribution['checked_out'];
+
+// Feedback Statistics - REMOVED (Guest Satisfaction section removed from overview)
+// Calculations removed to improve performance since they're no longer displayed
+
+// Calendar Events for JavaScript
+$events = [];
+$bookings_query = "SELECT b.*, i.name as item_name, i.item_type, i.room_number
+                 FROM bookings b 
+                 LEFT JOIN items i ON b.room_id = i.id
+                 WHERE b.status IN ('approved', 'confirmed', 'checked_in', 'checked_out', 'pending')
+                 AND b.checkin >= CURDATE() - INTERVAL 7 DAY
+                 AND b.checkin <= CURDATE() + INTERVAL 30 DAY
+                 ORDER BY b.checkin ASC";
+$bookings_result = $conn->query($bookings_query);
+
+$room_events = [];
+if ($bookings_result && $bookings_result->num_rows > 0) {
+  while ($booking = $bookings_result->fetch_assoc()) {
+    $item_name = $booking['item_name'] ? $booking['item_name'] : 'Unassigned Room/Facility';
+    $room_number = $booking['room_number'] ? '#' . $booking['room_number'] : '';
+    $item_type = $booking['item_type'] ?: 'room';
+    $guest = 'Guest';
+    $status = $booking['status'];
+    $display_title = $item_name . $room_number . ' - ' . $guest;
+
+    // Color based on status
+    $color = '#28a745'; // green for approved/confirmed
+    if ($status == 'checked_in')
+      $color = '#0d6efd'; // blue (primary)
+    if ($status == 'checked_out')
+      $color = '#6f42c1'; // purple
+    if ($status == 'pending')
+      $color = '#fd7e14'; // orange (warning)
+
+    $room_events[] = [
+      'id' => 'booking-' . $booking['id'],
+      'title' => $display_title,
+      'start' => $booking['checkin'],
+      'end' => date('Y-m-d', strtotime($booking['checkout'] . ' +1 day')),
+      'backgroundColor' => $color,
+      'borderColor' => $color,
+      'textColor' => '#ffffff',
+      'extendedProps' => [
+        'itemName' => $item_name,
+        'roomNumber' => $booking['room_number'] ?: '',
+        'itemType' => $item_type,
+        'guest' => $guest,
+        'status' => $status,
+        'checkin' => $booking['checkin'],
+        'checkout' => $booking['checkout'],
+        'roomId' => $booking['room_id'] ?: null
+      ]
+    ];
+  }
+}
+?>

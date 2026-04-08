@@ -66,7 +66,7 @@ Contains all client-side JavaScript functionality organized by section.
 
 ### Core Scripts
 
-- **`toast-notification.js`** - Toast notification system for user feedback
+- **`popup-manager.js`** - Unified popup system (confirm, error, loading, success) with toast compatibility
 - **`page-state-manager.js`** - Page state persistence and management
 - **`admin-management-enhanced.js`** - Enhanced admin management features
 
@@ -113,7 +113,10 @@ Landing page functionality:
 4. Use CSS custom properties (variables) for consistency
 
 ```html
-<link rel="stylesheet" href="assets/css/your-style.css?v=<?php echo $css_version; ?>">
+<link
+  rel="stylesheet"
+  href="assets/css/your-style.css?v=<?php echo $css_version; ?>"
+/>
 ```
 
 ### Adding New Images
@@ -124,7 +127,7 @@ Landing page functionality:
 4. Update image paths in relevant components
 
 ```html
-<img src="assets/images/category/your-image.jpg" alt="Description">
+<img src="assets/images/category/your-image.jpg" alt="Description" />
 ```
 
 ### Adding New JavaScript
@@ -141,12 +144,14 @@ Landing page functionality:
 ## 📝 Best Practices
 
 ### CSS
+
 - Use BEM naming convention for classes
 - Keep specificity low
 - Use CSS variables for colors and spacing
 - Comment complex selectors
 
 ### JavaScript
+
 - Use ES6+ features
 - Keep functions pure and modular
 - Handle errors appropriately
@@ -154,6 +159,7 @@ Landing page functionality:
 - Add JSDoc comments for functions
 
 ### Images
+
 - Always include alt text
 - Use responsive images when possible
 - Lazy load images below the fold

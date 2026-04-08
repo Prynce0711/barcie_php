@@ -20,3 +20,9 @@ uploads/*
 !uploads/.gitkeep
 uploads/items/*
 !uploads/items/.gitkeep
+
+# Local environment files
+.env.local
+
+# Tailwind CSS build output
+dist/

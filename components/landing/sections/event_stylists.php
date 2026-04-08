@@ -1,23 +1,43 @@
 <?php
-// Partner Event Stylists section partial
+require_once __DIR__ . '/../../../database/db_connect.php';
+
+$partners = [];
+$result = $conn->query("SELECT name, facebook_url, phones, image_path FROM landing_partners WHERE category = 'event_stylist' AND is_active = 1 ORDER BY sort_order ASC, id ASC");
+if ($result) {
+  while ($row = $result->fetch_assoc()) {
+    $partners[] = $row;
+  }
+  $result->free();
+}
 ?>
 <section id="event-stylists" class="partners-section section-padding">
   <div class="container">
     <h2 class="section-title text-center mb-5">Partner Event Stylists</h2>
 
     <div class="row partners-grid g-4">
-      <!-- house of brides -->
-      <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <div class="card glass-card h-100">
-          <div class="partner-logo-wrap">
-            <img src="assets/images/Caterings/house of brides.jpg" class="card-img-top" alt="House of Brides">
-          </div>
-          <div class="card-body">
-            <h5 class="card-title partner-title"><a href="https://www.facebook.com/hobevents" target="_blank" rel="noopener">House of Brides</a></h5>
-            <p class="partner-phones mb-0">0915 865 8973</p>
+      <?php foreach ($partners as $partner): ?>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+          <div class="card glass-card h-100">
+            <div class="partner-logo-wrap">
+              <img
+                src="<?php echo htmlspecialchars($partner['image_path'] ?: 'public/images/imageBg/barcie_logo.jpg'); ?>"
+                class="card-img-top" alt="<?php echo htmlspecialchars($partner['name']); ?>">
+            </div>
+            <div class="card-body">
+              <h5 class="card-title partner-title">
+                <?php if (!empty($partner['facebook_url'])): ?>
+                  <a href="<?php echo htmlspecialchars($partner['facebook_url']); ?>" target="_blank"
+                    rel="noopener"><?php echo htmlspecialchars($partner['name']); ?></a>
+                <?php else: ?>
+                  <?php echo htmlspecialchars($partner['name']); ?>
+                <?php endif; ?>
+              </h5>
+              <p class="partner-phones mb-0"><?php echo nl2br(htmlspecialchars((string) ($partner['phones'] ?? ''))); ?>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      <?php endforeach; ?>
 
     </div>
   </div>

@@ -1,6 +1,6 @@
 <?php
 // Include data processing logic
-require_once __DIR__ . '/components/dashboard/data_processing.php';
+require_once __DIR__ . '/Components/Admin/data_processing.php';
 ?>
 
 <!DOCTYPE html>
@@ -8,83 +8,61 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=yes">
   <meta name="theme-color" content="#3b82f6">
-  <link rel="icon" type="image/png" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/png" href="public/images/imageBg/barcie_logo.jpg">
   <title>Admin Dashboard</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-  <!-- FullCalendar CSS & JS -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="assets/css/dashboard.css">
-  <link rel="stylesheet" href="assets/css/dashboard-enhancements.css">
+  <link rel="stylesheet" href="Components/Admin/dashboard.css">
+
+  <!-- Tailwind CSS (compiled via CLI from src/css/admin.css) -->
+  <?php if (file_exists(__DIR__ . '/dist/css/admin.css')): ?>
+    <link rel="stylesheet" href="dist/css/admin.css">
+  <?php else: ?>
+    <link rel="stylesheet" href="Components/Admin/admin-tw-base.css">
+  <?php endif; ?>
   <link rel="stylesheet" href="assets/css/mobile-responsive.css">
   <link rel="stylesheet" href="assets/css/page-state.css">
-  <link rel="stylesheet" href="assets/css/news.css">
-  <link rel="stylesheet" href="assets/css/reports.css">
-  <!-- Enhanced Admin Management Styles -->
-  <link rel="stylesheet" href="assets/css/admin-online-status.css">
+  <link rel="stylesheet" href="Components/Admin/News/news.css">
+  <link rel="stylesheet" href="Components/Admin/Reports/reports.css">
+  <link rel="stylesheet" href="Components/Admin/AccountManagement/admin-online-status.css">
 </head>
 
 
 <body>
 
+  <?php
+  $flashSuccessMessage = $_SESSION['success_message'] ?? null;
+  $flashErrorMessage = $_SESSION['error_message'] ?? null;
+  unset($_SESSION['success_message'], $_SESSION['error_message']);
+  ?>
 
-
-
-  <!-- Mobile Menu Toggle -->
   <button class="mobile-menu-toggle d-lg-none" onclick="toggleSidebar()">
     <i class="fas fa-bars"></i>
   </button>
 
-  <!-- Sidebar -->
-  <?php include 'components/dashboard/sidebar.php'; ?>
+  <?php include __DIR__ . '/Components/Admin/sidebar.php'; ?>
 
-
-
-  <!-- Main Content -->
   <div class="main-content">
     <div class="container-fluid px-2" style="max-width: 100%;">
-      <div class="row">
-        <div class="col-12">
-          <?php if (isset($_SESSION['success_message'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-              <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($_SESSION['success_message']) ?>
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['success_message']); ?>
-          <?php endif; ?>
-          
-          <?php if (isset($_SESSION['error_message'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-              <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($_SESSION['error_message']) ?>
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['error_message']); ?>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <!-- Dashboard Section -->
       <section id="dashboard-section" class="content-section active d-block">
-  <?php include 'components/dashboard/sections/dashboard_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Dashboard/dashboard_section.php'; ?>
       </section>
 
       <?php
-      // Load booking events for calendar
+
       $events = [];
 
-      // Safe query - no user input (status is hardcoded)
       $calendar_query = "SELECT b.* FROM bookings b WHERE b.status != 'rejected' ORDER BY b.id DESC";
       $result = $conn->query($calendar_query);
 
@@ -92,7 +70,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         while ($row = $result->fetch_assoc()) {
           $room_facility = 'Booking #' . $row['id'];
 
-          // Try to extract guest name from details
+
           if (strpos($row['details'], 'Guest:') !== false) {
             $parts = explode('|', $row['details']);
             foreach ($parts as $part) {
@@ -174,9 +152,9 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         console.log("📊 Dashboard data initialized");
         // Current admin info exposed to frontend
         window.currentAdmin = <?php echo json_encode([
-            'id' => $_SESSION['admin_id'] ?? null,
-            'username' => $_SESSION['admin_username'] ?? null,
-            'role' => $_SESSION['admin_role'] ?? 'staff'
+          'id' => $_SESSION['admin_id'] ?? null,
+          'username' => $_SESSION['admin_username'] ?? null,
+          'role' => $_SESSION['admin_role'] ?? 'staff'
         ]); ?>;
       </script>
 
@@ -184,50 +162,69 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
       <!-- Calendar & Rooms Section -->
       <section id="calendar-section" class="content-section">
-        <?php include 'components/dashboard/sections/calendar_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Calendar/calendar_section.php'; ?>
       </section>
 
       <section id="rooms-section" class="content-section">
-        <?php include 'components/dashboard/sections/rooms_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/rooms_section.php'; ?>
       </section>
 
       <!-- Bookings Management -->
       <section id="bookings-section" class="content-section">
-        <?php include 'components/dashboard/sections/bookings_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Booking/BookingsSection.php'; ?>
       </section>
-    
+
+      <!-- Pencil Bookings Management (independent from bookings) -->
+      <section id="pencil-bookings-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/Booking/PencilBookManagement.php'; ?>
+      </section>
+
 
       <!-- Feedback Section -->
       <section id="feedback-section" class="content-section">
-        <?php include 'components/dashboard/sections/feedback_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Feedback/feedback_section.php'; ?>
       </section>
- 
+
       <!-- News & Updates Section -->
       <section id="news-section" class="content-section">
-        <?php include 'components/dashboard/sections/news_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/News/news_section.php'; ?>
+      </section>
+
+      <section id="partners-management-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/Partners/partners_management_section.php'; ?>
+      </section>
+
+      <section id="brochure-management-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/Brochure/brochure_management_section.php'; ?>
+      </section>
+
+      <section id="discount-management-section" class="content-section">
+        <?php include __DIR__ . '/Components/Admin/DiscountManagement/discount_management_section.php'; ?>
       </section>
 
       <!-- Payment Verification Section -->
       <section id="payment-verification-section" class="content-section">
-        <?php include 'components/dashboard/sections/payment_verification.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Booking/PaymentVerification.php'; ?>
       </section>
 
       <!-- Reports & Analytics Section -->
       <section id="reports-section" class="content-section">
-        <?php include 'components/dashboard/sections/reports_section.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/Reports/reports_section.php'; ?>
       </section>
 
       <!-- Admin Management Section (Manage Roles) -->
       <section id="admin-management-section" class="content-section">
-        <?php include 'components/dashboard/sections/admin_management_enhanced.php'; ?>
+        <?php include __DIR__ . '/Components/Admin/AccountManagement/admin_management_enhanced.php'; ?>
       </section>
 
-      
 
-      <!-- Footer -->
+
+      <!-- Footer
       <div class="footer">
         <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
-      </div>
+      </div> -->
+
+      <?php require_once __DIR__ . '/Components/Admin/footer.php'; ?>
 
 
 
@@ -307,7 +304,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
 
             // Initialize edit forms directly
             if (typeof setupEditFormToggles === 'function') {
-              setupEditFormToggles(); 
+              setupEditFormToggles();
             }
 
             // Debug: log all edit buttons and forms found
@@ -336,133 +333,202 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       </script>
 
       <!-- Load JavaScript files at the end of body for better performance -->
-  <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
-  <?php include 'components/dashboard/sections/add_item_modal.php'; ?>
-  <?php include 'components/dashboard/sections/edit_item_modal.php'; ?>
-  
-  <!-- Include Admin Management Modals at page bottom so they're always accessible -->
-  <?php include 'components/dashboard/sections/modals/admin_auth_modal.php'; ?>
-  <?php include 'components/dashboard/sections/modals/add_admin_modal.php'; ?>
-  <?php include 'components/dashboard/sections/modals/edit_admin_modal.php'; ?>
-  
-  <!-- Delete Admin Confirmation Modal (header styled blue for modal theme consistency) -->
-  <div class="modal fade" id="deleteAdminModal" tabindex="-1" aria-labelledby="deleteAdminModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title" id="deleteAdminModalLabel">
-            <i class="fas fa-exclamation-triangle me-2"></i>Delete Administrator
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>Are you sure you want to delete admin <strong id="delete-admin-username"></strong>?</p>
-          <p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>This action cannot be undone!</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteAdmin">
-            <i class="fas fa-trash me-2"></i>Delete Admin
-          </button>
+      <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
+      <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/add_item_modal.php'; ?>
+      <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/edit_item_modal.php'; ?>
+
+      <!-- Include Admin Management Modals at page bottom so they're always accessible -->
+      <?php include __DIR__ . '/Components/Admin/AccountManagement/admin_auth_modal.php'; ?>
+      <?php include __DIR__ . '/Components/Admin/AccountManagement/add_admin_modal.php'; ?>
+      <?php include __DIR__ . '/Components/Admin/AccountManagement/edit_admin_modal.php'; ?>
+
+      <!-- Delete Admin Confirmation Modal (header styled blue for modal theme consistency) -->
+      <div class="modal fade" id="deleteAdminModal" tabindex="-1" aria-labelledby="deleteAdminModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="deleteAdminModalLabel">
+                <i class="fas fa-exclamation-triangle me-2"></i>Delete Administrator
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Are you sure you want to delete admin <strong id="delete-admin-username"></strong>?</p>
+              <p class="text-danger"><i class="fas fa-exclamation-circle me-2"></i>This action cannot be undone!</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-danger" id="confirmDeleteAdmin">
+                <i class="fas fa-trash me-2"></i>Delete Admin
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Delete Admin Modal JavaScript -->
-  <script>
-  (function() {
-    let deleteAdminModal;
-    let adminToDelete = null;
+      <!-- Delete Admin Modal JavaScript -->
+      <script>
+        (function () {
+          let deleteAdminModal;
+          let adminToDelete = null;
 
-    document.addEventListener('DOMContentLoaded', function() {
-      const modalElement = document.getElementById('deleteAdminModal');
-      if (modalElement) {
-        deleteAdminModal = new bootstrap.Modal(modalElement);
-      }
-
-      // Confirm delete button
-      const confirmBtn = document.getElementById('confirmDeleteAdmin');
-      if (confirmBtn) {
-        confirmBtn.addEventListener('click', function() {
-          if (!adminToDelete) return;
-
-          const originalHtml = this.innerHTML;
-          this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
-          this.disabled = true;
-
-          const formData = new FormData();
-          formData.append('action', 'delete');
-          formData.append('admin_id', adminToDelete.id);
-
-          fetch('api/admin_management_enhanced.php', {
-            method: 'POST',
-            body: formData
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              if (typeof window.showAdminAlert === 'function') {
-                window.showAdminAlert('success', 'Admin deleted successfully!');
-              }
-              deleteAdminModal.hide();
-              if (typeof window.loadAdmins === 'function') {
-                window.loadAdmins();
-              }
-            } else {
-              if (typeof window.showAdminAlert === 'function') {
-                window.showAdminAlert('danger', data.message || 'Failed to delete admin');
-              } else {
-                alert(data.message || 'Failed to delete admin');
-              }
+          document.addEventListener('DOMContentLoaded', function () {
+            const modalElement = document.getElementById('deleteAdminModal');
+            if (modalElement) {
+              deleteAdminModal = new bootstrap.Modal(modalElement);
             }
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            if (typeof window.showAdminAlert === 'function') {
-              window.showAdminAlert('danger', 'Error deleting admin');
-            } else {
-              alert('Error deleting admin');
+
+            // Confirm delete button
+            const confirmBtn = document.getElementById('confirmDeleteAdmin');
+            if (confirmBtn) {
+              confirmBtn.addEventListener('click', function () {
+                if (!adminToDelete) return;
+
+                const originalHtml = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
+                this.disabled = true;
+
+                const formData = new FormData();
+                formData.append('action', 'delete');
+                formData.append('admin_id', adminToDelete.id);
+
+                fetch('api/AdminManagementEnhanced.php', {
+                  method: 'POST',
+                  body: formData
+                })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                      if (typeof window.showAdminAlert === 'function') {
+                        window.showAdminAlert('success', 'Admin deleted successfully!');
+                      }
+                      deleteAdminModal.hide();
+                      if (typeof window.loadAdmins === 'function') {
+                        window.loadAdmins();
+                      }
+                    } else {
+                      if (typeof window.showAdminAlert === 'function') {
+                        window.showAdminAlert('danger', data.message || 'Failed to delete admin');
+                      } else {
+                        window.showToast(data.message || 'Failed to delete admin', 'error');
+                      }
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Error:', error);
+                    if (typeof window.showAdminAlert === 'function') {
+                      window.showAdminAlert('danger', 'Error deleting admin');
+                    } else {
+                      window.showToast('Error deleting admin', 'error');
+                    }
+                  })
+                  .finally(() => {
+                    this.innerHTML = originalHtml;
+                    this.disabled = false;
+                    adminToDelete = null;
+                  });
+              });
             }
-          })
-          .finally(() => {
-            this.innerHTML = originalHtml;
-            this.disabled = false;
-            adminToDelete = null;
           });
-        });
-      }
-    });
 
-    // Global function to open delete modal
-    window.deleteAdmin = function(adminId, username) {
-      adminToDelete = { id: adminId, username: username };
-      document.getElementById('delete-admin-username').textContent = username;
-      deleteAdminModal.show();
-    };
-  })();
-  </script>
+          // Global function to open delete modal
+          window.deleteAdmin = function (adminId, username) {
+            adminToDelete = { id: adminId, username: username };
+            document.getElementById('delete-admin-username').textContent = username;
+            deleteAdminModal.show();
+          };
+        })();
+      </script>
+
+      <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>
+      <?php include __DIR__ . '/Components/Popup/ErrorPopup.php'; ?>
+      <?php include __DIR__ . '/Components/Popup/LoadingPopup.php'; ?>
+      <?php include __DIR__ . '/Components/Popup/SuccessPopup.php'; ?>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-      
+      <script src="Components/Popup/popup-manager.js"></script>
+      <script>
+        (function () {
+          const flashSuccessMessage = <?php echo json_encode($flashSuccessMessage); ?>;
+          const flashErrorMessage = <?php echo json_encode($flashErrorMessage); ?>;
+
+          if (flashSuccessMessage) {
+            if (typeof window.showSuccessPopup === 'function') {
+              window.showSuccessPopup(flashSuccessMessage, { title: 'Success' });
+            } else if (typeof window.showToast === 'function') {
+              window.showToast(flashSuccessMessage, 'success');
+            }
+          }
+
+          if (flashErrorMessage) {
+            if (typeof window.showErrorPopup === 'function') {
+              window.showErrorPopup(flashErrorMessage, { title: 'Error' });
+            } else if (typeof window.showToast === 'function') {
+              window.showToast(flashErrorMessage, 'error');
+            }
+          }
+
+          document.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if (form.dataset.popupAction !== 'true') return;
+            if (form.dataset.submitting === 'true') return;
+
+            const confirmMessage = form.dataset.confirmMessage || '';
+            if (confirmMessage) {
+              event.preventDefault();
+              if (typeof window.showConfirm === 'function') {
+                window.showConfirm(confirmMessage, {
+                  title: 'Confirm Action',
+                  confirmText: 'Yes, continue',
+                  cancelText: 'Cancel',
+                  confirmClass: 'btn-danger'
+                }).then(function (confirmed) {
+                  if (!confirmed) return;
+                  form.dataset.confirmMessage = '';
+                  form.requestSubmit();
+                });
+              } else if (window.confirm(confirmMessage)) {
+                form.dataset.confirmMessage = '';
+                form.requestSubmit();
+              }
+              return;
+            }
+
+            form.dataset.submitting = 'true';
+            if (typeof window.showLoadingPopup === 'function') {
+              window.showLoadingPopup('Processing your request...');
+            }
+          }, true);
+        })();
+      </script>
+      <script src="Components/Table/table.js"></script>
+
       <!-- Page State Manager - Load FIRST -->
       <script src="assets/js/page-state-manager.js"></script>
-      
+
       <!-- Dashboard JavaScript files -->
-      <script src="assets/js/dashboard/dashboard-bootstrap.js" onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
-      <script src="assets/js/dashboard/calendar-section.js" onerror="console.error('❌ Failed to load calendar-section.js')"></script>
-      <script src="assets/js/dashboard/rooms-section.js" onerror="console.error('❌ Failed to load rooms-section.js')"></script>
-      <script src="assets/js/dashboard/bookings-section.js" onerror="console.error('❌ Failed to load bookings-section.js')"></script>
-      <script src="assets/js/dashboard/news-section.js" onerror="console.error('❌ Failed to load news-section.js')"></script>
-      <script src="assets/js/dashboard/mobile-enhancements.js" onerror="console.error('❌ Failed to load mobile-enhancements.js')"></script>
-      <script src="assets/js/verify-structure.js" onerror="console.error('❌ Failed to load verify-structure.js')"></script>
-      
+      <script src="Components/Admin/Dashboard/dashboard-bootstrap.js"
+        onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
+      <script src="Components/Admin/Calendar/calendar-section.js"
+        onerror="console.error('❌ Failed to load calendar-section.js')"></script>
+      <script src="Components/Admin/RoomsAndFacilities/rooms-section.js"
+        onerror="console.error('❌ Failed to load rooms-section.js')"></script>
+      <script src="Components/Admin/Booking/BookingsSection.js"
+        onerror="console.error('❌ Failed to load bookings-section.js')"></script>
+      <script src="Components/Admin/News/news-section.js"
+        onerror="console.error('❌ Failed to load news-section.js')"></script>
+      <script src="Components/Admin/mobile-enhancements.js"
+        onerror="console.error('❌ Failed to load mobile-enhancements.js')"></script>
+
       <!-- Initialize dashboard with data after all scripts are loaded -->
       <script>
         console.log('📦 All scripts loaded, checking functions...');
-        console.log('  - setDashboardData:', typeof setDashboardData);
+        console.log('  - setDashboardData:', typeof window.setDashboardData);
         console.log('  - initializeCalendarNavigation:', typeof initializeCalendarNavigation);
         console.log('  - initializeRoomSearch:', typeof initializeRoomSearch);
         console.log('  - initializeRoomsFiltering:', typeof initializeRoomsFiltering);
@@ -470,10 +536,10 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         console.log('  - Chart:', typeof Chart);
 
         // Call setDashboardData if available
-        if (typeof setDashboardData === 'function') {
+        if (typeof window.setDashboardData === 'function') {
           console.log("✅ setDashboardData function found - initializing dashboard data");
           try {
-            setDashboardData(
+            window.setDashboardData(
               window.calendarEvents,
               window.monthlyBookingsData,
               window.statusDistributionData,
@@ -497,7 +563,7 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
           if (sidebar) {
             sidebar.classList.toggle('open');
           }
-          
+
           // Add overlay when sidebar is open on mobile
           let overlay = document.querySelector('.sidebar-overlay');
           if (!overlay) {
@@ -521,11 +587,14 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
         }
 
         // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
+        document.addEventListener('click', function (event) {
           const sidebar = document.querySelector('.sidebar');
           const toggleBtn = document.querySelector('.mobile-menu-toggle');
-          
+
           if (window.innerWidth < 992) {
+            if (!sidebar || !toggleBtn) {
+              return;
+            }
             if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
               sidebar.classList.remove('open');
               const overlay = document.querySelector('.sidebar-overlay');
@@ -540,10 +609,15 @@ require_once __DIR__ . '/components/dashboard/data_processing.php';
       </script>
 
       <!-- Enhanced Admin Management JavaScript -->
-      <script src="assets/js/admin-management-enhanced.js"></script>
+      <script src="Components/Admin/AccountManagement/admin-management-enhanced.js"></script>
 
       <!-- Reports & Analytics JavaScript -->
-      <script src="assets/js/dashboard/reports.js"></script>
+      <script src="Components/Admin/Reports/js/state.js"></script>
+      <script src="Components/Admin/Reports/js/utils.js"></script>
+      <script src="Components/Admin/Reports/js/charts.js"></script>
+      <script src="Components/Admin/Reports/js/updaters.js"></script>
+      <script src="Components/Admin/Reports/js/actions.js"></script>
+      <script src="Components/Admin/Reports/reports.js"></script>
 
 </body>
 
