@@ -3,10 +3,10 @@
 $candidateRoots = array_filter(array_unique([
   __DIR__,
   realpath(__DIR__) ?: '',
-  isset($_SERVER['DOCUMENT_ROOT']) ? rtrim((string)$_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) : '',
+  isset($_SERVER['DOCUMENT_ROOT']) ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) : '',
   isset($_SERVER['DOCUMENT_ROOT'])
-    ? rtrim((string)$_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename(__DIR__)
-    : '',
+  ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename(__DIR__)
+  : '',
 ]));
 
 $projectRoot = __DIR__;
