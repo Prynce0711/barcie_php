@@ -1,3 +1,35 @@
+<?php
+// Resolve project root for environments where the app may live in a subfolder.
+$candidateRoots = array_filter(array_unique([
+  __DIR__,
+  realpath(__DIR__) ?: '',
+  isset($_SERVER['DOCUMENT_ROOT']) ? rtrim((string)$_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) : '',
+  isset($_SERVER['DOCUMENT_ROOT'])
+    ? rtrim((string)$_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename(__DIR__)
+    : '',
+]));
+
+$projectRoot = __DIR__;
+foreach ($candidateRoots as $candidateRoot) {
+  if ($candidateRoot !== '' && is_dir($candidateRoot . DIRECTORY_SEPARATOR . 'Components')) {
+    $projectRoot = $candidateRoot;
+    break;
+  }
+}
+
+$componentRoot = $projectRoot . DIRECTORY_SEPARATOR . 'Components';
+$includeComponent = static function (string $relativePath) use ($componentRoot): void {
+  $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+  $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
+
+  if (!is_file($fullPath)) {
+    throw new RuntimeException('Missing component include: ' . $fullPath);
+  }
+
+  include $fullPath;
+};
+?>
+
 <!doctype html>
 <html lang="en">
 <meta charset="UTF-8">
@@ -7,32 +39,32 @@
 <link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
 
 
-<?php include __DIR__ . '/Components/Landing/head.php'; ?>
+<?php $includeComponent('Landing/head.php'); ?>
 
 <body class="overflow-x-hidden">
 
-  <?php include __DIR__ . '/Components/Landing/navigation.php'; ?>
+  <?php $includeComponent('Landing/navigation.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/hero.php'; ?>
+  <?php $includeComponent('Landing/sections/hero.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/about.php'; ?>
+  <?php $includeComponent('Landing/sections/about.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/vision_mission.php'; ?>
+  <?php $includeComponent('Landing/sections/vision_mission.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/news.php'; ?>
+  <?php $includeComponent('Landing/sections/news.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/event_stylists.php'; ?>
+  <?php $includeComponent('Landing/sections/event_stylists.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/caterings.php'; ?>
+  <?php $includeComponent('Landing/sections/caterings.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/brochure.php'; ?>
+  <?php $includeComponent('Landing/sections/brochure.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/sections/features.php'; ?>
+  <?php $includeComponent('Landing/sections/features.php'); ?>
 
 
-  <?php include __DIR__ . '/Components/Landing/sections/contact.php'; ?>
+  <?php $includeComponent('Landing/sections/contact.php'); ?>
 
-  <?php include __DIR__ . '/Components/Landing/footer.php'; ?>
+  <?php $includeComponent('Landing/footer.php'); ?>
 
   <?php
 
@@ -46,10 +78,10 @@
 
   <script src="Components/Landing/verify-components.js?v=<?php echo $v; ?>"></script>
 
-  <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>
-  <?php include __DIR__ . '/Components/Popup/ErrorPopup.php'; ?>
-  <?php include __DIR__ . '/Components/Popup/LoadingPopup.php'; ?>
-  <?php include __DIR__ . '/Components/Popup/SuccessPopup.php'; ?>
+  <?php $includeComponent('Popup/ConfirmPopup.php'); ?>
+  <?php $includeComponent('Popup/ErrorPopup.php'); ?>
+  <?php $includeComponent('Popup/LoadingPopup.php'); ?>
+  <?php $includeComponent('Popup/SuccessPopup.php'); ?>
 
 </body>
 
