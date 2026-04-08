@@ -1,20 +1,38 @@
 <?php
 // Resolve project root for environments where the app may live in a subfolder.
+$documentRoot = isset($_SERVER['DOCUMENT_ROOT'])
+  ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR)
+  : '';
+
 $candidateRoots = array_filter(array_unique([
   __DIR__,
   realpath(__DIR__) ?: '',
-  isset($_SERVER['DOCUMENT_ROOT']) ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) : '',
-  isset($_SERVER['DOCUMENT_ROOT'])
-  ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename(__DIR__)
-  : '',
+  $documentRoot,
+  getcwd() ?: '',
+  dirname(__DIR__),
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' : '',
 ]));
 
-$projectRoot = __DIR__;
+$projectRoot = '';
 foreach ($candidateRoots as $candidateRoot) {
-  if ($candidateRoot !== '' && is_dir($candidateRoot . DIRECTORY_SEPARATOR . 'Components')) {
+  if (is_dir($candidateRoot . DIRECTORY_SEPARATOR . 'Components')) {
     $projectRoot = $candidateRoot;
     break;
   }
+
+  // If the app is deployed as a child folder under the web root, detect it automatically.
+  if (is_dir($candidateRoot)) {
+    foreach ((glob($candidateRoot . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) ?: []) as $childDir) {
+      if (is_dir($childDir . DIRECTORY_SEPARATOR . 'Components')) {
+        $projectRoot = $childDir;
+        break 2;
+      }
+    }
+  }
+}
+
+if ($projectRoot === '') {
+  $projectRoot = __DIR__;
 }
 
 $componentRoot = $projectRoot . DIRECTORY_SEPARATOR . 'Components';
@@ -23,7 +41,8 @@ $includeComponent = static function (string $relativePath) use ($componentRoot):
   $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
 
   if (!is_file($fullPath)) {
-    throw new RuntimeException('Missing component include: ' . $fullPath);
+    trigger_error('Missing component include: ' . $fullPath, E_USER_WARNING);
+    return;
   }
 
   include $fullPath;
