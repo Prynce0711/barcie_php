@@ -1,41 +1,100 @@
 <?php
-// Resolve project root for environments where the app may live in a subfolder.
+/**
+ * Check whether a directory looks like this project root.
+ */
+$hasLandingHead = static function (string $root): bool {
+  $paths = [
+    $root . DIRECTORY_SEPARATOR . 'Components' . DIRECTORY_SEPARATOR . 'Landing' . DIRECTORY_SEPARATOR . 'head.php',
+    $root . DIRECTORY_SEPARATOR . 'components' . DIRECTORY_SEPARATOR . 'landing' . DIRECTORY_SEPARATOR . 'head.php',
+    $root . DIRECTORY_SEPARATOR . 'components' . DIRECTORY_SEPARATOR . 'Landing' . DIRECTORY_SEPARATOR . 'head.php',
+    $root . DIRECTORY_SEPARATOR . 'Components' . DIRECTORY_SEPARATOR . 'landing' . DIRECTORY_SEPARATOR . 'head.php',
+  ];
+
+  foreach ($paths as $path) {
+    if (is_file($path)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Breadth-first search for a root folder that contains the landing head component.
+ */
+$findProjectRoot = static function (array $baseDirs, int $maxDepth = 3) use ($hasLandingHead): string {
+  $skipNames = ['.', '..', '.git', 'node_modules', 'vendor'];
+  $visited = [];
+
+  foreach ($baseDirs as $baseDir) {
+    if (!is_dir($baseDir)) {
+      continue;
+    }
+
+    $queue = [[$baseDir, 0]];
+    while (!empty($queue)) {
+      [$currentDir, $depth] = array_shift($queue);
+
+      $real = realpath($currentDir);
+      if ($real === false || isset($visited[$real])) {
+        continue;
+      }
+      $visited[$real] = true;
+
+      if ($hasLandingHead($real)) {
+        return $real;
+      }
+
+      if ($depth >= $maxDepth) {
+        continue;
+      }
+
+      $entries = @scandir($real);
+      if ($entries === false) {
+        continue;
+      }
+
+      foreach ($entries as $entry) {
+        if (in_array($entry, $skipNames, true)) {
+          continue;
+        }
+
+        $child = $real . DIRECTORY_SEPARATOR . $entry;
+        if (is_dir($child) && !is_link($child)) {
+          $queue[] = [$child, $depth + 1];
+        }
+      }
+    }
+  }
+
+  return '';
+};
+
 $documentRoot = isset($_SERVER['DOCUMENT_ROOT'])
   ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR)
   : '';
 
-$candidateRoots = array_filter(array_unique([
+$scriptDir = isset($_SERVER['SCRIPT_FILENAME'])
+  ? dirname((string) $_SERVER['SCRIPT_FILENAME'])
+  : '';
+
+$baseDirs = array_filter(array_unique([
   __DIR__,
   realpath(__DIR__) ?: '',
+  $scriptDir,
   $documentRoot,
+  $documentRoot !== '' ? dirname($documentRoot) : '',
   getcwd() ?: '',
-  dirname(__DIR__),
-  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' : '',
 ]));
 
-$projectRoot = '';
-foreach ($candidateRoots as $candidateRoot) {
-  if (is_dir($candidateRoot . DIRECTORY_SEPARATOR . 'Components')) {
-    $projectRoot = $candidateRoot;
-    break;
-  }
-
-  // If the app is deployed as a child folder under the web root, detect it automatically.
-  if (is_dir($candidateRoot)) {
-    foreach ((glob($candidateRoot . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) ?: []) as $childDir) {
-      if (is_dir($childDir . DIRECTORY_SEPARATOR . 'Components')) {
-        $projectRoot = $childDir;
-        break 2;
-      }
-    }
-  }
-}
-
+$projectRoot = $findProjectRoot($baseDirs, 3);
 if ($projectRoot === '') {
   $projectRoot = __DIR__;
 }
 
-$componentRoot = $projectRoot . DIRECTORY_SEPARATOR . 'Components';
+$componentFolder = is_dir($projectRoot . DIRECTORY_SEPARATOR . 'Components') ? 'Components' : 'components';
+$componentRoot = $projectRoot . DIRECTORY_SEPARATOR . $componentFolder;
+
 $includeComponent = static function (string $relativePath) use ($componentRoot): void {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
   $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
