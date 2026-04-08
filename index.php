@@ -95,6 +95,31 @@ if ($componentRoot === '') {
   $componentRoot = $fallbackComponentRoot !== '' ? $fallbackComponentRoot : (__DIR__ . DIRECTORY_SEPARATOR . 'Components');
 }
 
+$computeAppBasePath = static function (string $componentRootPath, string $docRoot): string {
+  $projectRootPath = rtrim(str_replace('\\', '/', dirname($componentRootPath)), '/');
+  $normalizedDocRoot = rtrim(str_replace('\\', '/', $docRoot), '/');
+
+  if ($normalizedDocRoot !== '' && strncasecmp($projectRootPath, $normalizedDocRoot, strlen($normalizedDocRoot)) === 0) {
+    $relative = trim(substr($projectRootPath, strlen($normalizedDocRoot)), '/');
+    return $relative === '' ? '' : '/' . $relative;
+  }
+
+  $scriptName = isset($_SERVER['SCRIPT_NAME']) ? (string) $_SERVER['SCRIPT_NAME'] : '';
+  $scriptDirName = trim(str_replace('\\', '/', dirname($scriptName)), '/.');
+
+  return $scriptDirName === '' ? '' : '/' . $scriptDirName;
+};
+
+$appBasePath = $computeAppBasePath($componentRoot, $documentRoot);
+if (!defined('APP_BASE_PATH')) {
+  define('APP_BASE_PATH', $appBasePath);
+}
+
+$assetUrl = static function (string $path) use ($appBasePath): string {
+  $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+  return ($appBasePath !== '' ? $appBasePath : '') . '/' . $normalizedPath;
+};
+
 $includeComponent = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath): void {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
   $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
@@ -119,8 +144,10 @@ $includeComponent = static function (string $relativePath) use ($componentRoot, 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="user-id" content="<?php echo $user_id; ?>">
-<link rel="icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
-<link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
+<link rel="icon" type="image/jpeg"
+  href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="apple-touch-icon"
+  href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
 
 
 <?php $includeComponent('Landing/head.php'); ?>
@@ -156,11 +183,15 @@ $includeComponent = static function (string $relativePath) use ($componentRoot, 
   $v = time() . '_' . rand(1000, 9999);
   ?>
   <script>console.log('🔄 Cache bust version: <?php echo $v; ?>');</script>
-  <script src="assets/js/page-state-manager.js?v=<?php echo $v; ?>"></script>
-  <script src="Components/Landing/main.js?v=<?php echo $v; ?>"></script>
-  <script src="Components/Landing/auth.js?v=<?php echo $v; ?>"></script>
+  <script
+    src="<?php echo htmlspecialchars($assetUrl('assets/js/page-state-manager.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
+  <script
+    src="<?php echo htmlspecialchars($assetUrl('Components/Landing/main.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
+  <script
+    src="<?php echo htmlspecialchars($assetUrl('Components/Landing/auth.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
-  <script src="Components/Landing/verify-components.js?v=<?php echo $v; ?>"></script>
+  <script
+    src="<?php echo htmlspecialchars($assetUrl('Components/Landing/verify-components.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
   <?php $includeComponent('Popup/ConfirmPopup.php'); ?>
   <?php $includeComponent('Popup/ErrorPopup.php'); ?>

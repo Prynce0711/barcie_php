@@ -1,3 +1,9 @@
+<?php
+$basePath = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
+$newsApiUrl = ($basePath !== '' ? $basePath : '') . '/api/news.php';
+$defaultNewsImage = ($basePath !== '' ? $basePath : '') . '/public/images/imageBg/barcie_logo.jpg';
+?>
+
 <!-- News & Updates Section -->
 <section id="news" class="section-padding bg-light">
     <div class="container">
@@ -46,6 +52,9 @@
     (function () {
         'use strict';
 
+        const NEWS_API_URL = <?php echo json_encode($newsApiUrl); ?>;
+        const DEFAULT_NEWS_IMAGE = <?php echo json_encode($defaultNewsImage); ?>;
+
         let currentPage = 1;
         let newsPerPage = 6;
         let allNews = [];
@@ -62,7 +71,7 @@
          * Load published news from API
          */
         function loadPublishedNews() {
-            fetch(`api/News.php?action=fetch_published&limit=100`)
+            fetch(`${NEWS_API_URL}?action=fetch_published&limit=100`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -118,7 +127,7 @@
                     day: 'numeric'
                 }) : '';
 
-            const imageUrl = news.image_path || 'public/images/imageBg/barcie_logo.jpg';
+            const imageUrl = news.image_path || DEFAULT_NEWS_IMAGE;
 
             return `
             <div class="col-md-6 col-lg-4">
@@ -127,7 +136,7 @@
                         <img src="${escapeHtml(imageUrl)}" 
                              class="card-img-top" 
                              alt="${escapeHtml(news.title)}"
-                             onerror="this.src='public/images/imageBg/barcie_logo.jpg'">
+                                onerror="this.src='${escapeHtml(DEFAULT_NEWS_IMAGE)}'">
                         <div class="news-date-badge">
                             <span class="date-day">${new Date(news.published_date || news.created_at).getDate()}</span>
                             <span class="date-month">${new Date(news.published_date || news.created_at).toLocaleDateString('en-US', { month: 'short' })}</span>
