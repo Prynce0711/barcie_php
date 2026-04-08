@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/Bootstrap.php';
 
 $info = [
     'timestamp' => date('Y-m-d H:i:s'),

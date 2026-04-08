@@ -4,15 +4,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
-  <link rel="shortcut icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
-  <link rel="apple-touch-icon" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
+  <link rel="shortcut icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
+  <link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
   <title>BarCIE Admin Login - Secure Access Portal</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Bootstrap JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
   <style>
@@ -188,7 +185,7 @@
 
   <div class="login-container">
     <div class="logo-circle">
-      <img src="assets/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo">
+      <img src="public/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo">
     </div>
     <h1 class="login-title">BarCIE Admin Login</h1>
     <p class="login-subtitle">Access your unique admin portal</p>
@@ -202,7 +199,8 @@
       </div>
       <div class="mb-3 password-wrapper">
         <label for="admin-password" class="form-label">Password</label>
-        <input type="password" id="admin-password" name="password" placeholder="••••••••" required class="form-control with-icon">
+        <input type="password" id="admin-password" name="password" placeholder="••••••••" required
+          class="form-control with-icon">
         <button type="button" id="toggleAdminPassword" class="password-toggle">
           <i class="far fa-eye"></i>
         </button>
@@ -213,7 +211,7 @@
     </form>
 
     <div class="back-link">
-      <a href="index.php">
+      <a href="../../index.php">
         <i class="fas fa-arrow-left me-1"></i>Back to Home
       </a>
     </div>
@@ -221,7 +219,7 @@
 
   <script>
     // Toggle password visibility
-    document.getElementById('toggleAdminPassword').addEventListener('click', function() {
+    document.getElementById('toggleAdminPassword').addEventListener('click', function () {
       const passwordField = document.getElementById('admin-password');
       const icon = this.querySelector('i');
 
@@ -236,27 +234,66 @@
       }
     });
 
+    // Resolve project root robustly for different install layouts
+    function getProjectRoot() {
+      const path = window.location.pathname || '';
+      const lowerPath = path.toLowerCase();
+
+      // Try common component markers first (case-insensitive)
+      const markers = ['/components/login/', '/components/guest/', '/components/login', '/components/'];
+      for (const marker of markers) {
+        const idx = lowerPath.indexOf(marker);
+        if (idx !== -1) {
+          return path.substring(0, idx) || '';
+        }
+      }
+
+      // Fallback: use the first path segment as the project folder, e.g. '/barcie_php'
+      const parts = path.split('/').filter(Boolean);
+      if (parts.length > 0) {
+        // If first segment looks like a filename (contains a dot), ignore it
+        if (parts[0].indexOf('.') === -1) {
+          return '/' + parts[0];
+        }
+      }
+
+      // As last resort, return empty string (assume site root)
+      return '';
+    }
+
     // Admin login form submission
-    document.getElementById('admin-login-form').addEventListener('submit', function(e) {
+    document.getElementById('admin-login-form').addEventListener('submit', function (e) {
       e.preventDefault();
 
       const formData = new FormData(this);
       const submitButton = this.querySelector('button[type="submit"]');
       const errorDiv = document.getElementById('admin-login-error');
+      const projectRoot = getProjectRoot();
+      const loginEndpoint = `${projectRoot}/database/admin_login.php`;
 
       // Disable submit button
       submitButton.disabled = true;
       submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
 
-      fetch('database/admin_login.php', {
-          method: 'POST',
-          body: formData
+      fetch(loginEndpoint, {
+        method: 'POST',
+        body: formData
+      })
+        .then(async response => {
+          const raw = await response.text();
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch (e) {
+            throw new Error(`Invalid JSON response (${response.status})`);
+          }
+          return data;
         })
-        .then(response => response.json())
         .then(data => {
           if (data.success) {
             // Success - redirect to dashboard
-            window.location.href = 'dashboard.php';
+            const redirectPath = (data.redirect || 'dashboard.php').replace(/^\/+/, '');
+            window.location.href = `${projectRoot}/${redirectPath}`;
           } else {
             // Show error message
             errorDiv.textContent = data.message || 'Invalid username or password';

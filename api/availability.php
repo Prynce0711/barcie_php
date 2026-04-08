@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/Bootstrap.php';
 
 // Prevent caching
 header('Cache-Control: no-cache, no-store, must-revalidate');

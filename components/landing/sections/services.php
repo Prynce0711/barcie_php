@@ -1,4 +1,4 @@
-<!-- Services Section -->
+<!-- 
 <section id="services" class="section-padding bg-white">
   <div class="container">
     <div class="row">
@@ -8,7 +8,7 @@
       </div>
     </div>
     <div class="row g-4">
-      <!-- Accommodation Services -->
+
       <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="100">
         <div class="service-card bg-light rounded shadow-sm p-5 h-100 text-center hover-lift">
           <div class="service-icon mb-4">
@@ -27,7 +27,7 @@
         </div>
       </div>
       
-      <!-- Catering & Events -->
+
       <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="200">
         <div class="service-card bg-light rounded shadow-sm p-5 h-100 text-center hover-lift">
           <div class="service-icon mb-4">
@@ -46,7 +46,7 @@
         </div>
       </div>
       
-      <!-- Guest Services -->
+
       <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="300">
         <div class="service-card bg-light rounded shadow-sm p-5 h-100 text-center hover-lift">
           <div class="service-icon mb-4">
@@ -65,7 +65,7 @@
         </div>
       </div>
       
-      <!-- Training Programs -->
+
       <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="400">
         <div class="service-card bg-light rounded shadow-sm p-5 h-100 text-center hover-lift">
           <div class="service-icon mb-4">
@@ -83,8 +83,7 @@
           </ul>
         </div>
       </div>
-      
-      <!-- Facilities Management -->
+
       <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="500">
         <div class="service-card bg-light rounded shadow-sm p-5 h-100 text-center hover-lift">
           <div class="service-icon mb-4">
@@ -103,7 +102,7 @@
         </div>
       </div>
       
-      <!-- Technology Integration -->
+
       <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="600">
         <div class="service-card bg-light rounded shadow-sm p-5 h-100 text-center hover-lift">
           <div class="service-icon mb-4">
@@ -133,4 +132,4 @@
   transform: translateY(-10px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
 }
-</style>
+</style> -->

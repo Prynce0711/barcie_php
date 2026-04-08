@@ -1,0 +1,130 @@
+/* ========================================
+   Admin Tailwind Base - Non-Tailwind CSS
+   (scrollbar, pseudo-elements, :has(), @keyframes)
+   ======================================== */
+
+/* Scrollbar - Global */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
+}
+
+/* Scrollbar - Activity Timeline */
+.activity-timeline::-webkit-scrollbar {
+  width: 8px;
+}
+.activity-timeline::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.activity-timeline::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.activity-timeline::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Focus States */
+*:focus {
+  outline: none;
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Activity Type Hover Borders */
+.activity-item:has(.fa-check-circle):hover {
+  border-left: 3px solid #10b981;
+}
+.activity-item:has(.fa-credit-card):hover {
+  border-left: 3px solid #10b981;
+}
+.activity-item:has(.fa-times-circle):hover,
+.activity-item:has(.fa-ban):hover {
+  border-left: 3px solid #ef4444;
+}
+.activity-item:has(.fa-sign-in-alt):hover {
+  border-left: 3px solid #3b82f6;
+}
+.activity-item:has(.fa-sign-out-alt):hover {
+  border-left: 3px solid #6b7280;
+}
+.activity-item:has(.fa-comment-dots):hover {
+  border-left: 3px solid #f59e0b;
+}
+.activity-item:has(.fa-pencil-alt):hover {
+  border-left: 3px solid #8b5cf6;
+}
+
+/* Button Loading Spinner */
+.btn.loading {
+  position: relative;
+  color: transparent !important;
+}
+.btn.loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid white;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spinner 0.6s linear infinite;
+}
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* LIVE Badge Pulse */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Image Count Badge */
+.img-count-badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-weight: 700;
+}

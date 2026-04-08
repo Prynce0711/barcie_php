@@ -5,6 +5,7 @@ A comprehensive web-based booking and management system for BarCIE International
 ## 🌟 Features
 
 ### Public Features
+
 - **Landing Page**: Modern, responsive homepage with information about the facility
 - **Room Booking System**: Interactive calendar-based room reservation system
 - **Catering Services**: Browse and book catering packages for events
@@ -14,6 +15,7 @@ A comprehensive web-based booking and management system for BarCIE International
 - **Brochure Downloads**: Digital brochures and promotional materials
 
 ### Admin Features
+
 - **Dashboard**: Comprehensive overview of bookings, revenue, and statistics
 - **Booking Management**: View, edit, approve, and manage all reservations
 - **Room Management**: Configure room types, pricing, and availability
@@ -45,20 +47,18 @@ A comprehensive web-based booking and management system for BarCIE International
 - Composer (for dependency management)
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
-
-
 ## 📁 Project Structure
 
 ```
 barcie_php/
 ├── api/                        # Backend API endpoints
-│   ├── admin_management.php    # Admin user management
-│   ├── availability.php        # Room availability checks
+│   ├── AdminManagementEnhanced.php    # Admin user management
+│   ├── Availability.php        # Room availability checks
 │   ├── booking.php             # Booking operations
-│   ├── chatbot_answer.php      # AI chatbot responses
-│   ├── items.php               # Catering items API
-│   ├── news.php                # News management
-│   ├── reports_data.php        # Analytics and reports
+│   ├── ChatbotAnswer.php      # AI chatbot responses
+│   ├── Items.php               # Catering items API
+│   ├── News.php                # News management
+│   ├── ReportsData.php        # Analytics and reports
 │   └── ...
 ├── assets/
 │   ├── css/                    # Stylesheets
@@ -94,7 +94,7 @@ barcie_php/
 ### For Customers
 
 1. **Browse Facilities**: Visit the homepage to explore available rooms and services
-2. **Make a Booking**: 
+2. **Make a Booking**:
    - Navigate to the booking section
    - Select dates and room type
    - Fill in guest information
@@ -120,18 +120,20 @@ barcie_php/
    - Export reports to PDF or Excel
    - Track revenue and occupancy
 
-
 ### Upload Errors
+
 - Verify folder permissions (755 for directories, 644 for files)
 - Check PHP upload limits in php.ini
 - Ensure uploads/ directory exists
 
 ### Email Not Sending
+
 - Verify SMTP credentials in `.env`
 - Enable "Less secure app access" for Gmail (or use App Passwords)
 - Check firewall/antivirus settings
 
 ### Session Issues
+
 - Clear browser cache and cookies
 - Check PHP session configuration
 - Verify session directory permissions
@@ -149,12 +151,14 @@ barcie_php/
 ## 📦 Dependencies
 
 ### PHP Packages (via Composer)
+
 - `dompdf/dompdf` - PDF generation
 - `phpoffice/phpspreadsheet` - Excel export
 - `phpmailer/phpmailer` - Email functionality
 - `vlucas/phpdotenv` - Environment configuration
 
 ### Frontend Libraries (via CDN)
+
 - Bootstrap 5.3.2
 - Font Awesome 6.5.1
 - AOS Animation Library
@@ -162,6 +166,7 @@ barcie_php/
 ## 🚧 Maintenance
 
 ### Regular Tasks
+
 - Backup database regularly
 - Monitor disk space for uploads
 - Review and archive old bookings
@@ -169,12 +174,14 @@ barcie_php/
 - Monitor error logs
 
 ### Log Files
+
 - PHP errors: Check Apache/PHP error logs
 - Application logs: Check custom log files in designated directories
 
 ## 📞 Support
 
 For technical support or inquiries:
+
 - **Website**: [Your website URL]
 - **Email**: [Support email]
 - **Phone**: [Contact number]

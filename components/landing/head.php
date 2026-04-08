@@ -1,25 +1,41 @@
 <head>
+  <?php
+  $css_version = time() . '_' . rand(1000, 9999);
+  if (!isset($assetUrl) || !is_callable($assetUrl)) {
+    $basePath = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
+    $assetUrl = static function (string $path) use ($basePath): string {
+      $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+      return ($basePath !== '' ? $basePath : '') . '/' . $normalizedPath;
+    };
+  }
+  ?>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
-  <link rel="shortcut icon" type="image/jpeg" href="assets/images/imageBg/barcie_logo.jpg">
-  <link rel="apple-touch-icon" href="assets/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/jpeg"
+    href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="shortcut icon" type="image/jpeg"
+    href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="apple-touch-icon"
+    href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
   <title>BarCIE International Center - Your Gateway to Hospitality Excellence</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Custom Landing Page CSS -->
-  <?php $css_version = time() . '_' . rand(1000, 9999); ?>
-  <link rel="stylesheet" href="assets/css/landing-page.css?v=<?php echo $css_version; ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($assetUrl('Components/Landing/landing-page.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
   <!-- Caterings / Event Stylists CSS -->
-  <link rel="stylesheet" href="assets/css/caterings.css?v=<?php echo $css_version; ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($assetUrl('Components/Landing/caterings.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
   <!-- News Section CSS -->
-  <link rel="stylesheet" href="assets/css/news.css?v=<?php echo $css_version; ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($assetUrl('Components/Admin/News/news.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Bootstrap JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Toast Notification System -->
-  <script src="assets/js/toast-notification.js"></script>
+  <!-- Popup Manager -->
+  <script
+    src="<?php echo htmlspecialchars($assetUrl('Components/Popup/popup-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
   <!-- AOS Animation Library -->
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -88,12 +104,11 @@
       box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     }
 
-    
+
     /* Hero Section */
     .hero-section {
       height: 100vh;
-      background: linear-gradient(135deg, rgba(30, 60, 114, 0.8), rgba(42, 82, 152, 0.8)),
-        url('assets/images/imageBg/BarCIE-0.jpg') center/cover;
+      background: linear-gradient(135deg, rgba(30, 60, 114, 0.78), rgba(42, 82, 152, 0.72));
       display: flex;
       align-items: center;
       position: relative;
