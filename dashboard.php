@@ -129,6 +129,52 @@ $includeProjectFile = static function (string $relativePath) use ($resolveProjec
   include $path;
 };
 
+$computeAppBasePath = static function (string $projectRootPath, string $docRoot): string {
+  $normalizedProjectRoot = rtrim(str_replace('\\', '/', $projectRootPath), '/');
+  $normalizedDocRoot = rtrim(str_replace('\\', '/', $docRoot), '/');
+
+  if (
+    $normalizedDocRoot !== '' &&
+    strncasecmp($normalizedProjectRoot, $normalizedDocRoot, strlen($normalizedDocRoot)) === 0
+  ) {
+    $relative = trim(substr($normalizedProjectRoot, strlen($normalizedDocRoot)), '/');
+    return $relative === '' ? '' : '/' . $relative;
+  }
+
+  $scriptName = isset($_SERVER['SCRIPT_NAME']) ? (string) $_SERVER['SCRIPT_NAME'] : '';
+  $scriptDirName = trim(str_replace('\\', '/', dirname($scriptName)), '/.');
+
+  return $scriptDirName === '' ? '' : '/' . $scriptDirName;
+};
+
+$appBasePath = $computeAppBasePath($projectRoot, $documentRoot);
+
+$projectAssetPath = static function (string $relativePath) use ($resolveProjectFile, $projectRoot): string {
+  $normalizedRelativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+  $resolvedPath = $resolveProjectFile($normalizedRelativePath);
+
+  if ($resolvedPath !== '') {
+    $normalizedProjectRoot = rtrim(str_replace('\\', '/', $projectRoot), '/');
+    $normalizedResolvedPath = str_replace('\\', '/', $resolvedPath);
+    $projectPrefix = $normalizedProjectRoot . '/';
+
+    if (strpos($normalizedResolvedPath, $projectPrefix) === 0) {
+      return ltrim(substr($normalizedResolvedPath, strlen($projectPrefix)), '/');
+    }
+  }
+
+  return $normalizedRelativePath;
+};
+
+$projectAssetUrl = static function (string $relativePath) use ($appBasePath, $projectAssetPath): string {
+  $assetPath = $projectAssetPath($relativePath);
+  return ($appBasePath !== '' ? $appBasePath : '') . '/' . $assetPath;
+};
+
+if (!defined('APP_BASE_PATH')) {
+  define('APP_BASE_PATH', $appBasePath);
+}
+
 // Include data processing logic
 $requireProjectFile('Components/Admin/data_processing.php');
 ?>
@@ -145,7 +191,8 @@ $requireProjectFile('Components/Admin/data_processing.php');
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=yes">
   <meta name="theme-color" content="#3b82f6">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/x-icon"
+    href="<?php echo htmlspecialchars($projectAssetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
   <title>Admin Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -153,19 +200,27 @@ $requireProjectFile('Components/Admin/data_processing.php');
   <script
     src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="Components/Admin/dashboard.css">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/dashboard.css'), ENT_QUOTES, 'UTF-8'); ?>">
 
   <!-- Tailwind CSS (compiled via CLI from src/css/admin.css) -->
   <?php if ($resolveProjectFile('dist/css/admin.css') !== ''): ?>
-    <link rel="stylesheet" href="dist/css/admin.css">
+    <link rel="stylesheet"
+      href="<?php echo htmlspecialchars($projectAssetUrl('dist/css/admin.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <?php else: ?>
-    <link rel="stylesheet" href="Components/Admin/admin-tw-base.css">
+    <link rel="stylesheet"
+      href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/admin-tw-base.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="assets/css/mobile-responsive.css">
-  <link rel="stylesheet" href="assets/css/page-state.css">
-  <link rel="stylesheet" href="Components/Admin/News/news.css">
-  <link rel="stylesheet" href="Components/Admin/Reports/reports.css">
-  <link rel="stylesheet" href="Components/Admin/AccountManagement/admin-online-status.css">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('assets/css/mobile-responsive.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('assets/css/page-state.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/News/news.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/reports.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/AccountManagement/admin-online-status.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 
 
@@ -580,7 +635,8 @@ $requireProjectFile('Components/Admin/data_processing.php');
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-      <script src="Components/Popup/popup-manager.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Popup/popup-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
       <script>
         (function () {
           const flashSuccessMessage = <?php echo json_encode($flashSuccessMessage); ?>;
@@ -636,23 +692,31 @@ $requireProjectFile('Components/Admin/data_processing.php');
           }, true);
         })();
       </script>
-      <script src="Components/Table/table.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Table/table.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
       <!-- Page State Manager - Load FIRST -->
-      <script src="assets/js/page-state-manager.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('assets/js/page-state-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
       <!-- Dashboard JavaScript files -->
-      <script src="Components/Admin/Dashboard/dashboard-bootstrap.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Dashboard/dashboard-bootstrap.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
-      <script src="Components/Admin/Calendar/calendar-section.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Calendar/calendar-section.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load calendar-section.js')"></script>
-      <script src="Components/Admin/RoomsAndFacilities/rooms-section.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/RoomsAndFacilities/rooms-section.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load rooms-section.js')"></script>
-      <script src="Components/Admin/Booking/BookingsSection.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Booking/BookingsSection.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load bookings-section.js')"></script>
-      <script src="Components/Admin/News/news-section.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/News/news-section.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load news-section.js')"></script>
-      <script src="Components/Admin/mobile-enhancements.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/mobile-enhancements.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load mobile-enhancements.js')"></script>
 
       <!-- Initialize dashboard with data after all scripts are loaded -->
@@ -739,15 +803,22 @@ $requireProjectFile('Components/Admin/data_processing.php');
       </script>
 
       <!-- Enhanced Admin Management JavaScript -->
-      <script src="Components/Admin/AccountManagement/admin-management-enhanced.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/AccountManagement/admin-management-enhanced.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
       <!-- Reports & Analytics JavaScript -->
-      <script src="Components/Admin/Reports/js/state.js"></script>
-      <script src="Components/Admin/Reports/js/utils.js"></script>
-      <script src="Components/Admin/Reports/js/charts.js"></script>
-      <script src="Components/Admin/Reports/js/updaters.js"></script>
-      <script src="Components/Admin/Reports/js/actions.js"></script>
-      <script src="Components/Admin/Reports/reports.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/state.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/utils.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/charts.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/updaters.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/actions.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/reports.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 </body>
 
