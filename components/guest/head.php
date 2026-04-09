@@ -2,8 +2,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="user-id" content="<?php echo $user_id; ?>">
-<link rel="icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
-<link rel="shortcut icon" type="image/jpeg" href="public/images/imageBg/barcie_logo.jpg">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
 <title>Guest Portal</title>
 <!-- Bootstrap CSS -->
