@@ -627,7 +627,8 @@
     })();
 </script>
 
-<link rel="stylesheet" href="assets/css/page-state.css">
+<link rel="stylesheet"
+  href="<?php echo htmlspecialchars((defined('GUEST_ASSET_BASE_PATH') ? GUEST_ASSET_BASE_PATH : '') . '/assets/css/page-state.css', ENT_QUOTES, 'UTF-8'); ?>">
 
 <!-- Vendor JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
@@ -637,7 +638,8 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <!-- Popup Manager -->
-<script src="Components/Popup/popup-manager.js"></script>
+<script
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Popup/popup-manager.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 <!-- App JS (migrated to PHP includes by feature folder) -->
 <?php include __DIR__ . '/Sidebar/guest-core-init.php'; ?>
@@ -658,4 +660,6 @@ if (file_exists($guestDebugInitPath)) {
   include $guestDebugInitPath;
 }
 ?>
-<script src="Components/Guest/Booking/guest-inline.js" defer></script>
+<script
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/Booking/guest-inline.js', ENT_QUOTES, 'UTF-8'); ?>"
+  defer></script>

@@ -98,6 +98,22 @@ if ($componentRoot === '') {
   $componentRoot = $fallbackComponentRoot !== '' ? $fallbackComponentRoot : (__DIR__ . DIRECTORY_SEPARATOR . 'Components');
 }
 
+$scriptName = isset($_SERVER['SCRIPT_NAME']) ? (string) $_SERVER['SCRIPT_NAME'] : '';
+$scriptDirName = trim(str_replace('\\', '/', dirname($scriptName)), '/.');
+$appBasePath = $scriptDirName === '' ? '' : '/' . $scriptDirName;
+$componentBaseUrl = ($appBasePath !== '' ? $appBasePath : '') . '/' . basename($componentRoot);
+$apiBaseUrl = ($appBasePath !== '' ? $appBasePath : '') . '/api';
+
+if (!defined('GUEST_ASSET_BASE_PATH')) {
+  define('GUEST_ASSET_BASE_PATH', $appBasePath);
+}
+if (!defined('GUEST_COMPONENT_BASE_URL')) {
+  define('GUEST_COMPONENT_BASE_URL', $componentBaseUrl);
+}
+if (!defined('GUEST_API_BASE_URL')) {
+  define('GUEST_API_BASE_URL', $apiBaseUrl);
+}
+
 $resolveComponentPath = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath): string {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
   $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
@@ -244,7 +260,9 @@ if ($pencil_conversion_script_path !== '' && is_readable($pencil_conversion_scri
     // expose minimal globals used by guest-bootstrap.js if needed
     window.BARCIE_GUEST = {
       userId: <?php echo json_encode($user_id); ?>,
-      pencilConversion: <?php echo json_encode($pencil_conversion_data); ?>
+      pencilConversion: <?php echo json_encode($pencil_conversion_data); ?>,
+      apiBaseUrl: <?php echo json_encode(GUEST_API_BASE_URL); ?>,
+      componentBaseUrl: <?php echo json_encode(GUEST_COMPONENT_BASE_URL); ?>
     };
   </script>
   <!-- Pencil Conversion Handler -->

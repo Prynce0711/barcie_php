@@ -24,7 +24,8 @@
 
     function fetchAndFilterEvents(itemId, fetchInfo, successCallback, failureCallback) {
       // Try to fetch events for item from API with query param
-      const url = 'api/Availability.php' + (itemId ? ('?item_id=' + encodeURIComponent(itemId)) : '');
+      const apiBase = (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+      const url = `${apiBase}/availability.php` + (itemId ? ('?item_id=' + encodeURIComponent(itemId)) : '');
       fetch(url).then(r => r.json()).then(data => {
         let events = [];
         if (Array.isArray(data)) events = data;

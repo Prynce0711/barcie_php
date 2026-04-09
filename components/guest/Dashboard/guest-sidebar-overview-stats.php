@@ -126,7 +126,9 @@
     availableElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
     try {
-      const response = await fetch("api/AvailableCount.php");
+      const apiBase =
+        (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+      const response = await fetch(`${apiBase}/AvailableCount.php`);
       const data = await response.json();
 
       if (data && data.success) {

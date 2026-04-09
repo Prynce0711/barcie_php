@@ -4,7 +4,9 @@
     console.log("Guest: Loading items from API...");
 
     try {
-      const res = await fetch("api/Items.php");
+      const apiBase =
+        (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+      const res = await fetch(`${apiBase}/items.php`);
       console.log("Guest: Response status:", res.status);
 
       if (!res.ok) {
