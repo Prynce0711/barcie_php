@@ -22,7 +22,8 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
 
   <div style="padding: 2rem;">
     <!-- Add Discount Rule Form -->
-    <form method="POST" action="Components/Admin/data_processing.php" class="brochure-partners-form-wrapper" data-popup-action="true">
+    <form method="POST" action="Components/Admin/data_processing.php" class="brochure-partners-form-wrapper"
+      data-popup-action="true">
       <input type="hidden" name="action" value="add_discount_rule">
       <div class="brochure-partners-form-grid">
         <div class="partners-form-group">
@@ -43,14 +44,17 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
         </div>
         <div class="partners-form-group full-width">
           <label class="brochure-partners-label">Description</label>
-          <textarea name="description" rows="2" class="brochure-partners-textarea" placeholder="Brief description of this discount rule..."></textarea>
+          <textarea name="description" rows="2" class="brochure-partners-textarea"
+            placeholder="Brief description of this discount rule..."></textarea>
         </div>
         <div class="partners-form-group full-width">
           <label class="brochure-partners-label">Accepted ID Types</label>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
             <?php foreach ($idCatalog as $idKey => $idLabel): ?>
-              <label style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9375rem; cursor: pointer;">
-                <input type="checkbox" name="accepted_id_types[]" value="<?php echo htmlspecialchars($idKey); ?>" style="width: 1.125rem; height: 1.125rem; cursor: pointer; accent-color: #3b82f6;">
+              <label
+                style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9375rem; cursor: pointer;">
+                <input type="checkbox" name="accepted_id_types[]" value="<?php echo htmlspecialchars($idKey); ?>"
+                  style="width: 1.125rem; height: 1.125rem; cursor: pointer; accent-color: #3b82f6;">
                 <span><?php echo htmlspecialchars($idLabel); ?></span>
               </label>
             <?php endforeach; ?>
@@ -85,7 +89,8 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
           <tbody>
             <?php foreach ($rules as $rule): ?>
               <tr>
-                <form method="POST" action="Components/Admin/data_processing.php" style="display: contents;" data-popup-action="true">
+                <form method="POST" action="Components/Admin/data_processing.php" style="display: contents;"
+                  data-popup-action="true">
                   <input type="hidden" name="action" value="update_discount_rule">
                   <input type="hidden" name="id" value="<?php echo (int) $rule['id']; ?>">
                   <td>
@@ -98,17 +103,22 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
                   </td>
                   <td>
                     <input type="number" name="percentage" class="brochure-partners-input input-number-sm"
-                      value="<?php echo htmlspecialchars((string) $rule['percentage']); ?>" step="0.01" min="0" max="100" required>
+                      value="<?php echo htmlspecialchars((string) $rule['percentage']); ?>" step="0.01" min="0" max="100"
+                      required>
                   </td>
                   <td>
-                    <textarea name="description" rows="2" class="brochure-partners-textarea"><?php echo htmlspecialchars($rule['description'] ?? ''); ?></textarea>
+                    <textarea name="description" rows="2"
+                      class="brochure-partners-textarea"><?php echo htmlspecialchars($rule['description'] ?? ''); ?></textarea>
                   </td>
                   <td>
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; max-height: 150px; overflow-y: auto; padding: 0.5rem;">
+                    <div
+                      style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; max-height: 150px; overflow-y: auto; padding: 0.5rem;">
                       <?php foreach ($idCatalog as $idKey => $idLabel): ?>
-                        <label style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer; white-space: nowrap;">
+                        <label
+                          style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer; white-space: nowrap;">
                           <input type="checkbox" name="accepted_id_types[]" value="<?php echo htmlspecialchars($idKey); ?>"
-                            <?php echo in_array($idKey, $rule['accepted_id_types'], true) ? 'checked' : ''; ?> style="width: 1rem; height: 1rem; cursor: pointer; accent-color: #3b82f6;">
+                            <?php echo in_array($idKey, $rule['accepted_id_types'], true) ? 'checked' : ''; ?>
+                            style="width: 1rem; height: 1rem; cursor: pointer; accent-color: #3b82f6;">
                           <span><?php echo htmlspecialchars($idLabel); ?></span>
                         </label>
                       <?php endforeach; ?>
@@ -120,9 +130,9 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
                   </td>
                   <td style="text-align: center;">
                     <label style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                      <input type="checkbox" name="is_active" value="1" class="brochure-partners-checkbox"
-                        <?php echo (int) $rule['is_active'] === 1 ? 'checked' : ''; ?>>
-                      <span class="badge-status <?php echo (int) $rule['is_active'] === 1 ? 'active' : 'inactive'; ?>">
+                      <input type="checkbox" name="is_active" value="1" class="brochure-partners-checkbox" <input
+                        type="checkbox" <?= !empty($rule['is_active']) ? 'checked' : '' ?>> <span
+                        class="badge-status <?php echo (int) $rule['is_active'] === 1 ? 'active' : 'inactive'; ?>">
                         <?php echo (int) $rule['is_active'] === 1 ? 'Active' : 'Inactive'; ?>
                       </span>
                     </label>
@@ -132,15 +142,15 @@ $sectionSubtitle = 'Create and manage discount codes for customers';
                       <i class="fas fa-save"></i> Save
                     </button>
                 </form>
-                <form method="POST" action="Components/Admin/data_processing.php" data-popup-action="true" data-confirm-message="Delete this discount rule?"
-                  style="display: contents;">
+                <form method="POST" action="Components/Admin/data_processing.php" data-popup-action="true"
+                  data-confirm-message="Delete this discount rule?" style="display: contents;">
                   <input type="hidden" name="action" value="delete_discount_rule">
                   <input type="hidden" name="id" value="<?php echo (int) $rule['id']; ?>">
                   <button type="submit" class="btn-table-delete">
                     <i class="fas fa-trash"></i> Delete
                   </button>
                 </form>
-                  </td>
+                </td>
               </tr>
             <?php endforeach; ?>
           </tbody>
