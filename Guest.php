@@ -2,6 +2,127 @@
 session_start();
 include __DIR__ . '/database/db_connect.php';
 
+$normalizeDir = static function (?string $path): string {
+  if (!is_string($path) || $path === '') {
+    return '';
+  }
+
+  $trimmed = rtrim($path, DIRECTORY_SEPARATOR);
+  $real = realpath($trimmed);
+
+  return $real !== false ? $real : $trimmed;
+};
+
+$resolveCaseInsensitivePath = static function (string $basePath, string $relativePath): string {
+  $current = $basePath;
+  $segments = explode(DIRECTORY_SEPARATOR, $relativePath);
+
+  foreach ($segments as $segment) {
+    if ($segment === '' || $segment === '.') {
+      continue;
+    }
+
+    $direct = $current . DIRECTORY_SEPARATOR . $segment;
+    if (file_exists($direct)) {
+      $current = $direct;
+      continue;
+    }
+
+    $entries = @scandir($current);
+    if ($entries === false) {
+      return '';
+    }
+
+    $matched = null;
+    foreach ($entries as $entry) {
+      if (strcasecmp($entry, $segment) === 0) {
+        $matched = $entry;
+        break;
+      }
+    }
+
+    if ($matched === null) {
+      return '';
+    }
+
+    $current = $current . DIRECTORY_SEPARATOR . $matched;
+  }
+
+  return $current;
+};
+
+$documentRoot = isset($_SERVER['DOCUMENT_ROOT'])
+  ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR)
+  : '';
+
+$scriptDir = isset($_SERVER['SCRIPT_FILENAME'])
+  ? dirname((string) $_SERVER['SCRIPT_FILENAME'])
+  : '';
+
+$componentRootCandidates = array_filter(array_unique([
+  __DIR__ . DIRECTORY_SEPARATOR . 'Components',
+  __DIR__ . DIRECTORY_SEPARATOR . 'components',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'Components' : '',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'Components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'Components' : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'components' : '',
+  dirname(__DIR__) . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'Components',
+  dirname(__DIR__) . DIRECTORY_SEPARATOR . 'barcie_php' . DIRECTORY_SEPARATOR . 'components',
+]));
+
+$componentRoot = '';
+$fallbackComponentRoot = '';
+
+foreach ($componentRootCandidates as $candidate) {
+  $normalized = $normalizeDir($candidate);
+  if ($normalized === '' || !is_dir($normalized)) {
+    continue;
+  }
+
+  if ($fallbackComponentRoot === '') {
+    $fallbackComponentRoot = $normalized;
+  }
+
+  if (
+    is_file($normalized . DIRECTORY_SEPARATOR . 'Guest' . DIRECTORY_SEPARATOR . 'head.php') ||
+    is_file($normalized . DIRECTORY_SEPARATOR . 'guest' . DIRECTORY_SEPARATOR . 'head.php')
+  ) {
+    $componentRoot = $normalized;
+    break;
+  }
+}
+
+if ($componentRoot === '') {
+  $componentRoot = $fallbackComponentRoot !== '' ? $fallbackComponentRoot : (__DIR__ . DIRECTORY_SEPARATOR . 'Components');
+}
+
+$resolveComponentPath = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath): string {
+  $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+  $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
+
+  if (is_file($fullPath)) {
+    return $fullPath;
+  }
+
+  $resolvedPath = $resolveCaseInsensitivePath($componentRoot, $normalizedRelativePath);
+  if ($resolvedPath !== '' && is_file($resolvedPath)) {
+    return $resolvedPath;
+  }
+
+  return '';
+};
+
+$getComponentPathOrLog = static function (string $relativePath) use ($resolveComponentPath): string {
+  $path = $resolveComponentPath($relativePath);
+  if ($path === '') {
+    error_log('Missing component include in Guest.php: ' . $relativePath);
+  }
+
+  return $path;
+};
+
 $success = $error = "";
 
 // Check for session messages
@@ -104,8 +225,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['convert_from_pencil']
 }
 
 $pencil_conversion_script = '';
-$pencil_conversion_script_path = __DIR__ . '/Components/Guest/Booking/pencil-conversion.js';
-if (is_file($pencil_conversion_script_path) && is_readable($pencil_conversion_script_path)) {
+$pencil_conversion_script_path = $resolveComponentPath('Guest/Booking/pencil-conversion.js');
+if ($pencil_conversion_script_path !== '' && is_readable($pencil_conversion_script_path)) {
   $loaded_script = file_get_contents($pencil_conversion_script_path);
   if ($loaded_script !== false) {
     $pencil_conversion_script = $loaded_script;
@@ -116,7 +237,9 @@ if (is_file($pencil_conversion_script_path) && is_readable($pencil_conversion_sc
 <html lang="en">
 
 <head>
-  <?php include __DIR__ . '/Components/Guest/head.php'; ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Guest/head.php')) !== '') {
+    include $componentPath;
+  } ?>
   <script>
     // expose minimal globals used by guest-bootstrap.js if needed
     window.BARCIE_GUEST = {
@@ -146,30 +269,54 @@ if (is_file($pencil_conversion_script_path) && is_readable($pencil_conversion_sc
     onclick="closeSidebar()"></div>
 
   <!-- Sidebar -->
-  <?php include __DIR__ . '/Components/Guest/Sidebar/sidebar.php'; ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Guest/Sidebar/sidebar.php')) !== '') {
+    include $componentPath;
+  } ?>
 
   <!-- Main Content -->
   <main
     class="main-content ml-[260px] p-[30px] pb-[120px] grow min-h-[calc(100vh-80px)] relative transition-all duration-300 max-md:ml-0 max-md:px-4 max-md:pb-[120px] max-[480px]:px-2.5">
     <div class="container-fluid">
-      <?php include __DIR__ . '/Components/Guest/Dashboard/overview.php'; ?>
-      <?php include __DIR__ . '/Components/Guest/AvailabilityCalendar.php/availability.php'; ?>
-      <?php include __DIR__ . '/Components/Guest/RoomsAndFacilities.php/rooms.php'; ?>
-      <?php include __DIR__ . '/Components/Guest/Booking/booking.php'; ?>
-      <?php include __DIR__ . '/Components/Guest/Feedback/feedback.php'; ?>
+      <?php if (($componentPath = $getComponentPathOrLog('Guest/Dashboard/overview.php')) !== '') {
+        include $componentPath;
+      } ?>
+      <?php if (($componentPath = $getComponentPathOrLog('Guest/AvailabilityCalendar.php/availability.php')) !== '') {
+        include $componentPath;
+      } ?>
+      <?php if (($componentPath = $getComponentPathOrLog('Guest/RoomsAndFacilities.php/rooms.php')) !== '') {
+        include $componentPath;
+      } ?>
+      <?php if (($componentPath = $getComponentPathOrLog('Guest/Booking/booking.php')) !== '') {
+        include $componentPath;
+      } ?>
+      <?php if (($componentPath = $getComponentPathOrLog('Guest/Feedback/feedback.php')) !== '') {
+        include $componentPath;
+      } ?>
     </div>
   </main>
 
   <!-- Chatbot -->
-  <?php include __DIR__ . '/Components/Guest/ChatBot/chatbot.php'; ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Guest/ChatBot/chatbot.php')) !== '') {
+    include $componentPath;
+  } ?>
 
   <!-- Footer -->
-  <?php include __DIR__ . '/Components/Guest/footer.php'; ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Guest/footer.php')) !== '') {
+    include $componentPath;
+  } ?>
 
-  <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>
-  <?php include __DIR__ . '/Components/Popup/ErrorPopup.php'; ?>
-  <?php include __DIR__ . '/Components/Popup/LoadingPopup.php'; ?>
-  <?php include __DIR__ . '/Components/Popup/SuccessPopup.php'; ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Popup/ConfirmPopup.php')) !== '') {
+    include $componentPath;
+  } ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Popup/ErrorPopup.php')) !== '') {
+    include $componentPath;
+  } ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Popup/LoadingPopup.php')) !== '') {
+    include $componentPath;
+  } ?>
+  <?php if (($componentPath = $getComponentPathOrLog('Popup/SuccessPopup.php')) !== '') {
+    include $componentPath;
+  } ?>
 </body>
 
 </html>
