@@ -53,7 +53,9 @@
   // Receipt Number Generation (from guest.js)
   async function generateReceiptNumber() {
     try {
-      const response = await fetch("api/Receipt.php");
+      const apiBase =
+        (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+      const response = await fetch(`${apiBase}/receipt.php`);
       const data = await response.json();
 
       if (data && data.success && data.receipt_no) {
