@@ -172,8 +172,8 @@ $currentUserId = isset($user_id) ? (string) $user_id : '';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="user-id" content="<?php echo htmlspecialchars($currentUserId, ENT_QUOTES, 'UTF-8'); ?>">
-<link rel="icon" type="image/jpeg"
-  href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="icon" type="image/x-icon"
+  href="<?php echo htmlspecialchars($assetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
 <link rel="apple-touch-icon"
   href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
 

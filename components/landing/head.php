@@ -17,10 +17,10 @@
   ?>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" type="image/jpeg"
-    href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
-  <link rel="shortcut icon" type="image/jpeg"
-    href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="icon" type="image/x-icon"
+    href="<?php echo htmlspecialchars($assetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="shortcut icon" type="image/x-icon"
+    href="<?php echo htmlspecialchars($assetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
   <link rel="apple-touch-icon"
     href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
   <title>BarCIE International Center - Your Gateway to Hospitality Excellence</title>
