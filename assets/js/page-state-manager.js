@@ -131,12 +131,16 @@
       return false;
     }
     document.querySelectorAll(".content-section").forEach((section) => {
-      section.classList.remove("active");
+      section.classList.remove("active", "d-block");
+      section.classList.add("d-none");
       section.style.display = "none";
+      section.setAttribute("aria-hidden", "true");
     });
 
-    targetSection.classList.add("active");
+    targetSection.classList.remove("d-none");
+    targetSection.classList.add("active", "d-block");
     targetSection.style.display = "block";
+    targetSection.setAttribute("aria-hidden", "false");
 
     updateSidebarNavigation(normalizedSection);
     const pageType = detectPageType();
@@ -148,11 +152,13 @@
   }
 
   function updateSidebarNavigation(sectionName) {
-    document.querySelectorAll(".nav-link").forEach((link) => {
-      link.classList.remove("active");
-    });
+    document
+      .querySelectorAll(".sidebar .nav-link, .sidebar .nav-link-custom")
+      .forEach((link) => {
+        link.classList.remove("active");
+      });
     const matchingLink = document.querySelector(
-      `.nav-link[href="#${sectionName}"]`,
+      `.sidebar .nav-link[data-section="${sectionName}"], .sidebar .nav-link-custom[data-section="${sectionName}"], .sidebar .nav-link[href="#${sectionName}"], .sidebar .nav-link-custom[href="#${sectionName}"]`,
     );
     if (matchingLink) {
       matchingLink.classList.add("active");
@@ -220,9 +226,23 @@
     document.addEventListener("click", function (e) {
       const navLink = e.target.closest('.nav-link[href^="#"]');
       if (navLink) {
+        if (navLink.classList.contains("dropdown-toggle")) {
+          return;
+        }
+
+        const href = (navLink.getAttribute("href") || "").trim();
+        const sectionName = href.substring(1).trim();
+        if (!sectionName) {
+          return;
+        }
+
+        const resolvedSection = normalizeSectionName(sectionName);
+        if (!resolveTargetSection(resolvedSection)) {
+          return;
+        }
+
         e.preventDefault();
-        const sectionName = navLink.getAttribute("href").substring(1);
-        navigateToSection(sectionName, true);
+        navigateToSection(resolvedSection, true);
       }
     });
 

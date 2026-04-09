@@ -27,6 +27,10 @@
   }
 
   var basePath = resolveModulesBasePath();
+  var moduleVersion =
+    typeof window !== "undefined" && window.__ADMIN_ASSET_VERSION
+      ? String(window.__ADMIN_ASSET_VERSION)
+      : "";
   var modules = [
     "core-navigation-sections.js",
     "core-init-bootstrap.js",
@@ -46,10 +50,13 @@
   ];
 
   for (var i = 0; i < modules.length; i++) {
-    var tag =
-      '<script src="' +
+    var moduleSrc =
       basePath +
       modules[i] +
+      (moduleVersion ? "?v=" + encodeURIComponent(moduleVersion) : "");
+    var tag =
+      '<script src="' +
+      moduleSrc +
       '" onerror="console.error(\'Failed loading module: ' +
       modules[i] +
       "')\"><\\/script>";
