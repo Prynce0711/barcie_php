@@ -1,5 +1,32 @@
 ﻿(function () {
-  var basePath = "Components/Admin/Dashboard/modules/";
+  function resolveModulesBasePath() {
+    var script = document.currentScript;
+
+    if (!script) {
+      var allScripts = document.getElementsByTagName("script");
+      script = allScripts.length > 0 ? allScripts[allScripts.length - 1] : null;
+    }
+
+    if (script && script.src) {
+      var src = script.src;
+      var lastSlashIndex = src.lastIndexOf("/");
+      if (lastSlashIndex !== -1) {
+        return src.substring(0, lastSlashIndex + 1) + "modules/";
+      }
+    }
+
+    var appBasePath =
+      typeof window !== "undefined" && typeof window.APP_BASE_PATH === "string"
+        ? window.APP_BASE_PATH
+        : "";
+    appBasePath = appBasePath.replace(/\/+$/, "");
+
+    return (
+      (appBasePath ? appBasePath : "") + "/Components/Admin/Dashboard/modules/"
+    );
+  }
+
+  var basePath = resolveModulesBasePath();
   var modules = [
     "core-navigation-sections.js",
     "core-init-bootstrap.js",
