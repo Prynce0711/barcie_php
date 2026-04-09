@@ -102,6 +102,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['convert_from_pencil']
     'company_contact' => $_POST['company_contact'] ?? ''
   ];
 }
+
+$pencil_conversion_script = '';
+$pencil_conversion_script_path = __DIR__ . '/Components/Guest/Booking/pencil-conversion.js';
+if (is_file($pencil_conversion_script_path) && is_readable($pencil_conversion_script_path)) {
+  $loaded_script = file_get_contents($pencil_conversion_script_path);
+  if ($loaded_script !== false) {
+    $pencil_conversion_script = $loaded_script;
+  }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -116,7 +125,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['convert_from_pencil']
     };
   </script>
   <!-- Pencil Conversion Handler -->
-  <script src="Components/Guest/Booking/pencil-conversion.js"></script>
+  <?php if ($pencil_conversion_script !== ''): ?>
+    <script>
+      <?php echo $pencil_conversion_script; ?>
+    </script>
+  <?php endif; ?>
 </head>
 
 <body class="flex min-h-screen flex-col overflow-x-hidden text-gray-800 transition-colors duration-500">
