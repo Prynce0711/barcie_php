@@ -699,6 +699,10 @@ $requireProjectFile('Components/Admin/data_processing.php');
       <script
         src="<?php echo htmlspecialchars($projectAssetUrl('assets/js/page-state-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
+      <script>
+        window.APP_BASE_PATH = <?php echo json_encode(APP_BASE_PATH); ?>;
+      </script>
+
       <!-- Dashboard JavaScript files -->
       <script
         src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Dashboard/dashboard-bootstrap.js'), ENT_QUOTES, 'UTF-8'); ?>"

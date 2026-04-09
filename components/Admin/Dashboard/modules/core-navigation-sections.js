@@ -45,7 +45,9 @@ function setupSectionNavigation() {
     return SECTION_ALIASES[id] || id;
   }
 
-  const navLinks = document.querySelectorAll(".nav-link-custom");
+  const navLinks = document.querySelectorAll(
+    ".sidebar .nav-link, .sidebar .nav-link-custom",
+  );
   console.log("Found navigation links:", navLinks.length);
 
   if (navLinks.length === 0) {
@@ -55,13 +57,42 @@ function setupSectionNavigation() {
     return;
   }
 
+  function getSectionIdFromLink(link) {
+    const dataSection = link.getAttribute("data-section");
+    if (dataSection) {
+      return dataSection;
+    }
+
+    const href = (link.getAttribute("href") || "").trim();
+    if (href.charAt(0) === "#" && href.length > 1) {
+      return href.substring(1);
+    }
+
+    return "";
+  }
+
   navLinks.forEach((link, index) => {
-    const sectionId = link.getAttribute("data-section");
-    console.log("  Setting up link " + (index + 1) + ": " + sectionId);
+    const sectionId = getSectionIdFromLink(link);
+    const isDropdownToggle = link.classList.contains("dropdown-toggle");
+    console.log(
+      "  Setting up link " +
+        (index + 1) +
+        ": " +
+        (sectionId || "(no section)") +
+        (isDropdownToggle ? " [dropdown]" : ""),
+    );
+
+    if (!sectionId || isDropdownToggle) {
+      return;
+    }
 
     link.addEventListener("click", function (e) {
       e.preventDefault();
-      const clickedSectionId = this.getAttribute("data-section");
+      const clickedSectionId = getSectionIdFromLink(this);
+      if (!clickedSectionId) {
+        return;
+      }
+
       console.log("Navigation clicked:", clickedSectionId);
       const resolved =
         typeof resolveSectionId === "function"
@@ -70,20 +101,20 @@ function setupSectionNavigation() {
       showSection(resolved);
 
       document
-        .querySelectorAll(".nav-link-custom")
+        .querySelectorAll(".sidebar .nav-link, .sidebar .nav-link-custom")
         .forEach((l) => l.classList.remove("active"));
       this.classList.add("active");
 
-      localStorage.setItem("activeSection", clickedSectionId);
+      localStorage.setItem("activeSection", resolved || clickedSectionId);
     });
   });
 
   const initialActiveLink = document.querySelector(
-    `.nav-link-custom[data-section="${lastSectionId}"]`,
+    `.sidebar .nav-link-custom[data-section="${lastSectionId}"], .sidebar .nav-link[data-section="${lastSectionId}"], .sidebar .nav-link-custom[href="#${lastSectionId}"], .sidebar .nav-link[href="#${lastSectionId}"]`,
   );
   if (initialActiveLink) {
     document
-      .querySelectorAll(".nav-link-custom")
+      .querySelectorAll(".sidebar .nav-link, .sidebar .nav-link-custom")
       .forEach((l) => l.classList.remove("active"));
     initialActiveLink.classList.add("active");
   }
@@ -105,10 +136,10 @@ function setupSectionNavigation() {
       showSection(resolved);
 
       document
-        .querySelectorAll(".nav-link-custom, .nav-link")
+        .querySelectorAll(".sidebar .nav-link, .sidebar .nav-link-custom")
         .forEach((l) => l.classList.remove("active"));
       const activeLink = document.querySelector(
-        `.nav-link-custom[data-section="${hash}"], .nav-link[data-section="${hash}"], .nav-link-custom[data-section="${resolved}"], .nav-link[data-section="${resolved}"]`,
+        `.sidebar .nav-link-custom[data-section="${hash}"], .sidebar .nav-link[data-section="${hash}"], .sidebar .nav-link-custom[data-section="${resolved}"], .sidebar .nav-link[data-section="${resolved}"], .sidebar .nav-link-custom[href="#${hash}"], .sidebar .nav-link[href="#${hash}"], .sidebar .nav-link-custom[href="#${resolved}"], .sidebar .nav-link[href="#${resolved}"]`,
       );
       if (activeLink) {
         activeLink.classList.add("active");
