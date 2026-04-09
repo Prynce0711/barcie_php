@@ -171,6 +171,31 @@ $projectAssetUrl = static function (string $relativePath) use ($appBasePath, $pr
   return ($appBasePath !== '' ? $appBasePath : '') . '/' . $assetPath;
 };
 
+$projectAssetVersion = static function (array $relativePaths) use ($resolveProjectFile): string {
+  $latestMtime = 0;
+
+  foreach ($relativePaths as $relativePath) {
+    $fullPath = $resolveProjectFile((string) $relativePath);
+    if ($fullPath === '' || !is_file($fullPath)) {
+      continue;
+    }
+
+    $mtime = @filemtime($fullPath);
+    if ($mtime !== false && $mtime > $latestMtime) {
+      $latestMtime = (int) $mtime;
+    }
+  }
+
+  return (string) ($latestMtime > 0 ? $latestMtime : time());
+};
+
+$adminNavAssetVersion = $projectAssetVersion([
+  'assets/js/page-state-manager.js',
+  'Components/Admin/Dashboard/dashboard-bootstrap.js',
+  'Components/Admin/Dashboard/modules/core-navigation-sections.js',
+  'Components/Admin/sidebar.php'
+]);
+
 if (!defined('APP_BASE_PATH')) {
   define('APP_BASE_PATH', $appBasePath);
 }
@@ -697,15 +722,16 @@ $requireProjectFile('Components/Admin/data_processing.php');
 
       <!-- Page State Manager - Load FIRST -->
       <script
-        src="<?php echo htmlspecialchars($projectAssetUrl('assets/js/page-state-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+        src="<?php echo htmlspecialchars($projectAssetUrl('assets/js/page-state-manager.js') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
       <script>
         window.APP_BASE_PATH = <?php echo json_encode(APP_BASE_PATH); ?>;
+        window.__ADMIN_ASSET_VERSION = <?php echo json_encode($adminNavAssetVersion); ?>;
       </script>
 
       <!-- Dashboard JavaScript files -->
       <script
-        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Dashboard/dashboard-bootstrap.js'), ENT_QUOTES, 'UTF-8'); ?>"
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Dashboard/dashboard-bootstrap.js') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
       <script
         src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Calendar/calendar-section.js'), ENT_QUOTES, 'UTF-8'); ?>"
