@@ -45,6 +45,10 @@ function setupSectionNavigation() {
     return SECTION_ALIASES[id] || id;
   }
 
+  function sectionExists(sectionId) {
+    return !!(sectionId && document.getElementById(sectionId));
+  }
+
   const navLinks = document.querySelectorAll(
     ".sidebar .nav-link, .sidebar .nav-link-custom",
   );
@@ -109,8 +113,17 @@ function setupSectionNavigation() {
     });
   });
 
+  const initialHash = window.location.hash.substring(1);
+  const resolvedHashSection = resolveSectionId(initialHash);
+  const resolvedStoredSection = resolveSectionId(lastSectionId);
+  const initialSectionId = sectionExists(resolvedHashSection)
+    ? resolvedHashSection
+    : sectionExists(resolvedStoredSection)
+      ? resolvedStoredSection
+      : "dashboard-section";
+
   const initialActiveLink = document.querySelector(
-    `.sidebar .nav-link-custom[data-section="${lastSectionId}"], .sidebar .nav-link[data-section="${lastSectionId}"], .sidebar .nav-link-custom[href="#${lastSectionId}"], .sidebar .nav-link[href="#${lastSectionId}"]`,
+    `.sidebar .nav-link-custom[data-section="${initialSectionId}"], .sidebar .nav-link[data-section="${initialSectionId}"], .sidebar .nav-link-custom[href="#${initialSectionId}"], .sidebar .nav-link[href="#${initialSectionId}"]`,
   );
   if (initialActiveLink) {
     document
@@ -120,11 +133,11 @@ function setupSectionNavigation() {
   }
 
   console.log("Initial section display...");
-  showSection(lastSectionId);
+  showSection(initialSectionId);
+  localStorage.setItem("activeSection", initialSectionId);
 
-  const initialHash = window.location.hash.substring(1);
-  if (initialHash === "Pencil-Bookings") {
-    window.location.hash = "pencil-bookings-section";
+  if (initialHash && resolvedHashSection && initialHash !== resolvedHashSection) {
+    window.location.hash = resolvedHashSection;
   }
 
   window.addEventListener("hashchange", function () {
