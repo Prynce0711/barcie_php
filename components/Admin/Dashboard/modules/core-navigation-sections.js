@@ -136,7 +136,11 @@ function setupSectionNavigation() {
   showSection(initialSectionId);
   localStorage.setItem("activeSection", initialSectionId);
 
-  if (initialHash && resolvedHashSection && initialHash !== resolvedHashSection) {
+  if (
+    initialHash &&
+    resolvedHashSection &&
+    initialHash !== resolvedHashSection
+  ) {
     window.location.hash = resolvedHashSection;
   }
 
