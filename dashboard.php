@@ -1,6 +1,136 @@
 <?php
+$normalizeDir = static function (?string $path): string {
+  if (!is_string($path) || $path === '') {
+    return '';
+  }
+
+  $trimmed = rtrim($path, DIRECTORY_SEPARATOR);
+  $real = realpath($trimmed);
+
+  return $real !== false ? $real : $trimmed;
+};
+
+$resolveCaseInsensitivePath = static function (string $basePath, string $relativePath): string {
+  $current = $basePath;
+  $segments = explode(DIRECTORY_SEPARATOR, $relativePath);
+
+  foreach ($segments as $segment) {
+    if ($segment === '' || $segment === '.') {
+      continue;
+    }
+
+    $direct = $current . DIRECTORY_SEPARATOR . $segment;
+    if (file_exists($direct)) {
+      $current = $direct;
+      continue;
+    }
+
+    $entries = @scandir($current);
+    if ($entries === false) {
+      return '';
+    }
+
+    $matched = null;
+    foreach ($entries as $entry) {
+      if (strcasecmp($entry, $segment) === 0) {
+        $matched = $entry;
+        break;
+      }
+    }
+
+    if ($matched === null) {
+      return '';
+    }
+
+    $current = $current . DIRECTORY_SEPARATOR . $matched;
+  }
+
+  return $current;
+};
+
+$documentRoot = isset($_SERVER['DOCUMENT_ROOT'])
+  ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR)
+  : '';
+
+$scriptDir = isset($_SERVER['SCRIPT_FILENAME'])
+  ? dirname((string) $_SERVER['SCRIPT_FILENAME'])
+  : '';
+
+$projectRootCandidates = array_filter(array_unique([
+  __DIR__,
+  dirname(__DIR__) . DIRECTORY_SEPARATOR . 'barcie_php',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) : '',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'barcie_php' : '',
+  $documentRoot !== '' ? $documentRoot : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' : '',
+]));
+
+$projectRoot = __DIR__;
+foreach ($projectRootCandidates as $candidate) {
+  $normalizedCandidate = $normalizeDir($candidate);
+  if ($normalizedCandidate === '' || !is_dir($normalizedCandidate)) {
+    continue;
+  }
+
+  $componentsPath = $normalizedCandidate . DIRECTORY_SEPARATOR . 'Components';
+  if (!is_dir($componentsPath)) {
+    $resolvedComponentsPath = $resolveCaseInsensitivePath($normalizedCandidate, 'Components');
+    if ($resolvedComponentsPath === '' || !is_dir($resolvedComponentsPath)) {
+      continue;
+    }
+    $componentsPath = $resolvedComponentsPath;
+  }
+
+  $resolvedDataProcessingPath = $resolveCaseInsensitivePath(
+    $componentsPath,
+    'Admin' . DIRECTORY_SEPARATOR . 'data_processing.php'
+  );
+
+  if ($resolvedDataProcessingPath !== '' && is_file($resolvedDataProcessingPath)) {
+    $projectRoot = dirname($componentsPath);
+    break;
+  }
+}
+
+$projectRoot = rtrim($projectRoot, DIRECTORY_SEPARATOR);
+
+$resolveProjectFile = static function (string $relativePath) use ($projectRoot, $resolveCaseInsensitivePath): string {
+  $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+  $fullPath = $projectRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
+
+  if (is_file($fullPath)) {
+    return $fullPath;
+  }
+
+  $resolvedPath = $resolveCaseInsensitivePath($projectRoot, $normalizedRelativePath);
+  if ($resolvedPath !== '' && is_file($resolvedPath)) {
+    return $resolvedPath;
+  }
+
+  return '';
+};
+
+$requireProjectFile = static function (string $relativePath) use ($resolveProjectFile): void {
+  $path = $resolveProjectFile($relativePath);
+  if ($path === '') {
+    throw new RuntimeException('Missing required project file: ' . $relativePath);
+  }
+
+  require_once $path;
+};
+
+$includeProjectFile = static function (string $relativePath) use ($resolveProjectFile): void {
+  $path = $resolveProjectFile($relativePath);
+  if ($path === '') {
+    trigger_error('Missing project include: ' . $relativePath, E_USER_WARNING);
+    return;
+  }
+
+  include $path;
+};
+
 // Include data processing logic
-require_once __DIR__ . '/Components/Admin/data_processing.php';
+$requireProjectFile('Components/Admin/data_processing.php');
 ?>
 
 <!DOCTYPE html>
@@ -26,7 +156,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
   <link rel="stylesheet" href="Components/Admin/dashboard.css">
 
   <!-- Tailwind CSS (compiled via CLI from src/css/admin.css) -->
-  <?php if (file_exists(__DIR__ . '/dist/css/admin.css')): ?>
+  <?php if ($resolveProjectFile('dist/css/admin.css') !== ''): ?>
     <link rel="stylesheet" href="dist/css/admin.css">
   <?php else: ?>
     <link rel="stylesheet" href="Components/Admin/admin-tw-base.css">
@@ -51,12 +181,12 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
     <i class="fas fa-bars"></i>
   </button>
 
-  <?php include __DIR__ . '/Components/Admin/sidebar.php'; ?>
+  <?php $includeProjectFile('Components/Admin/sidebar.php'); ?>
 
   <div class="main-content">
     <div class="container-fluid px-2" style="max-width: 100%;">
       <section id="dashboard-section" class="content-section active d-block">
-        <?php include __DIR__ . '/Components/Admin/Dashboard/dashboard_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Dashboard/dashboard_section.php'); ?>
       </section>
 
       <?php
@@ -162,59 +292,59 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
       <!-- Calendar & Rooms Section -->
       <section id="calendar-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Calendar/calendar_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Calendar/calendar_section.php'); ?>
       </section>
 
       <section id="rooms-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/rooms_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/RoomsAndFacilities/rooms_section.php'); ?>
       </section>
 
       <!-- Bookings Management -->
       <section id="bookings-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/BookingsSection.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Booking/BookingsSection.php'); ?>
       </section>
 
       <!-- Pencil Bookings Management (independent from bookings) -->
       <section id="pencil-bookings-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/PencilBookManagement.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Booking/PencilBookManagement.php'); ?>
       </section>
 
 
       <!-- Feedback Section -->
       <section id="feedback-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Feedback/feedback_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Feedback/feedback_section.php'); ?>
       </section>
 
       <!-- News & Updates Section -->
       <section id="news-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/News/news_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/News/news_section.php'); ?>
       </section>
 
       <section id="partners-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Partners/partners_management_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Partners/partners_management_section.php'); ?>
       </section>
 
       <section id="brochure-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Brochure/brochure_management_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Brochure/brochure_management_section.php'); ?>
       </section>
 
       <section id="discount-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/DiscountManagement/discount_management_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/DiscountManagement/discount_management_section.php'); ?>
       </section>
 
       <!-- Payment Verification Section -->
       <section id="payment-verification-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/PaymentVerification.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Booking/PaymentVerification.php'); ?>
       </section>
 
       <!-- Reports & Analytics Section -->
       <section id="reports-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Reports/reports_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Reports/reports_section.php'); ?>
       </section>
 
       <!-- Admin Management Section (Manage Roles) -->
       <section id="admin-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/AccountManagement/admin_management_enhanced.php'; ?>
+        <?php $includeProjectFile('Components/Admin/AccountManagement/admin_management_enhanced.php'); ?>
       </section>
 
 
@@ -224,7 +354,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
       </div> -->
 
-      <?php require_once __DIR__ . '/Components/Admin/footer.php'; ?>
+      <?php $requireProjectFile('Components/Admin/footer.php'); ?>
 
 
 
@@ -334,13 +464,13 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
       <!-- Load JavaScript files at the end of body for better performance -->
       <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
-      <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/add_item_modal.php'; ?>
-      <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/edit_item_modal.php'; ?>
+      <?php $includeProjectFile('Components/Admin/RoomsAndFacilities/add_item_modal.php'); ?>
+      <?php $includeProjectFile('Components/Admin/RoomsAndFacilities/edit_item_modal.php'); ?>
 
       <!-- Include Admin Management Modals at page bottom so they're always accessible -->
-      <?php include __DIR__ . '/Components/Admin/AccountManagement/admin_auth_modal.php'; ?>
-      <?php include __DIR__ . '/Components/Admin/AccountManagement/add_admin_modal.php'; ?>
-      <?php include __DIR__ . '/Components/Admin/AccountManagement/edit_admin_modal.php'; ?>
+      <?php $includeProjectFile('Components/Admin/AccountManagement/admin_auth_modal.php'); ?>
+      <?php $includeProjectFile('Components/Admin/AccountManagement/add_admin_modal.php'); ?>
+      <?php $includeProjectFile('Components/Admin/AccountManagement/edit_admin_modal.php'); ?>
 
       <!-- Delete Admin Confirmation Modal (header styled blue for modal theme consistency) -->
       <div class="modal fade" id="deleteAdminModal" tabindex="-1" aria-labelledby="deleteAdminModalLabel"
@@ -442,10 +572,10 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         })();
       </script>
 
-      <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>
-      <?php include __DIR__ . '/Components/Popup/ErrorPopup.php'; ?>
-      <?php include __DIR__ . '/Components/Popup/LoadingPopup.php'; ?>
-      <?php include __DIR__ . '/Components/Popup/SuccessPopup.php'; ?>
+      <?php $includeProjectFile('Components/Popup/ConfirmPopup.php'); ?>
+      <?php $includeProjectFile('Components/Popup/ErrorPopup.php'); ?>
+      <?php $includeProjectFile('Components/Popup/LoadingPopup.php'); ?>
+      <?php $includeProjectFile('Components/Popup/SuccessPopup.php'); ?>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
