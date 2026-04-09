@@ -8,6 +8,12 @@
       return ($basePath !== '' ? $basePath : '') . '/' . $normalizedPath;
     };
   }
+
+  if (!isset($componentAssetUrl) || !is_callable($componentAssetUrl)) {
+    $componentAssetUrl = static function (string $path) use ($assetUrl): string {
+      return $assetUrl('Components/' . ltrim(str_replace('\\', '/', $path), '/'));
+    };
+  }
   ?>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -22,20 +28,20 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Custom Landing Page CSS -->
   <link rel="stylesheet"
-    href="<?php echo htmlspecialchars($assetUrl('Components/Landing/landing-page.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
+    href="<?php echo htmlspecialchars($componentAssetUrl('Landing/landing-page.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
   <!-- Caterings / Event Stylists CSS -->
   <link rel="stylesheet"
-    href="<?php echo htmlspecialchars($assetUrl('Components/Landing/caterings.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
+    href="<?php echo htmlspecialchars($componentAssetUrl('Landing/caterings.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
   <!-- News Section CSS -->
   <link rel="stylesheet"
-    href="<?php echo htmlspecialchars($assetUrl('Components/Admin/News/news.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
+    href="<?php echo htmlspecialchars($componentAssetUrl('Admin/News/news.css') . '?v=' . $css_version, ENT_QUOTES, 'UTF-8'); ?>">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Bootstrap JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Popup Manager -->
   <script
-    src="<?php echo htmlspecialchars($assetUrl('Components/Popup/popup-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+    src="<?php echo htmlspecialchars($componentAssetUrl('Popup/popup-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
   <!-- AOS Animation Library -->
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
@@ -78,6 +84,7 @@
     }
 
     /* Glassmorphism Effects */
+
     .glass-card {
       background: var(--glass-bg);
       backdrop-filter: blur(20px);
