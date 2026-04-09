@@ -224,14 +224,15 @@
     });
 
     document.addEventListener("click", function (e) {
-      const navLink = e.target.closest('.nav-link[href^="#"]');
+      const navLink = e.target.closest('.sidebar a[href^="#"]');
       if (navLink) {
         if (navLink.classList.contains("dropdown-toggle")) {
           return;
         }
 
+        const dataSection = (navLink.getAttribute("data-section") || "").trim();
         const href = (navLink.getAttribute("href") || "").trim();
-        const sectionName = href.substring(1).trim();
+        const sectionName = (dataSection || href.substring(1)).trim();
         if (!sectionName) {
           return;
         }
