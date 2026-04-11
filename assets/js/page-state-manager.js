@@ -133,13 +133,13 @@
     document.querySelectorAll(".content-section").forEach((section) => {
       section.classList.remove("active", "d-block");
       section.classList.add("d-none");
-      section.style.display = "none";
+      section.style.setProperty("display", "none", "important");
       section.setAttribute("aria-hidden", "true");
     });
 
     targetSection.classList.remove("d-none");
     targetSection.classList.add("active", "d-block");
-    targetSection.style.display = "block";
+    targetSection.style.setProperty("display", "block", "important");
     targetSection.setAttribute("aria-hidden", "false");
 
     updateSidebarNavigation(normalizedSection);
@@ -223,29 +223,35 @@
       }
     });
 
-    document.addEventListener("click", function (e) {
-      const navLink = e.target.closest('.sidebar a[href^="#"]');
-      if (navLink) {
-        if (navLink.classList.contains("dropdown-toggle")) {
-          return;
-        }
+    document.addEventListener(
+      "click",
+      function (e) {
+        const navLink = e.target.closest('.sidebar a[href^="#"]');
+        if (navLink) {
+          if (navLink.classList.contains("dropdown-toggle")) {
+            return;
+          }
 
-        const dataSection = (navLink.getAttribute("data-section") || "").trim();
-        const href = (navLink.getAttribute("href") || "").trim();
-        const sectionName = (dataSection || href.substring(1)).trim();
-        if (!sectionName) {
-          return;
-        }
+          const dataSection = (
+            navLink.getAttribute("data-section") || ""
+          ).trim();
+          const href = (navLink.getAttribute("href") || "").trim();
+          const sectionName = (dataSection || href.substring(1)).trim();
+          if (!sectionName) {
+            return;
+          }
 
-        const resolvedSection = normalizeSectionName(sectionName);
-        if (!resolveTargetSection(resolvedSection)) {
-          return;
-        }
+          const resolvedSection = normalizeSectionName(sectionName);
+          if (!resolveTargetSection(resolvedSection)) {
+            return;
+          }
 
-        e.preventDefault();
-        navigateToSection(resolvedSection, true);
-      }
-    });
+          e.preventDefault();
+          navigateToSection(resolvedSection, true);
+        }
+      },
+      true,
+    );
 
     setInterval(function () {
       const currentSection = getCurrentSection();

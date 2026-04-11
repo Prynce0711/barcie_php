@@ -116,6 +116,13 @@ $requireProjectFile = static function (string $relativePath) use ($resolveProjec
     throw new RuntimeException('Missing required project file: ' . $relativePath);
   }
 
+  foreach ($GLOBALS as $name => &$value) {
+    if ($name === 'GLOBALS') {
+      continue;
+    }
+    ${$name} = &$value;
+  }
+
   require_once $path;
 };
 
@@ -124,6 +131,13 @@ $includeProjectFile = static function (string $relativePath) use ($resolveProjec
   if ($path === '') {
     trigger_error('Missing project include: ' . $relativePath, E_USER_WARNING);
     return;
+  }
+
+  foreach ($GLOBALS as $name => &$value) {
+    if ($name === 'GLOBALS') {
+      continue;
+    }
+    ${$name} = &$value;
   }
 
   include $path;
@@ -191,6 +205,8 @@ $projectAssetVersion = static function (array $relativePaths) use ($resolveProje
 
 $adminNavAssetVersion = $projectAssetVersion([
   'assets/js/page-state-manager.js',
+  'assets/css/page-state.css',
+  'Components/Admin/dashboard.css',
   'Components/Admin/Dashboard/dashboard-bootstrap.js',
   'Components/Admin/Dashboard/modules/core-navigation-sections.js',
   'Components/Admin/sidebar.php'
@@ -201,7 +217,14 @@ if (!defined('APP_BASE_PATH')) {
 }
 
 // Include data processing logic
-$requireProjectFile('Components/Admin/data_processing.php');
+$dataProcessingPath = $resolveProjectFile('Components/Admin/data_processing.php');
+if ($dataProcessingPath === '') {
+  throw new RuntimeException('Missing required project file: Components/Admin/data_processing.php');
+}
+
+// Load in global scope so exported variables (e.g. $conn, dashboard aggregates)
+// remain available to the rest of dashboard.php.
+require $dataProcessingPath;
 ?>
 
 <!DOCTYPE html>
@@ -226,7 +249,7 @@ $requireProjectFile('Components/Admin/data_processing.php');
     src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <link rel="stylesheet"
-    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/dashboard.css'), ENT_QUOTES, 'UTF-8'); ?>">
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/dashboard.css') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>">
 
   <!-- Tailwind CSS (compiled via CLI from src/css/admin.css) -->
   <?php if ($resolveProjectFile('dist/css/admin.css') !== ''): ?>
@@ -239,7 +262,7 @@ $requireProjectFile('Components/Admin/data_processing.php');
   <link rel="stylesheet"
     href="<?php echo htmlspecialchars($projectAssetUrl('assets/css/mobile-responsive.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <link rel="stylesheet"
-    href="<?php echo htmlspecialchars($projectAssetUrl('assets/css/page-state.css'), ENT_QUOTES, 'UTF-8'); ?>">
+    href="<?php echo htmlspecialchars($projectAssetUrl('assets/css/page-state.css') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>">
   <link rel="stylesheet"
     href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/News/news.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <link rel="stylesheet"

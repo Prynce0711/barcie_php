@@ -31,6 +31,16 @@
 function setupSectionNavigation() {
   console.log("Setting up section navigation...");
 
+  if (
+    window.BarcieStateManager &&
+    typeof window.BarcieStateManager.navigate === "function"
+  ) {
+    console.log(
+      "Page State Manager detected; skipping legacy section navigation bindings.",
+    );
+    return;
+  }
+
   const lastSectionId =
     localStorage.getItem("activeSection") || "dashboard-section";
 
