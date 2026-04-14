@@ -53,7 +53,7 @@
 </button>
 
 <link rel="stylesheet"
-  href="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/ChatBot/chatbot.css', ENT_QUOTES, 'UTF-8'); ?>">
+  href="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'components') . '/guest/ChatBot/chatbot.css', ENT_QUOTES, 'UTF-8'); ?>">
 <script
-  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/ChatBot/chatbot.js', ENT_QUOTES, 'UTF-8'); ?>"
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'components') . '/guest/ChatBot/chatbot.js', ENT_QUOTES, 'UTF-8'); ?>"
   defer></script>

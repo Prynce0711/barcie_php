@@ -661,5 +661,5 @@ if (file_exists($guestDebugInitPath)) {
 }
 ?>
 <script
-  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/Booking/guest-inline.js', ENT_QUOTES, 'UTF-8'); ?>"
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'components') . '/guest/Booking/guest-inline.js', ENT_QUOTES, 'UTF-8'); ?>"
   defer></script>
