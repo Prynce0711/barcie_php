@@ -440,7 +440,7 @@
 </div>
 
 <!-- Room Feedback Modal -->
-<?php include __DIR__ . '/../../Guest/Feedback/RoomFeedback.php'; ?>
+<?php include __DIR__ . '/../../guest/Feedback/RoomFeedback.php'; ?>
 
 <!-- Card template (hidden) -->
 <template id="roomCardTemplate">

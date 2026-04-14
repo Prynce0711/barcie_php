@@ -52,12 +52,42 @@
   }
 
   // Global function exports for compatibility
-  window.showSection = showSection;
-  window.toggleBookingForm = toggleBookingForm;
-  window.generateReceiptNumber = generateReceiptNumber;
-  window.pencilReminder = pencilReminder;
-  window.reservationReminder = reservationReminder;
-  window.showToast = showToast;
+  window.showSection =
+    typeof showSection === "function"
+      ? showSection
+      : function () {
+        console.info("Guest: showSection is not ready yet");
+      };
+  window.toggleBookingForm =
+    typeof toggleBookingForm === "function"
+      ? toggleBookingForm
+      : function () {
+        console.info("Guest: toggleBookingForm is not ready yet");
+      };
+  window.generateReceiptNumber =
+    typeof generateReceiptNumber === "function"
+      ? generateReceiptNumber
+      : function () {
+        console.info("Guest: generateReceiptNumber is not ready yet");
+      };
+  window.pencilReminder =
+    typeof pencilReminder === "function"
+      ? pencilReminder
+      : function () {
+        console.info("Guest: pencilReminder is not ready yet");
+      };
+  window.reservationReminder =
+    typeof reservationReminder === "function"
+      ? reservationReminder
+      : function () {
+        console.info("Guest: reservationReminder is not ready yet");
+      };
+  window.showToast =
+    typeof showToast === "function"
+      ? showToast
+      : function () {
+        console.info("Guest: showToast is not ready yet");
+      };
   window.toggleSidebar = toggleSidebar;
   window.closeSidebar = closeSidebar;
   window.loadItems =
@@ -68,11 +98,36 @@
         return Promise.resolve([]);
       };
   window.loadRooms = window.loadItems; // Alias for room feedback system
-  window.filterItems = filterItems;
-  window.showItemDetails = showItemDetails;
-  window.redirectToBooking = redirectToBooking;
-  window.setupItemButtons = setupItemButtons;
-  window.scrollToAvailability = scrollToAvailability;
+  window.filterItems =
+    typeof filterItems === "function"
+      ? filterItems
+      : function () {
+        console.info("Guest: filterItems is not ready yet");
+      };
+  window.showItemDetails =
+    typeof showItemDetails === "function"
+      ? showItemDetails
+      : function () {
+        console.info("Guest: showItemDetails is not ready yet");
+      };
+  window.redirectToBooking =
+    typeof redirectToBooking === "function"
+      ? redirectToBooking
+      : function () {
+        console.info("Guest: redirectToBooking is not ready yet");
+      };
+  window.setupItemButtons =
+    typeof setupItemButtons === "function"
+      ? setupItemButtons
+      : function () {
+        console.info("Guest: setupItemButtons is not ready yet");
+      };
+  window.scrollToAvailability =
+    typeof scrollToAvailability === "function"
+      ? scrollToAvailability
+      : function () {
+        console.info("Guest: scrollToAvailability is not ready yet");
+      };
 
   // Interactive Overview Setup - Typical Dashboard Style
   function setupInteractiveOverview() {

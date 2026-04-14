@@ -1,5 +1,28 @@
 <?php
-require __DIR__ . '/Bootstrap.php';
+$bootstrapPath = __DIR__ . '/Bootstrap.php';
+if (!is_file($bootstrapPath)) {
+    $entries = @scandir(__DIR__);
+    if (is_array($entries)) {
+        foreach ($entries as $entry) {
+            if (strcasecmp($entry, 'Bootstrap.php') === 0) {
+                $bootstrapPath = __DIR__ . '/' . $entry;
+                break;
+            }
+        }
+    }
+}
+
+if (!is_file($bootstrapPath)) {
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'API bootstrap file not found',
+    ]);
+    exit;
+}
+
+require $bootstrapPath;
 
 header('Content-Type: application/json');
 
