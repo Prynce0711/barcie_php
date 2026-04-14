@@ -1,5 +1,36 @@
 ﻿(function () {
-  var basePath = "Components/Admin/Dashboard/modules/";
+  function resolveModulesBasePath() {
+    var script = document.currentScript;
+
+    if (!script) {
+      var allScripts = document.getElementsByTagName("script");
+      script = allScripts.length > 0 ? allScripts[allScripts.length - 1] : null;
+    }
+
+    if (script && script.src) {
+      var src = script.src;
+      var lastSlashIndex = src.lastIndexOf("/");
+      if (lastSlashIndex !== -1) {
+        return src.substring(0, lastSlashIndex + 1) + "modules/";
+      }
+    }
+
+    var appBasePath =
+      typeof window !== "undefined" && typeof window.APP_BASE_PATH === "string"
+        ? window.APP_BASE_PATH
+        : "";
+    appBasePath = appBasePath.replace(/\/+$/, "");
+
+    return (
+      (appBasePath ? appBasePath : "") + "/Components/Admin/Dashboard/modules/"
+    );
+  }
+
+  var basePath = resolveModulesBasePath();
+  var moduleVersion =
+    typeof window !== "undefined" && window.__ADMIN_ASSET_VERSION
+      ? String(window.__ADMIN_ASSET_VERSION)
+      : "";
   var modules = [
     "core-navigation-sections.js",
     "core-init-bootstrap.js",
@@ -19,10 +50,13 @@
   ];
 
   for (var i = 0; i < modules.length; i++) {
-    var tag =
-      '<script src="' +
+    var moduleSrc =
       basePath +
       modules[i] +
+      (moduleVersion ? "?v=" + encodeURIComponent(moduleVersion) : "");
+    var tag =
+      '<script src="' +
+      moduleSrc +
       '" onerror="console.error(\'Failed loading module: ' +
       modules[i] +
       "')\"><\\/script>";

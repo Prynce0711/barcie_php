@@ -45,6 +45,10 @@
 
             <!-- Description -->
             <p class="card-description my-2 line-clamp-3 text-sm leading-relaxed text-slate-600"></p>
+            <button type="button"
+                class="card-description-toggle hidden p-0 text-start text-xs font-semibold text-sky-700 hover:text-sky-900">
+                See more
+            </button>
 
             <!-- Action buttons -->
             <div class="card-actions mt-4 grid grid-cols-3 gap-2">
@@ -82,13 +86,48 @@
         return html;
     }
 
+    function setupDescriptionToggle(card) {
+        const descEl = card.querySelector(".card-description");
+        const toggleEl = card.querySelector(".card-description-toggle");
+        if (!descEl || !toggleEl) return;
+
+        // Reset to collapsed state before measuring overflow.
+        descEl.classList.add("line-clamp-3");
+        toggleEl.classList.add("hidden");
+        toggleEl.textContent = "See more";
+
+        requestAnimationFrame(() => {
+            const clampedHeight = descEl.getBoundingClientRect().height;
+            descEl.classList.remove("line-clamp-3");
+            const expandedHeight = descEl.getBoundingClientRect().height;
+            descEl.classList.add("line-clamp-3");
+
+            const hasOverflow = expandedHeight - clampedHeight > 1;
+            if (!hasOverflow) return;
+
+            toggleEl.classList.remove("hidden");
+            toggleEl.onclick = () => {
+                const isExpanded = !descEl.classList.contains("line-clamp-3");
+                if (isExpanded) {
+                    descEl.classList.add("line-clamp-3");
+                    toggleEl.textContent = "See more";
+                } else {
+                    descEl.classList.remove("line-clamp-3");
+                    toggleEl.textContent = "See less";
+                }
+            };
+        });
+    }
+
     // ── loadItems ─────────────────────────────────────────────────────────────
 
     async function loadItems() {
         console.log("Guest: Loading items from API...");
 
         try {
-            const res = await fetch("api/Items.php");
+            const apiBase =
+                (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+            const res = await fetch(`${apiBase}/items.php`);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
             const response = await res.json();
@@ -199,6 +238,7 @@
                 if (avail !== "available") btnBook.disabled = true;
 
                 container.appendChild(card);
+                setupDescriptionToggle(card);
             });
 
             setupItemButtons();

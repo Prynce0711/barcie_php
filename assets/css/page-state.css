@@ -39,9 +39,7 @@ body.page-loaded .content-section.active {
    and are not constrained by earlier dashboard rules. This file is loaded
    after other dashboard CSS, so these values win. */
 @media (max-width: 768px) {
-  .main-content,
-  .content-section {
-    display: block !important;
+  .main-content {
     width: 100% !important;
     max-width: 100% !important;
     margin-left: 0 !important;

@@ -8,10 +8,15 @@
 </div>
 
 <!-- Page State Manager - Load FIRST -->
-<script src="assets/js/page-state-manager.js"></script>
+<script
+  src="<?php echo htmlspecialchars((defined('GUEST_ASSET_BASE_PATH') ? GUEST_ASSET_BASE_PATH : '') . '/assets/js/page-state-manager.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
-<script src="Components/Guest/Sidebar/sidebar-mobile.js" defer></script>
-<script src="Components/Guest/Feedback/room-feedback.js" defer></script>
+<script
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/Sidebar/sidebar-mobile.js', ENT_QUOTES, 'UTF-8'); ?>"
+  defer></script>
+<script
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/Feedback/room-feedback.js', ENT_QUOTES, 'UTF-8'); ?>"
+  defer></script>
 </body>
 
 </html>

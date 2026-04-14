@@ -1,6 +1,230 @@
 <?php
+$normalizeDir = static function (?string $path): string {
+  if (!is_string($path) || $path === '') {
+    return '';
+  }
+
+  $trimmed = rtrim($path, DIRECTORY_SEPARATOR);
+  $real = realpath($trimmed);
+
+  return $real !== false ? $real : $trimmed;
+};
+
+$resolveCaseInsensitivePath = static function (string $basePath, string $relativePath): string {
+  $current = $basePath;
+  $segments = explode(DIRECTORY_SEPARATOR, $relativePath);
+
+  foreach ($segments as $segment) {
+    if ($segment === '' || $segment === '.') {
+      continue;
+    }
+
+    $direct = $current . DIRECTORY_SEPARATOR . $segment;
+    if (file_exists($direct)) {
+      $current = $direct;
+      continue;
+    }
+
+    $entries = @scandir($current);
+    if ($entries === false) {
+      return '';
+    }
+
+    $matched = null;
+    foreach ($entries as $entry) {
+      if (strcasecmp($entry, $segment) === 0) {
+        $matched = $entry;
+        break;
+      }
+    }
+
+    if ($matched === null) {
+      return '';
+    }
+
+    $current = $current . DIRECTORY_SEPARATOR . $matched;
+  }
+
+  return $current;
+};
+
+$documentRoot = isset($_SERVER['DOCUMENT_ROOT'])
+  ? rtrim((string) $_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR)
+  : '';
+
+$scriptDir = isset($_SERVER['SCRIPT_FILENAME'])
+  ? dirname((string) $_SERVER['SCRIPT_FILENAME'])
+  : '';
+
+$projectRootCandidates = array_filter(array_unique([
+  __DIR__,
+  dirname(__DIR__) . DIRECTORY_SEPARATOR . 'barcie_php',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) : '',
+  $scriptDir !== '' ? rtrim($scriptDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'barcie_php' : '',
+  $documentRoot !== '' ? $documentRoot : '',
+  $documentRoot !== '' ? $documentRoot . DIRECTORY_SEPARATOR . 'barcie_php' : '',
+]));
+
+$projectRoot = __DIR__;
+foreach ($projectRootCandidates as $candidate) {
+  $normalizedCandidate = $normalizeDir($candidate);
+  if ($normalizedCandidate === '' || !is_dir($normalizedCandidate)) {
+    continue;
+  }
+
+  $componentsPath = $normalizedCandidate . DIRECTORY_SEPARATOR . 'Components';
+  if (!is_dir($componentsPath)) {
+    $resolvedComponentsPath = $resolveCaseInsensitivePath($normalizedCandidate, 'Components');
+    if ($resolvedComponentsPath === '' || !is_dir($resolvedComponentsPath)) {
+      continue;
+    }
+    $componentsPath = $resolvedComponentsPath;
+  }
+
+  $resolvedDataProcessingPath = $resolveCaseInsensitivePath(
+    $componentsPath,
+    'Admin' . DIRECTORY_SEPARATOR . 'data_processing.php'
+  );
+
+  if ($resolvedDataProcessingPath !== '' && is_file($resolvedDataProcessingPath)) {
+    $projectRoot = dirname($componentsPath);
+    break;
+  }
+}
+
+$projectRoot = rtrim($projectRoot, DIRECTORY_SEPARATOR);
+
+$resolveProjectFile = static function (string $relativePath) use ($projectRoot, $resolveCaseInsensitivePath): string {
+  $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+  $fullPath = $projectRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
+
+  if (is_file($fullPath)) {
+    return $fullPath;
+  }
+
+  $resolvedPath = $resolveCaseInsensitivePath($projectRoot, $normalizedRelativePath);
+  if ($resolvedPath !== '' && is_file($resolvedPath)) {
+    return $resolvedPath;
+  }
+
+  return '';
+};
+
+$requireProjectFile = static function (string $relativePath) use ($resolveProjectFile): void {
+  $path = $resolveProjectFile($relativePath);
+  if ($path === '') {
+    throw new RuntimeException('Missing required project file: ' . $relativePath);
+  }
+
+  foreach ($GLOBALS as $name => &$value) {
+    if ($name === 'GLOBALS') {
+      continue;
+    }
+    ${$name} = &$value;
+  }
+
+  require_once $path;
+};
+
+$includeProjectFile = static function (string $relativePath) use ($resolveProjectFile): void {
+  $path = $resolveProjectFile($relativePath);
+  if ($path === '') {
+    trigger_error('Missing project include: ' . $relativePath, E_USER_WARNING);
+    return;
+  }
+
+  foreach ($GLOBALS as $name => &$value) {
+    if ($name === 'GLOBALS') {
+      continue;
+    }
+    ${$name} = &$value;
+  }
+
+  include $path;
+};
+
+$computeAppBasePath = static function (string $projectRootPath, string $docRoot): string {
+  $normalizedProjectRoot = rtrim(str_replace('\\', '/', $projectRootPath), '/');
+  $normalizedDocRoot = rtrim(str_replace('\\', '/', $docRoot), '/');
+
+  if (
+    $normalizedDocRoot !== '' &&
+    strncasecmp($normalizedProjectRoot, $normalizedDocRoot, strlen($normalizedDocRoot)) === 0
+  ) {
+    $relative = trim(substr($normalizedProjectRoot, strlen($normalizedDocRoot)), '/');
+    return $relative === '' ? '' : '/' . $relative;
+  }
+
+  $scriptName = isset($_SERVER['SCRIPT_NAME']) ? (string) $_SERVER['SCRIPT_NAME'] : '';
+  $scriptDirName = trim(str_replace('\\', '/', dirname($scriptName)), '/.');
+
+  return $scriptDirName === '' ? '' : '/' . $scriptDirName;
+};
+
+$appBasePath = $computeAppBasePath($projectRoot, $documentRoot);
+
+$projectAssetPath = static function (string $relativePath) use ($resolveProjectFile, $projectRoot): string {
+  $normalizedRelativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+  $resolvedPath = $resolveProjectFile($normalizedRelativePath);
+
+  if ($resolvedPath !== '') {
+    $normalizedProjectRoot = rtrim(str_replace('\\', '/', $projectRoot), '/');
+    $normalizedResolvedPath = str_replace('\\', '/', $resolvedPath);
+    $projectPrefix = $normalizedProjectRoot . '/';
+
+    if (strpos($normalizedResolvedPath, $projectPrefix) === 0) {
+      return ltrim(substr($normalizedResolvedPath, strlen($projectPrefix)), '/');
+    }
+  }
+
+  return $normalizedRelativePath;
+};
+
+$projectAssetUrl = static function (string $relativePath) use ($appBasePath, $projectAssetPath): string {
+  $assetPath = $projectAssetPath($relativePath);
+  return ($appBasePath !== '' ? $appBasePath : '') . '/' . $assetPath;
+};
+
+$projectAssetVersion = static function (array $relativePaths) use ($resolveProjectFile): string {
+  $latestMtime = 0;
+
+  foreach ($relativePaths as $relativePath) {
+    $fullPath = $resolveProjectFile((string) $relativePath);
+    if ($fullPath === '' || !is_file($fullPath)) {
+      continue;
+    }
+
+    $mtime = @filemtime($fullPath);
+    if ($mtime !== false && $mtime > $latestMtime) {
+      $latestMtime = (int) $mtime;
+    }
+  }
+
+  return (string) ($latestMtime > 0 ? $latestMtime : time());
+};
+
+$adminNavAssetVersion = $projectAssetVersion([
+  'assets/js/page-state-manager.js',
+  'assets/css/page-state.css',
+  'Components/Admin/dashboard.css',
+  'Components/Admin/Dashboard/dashboard-bootstrap.js',
+  'Components/Admin/Dashboard/modules/core-navigation-sections.js',
+  'Components/Admin/sidebar.php'
+]);
+
+if (!defined('APP_BASE_PATH')) {
+  define('APP_BASE_PATH', $appBasePath);
+}
+
 // Include data processing logic
-require_once __DIR__ . '/Components/Admin/data_processing.php';
+$dataProcessingPath = $resolveProjectFile('Components/Admin/data_processing.php');
+if ($dataProcessingPath === '') {
+  throw new RuntimeException('Missing required project file: Components/Admin/data_processing.php');
+}
+
+// Load in global scope so exported variables (e.g. $conn, dashboard aggregates)
+// remain available to the rest of dashboard.php.
+require $dataProcessingPath;
 ?>
 
 <!DOCTYPE html>
@@ -15,7 +239,8 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=yes">
   <meta name="theme-color" content="#3b82f6">
-  <link rel="icon" type="image/png" href="public/images/imageBg/barcie_logo.jpg">
+  <link rel="icon" type="image/x-icon"
+    href="<?php echo htmlspecialchars($projectAssetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
   <title>Admin Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -23,19 +248,27 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
   <script
     src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="Components/Admin/dashboard.css">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/dashboard.css') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>">
 
   <!-- Tailwind CSS (compiled via CLI from src/css/admin.css) -->
-  <?php if (file_exists(__DIR__ . '/dist/css/admin.css')): ?>
-    <link rel="stylesheet" href="dist/css/admin.css">
+  <?php if ($resolveProjectFile('dist/css/admin.css') !== ''): ?>
+    <link rel="stylesheet"
+      href="<?php echo htmlspecialchars($projectAssetUrl('dist/css/admin.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <?php else: ?>
-    <link rel="stylesheet" href="Components/Admin/admin-tw-base.css">
+    <link rel="stylesheet"
+      href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/admin-tw-base.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <?php endif; ?>
-  <link rel="stylesheet" href="assets/css/mobile-responsive.css">
-  <link rel="stylesheet" href="assets/css/page-state.css">
-  <link rel="stylesheet" href="Components/Admin/News/news.css">
-  <link rel="stylesheet" href="Components/Admin/Reports/reports.css">
-  <link rel="stylesheet" href="Components/Admin/AccountManagement/admin-online-status.css">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('assets/css/mobile-responsive.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('assets/css/page-state.css') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/News/news.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/reports.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet"
+    href="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/AccountManagement/admin-online-status.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 
 
@@ -51,12 +284,12 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
     <i class="fas fa-bars"></i>
   </button>
 
-  <?php include __DIR__ . '/Components/Admin/sidebar.php'; ?>
+  <?php $includeProjectFile('Components/Admin/sidebar.php'); ?>
 
   <div class="main-content">
     <div class="container-fluid px-2" style="max-width: 100%;">
       <section id="dashboard-section" class="content-section active d-block">
-        <?php include __DIR__ . '/Components/Admin/Dashboard/dashboard_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Dashboard/dashboard_section.php'); ?>
       </section>
 
       <?php
@@ -162,59 +395,59 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
       <!-- Calendar & Rooms Section -->
       <section id="calendar-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Calendar/calendar_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Calendar/calendar_section.php'); ?>
       </section>
 
       <section id="rooms-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/rooms_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/RoomsAndFacilities/rooms_section.php'); ?>
       </section>
 
       <!-- Bookings Management -->
       <section id="bookings-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/BookingsSection.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Booking/BookingsSection.php'); ?>
       </section>
 
       <!-- Pencil Bookings Management (independent from bookings) -->
       <section id="pencil-bookings-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/PencilBookManagement.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Booking/PencilBookManagement.php'); ?>
       </section>
 
 
       <!-- Feedback Section -->
       <section id="feedback-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Feedback/feedback_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Feedback/feedback_section.php'); ?>
       </section>
 
       <!-- News & Updates Section -->
       <section id="news-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/News/news_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/News/news_section.php'); ?>
       </section>
 
       <section id="partners-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Partners/partners_management_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Partners/partners_management_section.php'); ?>
       </section>
 
       <section id="brochure-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Brochure/brochure_management_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Brochure/brochure_management_section.php'); ?>
       </section>
 
       <section id="discount-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/DiscountManagement/discount_management_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/DiscountManagement/discount_management_section.php'); ?>
       </section>
 
       <!-- Payment Verification Section -->
       <section id="payment-verification-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Booking/PaymentVerification.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Booking/PaymentVerification.php'); ?>
       </section>
 
       <!-- Reports & Analytics Section -->
       <section id="reports-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/Reports/reports_section.php'; ?>
+        <?php $includeProjectFile('Components/Admin/Reports/reports_section.php'); ?>
       </section>
 
       <!-- Admin Management Section (Manage Roles) -->
       <section id="admin-management-section" class="content-section">
-        <?php include __DIR__ . '/Components/Admin/AccountManagement/admin_management_enhanced.php'; ?>
+        <?php $includeProjectFile('Components/Admin/AccountManagement/admin_management_enhanced.php'); ?>
       </section>
 
 
@@ -224,7 +457,7 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         <p>&copy; <?php echo date("Y"); ?> Hotel Management System</p>
       </div> -->
 
-      <?php require_once __DIR__ . '/Components/Admin/footer.php'; ?>
+      <?php $requireProjectFile('Components/Admin/footer.php'); ?>
 
 
 
@@ -334,13 +567,13 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
 
       <!-- Load JavaScript files at the end of body for better performance -->
       <!-- Include Add Item Modal once at page bottom so it's a direct child of body -->
-      <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/add_item_modal.php'; ?>
-      <?php include __DIR__ . '/Components/Admin/RoomsAndFacilities/edit_item_modal.php'; ?>
+      <?php $includeProjectFile('Components/Admin/RoomsAndFacilities/add_item_modal.php'); ?>
+      <?php $includeProjectFile('Components/Admin/RoomsAndFacilities/edit_item_modal.php'); ?>
 
       <!-- Include Admin Management Modals at page bottom so they're always accessible -->
-      <?php include __DIR__ . '/Components/Admin/AccountManagement/admin_auth_modal.php'; ?>
-      <?php include __DIR__ . '/Components/Admin/AccountManagement/add_admin_modal.php'; ?>
-      <?php include __DIR__ . '/Components/Admin/AccountManagement/edit_admin_modal.php'; ?>
+      <?php $includeProjectFile('Components/Admin/AccountManagement/admin_auth_modal.php'); ?>
+      <?php $includeProjectFile('Components/Admin/AccountManagement/add_admin_modal.php'); ?>
+      <?php $includeProjectFile('Components/Admin/AccountManagement/edit_admin_modal.php'); ?>
 
       <!-- Delete Admin Confirmation Modal (header styled blue for modal theme consistency) -->
       <div class="modal fade" id="deleteAdminModal" tabindex="-1" aria-labelledby="deleteAdminModalLabel"
@@ -442,15 +675,16 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
         })();
       </script>
 
-      <?php include __DIR__ . '/Components/Popup/ConfirmPopup.php'; ?>
-      <?php include __DIR__ . '/Components/Popup/ErrorPopup.php'; ?>
-      <?php include __DIR__ . '/Components/Popup/LoadingPopup.php'; ?>
-      <?php include __DIR__ . '/Components/Popup/SuccessPopup.php'; ?>
+      <?php $includeProjectFile('Components/Popup/ConfirmPopup.php'); ?>
+      <?php $includeProjectFile('Components/Popup/ErrorPopup.php'); ?>
+      <?php $includeProjectFile('Components/Popup/LoadingPopup.php'); ?>
+      <?php $includeProjectFile('Components/Popup/SuccessPopup.php'); ?>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-      <script src="Components/Popup/popup-manager.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Popup/popup-manager.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
       <script>
         (function () {
           const flashSuccessMessage = <?php echo json_encode($flashSuccessMessage); ?>;
@@ -506,23 +740,36 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
           }, true);
         })();
       </script>
-      <script src="Components/Table/table.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Table/table.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
       <!-- Page State Manager - Load FIRST -->
-      <script src="assets/js/page-state-manager.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('assets/js/page-state-manager.js') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>"></script>
+
+      <script>
+        window.APP_BASE_PATH = <?php echo json_encode(APP_BASE_PATH); ?>;
+        window.__ADMIN_ASSET_VERSION = <?php echo json_encode($adminNavAssetVersion); ?>;
+      </script>
 
       <!-- Dashboard JavaScript files -->
-      <script src="Components/Admin/Dashboard/dashboard-bootstrap.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Dashboard/dashboard-bootstrap.js') . '?v=' . rawurlencode($adminNavAssetVersion), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load dashboard-bootstrap.js')"></script>
-      <script src="Components/Admin/Calendar/calendar-section.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Calendar/calendar-section.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load calendar-section.js')"></script>
-      <script src="Components/Admin/RoomsAndFacilities/rooms-section.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/RoomsAndFacilities/rooms-section.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load rooms-section.js')"></script>
-      <script src="Components/Admin/Booking/BookingsSection.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Booking/BookingsSection.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load bookings-section.js')"></script>
-      <script src="Components/Admin/News/news-section.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/News/news-section.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load news-section.js')"></script>
-      <script src="Components/Admin/mobile-enhancements.js"
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/mobile-enhancements.js'), ENT_QUOTES, 'UTF-8'); ?>"
         onerror="console.error('❌ Failed to load mobile-enhancements.js')"></script>
 
       <!-- Initialize dashboard with data after all scripts are loaded -->
@@ -609,15 +856,22 @@ require_once __DIR__ . '/Components/Admin/data_processing.php';
       </script>
 
       <!-- Enhanced Admin Management JavaScript -->
-      <script src="Components/Admin/AccountManagement/admin-management-enhanced.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/AccountManagement/admin-management-enhanced.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
       <!-- Reports & Analytics JavaScript -->
-      <script src="Components/Admin/Reports/js/state.js"></script>
-      <script src="Components/Admin/Reports/js/utils.js"></script>
-      <script src="Components/Admin/Reports/js/charts.js"></script>
-      <script src="Components/Admin/Reports/js/updaters.js"></script>
-      <script src="Components/Admin/Reports/js/actions.js"></script>
-      <script src="Components/Admin/Reports/reports.js"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/state.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/utils.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/charts.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/updaters.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/js/actions.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+      <script
+        src="<?php echo htmlspecialchars($projectAssetUrl('Components/Admin/Reports/reports.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 </body>
 

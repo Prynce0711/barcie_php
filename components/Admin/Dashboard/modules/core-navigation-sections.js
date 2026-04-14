@@ -31,6 +31,16 @@
 function setupSectionNavigation() {
   console.log("Setting up section navigation...");
 
+  if (
+    window.BarcieStateManager &&
+    typeof window.BarcieStateManager.navigate === "function"
+  ) {
+    console.log(
+      "Page State Manager detected; skipping legacy section navigation bindings.",
+    );
+    return;
+  }
+
   const lastSectionId =
     localStorage.getItem("activeSection") || "dashboard-section";
 
@@ -45,7 +55,13 @@ function setupSectionNavigation() {
     return SECTION_ALIASES[id] || id;
   }
 
-  const navLinks = document.querySelectorAll(".nav-link-custom");
+  function sectionExists(sectionId) {
+    return !!(sectionId && document.getElementById(sectionId));
+  }
+
+  const navLinks = document.querySelectorAll(
+    ".sidebar .nav-link, .sidebar .nav-link-custom",
+  );
   console.log("Found navigation links:", navLinks.length);
 
   if (navLinks.length === 0) {
@@ -55,13 +71,42 @@ function setupSectionNavigation() {
     return;
   }
 
+  function getSectionIdFromLink(link) {
+    const dataSection = link.getAttribute("data-section");
+    if (dataSection) {
+      return dataSection;
+    }
+
+    const href = (link.getAttribute("href") || "").trim();
+    if (href.charAt(0) === "#" && href.length > 1) {
+      return href.substring(1);
+    }
+
+    return "";
+  }
+
   navLinks.forEach((link, index) => {
-    const sectionId = link.getAttribute("data-section");
-    console.log("  Setting up link " + (index + 1) + ": " + sectionId);
+    const sectionId = getSectionIdFromLink(link);
+    const isDropdownToggle = link.classList.contains("dropdown-toggle");
+    console.log(
+      "  Setting up link " +
+        (index + 1) +
+        ": " +
+        (sectionId || "(no section)") +
+        (isDropdownToggle ? " [dropdown]" : ""),
+    );
+
+    if (!sectionId || isDropdownToggle) {
+      return;
+    }
 
     link.addEventListener("click", function (e) {
       e.preventDefault();
-      const clickedSectionId = this.getAttribute("data-section");
+      const clickedSectionId = getSectionIdFromLink(this);
+      if (!clickedSectionId) {
+        return;
+      }
+
       console.log("Navigation clicked:", clickedSectionId);
       const resolved =
         typeof resolveSectionId === "function"
@@ -70,30 +115,43 @@ function setupSectionNavigation() {
       showSection(resolved);
 
       document
-        .querySelectorAll(".nav-link-custom")
+        .querySelectorAll(".sidebar .nav-link, .sidebar .nav-link-custom")
         .forEach((l) => l.classList.remove("active"));
       this.classList.add("active");
 
-      localStorage.setItem("activeSection", clickedSectionId);
+      localStorage.setItem("activeSection", resolved || clickedSectionId);
     });
   });
 
+  const initialHash = window.location.hash.substring(1);
+  const resolvedHashSection = resolveSectionId(initialHash);
+  const resolvedStoredSection = resolveSectionId(lastSectionId);
+  const initialSectionId = sectionExists(resolvedHashSection)
+    ? resolvedHashSection
+    : sectionExists(resolvedStoredSection)
+      ? resolvedStoredSection
+      : "dashboard-section";
+
   const initialActiveLink = document.querySelector(
-    `.nav-link-custom[data-section="${lastSectionId}"]`,
+    `.sidebar .nav-link-custom[data-section="${initialSectionId}"], .sidebar .nav-link[data-section="${initialSectionId}"], .sidebar .nav-link-custom[href="#${initialSectionId}"], .sidebar .nav-link[href="#${initialSectionId}"]`,
   );
   if (initialActiveLink) {
     document
-      .querySelectorAll(".nav-link-custom")
+      .querySelectorAll(".sidebar .nav-link, .sidebar .nav-link-custom")
       .forEach((l) => l.classList.remove("active"));
     initialActiveLink.classList.add("active");
   }
 
   console.log("Initial section display...");
-  showSection(lastSectionId);
+  showSection(initialSectionId);
+  localStorage.setItem("activeSection", initialSectionId);
 
-  const initialHash = window.location.hash.substring(1);
-  if (initialHash === "Pencil-Bookings") {
-    window.location.hash = "pencil-bookings-section";
+  if (
+    initialHash &&
+    resolvedHashSection &&
+    initialHash !== resolvedHashSection
+  ) {
+    window.location.hash = resolvedHashSection;
   }
 
   window.addEventListener("hashchange", function () {
@@ -105,10 +163,10 @@ function setupSectionNavigation() {
       showSection(resolved);
 
       document
-        .querySelectorAll(".nav-link-custom, .nav-link")
+        .querySelectorAll(".sidebar .nav-link, .sidebar .nav-link-custom")
         .forEach((l) => l.classList.remove("active"));
       const activeLink = document.querySelector(
-        `.nav-link-custom[data-section="${hash}"], .nav-link[data-section="${hash}"], .nav-link-custom[data-section="${resolved}"], .nav-link[data-section="${resolved}"]`,
+        `.sidebar .nav-link-custom[data-section="${hash}"], .sidebar .nav-link[data-section="${hash}"], .sidebar .nav-link-custom[data-section="${resolved}"], .sidebar .nav-link[data-section="${resolved}"], .sidebar .nav-link-custom[href="#${hash}"], .sidebar .nav-link[href="#${hash}"], .sidebar .nav-link-custom[href="#${resolved}"], .sidebar .nav-link[href="#${resolved}"]`,
       );
       if (activeLink) {
         activeLink.classList.add("active");
