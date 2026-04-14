@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BarCIE QR Code</title>
+    <style>
+      :root {
+        --target-url: "https://barcie.safehub-lcup.uk/";
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: radial-gradient(
+          circle at top,
+          #fef9ef,
+          #efe8d8 60%,
+          #ddd2bb
+        );
+        color: #1a1a1a;
+      }
+
+      .qr-card {
+        width: min(92vw, 420px);
+        border-radius: 20px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid rgba(179, 132, 0, 0.4);
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+        text-align: center;
+      }
+
+      .title {
+        margin: 0 0 12px;
+        font-size: clamp(1.1rem, 2.8vw, 1.4rem);
+        font-weight: 700;
+        letter-spacing: 0.4px;
+      }
+
+      .qr-display {
+        display: inline-grid;
+        place-items: center;
+        width: min(84vw, 320px);
+        aspect-ratio: 1 / 1;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 2px solid rgba(0, 0, 0, 0.18);
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)),
+          url("./images/imageBg/barcie_logo.jpg");
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+
+      .qr-image {
+        width: 82%;
+        max-width: 260px;
+        height: auto;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.96);
+        padding: 8px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      .hint {
+        margin: 12px 0 0;
+        font-size: 0.92rem;
+        color: #303030;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="qr-card" aria-label="BarCIE QR Code Card">
+      <div
+        class="qr-display"
+        role="img"
+        aria-label="QR code for barcie.safehub-lcup.uk"
+      >
+        <img
+          class="qr-image"
+          src="https://api.qrserver.com/v1/create-qr-code/?size=600x600&format=png&margin=10&ecc=H&data=https%3A%2F%2Fbarcie.safehub-lcup.uk%2F"
+          alt="Scannable QR code for https://barcie.safehub-lcup.uk/"
+        />
+      </div>
+
+      <p class="hint">Scan this QR code to open the website.</p>
+    </section>
+  </body>
+</html>
