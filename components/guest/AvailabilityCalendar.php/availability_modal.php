@@ -86,7 +86,8 @@
         }
         if (t === 'room' || t === 'facility') params.push('item_type=' + encodeURIComponent(t));
       } catch (e) { /* ignore */ }
-      const url = 'api/Availability.php' + (params.length ? ('?' + params.join('&')) : '');
+      const apiBase = (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+      const url = `${apiBase}/availability.php` + (params.length ? ('?' + params.join('&')) : '');
       fetch(url).then(r => r.json()).then(data => {
         let events = [];
         if (Array.isArray(data)) events = data;

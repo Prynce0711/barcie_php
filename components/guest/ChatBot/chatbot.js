@@ -217,7 +217,9 @@ function sendQuickReply(query) {
 async function queryChatbotAPI(message) {
   try {
     // Use a relative path and include message as query param as a fallback for servers that don't pass JSON body
-    const url = "api/ChatbotAnswer.php?message=" + encodeURIComponent(message);
+    const apiBase =
+      (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+    const url = `${apiBase}/ChatbotAnswer.php?message=` + encodeURIComponent(message);
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

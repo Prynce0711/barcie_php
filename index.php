@@ -120,7 +120,33 @@ $assetUrl = static function (string $path) use ($appBasePath): string {
   return ($appBasePath !== '' ? $appBasePath : '') . '/' . $normalizedPath;
 };
 
-$includeComponent = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath, $assetUrl, $appBasePath): void {
+$componentAssetPath = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath): string {
+  $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
+  $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
+
+  if (!is_file($fullPath)) {
+    $resolvedPath = $resolveCaseInsensitivePath($componentRoot, $normalizedRelativePath);
+    if ($resolvedPath !== '' && is_file($resolvedPath)) {
+      $fullPath = $resolvedPath;
+    }
+  }
+
+  $projectRoot = rtrim(str_replace('\\', '/', dirname($componentRoot)), '/');
+  $normalizedFullPath = str_replace('\\', '/', $fullPath);
+  $projectPrefix = $projectRoot . '/';
+
+  if (strpos($normalizedFullPath, $projectPrefix) === 0) {
+    return ltrim(substr($normalizedFullPath, strlen($projectPrefix)), '/');
+  }
+
+  return trim(str_replace('\\', '/', basename($componentRoot) . DIRECTORY_SEPARATOR . $normalizedRelativePath), '/');
+};
+
+$componentAssetUrl = static function (string $relativePath) use ($assetUrl, $componentAssetPath): string {
+  return $assetUrl($componentAssetPath($relativePath));
+};
+
+$includeComponent = static function (string $relativePath) use ($componentRoot, $resolveCaseInsensitivePath, $assetUrl, $appBasePath, $componentAssetUrl): void {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
   $fullPath = $componentRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
 
@@ -137,15 +163,17 @@ $includeComponent = static function (string $relativePath) use ($componentRoot, 
 
   trigger_error('Missing component include: ' . $fullPath, E_USER_WARNING);
 };
+
+$currentUserId = isset($user_id) ? (string) $user_id : '';
 ?>
 
 <!doctype html>
 <html lang="en">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="user-id" content="<?php echo $user_id; ?>">
-<link rel="icon" type="image/jpeg"
-  href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+<meta name="user-id" content="<?php echo htmlspecialchars($currentUserId, ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="icon" type="image/x-icon"
+  href="<?php echo htmlspecialchars($assetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
 <link rel="apple-touch-icon"
   href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -186,12 +214,12 @@ $includeComponent = static function (string $relativePath) use ($componentRoot, 
   <script
     src="<?php echo htmlspecialchars($assetUrl('assets/js/page-state-manager.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
   <script
-    src="<?php echo htmlspecialchars($assetUrl('Components/Landing/main.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
+    src="<?php echo htmlspecialchars($componentAssetUrl('Landing/main.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
   <script
-    src="<?php echo htmlspecialchars($assetUrl('Components/Landing/auth.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
+    src="<?php echo htmlspecialchars($componentAssetUrl('Landing/auth.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
   <script
-    src="<?php echo htmlspecialchars($assetUrl('Components/Landing/verify-components.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
+    src="<?php echo htmlspecialchars($componentAssetUrl('Landing/verify-components.js') . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
   <?php $includeComponent('Popup/ConfirmPopup.php'); ?>
   <?php $includeComponent('Popup/ErrorPopup.php'); ?>

@@ -389,7 +389,9 @@ function submitRoomFeedback() {
 }
 
 function openRoomDetailsModal(roomId) {
-  fetch(`api/Items.php?id=${roomId}`)
+  const apiBase =
+    (window.BARCIE_GUEST && window.BARCIE_GUEST.apiBaseUrl) || "api";
+  fetch(`${apiBase}/items.php?id=${roomId}`)
     .then((response) => response.json())
     .then((data) => {
       if (data.success && data.item) {

@@ -71,7 +71,9 @@
           );
           if (typeRadio) {
             typeRadio.checked = true;
-            filterItems();
+            if (typeof window.filterItems === "function") {
+              window.filterItems();
+            }
           }
         }, 300);
         showToast(`Viewing ${itemType}s in Rooms & Facilities`, "info");
