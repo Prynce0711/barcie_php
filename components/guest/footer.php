@@ -12,10 +12,10 @@
   src="<?php echo htmlspecialchars((defined('GUEST_ASSET_BASE_PATH') ? GUEST_ASSET_BASE_PATH : '') . '/assets/js/page-state-manager.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 <script
-  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/Sidebar/sidebar-mobile.js', ENT_QUOTES, 'UTF-8'); ?>"
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'components') . '/guest/Sidebar/sidebar-mobile.js', ENT_QUOTES, 'UTF-8'); ?>"
   defer></script>
 <script
-  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'Components') . '/Guest/Feedback/room-feedback.js', ENT_QUOTES, 'UTF-8'); ?>"
+  src="<?php echo htmlspecialchars((defined('GUEST_COMPONENT_BASE_URL') ? GUEST_COMPONENT_BASE_URL : 'components') . '/guest/Feedback/room-feedback.js', ENT_QUOTES, 'UTF-8'); ?>"
   defer></script>
 </body>
 
