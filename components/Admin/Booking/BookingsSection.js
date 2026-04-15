@@ -195,43 +195,42 @@ function initializeBookingsActions() {
 
 // Inline admin alert helper — replaces alert() usage in admin pages
 function showAdminAlert(message, type = "danger", duration = 6000) {
-  let container = document.getElementById("admin_discount_alert");
+  const normalized =
+    String(type || "info").toLowerCase() === "danger"
+      ? "error"
+      : String(type || "info").toLowerCase();
 
-  // If an admin alert container doesn't exist, create a floating one
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "admin_discount_alert";
-    container.style.position = "fixed";
-    container.style.top = "1rem";
-    container.style.right = "1rem";
-    container.style.zIndex = 1080; // above modals
-    document.body.appendChild(container);
+  if (
+    typeof window.showAdminAlert === "function" &&
+    window.showAdminAlert !== showAdminAlert
+  ) {
+    return window.showAdminAlert(message, normalized, duration);
   }
 
-  const alertId = "admin-alert-" + Date.now();
-  const alertDiv = document.createElement("div");
-  alertDiv.id = alertId;
-  alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-  alertDiv.role = "alert";
-  alertDiv.style.minWidth = "260px";
-  alertDiv.innerHTML = `
-    <div style="font-size:0.95rem;">${message}</div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  `;
-
-  container.appendChild(alertDiv);
-
-  if (duration > 0) {
-    setTimeout(() => {
-      try {
-        bootstrap &&
-          bootstrap.Alert &&
-          bootstrap.Alert.getOrCreateInstance(alertDiv).close();
-      } catch (e) {
-        alertDiv.remove();
-      }
-    }, duration);
+  if (
+    normalized === "success" &&
+    typeof window.showSuccessPopup === "function"
+  ) {
+    return window.showSuccessPopup(String(message || "Success"), {
+      title: "Success",
+      autoCloseMs: duration > 0 ? duration : undefined,
+    });
   }
+
+  if (typeof window.showErrorPopup === "function") {
+    const titleMap = {
+      error: "Error",
+      warning: "Warning",
+      info: "Notification",
+    };
+
+    return window.showErrorPopup(String(message || "Notification"), {
+      title: titleMap[normalized] || "Notification",
+      autoCloseMs: duration > 0 ? duration : undefined,
+    });
+  }
+
+  alert(String(message || "Notification"));
 }
 
 // showConfirmModal is provided by components/Popup/popup-manager.js (window.showConfirmModal = window.showConfirm)
@@ -572,4 +571,3 @@ window.viewBookingDetails = viewBookingDetails;
 window.deleteBooking = deleteBooking;
 window.processDiscount = processDiscount;
 window.resendChangeRoomEmail = resendChangeRoomEmail;
-

@@ -604,28 +604,38 @@ function escapeHtml(text) {
 }
 
 function showAlert(message, type = "info") {
-  const alertClass = `alert-${type}`;
-  const iconClass =
-    type === "success"
-      ? "check-circle"
-      : type === "danger"
-        ? "exclamation-triangle"
-        : "info-circle";
-  const alert = document.createElement("div");
-  alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-  alert.style.top = "20px";
-  alert.style.right = "20px";
-  alert.style.zIndex = "9999";
-  alert.style.maxWidth = "400px";
-  alert.innerHTML = `<i class="fas fa-${iconClass} me-2"></i>${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-  document.body.appendChild(alert);
-  setTimeout(() => {
-    if (alert.parentNode) alert.remove();
-  }, 5000);
+  const normalized =
+    String(type || "info").toLowerCase() === "danger"
+      ? "error"
+      : String(type || "info").toLowerCase();
+
+  if (
+    normalized === "success" &&
+    typeof window.showSuccessPopup === "function"
+  ) {
+    return window.showSuccessPopup(String(message || "Success"), {
+      title: "Success",
+      autoCloseMs: 5000,
+    });
+  }
+
+  if (typeof window.showErrorPopup === "function") {
+    const titleMap = {
+      error: "Error",
+      warning: "Warning",
+      info: "Notification",
+    };
+
+    return window.showErrorPopup(String(message || "Notification"), {
+      title: titleMap[normalized] || "Notification",
+      autoCloseMs: 5000,
+    });
+  }
+
+  alert(String(message || "Notification"));
 }
 
 // Export functions for global access
 window.openRoomFeedbackModal = openRoomFeedbackModal;
 window.openRoomDetailsModal = openRoomDetailsModal;
 window.loadRoomReviews = loadRoomReviews;
-

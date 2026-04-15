@@ -349,51 +349,42 @@ document.addEventListener("DOMContentLoaded", setupImagePreview);
 
 // Inline admin alert helper for rooms section (fallback if a global helper isn't available)
 function showAdminAlert(message, type = "danger", duration = 6000) {
-  try {
-    // If a global helper exists (from bookings-section.js), reuse it
-    if (
-      typeof window.showAdminAlert === "function" &&
-      window.showAdminAlert !== showAdminAlert
-    ) {
-      return window.showAdminAlert(message, type, duration);
-    }
-  } catch (e) {
-    /* ignore */
+  const normalized =
+    String(type || "info").toLowerCase() === "danger"
+      ? "error"
+      : String(type || "info").toLowerCase();
+
+  if (
+    typeof window.showAdminAlert === "function" &&
+    window.showAdminAlert !== showAdminAlert
+  ) {
+    return window.showAdminAlert(message, normalized, duration);
   }
 
-  let container = document.getElementById("admin_discount_alert");
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "admin_discount_alert";
-    container.style.position = "fixed";
-    container.style.top = "1rem";
-    container.style.right = "1rem";
-    container.style.zIndex = 1080;
-    document.body.appendChild(container);
+  if (
+    normalized === "success" &&
+    typeof window.showSuccessPopup === "function"
+  ) {
+    return window.showSuccessPopup(String(message || "Success"), {
+      title: "Success",
+      autoCloseMs: duration > 0 ? duration : undefined,
+    });
   }
 
-  const alertDiv = document.createElement("div");
-  alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-  alertDiv.role = "alert";
-  alertDiv.style.minWidth = "260px";
-  alertDiv.innerHTML = `
-    <div style="font-size:0.95rem;">${message}</div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  `;
+  if (typeof window.showErrorPopup === "function") {
+    const titleMap = {
+      error: "Error",
+      warning: "Warning",
+      info: "Notification",
+    };
 
-  container.appendChild(alertDiv);
-
-  if (duration > 0) {
-    setTimeout(() => {
-      try {
-        bootstrap &&
-          bootstrap.Alert &&
-          bootstrap.Alert.getOrCreateInstance(alertDiv).close();
-      } catch (e) {
-        alertDiv.remove();
-      }
-    }, duration);
+    return window.showErrorPopup(String(message || "Notification"), {
+      title: titleMap[normalized] || "Notification",
+      autoCloseMs: duration > 0 ? duration : undefined,
+    });
   }
+
+  alert(String(message || "Notification"));
 }
 
 // Export functions for global access

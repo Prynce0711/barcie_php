@@ -234,24 +234,35 @@ if (typeof window.showPencilSuccessModal !== "function") {
     }
 
     function showAlert(message, type = "info") {
-      const alertClass = `alert-${type}`;
-      const iconClass =
-        type === "success"
-          ? "check-circle"
-          : type === "danger"
-            ? "exclamation-triangle"
-            : "info-circle";
-      const alertEl = document.createElement("div");
-      alertEl.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-      alertEl.style.top = "20px";
-      alertEl.style.right = "20px";
-      alertEl.style.zIndex = "9999";
-      alertEl.style.maxWidth = "400px";
-      alertEl.innerHTML = `<i class="fas fa-${iconClass} me-2"></i>${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-      document.body.appendChild(alertEl);
-      setTimeout(() => {
-        if (alertEl.parentNode) alertEl.remove();
-      }, 5000);
+      const normalized =
+        String(type || "info").toLowerCase() === "danger"
+          ? "error"
+          : String(type || "info").toLowerCase();
+
+      if (
+        normalized === "success" &&
+        typeof window.showSuccessPopup === "function"
+      ) {
+        return window.showSuccessPopup(String(message || "Success"), {
+          title: "Success",
+          autoCloseMs: 5000,
+        });
+      }
+
+      if (typeof window.showErrorPopup === "function") {
+        const titleMap = {
+          error: "Error",
+          warning: "Warning",
+          info: "Notification",
+        };
+
+        return window.showErrorPopup(String(message || "Notification"), {
+          title: titleMap[normalized] || "Notification",
+          autoCloseMs: 5000,
+        });
+      }
+
+      alert(String(message || "Notification"));
     }
 
     // showPencilSuccessModal is provided centrally in `components/guest/sections/pencil_booking.php`.
@@ -358,4 +369,3 @@ if (typeof window.showPencilSuccessModal !== "function") {
     }
   });
 })();
-

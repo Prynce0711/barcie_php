@@ -53,124 +53,80 @@
     );
   }
 
-  // Enhanced Toast Notifications
-  function showToast(message, type = "info") {
-    const toastContainer = getOrCreateToastContainer();
-    const toastId = "toast-" + Date.now();
-
-    let bgClass, iconClass;
-    switch (type) {
-      case "success":
-        bgClass = "bg-success";
-        iconClass = "fa-check-circle";
-        break;
-      case "warning":
-        bgClass = "bg-warning";
-        iconClass = "fa-exclamation-triangle";
-        break;
-      case "error":
-      case "danger":
-        bgClass = "bg-danger";
-        iconClass = "fa-times-circle";
-        break;
-      default:
-        bgClass = "bg-info";
-        iconClass = "fa-info-circle";
+  function normalizeNoticeType(type) {
+    const normalized = String(type || "info").toLowerCase();
+    if (normalized === "danger") return "error";
+    if (["success", "error", "warning", "info"].includes(normalized)) {
+      return normalized;
     }
-
-    const toastHtml = `
-        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="fas ${iconClass} me-2"></i>
-                <strong class="me-auto">Notification</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
-    `;
-
-    toastContainer.insertAdjacentHTML("beforeend", toastHtml);
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement);
-    toast.show();
-
-    // Remove element after it's hidden
-    toastElement.addEventListener("hidden.bs.toast", function () {
-      this.remove();
-    });
+    return "info";
   }
 
-  // Get or Create Toast Container
-  function getOrCreateToastContainer() {
-    let container = document.getElementById("toast-container");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "toast-container";
-      container.className = "toast-container position-fixed top-0 end-0 p-3";
-      container.style.zIndex = "9999";
-      document.body.appendChild(container);
+  function clearLegacyToastContainer() {
+    const container = document.getElementById("toast-container");
+    if (container) {
+      container.remove();
     }
-    return container;
   }
 
-  // Enhanced detailed toast for calendar events
+  // Popup-based notifications (replaces upper-right toast notifications)
+  function showToast(message, type = "info", duration = 4500) {
+    const normalizedType = normalizeNoticeType(type);
+    const text = String(message || "Notification");
+
+    clearLegacyToastContainer();
+
+    if (normalizedType === "success" && typeof window.showSuccessPopup === "function") {
+      return window.showSuccessPopup(text, {
+        title: "Success",
+        autoCloseMs: duration > 0 ? duration : undefined,
+      });
+    }
+
+    if (typeof window.showErrorPopup === "function") {
+      const titleMap = {
+        error: "Error",
+        warning: "Warning",
+        info: "Notification",
+      };
+
+      return window.showErrorPopup(text, {
+        title: titleMap[normalizedType] || "Notification",
+        autoCloseMs: duration > 0 ? duration : undefined,
+      });
+    }
+
+    alert(text);
+    return null;
+  }
+
+  // Detailed popup for calendar events (keeps existing API name for compatibility)
   function showDetailedToast(
     message,
     type = "info",
     title = "Room/Facility Information",
   ) {
-    const toastContainer = getOrCreateToastContainer();
-    const toastId = "detailed-toast-" + Date.now();
+    const normalizedType = normalizeNoticeType(type);
+    const text = String(message || "Notification");
 
-    let bgClass, iconClass;
-    switch (type) {
-      case "success":
-        bgClass = "bg-success";
-        iconClass = "fa-check-circle";
-        break;
-      case "warning":
-        bgClass = "bg-warning";
-        iconClass = "fa-exclamation-triangle";
-        break;
-      case "error":
-      case "danger":
-        bgClass = "bg-danger";
-        iconClass = "fa-times-circle";
-        break;
-      default:
-        bgClass = "bg-info";
-        iconClass = "fa-info-circle";
+    clearLegacyToastContainer();
+
+    if (normalizedType === "success" && typeof window.showSuccessPopup === "function") {
+      return window.showSuccessPopup(text, {
+        title,
+        allowHtml: true,
+      });
     }
 
-    const toastHtml = `
-        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false" style="max-width: 350px;">
-            <div class="toast-header">
-                <i class="fas ${iconClass} me-2"></i>
-                <strong class="me-auto">${title}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body" style="font-size: 0.9rem; line-height: 1.4;">
-                ${message}
-                <hr class="my-2 opacity-50">
-                <div class="d-flex justify-content-between align-items-center">
-                    <small><i class="fas fa-calendar-alt me-1"></i>Calendar View</small>
-                    <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="toast">Got it</button>
-                </div>
-            </div>
-        </div>
-    `;
+    if (typeof window.showErrorPopup === "function") {
+      return window.showErrorPopup(text, {
+        title,
+        allowHtml: true,
+      });
+    }
 
-    toastContainer.insertAdjacentHTML("beforeend", toastHtml);
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, { autohide: false }); // Don't auto-hide
-    toast.show();
-
-    // Remove element after it's hidden
-    toastElement.addEventListener("hidden.bs.toast", function () {
-      this.remove();
-    });
+    alert(text);
+    return null;
   }
 
   // Global Sidebar Toggle Function
