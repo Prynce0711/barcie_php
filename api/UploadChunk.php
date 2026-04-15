@@ -11,8 +11,13 @@
 
 session_start();
 require __DIR__ . '/../database/db_connect.php';
+require_once __DIR__ . '/../components/Login/remember_me.php';
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_id']) && isset($conn) && $conn instanceof mysqli) {
+  remember_me_restore_session($conn);
+}
 
 // Basic admin check
 if (!isset($_SESSION['admin_id'])) {

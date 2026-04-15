@@ -28,8 +28,12 @@ if (file_exists(__DIR__ . '/../.env')) {
 }
 
 // Application Settings
-define('APP_ENV', getenv('APP_ENV') ?: 'development');
-define('APP_DEBUG', getenv('APP_DEBUG') === 'true' || getenv('APP_DEBUG') === '1');
+if (!defined('APP_ENV')) {
+    define('APP_ENV', getenv('APP_ENV') ?: 'development');
+}
+if (!defined('APP_DEBUG')) {
+    define('APP_DEBUG', getenv('APP_DEBUG') === 'true' || getenv('APP_DEBUG') === '1');
+}
 
 $requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $requestHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
@@ -39,46 +43,98 @@ if ($appBasePath === '/') {
     $appBasePath = '';
 }
 
-define('APP_BASE_PATH', $appBasePath);
-define('APP_URL', getenv('APP_URL') ?: ($requestScheme . '://' . $requestHost . APP_BASE_PATH));
+if (!defined('APP_BASE_PATH')) {
+    define('APP_BASE_PATH', $appBasePath);
+}
+if (!defined('APP_URL')) {
+    define('APP_URL', getenv('APP_URL') ?: ($requestScheme . '://' . $requestHost . APP_BASE_PATH));
+}
 
 // Debug Mode Control
-define('DEBUG_MODE', APP_DEBUG && APP_ENV !== 'production');
-define('LOG_ERRORS', true);
-define('DISPLAY_ERRORS', DEBUG_MODE);
+if (!defined('DEBUG_MODE')) {
+    define('DEBUG_MODE', APP_DEBUG && APP_ENV !== 'production');
+}
+if (!defined('LOG_ERRORS')) {
+    define('LOG_ERRORS', true);
+}
+if (!defined('DISPLAY_ERRORS')) {
+    define('DISPLAY_ERRORS', DEBUG_MODE);
+}
 
 // Security Settings
-define('CSRF_ENABLED', true);
-define('SESSION_LIFETIME', (int) (getenv('SESSION_LIFETIME') ?: 7200));
-define('PASSWORD_MIN_LENGTH', (int) (getenv('PASSWORD_MIN_LENGTH') ?: 8));
+if (!defined('CSRF_ENABLED')) {
+    define('CSRF_ENABLED', true);
+}
+if (!defined('SESSION_LIFETIME')) {
+    define('SESSION_LIFETIME', (int) (getenv('SESSION_LIFETIME') ?: 7200));
+}
+if (!defined('PASSWORD_MIN_LENGTH')) {
+    define('PASSWORD_MIN_LENGTH', (int) (getenv('PASSWORD_MIN_LENGTH') ?: 8));
+}
 
 // Database Settings
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
-define('DB_NAME', getenv('DB_NAME') ?: 'barcie_db');
-define('DB_PORT', (int) (getenv('DB_PORT') ?: 3306));
+if (!defined('DB_HOST')) {
+    define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+}
+if (!defined('DB_USER')) {
+    define('DB_USER', getenv('DB_USER') ?: 'root');
+}
+if (!defined('DB_PASS')) {
+    define('DB_PASS', getenv('DB_PASS') ?: '');
+}
+if (!defined('DB_NAME')) {
+    define('DB_NAME', getenv('DB_NAME') ?: 'barcie_db');
+}
+if (!defined('DB_PORT')) {
+    define('DB_PORT', (int) (getenv('DB_PORT') ?: 3306));
+}
 
 // Email Settings
-define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp.gmail.com');
-define('SMTP_USERNAME', getenv('SMTP_USERNAME') ?: '');
-define('SMTP_PASSWORD', getenv('SMTP_PASSWORD') ?: '');
-define('SMTP_PORT', (int) (getenv('SMTP_PORT') ?: 587));
-define('SMTP_SECURE', getenv('SMTP_SECURE') ?: 'tls');
-define('FROM_EMAIL', getenv('FROM_EMAIL') ?: '');
-define('FROM_NAME', getenv('FROM_NAME') ?: 'BarCIE International Center');
+if (!defined('SMTP_HOST')) {
+    define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp.gmail.com');
+}
+if (!defined('SMTP_USERNAME')) {
+    define('SMTP_USERNAME', getenv('SMTP_USERNAME') ?: '');
+}
+if (!defined('SMTP_PASSWORD')) {
+    define('SMTP_PASSWORD', getenv('SMTP_PASSWORD') ?: '');
+}
+if (!defined('SMTP_PORT')) {
+    define('SMTP_PORT', (int) (getenv('SMTP_PORT') ?: 587));
+}
+if (!defined('SMTP_SECURE')) {
+    define('SMTP_SECURE', getenv('SMTP_SECURE') ?: 'tls');
+}
+if (!defined('FROM_EMAIL')) {
+    define('FROM_EMAIL', getenv('FROM_EMAIL') ?: '');
+}
+if (!defined('FROM_NAME')) {
+    define('FROM_NAME', getenv('FROM_NAME') ?: 'BarCIE International Center');
+}
 
 // File Upload Settings
-define('MAX_UPLOAD_SIZE', (int) (getenv('MAX_UPLOAD_SIZE') ?: 5242880)); // 5MB
-define('ALLOWED_IMAGE_TYPES', explode(',', getenv('ALLOWED_IMAGE_TYPES') ?: 'jpg,jpeg,png,gif,webp'));
-define('UPLOAD_PATH', getenv('UPLOAD_PATH') ?: __DIR__ . '/../uploads');
+if (!defined('MAX_UPLOAD_SIZE')) {
+    define('MAX_UPLOAD_SIZE', (int) (getenv('MAX_UPLOAD_SIZE') ?: 5242880)); // 5MB
+}
+if (!defined('ALLOWED_IMAGE_TYPES')) {
+    define('ALLOWED_IMAGE_TYPES', explode(',', getenv('ALLOWED_IMAGE_TYPES') ?: 'jpg,jpeg,png,gif,webp'));
+}
+if (!defined('UPLOAD_PATH')) {
+    define('UPLOAD_PATH', getenv('UPLOAD_PATH') ?: __DIR__ . '/../uploads');
+}
 
 // Logging Settings
-define('LOG_PATH', getenv('LOG_PATH') ?: __DIR__ . '/../logs');
-define('LOG_LEVEL', getenv('LOG_LEVEL') ?: (DEBUG_MODE ? 'debug' : 'info'));
+if (!defined('LOG_PATH')) {
+    define('LOG_PATH', getenv('LOG_PATH') ?: __DIR__ . '/../logs');
+}
+if (!defined('LOG_LEVEL')) {
+    define('LOG_LEVEL', getenv('LOG_LEVEL') ?: (DEBUG_MODE ? 'debug' : 'info'));
+}
 
 // API Keys
-define('OPENAI_API_KEY', getenv('OPENAI_API_KEY') ?: '');
+if (!defined('OPENAI_API_KEY')) {
+    define('OPENAI_API_KEY', getenv('OPENAI_API_KEY') ?: '');
+}
 
 // Configure PHP error handling
 if (DEBUG_MODE) {

@@ -1,4 +1,4 @@
-﻿function initializeEditForms() {
+function initializeEditForms() {
   // Initialize edit form toggles with the correct selectors
   setupEditFormToggles();
 
@@ -61,7 +61,7 @@ function initializeFeedbackManagement() {
 
 async function loadFeedbackData(limit = 50, offset = 0) {
   try {
-    const endpoint = "database/user_auth.php";
+    const endpoint = "database/index.php?endpoint=user_auth";
 
     async function fetchJson(url) {
       const response = await fetch(url, { credentials: "same-origin" });
@@ -183,3 +183,4 @@ function updateFeedbackTable(feedback) {
     })
     .join("");
 }
+

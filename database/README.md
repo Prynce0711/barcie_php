@@ -2,6 +2,19 @@
 
 This directory contains all database-related utilities, configurations, and modules for the BarCIE International Center system. It handles database connections, authentication, data fetching, and business logic modules.
 
+## Single Entry Point
+
+Database HTTP requests now use a front controller at `database/index.php`.
+
+Use the `endpoint` query parameter to route requests:
+
+- `database/index.php?endpoint=admin_login`
+- `database/index.php?endpoint=user_auth`
+- `database/index.php?endpoint=fetch_items`
+- `database/index.php?endpoint=fetch_calendar_data`
+
+Legacy direct endpoints (`admin_login.php`, `user_auth.php`, `fetch_items.php`, `fetch_calendar_data.php`) are still supported via rewrite compatibility so existing links continue to work during migration.
+
 ## 📁 Directory Structure
 
 ```
@@ -15,21 +28,25 @@ database/
 ## ⚙️ Configuration Files
 
 ### `config.php`
+
 **Purpose**: Central database configuration file
 
 **Contains**:
+
 - Database credentials
 - Server settings
 - Environment-specific configurations
 - Application constants
 
 **Usage**:
+
 ```php
 require_once 'database/config.php';
 // Access: DB_HOST, DB_NAME, DB_USER, DB_PASS
 ```
 
 **Configuration Variables**:
+
 ```php
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'barcie_db');
@@ -41,21 +58,25 @@ define('DB_CHARSET', 'utf8mb4');
 ---
 
 ### `db_connect.php`
+
 **Purpose**: Database connection handler
 
 **Features**:
+
 - Establishes MySQLi connection
 - Connection error handling
 - Character set configuration
 - Connection pooling
 
 **Usage**:
+
 ```php
 require_once 'database/db_connect.php';
 // Use $conn for database queries
 ```
 
 **Connection Object**:
+
 ```php
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
@@ -66,15 +87,18 @@ if ($conn->connect_error) {
 ---
 
 ### `mail_config.php`
+
 **Purpose**: Email configuration using PHPMailer
 
 **Features**:
+
 - SMTP configuration
 - Email templates
 - Sender settings
 - Error handling
 
 **Configuration**:
+
 ```php
 // SMTP Settings
 $mail->isSMTP();
@@ -87,6 +111,7 @@ $mail->Port = 587;
 ```
 
 **Usage**:
+
 ```php
 require_once 'database/mail_config.php';
 $mail = getMailer();
@@ -101,11 +126,13 @@ $mail->send();
 ## 🔐 Authentication & Security
 
 ### `admin_login.php`
+
 **Purpose**: Admin user authentication endpoint
 
 **Method**: `POST`
 
 **Process**:
+
 1. Receive username and password
 2. Validate input
 3. Check credentials against database
@@ -113,6 +140,7 @@ $mail->send();
 5. Return authentication result
 
 **Request**:
+
 ```json
 {
   "username": "admin",
@@ -121,6 +149,7 @@ $mail->send();
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -132,6 +161,7 @@ $mail->send();
 ```
 
 **Security Features**:
+
 - Password hashing (bcrypt)
 - SQL injection prevention
 - Session management
@@ -140,9 +170,11 @@ $mail->send();
 ---
 
 ### `user_auth.php`
+
 **Purpose**: General user authentication utilities
 
 **Functions**:
+
 - `authenticate($username, $password)` - Verify credentials
 - `createSession($user_data)` - Initialize user session
 - `checkSession()` - Verify active session
@@ -150,6 +182,7 @@ $mail->send();
 - `sendVerificationEmail($email)` - Send verification emails
 
 **Usage**:
+
 ```php
 require_once 'database/user_auth.php';
 
@@ -164,14 +197,17 @@ if (authenticate($username, $password)) {
 ---
 
 ### `csrf_protection.php`
+
 **Purpose**: CSRF (Cross-Site Request Forgery) protection
 
 **Functions**:
+
 - `generateCSRFToken()` - Create unique token
 - `validateCSRFToken($token)` - Verify token validity
 - `embedCSRFField()` - Add token to forms
 
 **Usage**:
+
 ```php
 // Generate token
 session_start();
@@ -190,20 +226,24 @@ if (!validateCSRFToken($_POST['csrf_token'])) {
 ---
 
 ### `role_check.php`
+
 **Purpose**: Role-based access control
 
 **Functions**:
+
 - `checkRole($required_role)` - Verify user role
 - `hasPermission($permission)` - Check specific permission
 - `getAdminRoles()` - Fetch available roles
 
 **Roles**:
+
 - `super_admin` - Full system access
 - `admin` - Standard admin access
 - `manager` - Limited management access
 - `staff` - Basic access
 
 **Usage**:
+
 ```php
 require_once 'database/role_check.php';
 
@@ -218,15 +258,18 @@ if (!checkRole('admin')) {
 ## 📊 Data Fetching Utilities
 
 ### `fetch_calendar_data.php`
+
 **Purpose**: Fetch booking data for calendar views
 
 **Returns**:
+
 - All bookings within date range
 - Room availability status
 - Booking conflicts
 - Calendar events
 
 **Usage**:
+
 ```php
 require_once 'database/fetch_calendar_data.php';
 
@@ -235,6 +278,7 @@ echo json_encode($calendar_data);
 ```
 
 **Response Format**:
+
 ```json
 {
   "events": [
@@ -252,15 +296,18 @@ echo json_encode($calendar_data);
 ---
 
 ### `fetch_items.php`
+
 **Purpose**: Retrieve catering items and services
 
 **Features**:
+
 - Fetch all items or by category
 - Filter by availability
 - Include pricing and images
 - Sort by various criteria
 
 **Usage**:
+
 ```php
 require_once 'database/fetch_items.php';
 
@@ -275,6 +322,7 @@ $item = fetchItemById(5);
 ```
 
 **Return Structure**:
+
 ```php
 [
   [
@@ -294,21 +342,25 @@ $item = fetchItemById(5);
 ## 🛠️ Error Handling
 
 ### `error_handler.php`
+
 **Purpose**: Centralized error handling and logging
 
 **Functions**:
+
 - `handleError($error)` - Process errors
 - `logError($message, $level)` - Log to file
 - `displayError($message)` - Show user-friendly errors
 - `sendErrorAlert($error)` - Notify admins
 
 **Error Levels**:
+
 - `ERROR` - Critical errors
 - `WARNING` - Non-critical issues
 - `NOTICE` - Informational messages
 - `DEBUG` - Development information
 
 **Usage**:
+
 ```php
 require_once 'database/error_handler.php';
 
@@ -322,6 +374,7 @@ try {
 ```
 
 **Log Format**:
+
 ```
 [2025-12-19 10:30:45] ERROR: Database connection failed - Connection timeout
 [2025-12-19 10:31:12] WARNING: Invalid input detected - User ID: 123
@@ -334,11 +387,13 @@ try {
 Business logic modules for specific features.
 
 ### `modules/AuthModule.php`
+
 **Purpose**: Advanced authentication module
 
 **Class**: `AuthModule`
 
 **Methods**:
+
 - `login($username, $password)` - User login
 - `register($user_data)` - User registration
 - `resetPassword($email)` - Password reset
@@ -348,6 +403,7 @@ Business logic modules for specific features.
 - `validateToken($token)` - Verify token
 
 **Usage**:
+
 ```php
 require_once 'database/modules/AuthModule.php';
 
@@ -363,11 +419,13 @@ if ($result['success']) {
 ---
 
 ### `modules/BookingModule.php`
+
 **Purpose**: Booking management business logic
 
 **Class**: `BookingModule`
 
 **Methods**:
+
 - `createBooking($booking_data)` - Create new booking
 - `updateBooking($booking_id, $data)` - Update booking
 - `cancelBooking($booking_id)` - Cancel booking
@@ -378,6 +436,7 @@ if ($result['success']) {
 - `confirmPayment($booking_id, $payment_data)` - Confirm payment
 
 **Usage**:
+
 ```php
 require_once 'database/modules/BookingModule.php';
 
@@ -401,9 +460,11 @@ if ($result['success']) {
 ---
 
 ### `modules/permissions_manager.php`
+
 **Purpose**: Manage user permissions and access control
 
 **Functions**:
+
 - `grantPermission($user_id, $permission)` - Grant permission
 - `revokePermission($user_id, $permission)` - Remove permission
 - `hasPermission($user_id, $permission)` - Check permission
@@ -411,6 +472,7 @@ if ($result['success']) {
 - `getRolePermissions($role)` - Get role-based permissions
 
 **Permissions**:
+
 - `view_bookings` - View booking list
 - `create_bookings` - Create new bookings
 - `edit_bookings` - Modify bookings
@@ -421,6 +483,7 @@ if ($result['success']) {
 - `export_data` - Export functionality
 
 **Usage**:
+
 ```php
 require_once 'database/modules/permissions_manager.php';
 
@@ -434,15 +497,18 @@ if (hasPermission($_SESSION['user_id'], 'manage_rooms')) {
 ---
 
 ### `modules/audit_trail.php`
+
 **Purpose**: Track and log user activities
 
 **Functions**:
+
 - `logActivity($user_id, $action, $details)` - Log activity
 - `getActivityLog($filters)` - Retrieve logs
 - `getUserActivity($user_id)` - Get user-specific logs
 - `generateAuditReport($start_date, $end_date)` - Generate report
 
 **Activity Types**:
+
 - `login` - User login
 - `logout` - User logout
 - `create` - Record creation
@@ -452,6 +518,7 @@ if (hasPermission($_SESSION['user_id'], 'manage_rooms')) {
 - `view` - Data viewing
 
 **Usage**:
+
 ```php
 require_once 'database/modules/audit_trail.php';
 
@@ -471,6 +538,7 @@ $activities = getActivityLog([
 ```
 
 **Log Structure**:
+
 ```php
 [
   [
@@ -494,12 +562,14 @@ $activities = getActivityLog([
 ### Creating Connections
 
 **MySQLi Connection**:
+
 ```php
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 $conn->set_charset('utf8mb4');
 ```
 
 **PDO Connection**:
+
 ```php
 $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
 $pdo = new PDO($dsn, DB_USER, DB_PASS, [
@@ -511,6 +581,7 @@ $pdo = new PDO($dsn, DB_USER, DB_PASS, [
 ### Query Best Practices
 
 **Prepared Statements (MySQLi)**:
+
 ```php
 $stmt = $conn->prepare("SELECT * FROM bookings WHERE id = ?");
 $stmt->bind_param("i", $booking_id);
@@ -520,6 +591,7 @@ $booking = $result->fetch_assoc();
 ```
 
 **Prepared Statements (PDO)**:
+
 ```php
 $stmt = $pdo->prepare("SELECT * FROM bookings WHERE id = :id");
 $stmt->execute(['id' => $booking_id]);
@@ -531,6 +603,7 @@ $booking = $stmt->fetch();
 ## 🔒 Security Best Practices
 
 ### Input Sanitization
+
 ```php
 // Sanitize string input
 $clean_input = filter_var($input, FILTER_SANITIZE_STRING);
@@ -543,6 +616,7 @@ $id = filter_var($input, FILTER_VALIDATE_INT);
 ```
 
 ### Password Hashing
+
 ```php
 // Hash password
 $hashed = password_hash($password, PASSWORD_BCRYPT);
@@ -554,6 +628,7 @@ if (password_verify($input_password, $hashed_password)) {
 ```
 
 ### SQL Injection Prevention
+
 - Always use prepared statements
 - Never concatenate user input into queries
 - Validate and sanitize all inputs
@@ -564,17 +639,20 @@ if (password_verify($input_password, $hashed_password)) {
 ## 📊 Database Backup
 
 ### Manual Backup
+
 ```bash
 mysqldump -u root -p barcie_db > backup_$(date +%Y%m%d).sql
 ```
 
 ### Automated Backup Script
+
 ```php
 // Create backup
 exec('mysqldump -u ' . DB_USER . ' -p' . DB_PASS . ' ' . DB_NAME . ' > backup.sql');
 ```
 
 ### Restore Database
+
 ```bash
 mysql -u root -p barcie_db < backup.sql
 ```
@@ -584,6 +662,7 @@ mysql -u root -p barcie_db < backup.sql
 ## 🧪 Testing Database Operations
 
 ### Test Connection
+
 ```php
 require_once 'database/db_connect.php';
 
@@ -595,6 +674,7 @@ if ($conn->ping()) {
 ```
 
 ### Test Queries
+
 ```php
 // Test simple query
 $result = $conn->query("SELECT 1");
@@ -608,6 +688,7 @@ if ($result) {
 ## 📝 Common Database Operations
 
 ### INSERT
+
 ```php
 $stmt = $conn->prepare("INSERT INTO bookings (guest_name, room_type, check_in) VALUES (?, ?, ?)");
 $stmt->bind_param("sss", $name, $room, $date);
@@ -616,6 +697,7 @@ $new_id = $conn->insert_id;
 ```
 
 ### UPDATE
+
 ```php
 $stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
 $stmt->bind_param("si", $status, $id);
@@ -623,6 +705,7 @@ $stmt->execute();
 ```
 
 ### DELETE
+
 ```php
 $stmt = $conn->prepare("DELETE FROM bookings WHERE id = ?");
 $stmt->bind_param("i", $id);
@@ -630,6 +713,7 @@ $stmt->execute();
 ```
 
 ### SELECT
+
 ```php
 $stmt = $conn->prepare("SELECT * FROM bookings WHERE status = ?");
 $stmt->bind_param("s", $status);

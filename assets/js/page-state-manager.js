@@ -48,9 +48,12 @@
   }
 
   function detectPageType() {
-    const path = window.location.pathname;
-    if (path.includes("dashboard.php")) return "admin";
-    if (path.includes("Guest.php")) return "guest";
+    const path = (window.location.pathname || "").toLowerCase();
+    const params = new URLSearchParams(window.location.search || "");
+    const view = (params.get("view") || "").toLowerCase();
+
+    if (view === "dashboard" || path.includes("dashboard.php")) return "admin";
+    if (view === "guest" || path.includes("guest.php")) return "guest";
     if (path.includes("index.php") || path === "/" || /\/[^/]+\/?$/.test(path))
       return "landing";
     return "unknown";
@@ -114,7 +117,14 @@
     const normalizedSection = normalizeSectionName(sectionName);
     console.log("🧭 Navigating to section:", normalizedSection);
     if (updateHash) {
-      window.location.hash = normalizedSection;
+      const pageType = detectPageType();
+      if (pageType === "admin") {
+        const preservedUrl =
+          window.location.pathname + (window.location.search || "");
+        history.replaceState(null, "", preservedUrl);
+      } else {
+        window.location.hash = normalizedSection;
+      }
     }
 
     const targetSection = resolveTargetSection(normalizedSection);
@@ -176,6 +186,11 @@
       if (urlHash) {
         console.log("📍 Using URL hash:", urlHash);
         navigateToSection(urlHash, false);
+        if (pageType === "admin") {
+          const preservedUrl =
+            window.location.pathname + (window.location.search || "");
+          history.replaceState(null, "", preservedUrl);
+        }
       } else {
         const savedState = getPageState();
 
@@ -196,16 +211,46 @@
     const defaultSection = DEFAULT_SECTIONS[role];
     savePageState(defaultSection, role);
     if (role === "admin") {
-      window.location.href = "dashboard.php#" + defaultSection;
+      window.location.href = "index.php?view=dashboard";
     } else if (role === "guest") {
-      window.location.href = "Guest.php#" + defaultSection;
+      window.location.href = "index.php?view=guest#" + defaultSection;
     }
   }
 
-  function handleLogout() {
+  function executeLogout(targetUrl) {
     console.log("👋 Logging out, clearing state");
     clearPageState();
-    window.location.href = "index.php";
+    window.location.href = targetUrl || "index.php?view=logout";
+  }
+
+  function requestLogoutConfirmation(targetUrl) {
+    var resolvedTarget = targetUrl || "index.php?view=logout";
+
+    // Prefer the shared popup manager confirm dialog when available.
+    if (typeof window.showConfirm === "function") {
+      window
+        .showConfirm("Do you want to log out?", {
+          title: "Confirm Logout",
+          confirmText: "Yes",
+          cancelText: "No",
+          confirmClass: "btn-danger",
+        })
+        .then(function (confirmed) {
+          if (confirmed) {
+            executeLogout(resolvedTarget);
+          }
+        });
+      return;
+    }
+
+    // Fallback if popup manager is unavailable.
+    if (window.confirm("Do you want to log out?")) {
+      executeLogout(resolvedTarget);
+    }
+  }
+
+  function handleLogout(targetUrl) {
+    requestLogoutConfirmation(targetUrl);
   }
 
   function initialize() {
@@ -220,12 +265,27 @@
       const hash = window.location.hash.substring(1);
       if (hash) {
         navigateToSection(hash, false);
+        if (detectPageType() === "admin") {
+          const preservedUrl =
+            window.location.pathname + (window.location.search || "");
+          history.replaceState(null, "", preservedUrl);
+        }
       }
     });
 
     document.addEventListener(
       "click",
       function (e) {
+        var logoutLink = e.target.closest(
+          'a[href*="view=logout"], a[href$="/logout.php"], a[data-action="logout"]',
+        );
+        if (logoutLink) {
+          e.preventDefault();
+          var href = (logoutLink.getAttribute("href") || "").trim();
+          requestLogoutConfirmation(href || "index.php?view=logout");
+          return;
+        }
+
         const navLink = e.target.closest('.sidebar a[href^="#"]');
         if (navLink) {
           if (navLink.classList.contains("dropdown-toggle")) {

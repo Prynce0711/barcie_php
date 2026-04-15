@@ -87,7 +87,7 @@
         const formData = new FormData(this);
 
         try {
-          const response = await fetch('database/admin_login.php', {
+          const response = await fetch('database/index.php?endpoint=admin_login', {
             method: 'POST',
             body: formData
           });
@@ -164,3 +164,4 @@
   };
 })();
 </script>
+

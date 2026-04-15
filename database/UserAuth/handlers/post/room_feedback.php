@@ -31,7 +31,7 @@ if ($action === 'room_feedback') {
         if ($is_ajax) {
             echo json_encode(['success' => false, 'error' => 'Invalid room ID']);
         } else {
-            handleResponse("Invalid room ID.", false, '../Guest.php#rooms');
+            handleResponse("Invalid room ID.", false, '../index.php?view=guest#rooms');
         }
         exit();
     }
@@ -40,7 +40,7 @@ if ($action === 'room_feedback') {
         if ($is_ajax) {
             echo json_encode(['success' => false, 'error' => 'Please select a star rating (1-5)']);
         } else {
-            handleResponse("Please select a star rating.", false, '../Guest.php#rooms');
+            handleResponse("Please select a star rating.", false, '../index.php?view=guest#rooms');
         }
         exit();
     }
@@ -50,7 +50,7 @@ if ($action === 'room_feedback') {
         if ($is_ajax) {
             echo json_encode(['success' => false, 'error' => 'Please sign in with Google to submit your review.']);
         } else {
-            handleResponse('Please sign in with Google to submit your review.', false, '../Guest.php#rooms');
+            handleResponse('Please sign in with Google to submit your review.', false, '../index.php?view=guest#rooms');
         }
         exit();
     }
@@ -72,14 +72,14 @@ if ($action === 'room_feedback') {
                 'message' => 'Thank you for your review! Your feedback helps others make better decisions.'
             ]);
         } else {
-            handleResponse("Thank you for your review!", true, '../Guest.php#rooms');
+            handleResponse("Thank you for your review!", true, '../index.php?view=guest#rooms');
         }
     } else {
         error_log("Room feedback submission error: " . $stmt->error);
         if ($is_ajax) {
             echo json_encode(['success' => false, 'error' => 'Failed to submit review. Please try again.']);
         } else {
-            handleResponse("Error submitting review. Please try again.", false, '../Guest.php#rooms');
+            handleResponse("Error submitting review. Please try again.", false, '../index.php?view=guest#rooms');
         }
     }
     $stmt->close();

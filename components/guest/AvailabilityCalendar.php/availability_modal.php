@@ -4,7 +4,10 @@
   <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width:720px;">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="roomCalendarModalLabel">Room Calendar</h5>
+        <div class="me-auto">
+          <h5 class="modal-title mb-0" id="roomCalendarModalLabel">Room Calendar</h5>
+          <small id="roomCalendarMonthLabel" class="text-muted fw-semibold">Month Year</small>
+        </div>
         <div class="btn-group btn-group-sm ms-3 me-2" role="group" aria-label="Modal navigation">
           <button type="button" class="btn btn-outline-secondary" title="Previous"
             onclick="if(window.roomCalendarPrev) roomCalendarPrev();">
@@ -70,6 +73,20 @@
   (function () {
     let roomCalendar = null;
     let currentItemId = null;
+
+    function updateRoomCalendarMonthLabel() {
+      const labelEl = document.getElementById('roomCalendarMonthLabel');
+      if (!labelEl || !roomCalendar) return;
+      try {
+        const currentDate = roomCalendar.getDate();
+        labelEl.textContent = currentDate.toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric'
+        });
+      } catch (e) {
+        labelEl.textContent = 'Month Year';
+      }
+    }
 
     // Now accepts explicit itemType to pass to the server (preferred)
     function fetchAndFilterEvents(itemId, itemType, successCallback, failureCallback) {
@@ -146,9 +163,13 @@
           locale: 'en',
           firstDay: 1,
           height: calcCalendarHeight(),
+          datesSet: function () {
+            updateRoomCalendarMonthLabel();
+          },
           events: []
         });
         try { roomCalendar.render(); } catch (e) { console.warn('render error', e); }
+        updateRoomCalendarMonthLabel();
 
         // keep calendar responsive while modal is open
         window.addEventListener('resize', function onRCResize() {
@@ -217,6 +238,7 @@
       if (!modalEl) return;
       const titleEl = modalEl.querySelector('.modal-title');
       if (titleEl) titleEl.textContent = (itemName ? itemName : 'Room') + ' Schedule';
+      updateRoomCalendarMonthLabel();
 
       // infer itemType from client data when possible, prefer explicit inference
       let inferredType = null;
@@ -251,9 +273,24 @@
     };
 
     // Expose small control functions for the modal calendar
-    window.roomCalendarPrev = function () { try { if (roomCalendar) roomCalendar.prev(); } catch (e) { } };
-    window.roomCalendarToday = function () { try { if (roomCalendar) roomCalendar.today(); } catch (e) { } };
-    window.roomCalendarNext = function () { try { if (roomCalendar) roomCalendar.next(); } catch (e) { } };
+    window.roomCalendarPrev = function () {
+      try {
+        if (roomCalendar) roomCalendar.prev();
+        updateRoomCalendarMonthLabel();
+      } catch (e) { }
+    };
+    window.roomCalendarToday = function () {
+      try {
+        if (roomCalendar) roomCalendar.today();
+        updateRoomCalendarMonthLabel();
+      } catch (e) { }
+    };
+    window.roomCalendarNext = function () {
+      try {
+        if (roomCalendar) roomCalendar.next();
+        updateRoomCalendarMonthLabel();
+      } catch (e) { }
+    };
 
     // Function to book from calendar - navigates to booking section with pre-filled data
     window.bookFromCalendar = function () {
@@ -261,41 +298,24 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById('roomCalendarModal'));
         if (modal) modal.hide();
 
-        // Navigate to booking section
-        const bookingSection = document.getElementById('booking');
-        if (bookingSection) {
-          // Hide all sections first
-          document.querySelectorAll('.content-section').forEach(s => {
-            s.style.display = 'none';
-            s.classList.remove('active');
-          });
+        // Use the shared booking redirect so section state and sidebar highlight stay consistent.
+        if (typeof window.redirectToBooking === 'function' && currentItemId) {
+          window.redirectToBooking(currentItemId);
+          return;
+        }
 
-          // Show booking section
-          bookingSection.style.display = 'block';
-          bookingSection.classList.add('active');
+        // Fallback: direct section switch if shared helper is unavailable.
+        if (typeof window.showSection === 'function') {
+          const bookingButton = document.querySelector('.sidebar-guest .sidebar-btn[data-section="booking"]');
+          window.showSection('booking', bookingButton, true);
+        }
 
-          // Update navigation if available
-          document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === '#booking' || link.dataset.section === 'booking') {
-              link.classList.add('active');
-            }
-          });
-
-          // Pre-fill room selection if we have currentItemId
-          if (currentItemId) {
-            const roomSelect = document.getElementById('room_select');
-            if (roomSelect) {
-              roomSelect.value = currentItemId;
-              // Trigger change event to update prices, etc.
-              roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+        if (currentItemId) {
+          const roomSelect = document.getElementById('room_select');
+          if (roomSelect) {
+            roomSelect.value = currentItemId;
+            roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
           }
-
-          // Scroll to booking form
-          setTimeout(() => {
-            bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 100);
         }
       } catch (e) {
         console.error('Error navigating to booking:', e);

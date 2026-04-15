@@ -1,4 +1,4 @@
-﻿function addTableSorting(table) {
+function addTableSorting(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((header, index) => {
     if (!header.classList.contains("no-sort")) {
@@ -49,72 +49,55 @@ function sortTable(table, columnIndex) {
   });
 }
 
-// Enhanced Toast Notifications
-function showToast(message, type = "info") {
-  const toastContainer = getOrCreateToastContainer();
-  const toastId = "toast-" + Date.now();
-
-  let bgClass, iconClass;
-  switch (type) {
-    case "success":
-      bgClass = "bg-success";
-      iconClass = "fa-check-circle";
-      break;
-    case "warning":
-      bgClass = "bg-warning";
-      iconClass = "fa-exclamation-triangle";
-      break;
-    case "error":
-    case "danger":
-      bgClass = "bg-danger";
-      iconClass = "fa-times-circle";
-      break;
-    default:
-      bgClass = "bg-info";
-      iconClass = "fa-info-circle";
+function normalizeNoticeType(type) {
+  const normalized = String(type || "info").toLowerCase();
+  if (normalized === "danger") return "error";
+  if (["success", "error", "warning", "info"].includes(normalized)) {
+    return normalized;
   }
-
-  const toastHtml = `
-        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="fas ${iconClass} me-2"></i>
-                <strong class="me-auto">Dashboard</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
-    `;
-
-  toastContainer.insertAdjacentHTML("beforeend", toastHtml);
-  const toastElement = document.getElementById(toastId);
-  const toast = new bootstrap.Toast(toastElement);
-  toast.show();
-
-  // Remove element after it's hidden
-  toastElement.addEventListener("hidden.bs.toast", function () {
-    this.remove();
-  });
+  return "info";
 }
 
-// Get or Create Toast Container
-function getOrCreateToastContainer() {
-  let container = document.getElementById("toast-container");
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "toast-container";
-    container.className = "toast-container position-fixed top-0 end-0 p-3";
-    container.style.zIndex = "9999";
-    document.body.appendChild(container);
+// Popup-based notifications (replaces upper-right toast notifications)
+function showToast(message, type = "info", duration = 4500) {
+  const normalizedType = normalizeNoticeType(type);
+  const text = String(message || "Notification");
+
+  const legacyContainer = document.getElementById("toast-container");
+  if (legacyContainer) {
+    legacyContainer.remove();
   }
-  return container;
+
+  if (
+    normalizedType === "success" &&
+    typeof window.showSuccessPopup === "function"
+  ) {
+    return window.showSuccessPopup(text, {
+      title: "Success",
+      autoCloseMs: duration > 0 ? duration : undefined,
+    });
+  }
+
+  if (typeof window.showErrorPopup === "function") {
+    const titleMap = {
+      error: "Error",
+      warning: "Warning",
+      info: "Notification",
+    };
+    return window.showErrorPopup(text, {
+      title: titleMap[normalizedType] || "Notification",
+      autoCloseMs: duration > 0 ? duration : undefined,
+    });
+  }
+
+  alert(text);
+  return null;
 }
 
 // Item Management Functions
 async function loadItems() {
   try {
-    const res = await fetch("database/fetch_items.php");
+    const res = await fetch("database/index.php?endpoint=fetch_items");
     const items = await res.json();
     const container = document.getElementById("cards-grid");
     if (container) {
@@ -153,7 +136,7 @@ async function loadItems() {
 
             </p>
             <p class="card-text mb-2">
-              <i class="fas fa-tag me-2"></i>Price: â‚±${item.price}${
+              <i class="fas fa-tag me-2"></i>Price: ₱${item.price}${
                 item.item_type === "room" ? "/night" : "/day"
               }
             </p>

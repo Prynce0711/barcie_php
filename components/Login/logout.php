@@ -1,6 +1,11 @@
 <?php
 session_start();
-require_once __DIR__ . '/database/db_connect.php';
+require_once dirname(__DIR__, 2) . '/database/db_connect.php';
+require_once __DIR__ . '/remember_me.php';
+
+if (isset($conn) && $conn instanceof mysqli) {
+    remember_me_forget_current($conn);
+}
 
 // Clear last_activity in database before destroying session
 if (isset($_SESSION['admin_id'])) {

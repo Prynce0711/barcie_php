@@ -33,6 +33,8 @@
 # Protect vendor and sensitive directories
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # Route legacy entry files to the single front controller.
+    RewriteRule ^(admin|dashboard|guest|logout)\.php$ index.php?view=$1 [QSA,L,NC]
     RewriteRule ^vendor/.*$ - [F,L]
     # Block SQL files only in database folder
     RewriteRule ^database/.*\.sql$ - [F,L]

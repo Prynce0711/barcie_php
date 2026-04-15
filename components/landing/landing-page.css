@@ -406,8 +406,11 @@ section.bg-dark {
 
 .hero-section {
   height: 100vh;
-  background:
-    linear-gradient(135deg, rgba(30, 60, 114, 0.78), rgba(42, 82, 152, 0.72));
+  background: linear-gradient(
+    135deg,
+    rgba(30, 60, 114, 0.78),
+    rgba(42, 82, 152, 0.72)
+  );
   display: flex;
   align-items: center;
   position: relative;
@@ -797,6 +800,18 @@ section.bg-dark {
   position: relative;
   overflow: hidden;
   border-radius: 1rem;
+  /* Keep the image from growing too large on wide screens while
+     remaining responsive on small devices */
+  max-width: 400px; /* preferred max width */
+  margin-left: 0; /* left-align within the column on wide screens */
+}
+
+/* Make the about image fill its column on smaller screens and center it */
+@media (max-width: 991.98px) {
+  .about-image-wrapper {
+    max-width: 100%;
+    margin: 0 auto;
+  }
 }
 
 .about-image-wrapper img {

@@ -201,7 +201,7 @@ if ($confirm === 'yes') {
                     <strong>Receipt #:</strong> <?= htmlspecialchars($receipt) ?>
                 </div>
                 <p class="mb-4">A confirmation email has been sent to <strong><?= htmlspecialchars($email) ?></strong></p>
-                <a href="../../Guest.php" class="btn btn-primary">
+                <a href="../index.php?view=guest" class="btn btn-primary">
                     <i class="fas fa-home me-2"></i>Return to Home
                 </a>
             </div>
@@ -213,7 +213,7 @@ if ($confirm === 'yes') {
                 <div class="alert alert-danger">
                     <?= htmlspecialchars($error_message ?? 'An error occurred while processing your cancellation.') ?>
                 </div>
-                <a href="../../Guest.php" class="btn btn-secondary">
+                <a href="../index.php?view=guest" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Go Back
                 </a>
             </div>
@@ -266,7 +266,7 @@ if ($confirm === 'yes') {
                     class="btn btn-danger btn-cancel">
                     <i class="fas fa-times-circle me-2"></i>Yes, Cancel This Booking
                 </a>
-                <a href="../../Guest.php" class="btn btn-outline-secondary">
+                <a href="../index.php?view=guest" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i>No, Keep My Booking
                 </a>
             </div>
