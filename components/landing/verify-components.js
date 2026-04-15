@@ -1,40 +1,38 @@
 // Component Verification Script
 // This script verifies that all critical components are loaded correctly
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
-  console.log('🔍 Component Verification Script Loaded');
+  console.log("🔍 Component Verification Script Loaded");
 
   // Wait for DOM to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', verifyComponents);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", verifyComponents);
   } else {
     verifyComponents();
   }
 
   function verifyComponents() {
-    console.log('✅ Starting component verification...');
+    console.log("✅ Starting component verification...");
 
     // Required elements for the current landing page build
     const requiredElements = {
-      'Navigation': document.querySelector('nav'),
-      'Hero Section': document.getElementById('home'),
-      'About Section': document.getElementById('about'),
-      'Vision & Mission Section': document.getElementById('vision-mission'),
-      'News Section': document.getElementById('news'),
-      'Event Stylists Section': document.getElementById('event-stylists'),
-      'Caterings Section': document.getElementById('caterings'),
-      'Brochure Section': document.getElementById('brochure'),
-      'Contact Section': document.getElementById('contact'),
+      Navigation: document.querySelector("nav"),
+      "Hero Section": document.getElementById("home"),
+      "About Section": document.getElementById("about"),
+      "Vision & Mission Section": document.getElementById("vision-mission"),
+      "News Section": document.getElementById("news"),
+      "Event Stylists Section": document.getElementById("event-stylists"),
+      "Caterings Section": document.getElementById("caterings"),
+      "Brochure Section": document.getElementById("brochure"),
+      "Contact Section": document.getElementById("contact"),
     };
 
-    // Optional/legacy elements (kept for compatibility checks)
+    // Optional/legacy elements
     const optionalElements = {
-      'Features Section': document.getElementById('features'),
-      'Services Section': document.getElementById('services'),
-      'Admin Login Modal': document.getElementById('adminLoginModal'),
-      'Admin Login Form': document.getElementById('admin-login-form')
+      "Features Section": document.getElementById("features"),
+      "Services Section": document.getElementById("services"),
     };
 
     let allPresent = true;
@@ -58,17 +56,17 @@
 
     // Check for State Manager
     if (window.BarcieStateManager) {
-      console.log('✅ State Manager: Loaded');
+      console.log("✅ State Manager: Loaded");
     } else {
-      console.warn('⚠️ State Manager: Not loaded');
+      console.warn("⚠️ State Manager: Not loaded");
       allPresent = false;
     }
 
     // Final verification result
     if (allPresent) {
-      console.log('✅ All components verified successfully!');
+      console.log("✅ All components verified successfully!");
     } else {
-      console.warn('⚠️ Some components are missing. Check the warnings above.');
+      console.warn("⚠️ Some components are missing. Check the warnings above.");
     }
   }
 })();
