@@ -174,8 +174,6 @@ $assetVersion = time() . '_' . mt_rand(1000, 9999);
     src="<?php echo htmlspecialchars($assetUrl('assets/js/page-state-manager.js') . '?v=' . $assetVersion, ENT_QUOTES, 'UTF-8'); ?>"></script>
   <script
     src="<?php echo htmlspecialchars($componentAssetUrl('landing/main.js') . '?v=' . $assetVersion, ENT_QUOTES, 'UTF-8'); ?>"></script>
-  <script
-    src="<?php echo htmlspecialchars($componentAssetUrl('landing/auth.js') . '?v=' . $assetVersion, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
   <script
     src="<?php echo htmlspecialchars($componentAssetUrl('landing/verify-components.js') . '?v=' . $assetVersion, ENT_QUOTES, 'UTF-8'); ?>"></script>
