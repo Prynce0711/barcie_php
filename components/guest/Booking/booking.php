@@ -442,8 +442,8 @@
 
       <!-- Payment moved into confirm modal -->
 
-      <button type="button" id="reservationSubmitBtn">
-        <i class="fas fa-calendar-check me-2"></i>Confirm Reservation
+      <button type="button" id="reviewBookingBtn">
+        <i class="fas fa-calendar-check me-2"></i>Review Booking
       </button>
     </div>
   </form>
@@ -698,7 +698,7 @@ include __DIR__ . '/confirm_addOn.php';
       const isReservation = formType === 'reservation';
       const formFields = document.getElementById(isReservation ? 'reservation_form_fields' : 'pencil_form_fields');
       const idNotice = document.getElementById(isReservation ? 'reservation_id_notice' : 'pencil_id_notice');
-      const submitBtn = document.getElementById(isReservation ? 'reservationSubmitBtn' : 'pencilSubmitBtn');
+      const submitBtn = document.getElementById(isReservation ? 'reviewBookingBtn' : 'pencilSubmitBtn');
 
       if (!formFields) return;
 

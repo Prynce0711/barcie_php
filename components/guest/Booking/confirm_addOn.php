@@ -1327,10 +1327,10 @@
       // Attach field listeners so inline errors clear as user types
       try { attachFieldListeners(resForm); } catch (e) { }
 
-      // Also attach to the reservation button (in case button is type=button)
-      const reservationBtn = document.getElementById('reservationSubmitBtn');
-      if (reservationBtn) {
-        reservationBtn.addEventListener('click', function (e) {
+      // Also attach to the review button (button is type=button and does not submit by default)
+      const reviewBookingBtn = document.getElementById('reviewBookingBtn') || document.getElementById('reservationSubmitBtn');
+      if (reviewBookingBtn) {
+        reviewBookingBtn.addEventListener('click', function (e) {
           e.preventDefault();
           const form = document.getElementById('reservationForm');
           if (!form) return;

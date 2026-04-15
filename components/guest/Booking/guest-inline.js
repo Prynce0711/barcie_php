@@ -271,7 +271,7 @@ if (typeof window.showPencilSuccessModal !== "function") {
     if (reservationForm) {
       reservationForm.addEventListener("submit", function (e) {
         e.preventDefault();
-        handleFormSubmission(this, "reservationSubmitBtn");
+        handleFormSubmission(this, "reviewBookingBtn");
       });
     }
     if (pencilForm) {
