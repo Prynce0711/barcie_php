@@ -217,10 +217,40 @@
     }
   }
 
-  function handleLogout() {
+  function executeLogout(targetUrl) {
     console.log("👋 Logging out, clearing state");
     clearPageState();
-    window.location.href = "index.php";
+    window.location.href = targetUrl || "index.php?view=logout";
+  }
+
+  function requestLogoutConfirmation(targetUrl) {
+    var resolvedTarget = targetUrl || "index.php?view=logout";
+
+    // Prefer the shared popup manager confirm dialog when available.
+    if (typeof window.showConfirm === "function") {
+      window
+        .showConfirm("Do you want to log out?", {
+          title: "Confirm Logout",
+          confirmText: "Yes",
+          cancelText: "No",
+          confirmClass: "btn-danger",
+        })
+        .then(function (confirmed) {
+          if (confirmed) {
+            executeLogout(resolvedTarget);
+          }
+        });
+      return;
+    }
+
+    // Fallback if popup manager is unavailable.
+    if (window.confirm("Do you want to log out?")) {
+      executeLogout(resolvedTarget);
+    }
+  }
+
+  function handleLogout(targetUrl) {
+    requestLogoutConfirmation(targetUrl);
   }
 
   function initialize() {
@@ -246,6 +276,16 @@
     document.addEventListener(
       "click",
       function (e) {
+        var logoutLink = e.target.closest(
+          'a[href*="view=logout"], a[href$="/logout.php"], a[data-action="logout"]',
+        );
+        if (logoutLink) {
+          e.preventDefault();
+          var href = (logoutLink.getAttribute("href") || "").trim();
+          requestLogoutConfirmation(href || "index.php?view=logout");
+          return;
+        }
+
         const navLink = e.target.closest('.sidebar a[href^="#"]');
         if (navLink) {
           if (navLink.classList.contains("dropdown-toggle")) {
