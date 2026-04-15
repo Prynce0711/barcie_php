@@ -361,12 +361,21 @@
     const MAX_UPLOAD_MB = 10;
     const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
-    // Notification helper: prefer showToast if available, fallback to alert
+    // Notification helper: prefer popup notice; fallback to alert only when needed
     function notify(message, type = 'info') {
       try {
-        if (typeof showToast === 'function') return showToast(message, type);
+        if (typeof window.showToast === 'function') {
+          return window.showToast(message, type);
+        }
       } catch (e) { }
-      try { showToast(message, 'info'); } catch (e) { /* ignore */ }
+
+      try {
+        if (typeof window.alert === 'function') {
+          window.alert(String(message || 'Notification'));
+        }
+      } catch (e) { /* ignore */ }
+
+      return null;
     }
 
     // Clear all form data
@@ -1296,79 +1305,69 @@
       modal.show();
     }
 
+    function collectReservationBookingData(form, options = {}) {
+      const bookingData = {
+        type: options.type || 'reservation',
+        room_id: form.querySelector('[name="room_id"]')?.value || '',
+        guest_name: form.querySelector('[name="guest_name"]')?.value || '',
+        contact: form.querySelector('[name="contact_number"]')?.value || '',
+        email: form.querySelector('[name="email"]')?.value || '',
+        checkin: form.querySelector('[name="checkin"]')?.value || '',
+        checkout: form.querySelector('[name="checkout"]')?.value || '',
+        occupants: form.querySelector('[name="occupants"]')?.value || ''
+      };
+
+      if (options.originalType) {
+        bookingData._originalType = options.originalType;
+      }
+
+      return bookingData;
+    }
+
+    function openPreviewFromForm(form, options = {}) {
+      if (!form) return;
+
+      const invalid = validateFormInline(form);
+      if (invalid) {
+        showInlineAlert(invalid.field, invalid.message);
+        return;
+      }
+
+      const bookingData = collectReservationBookingData(form, options);
+      showPreviewModal(form, bookingData);
+    }
+
     // Attach to reservation & pencil form submit
     function attachInterceptors() {
-      const resForm = document.getElementById('reservationForm');
+      const reservationForm = document.getElementById('reservationForm');
       const pencilForm = document.getElementById('pencilForm');
 
-      if (resForm) {
-        resForm.addEventListener('submit', function (e) {
+      if (reservationForm) {
+        reservationForm.addEventListener('submit', function (e) {
           e.preventDefault();
-          const form = e.target;
-          const invalid = validateFormInline(form);
-          if (invalid) {
-            showInlineAlert(invalid.field, invalid.message);
-            return;
-          }
-          const bookingData = {
-            type: 'reservation',
-            room_id: form.querySelector('[name="room_id"]').value,
-            guest_name: form.querySelector('[name="guest_name"]').value,
-            contact: form.querySelector('[name="contact_number"]').value,
-            email: form.querySelector('[name="email"]').value,
-            checkin: form.querySelector('[name="checkin"]').value,
-            checkout: form.querySelector('[name="checkout"]').value,
-            occupants: form.querySelector('[name="occupants"]').value
-          };
-          showPreviewModal(form, bookingData);
+          openPreviewFromForm(e.target);
         });
       }
 
       // Attach field listeners so inline errors clear as user types
-      try { attachFieldListeners(resForm); } catch (e) { }
+      try { attachFieldListeners(reservationForm); } catch (e) { }
 
       // Also attach to the review button (button is type=button and does not submit by default)
       const reviewBookingBtn = document.getElementById('reviewBookingBtn') || document.getElementById('reservationSubmitBtn');
       if (reviewBookingBtn) {
         reviewBookingBtn.addEventListener('click', function (e) {
           e.preventDefault();
-          const form = document.getElementById('reservationForm');
-          if (!form) return;
-          const invalid = validateFormInline(form);
-          if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
-          const bookingData = {
-            type: 'reservation',
-            room_id: form.querySelector('[name="room_id"]').value,
-            guest_name: form.querySelector('[name="guest_name"]').value,
-            contact: form.querySelector('[name="contact_number"]').value,
-            email: form.querySelector('[name="email"]').value,
-            checkin: form.querySelector('[name="checkin"]').value,
-            checkout: form.querySelector('[name="checkout"]').value,
-            occupants: form.querySelector('[name="occupants"]').value
-          };
-          showPreviewModal(form, bookingData);
+          openPreviewFromForm(document.getElementById('reservationForm'));
         });
       }
 
       if (pencilForm) {
         pencilForm.addEventListener('submit', function (e) {
           e.preventDefault();
-          const form = e.target;
-          const invalid = validateFormInline(form);
-          if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
-          // Pencil form now has same fields as reservation, just mark it as draft
-          const bookingData = {
+          openPreviewFromForm(e.target, {
             type: 'reservation',
-            _originalType: 'pencil',
-            room_id: form.querySelector('[name="room_id"]').value,
-            guest_name: form.querySelector('[name="guest_name"]').value,
-            contact: form.querySelector('[name="contact_number"]').value,
-            email: form.querySelector('[name="email"]').value,
-            checkin: form.querySelector('[name="checkin"]').value,
-            checkout: form.querySelector('[name="checkout"]').value,
-            occupants: form.querySelector('[name="occupants"]').value
-          };
-          showPreviewModal(form, bookingData);
+            originalType: 'pencil'
+          });
         });
       }
 
