@@ -23,6 +23,29 @@ $bookingId = isset($_GET['booking_id']) ? (int) $_GET['booking_id'] : 0;
 $email = trim((string) ($_GET['email'] ?? ''));
 $receipt = trim((string) ($_GET['receipt'] ?? ''));
 
+$projectBasePath = defined('APP_BASE_PATH') ? rtrim((string) APP_BASE_PATH, '/') : '';
+
+// This page can be accessed directly under /components/guest/Booking, where
+// APP_BASE_PATH may incorrectly include /components/guest. Normalize it to the
+// project root so form actions always target /<project>/database/...
+if ($projectBasePath !== '' && strpos($projectBasePath, '/components/') !== false) {
+    $normalizedBasePath = preg_replace('#/components/.*$#', '', $projectBasePath);
+    if (is_string($normalizedBasePath)) {
+        $projectBasePath = rtrim($normalizedBasePath, '/');
+    }
+}
+
+if ($projectBasePath === '') {
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+    $normalizedFromScript = preg_replace('#/components/.*$#', '', $scriptDir);
+    if (is_string($normalizedFromScript) && $normalizedFromScript !== '') {
+        $projectBasePath = rtrim($normalizedFromScript, '/');
+    }
+}
+
+$userAuthEndpointUrl = ($projectBasePath !== '' ? $projectBasePath : '') . '/database/index.php?endpoint=user_auth';
+
 $flashMessage = '';
 $flashSuccess = false;
 if (!empty($_SESSION['booking_msg'])) {
@@ -381,7 +404,7 @@ if ($booking) {
                     <div class="alert error">No same-room alternatives are available right now for your selected dates. Please
                         contact the admin for assistance.</div>
                 <?php else: ?>
-                    <form method="POST" action="<?php echo htmlspecialchars((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/database/index.php?endpoint=user_auth', ENT_QUOTES, 'UTF-8'); ?>">
+                    <form method="POST" action="<?php echo htmlspecialchars($userAuthEndpointUrl, ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="action" value="change_conflict_room">
                         <input type="hidden" name="booking_id" value="<?php echo (int) $bookingId; ?>">
                         <input type="hidden" name="email" value="<?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>">
