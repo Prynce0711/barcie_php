@@ -9,6 +9,68 @@ $action = $_REQUEST['action'] ?? '';
 // Dedicated GET handlers (each exits when matched).
 require_once __DIR__ . '/../handlers/get/get_room_reviews.php';
 
+function feedbackColumnExists(mysqli $conn, string $column): bool
+{
+    $columnEscaped = $conn->real_escape_string($column);
+    $result = $conn->query("SHOW COLUMNS FROM feedback LIKE '{$columnEscaped}'");
+    return $result && $result->num_rows > 0;
+}
+
+function feedbackIndexExists(mysqli $conn, string $indexName): bool
+{
+    $indexEscaped = $conn->real_escape_string($indexName);
+    $result = $conn->query("SHOW INDEX FROM feedback WHERE Key_name = '{$indexEscaped}'");
+    return $result && $result->num_rows > 0;
+}
+
+function ensureFeedbackTableSchema(mysqli $conn): void
+{
+    $conn->query("CREATE TABLE IF NOT EXISTS feedback (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        room_id INT NULL,
+        rating INT NOT NULL DEFAULT 5,
+        message TEXT,
+        feedback_name VARCHAR(255) NULL,
+        feedback_email VARCHAR(255) NULL,
+        is_anonymous TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+
+    $columnsToAdd = [
+        'room_id' => 'INT NULL AFTER id',
+        'rating' => 'INT NOT NULL DEFAULT 5',
+        'message' => 'TEXT NULL',
+        'feedback_name' => 'VARCHAR(255) NULL',
+        'feedback_email' => 'VARCHAR(255) NULL',
+        'is_anonymous' => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+    ];
+
+    foreach ($columnsToAdd as $column => $definition) {
+        if (!feedbackColumnExists($conn, $column)) {
+            $conn->query("ALTER TABLE feedback ADD COLUMN {$column} {$definition}");
+        }
+    }
+
+    if (feedbackColumnExists($conn, 'user_id')) {
+        $conn->query('ALTER TABLE feedback MODIFY COLUMN user_id INT NULL');
+    }
+
+    $indexesToAdd = [
+        'idx_room_id' => 'room_id',
+        'idx_rating' => 'rating',
+        'idx_created_at' => 'created_at'
+    ];
+
+    foreach ($indexesToAdd as $indexName => $column) {
+        if (!feedbackIndexExists($conn, $indexName)) {
+            $conn->query("CREATE INDEX {$indexName} ON feedback ({$column})");
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
     // Simple ping endpoint - no database required
@@ -566,23 +628,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         header('Content-Type: application/json');
 
         try {
-            // Create feedback table if it doesn't exist
-            $conn->query("CREATE TABLE IF NOT EXISTS feedback (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                rating INT NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
-                message TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_user_id (user_id),
-                INDEX idx_rating (rating),
-                INDEX idx_created_at (created_at)
-            )");
-
-            // Check if rating column exists, add if missing
-            $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
-            if ($result->num_rows == 0) {
-                $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5 AFTER user_id");
-            }
+            ensureFeedbackTableSchema($conn);
 
             echo json_encode([
                 'success' => true,
@@ -635,23 +681,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         header('Content-Type: application/json');
 
         try {
-            // Ensure feedback table exists first
-            $conn->query("CREATE TABLE IF NOT EXISTS feedback (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                rating INT NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
-                message TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_user_id (user_id),
-                INDEX idx_rating (rating),
-                INDEX idx_created_at (created_at)
-            )");
-
-            // Check if rating column exists, add if missing
-            $result = $conn->query("SHOW COLUMNS FROM feedback LIKE 'rating'");
-            if ($result->num_rows == 0) {
-                $conn->query("ALTER TABLE feedback ADD COLUMN rating INT NOT NULL DEFAULT 5 AFTER user_id");
-            }
+            ensureFeedbackTableSchema($conn);
 
             $limit = (int) ($_GET['limit'] ?? 50);
             $offset = (int) ($_GET['offset'] ?? 0);
@@ -664,6 +694,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                                    LEFT JOIN items i ON f.room_id = i.id
                                    ORDER BY f.created_at DESC 
                                    LIMIT ? OFFSET ?");
+
+            if (!$stmt) {
+                throw new Exception('Failed to prepare feedback query: ' . $conn->error);
+            }
+
             $stmt->bind_param("ii", $limit, $offset);
             $stmt->execute();
             $result = $stmt->get_result();

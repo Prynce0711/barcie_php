@@ -1,5 +1,5 @@
 <!-- Pencil Booking (Draft Reservation Form) -->
-<form id="pencilForm" method="POST" action="database/user_auth.php" class="compact-form" style="display:none;">
+<form id="pencilForm" method="POST" action="<?php echo htmlspecialchars((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/database/index.php?endpoint=user_auth', ENT_QUOTES, 'UTF-8'); ?>" class="compact-form" style="display:none;">
   <h3>Pencil Booking Form (Draft Reservation)</h3>
   <input type="hidden" name="action" value="create_booking">
   <input type="hidden" name="booking_type" value="pencil_booking">

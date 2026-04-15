@@ -152,7 +152,8 @@
       ) {
         sectionToShow = hashSection;
         console.log("Guest: Using hash section from URL:", sectionToShow);
-        history.replaceState(null, "", window.location.pathname);
+        const preservedUrl = window.location.pathname + (window.location.search || "");
+        history.replaceState(null, "", preservedUrl);
       } else if (
         savedSection &&
         validSections.includes(savedSection) &&

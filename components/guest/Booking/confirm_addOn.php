@@ -354,13 +354,10 @@
    * - On confirm, appends add-on fields to the original form and submits
    */
   (function () {
-    // Get the base path dynamically from current page URL to handle any case/environment
-    const getBasePath = () => {
-      const path = window.location.pathname;
-      const match = path.match(/^(\/[^\/]+)\//); // Extract /folder_name/ from path
-      return match ? match[1] : '';
-    };
-    const BASE_PATH = getBasePath();
+    const BASE_PATH =
+      typeof window.APP_BASE_PATH === 'string' && window.APP_BASE_PATH.trim() !== ''
+        ? window.APP_BASE_PATH.replace(/\/+$/, '')
+        : '';
     const MAX_UPLOAD_MB = 10;
     const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
@@ -676,7 +673,7 @@
       try {
         // Update URL without reload
         if (history && history.pushState) {
-          history.pushState(null, '', 'Guest.php#booking');
+          history.pushState(null, '', 'index.php?view=guest#booking');
         } else {
           location.hash = 'booking';
         }
@@ -1049,7 +1046,7 @@
     async function fetchItemById(id) {
       try {
         // Use the project-relative fetch path to be consistent with dashboard script
-        const res = await fetch('database/fetch_items.php');
+        const res = await fetch('database/index.php?endpoint=fetch_items');
         if (!res.ok) return null;
         const items = await res.json();
         return items.find(it => Number(it.id) === Number(id)) || null;
@@ -1400,7 +1397,7 @@
             const formData = new FormData(form);
 
             // Send the form data directly - use dynamic base path
-            const response = await fetch(BASE_PATH + '/database/user_auth.php', {
+            const response = await fetch((BASE_PATH || '') + '/database/index.php?endpoint=user_auth', {
               method: 'POST',
               body: formData,
               credentials: 'same-origin',
@@ -1721,7 +1718,7 @@
             // Get the form action URL properly - use dynamic base path
             const actionAttr = currentForm.getAttribute('action');
             // Use form action if specified, otherwise default to dynamic path
-            const targetUrl = actionAttr || (BASE_PATH + '/database/user_auth.php');
+            const targetUrl = actionAttr || ((BASE_PATH || '') + '/database/index.php?endpoint=user_auth');
 
             console.debug('Submitting booking to', targetUrl);
 

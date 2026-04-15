@@ -6,6 +6,7 @@
 
 session_start();
 require_once __DIR__ . '/../database/db_connect.php';
+require_once __DIR__ . '/../components/Login/remember_me.php';
 
 // Set JSON header
 header('Content-Type: application/json');
@@ -16,6 +17,10 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 if ($action === 'fetch_published') {
     fetchPublishedNews($conn);
     exit;
+}
+
+if ((empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) && isset($conn) && $conn instanceof mysqli) {
+    remember_me_restore_session($conn);
 }
 
 // Check if admin is logged in for protected endpoints

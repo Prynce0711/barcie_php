@@ -328,7 +328,7 @@ function submitRoomFeedback() {
   const controls = form.querySelectorAll("input, textarea, button, select");
   controls.forEach((el) => (el.disabled = true));
 
-  fetch("database/UserAuth/user_auth.php", {
+  fetch("database/index.php?endpoint=user_auth", {
     method: "POST",
     body: formData,
     headers: {
@@ -354,8 +354,8 @@ function submitRoomFeedback() {
 
         // Short delay to allow modal to close smoothly, then navigate to rooms
         setTimeout(() => {
-          // Assuming this script runs on Guest.php; navigate to the rooms anchor
-          window.location.href = "Guest.php#rooms";
+          // Navigate back to the guest rooms section via single-entry route.
+          window.location.href = "index.php?view=guest#rooms";
         }, 300);
       } else {
         throw new Error(data.error || "Failed to submit review");
@@ -453,7 +453,7 @@ function openRoomDetailsModal(roomId) {
 function loadRoomReviews(roomId) {
   const reviewsList = document.getElementById("roomReviewsList");
   fetch(
-    `database/UserAuth/user_auth.php?action=get_room_reviews&room_id=${roomId}`,
+    `database/index.php?endpoint=user_auth&action=get_room_reviews&room_id=${roomId}`,
   )
     .then((response) => response.json())
     .then((data) => {
@@ -628,3 +628,4 @@ function showAlert(message, type = "info") {
 window.openRoomFeedbackModal = openRoomFeedbackModal;
 window.openRoomDetailsModal = openRoomDetailsModal;
 window.loadRoomReviews = loadRoomReviews;
+

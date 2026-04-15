@@ -28,7 +28,7 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
     }
 
     if ($rating < 1 || $rating > 5) {
-        handleResponse("Please select a star rating.", false, '../Guest.php#feedback');
+        handleResponse("Please select a star rating.", false, '../index.php?view=guest#feedback');
     }
 
     // Create feedback table if it doesn't exist
@@ -76,9 +76,9 @@ if ($action === 'submit_feedback' || $action === 'feedback') {
     $stmt->bind_param("isss", $rating, $message, $feedback_name, $feedback_email);
 
     if ($stmt->execute()) {
-        handleResponse("Thank you for your " . $rating . "-star feedback" . ($feedback_name ? ", " . htmlspecialchars($feedback_name) : "") . "!", true, '../Guest.php#feedback');
+        handleResponse("Thank you for your " . $rating . "-star feedback" . ($feedback_name ? ", " . htmlspecialchars($feedback_name) : "") . "!", true, '../index.php?view=guest#feedback');
     } else {
-        handleResponse("Error submitting feedback. Please try again.", false, '../Guest.php#feedback');
+        handleResponse("Error submitting feedback. Please try again.", false, '../index.php?view=guest#feedback');
         error_log("Feedback submission error: " . $stmt->error);
     }
     $stmt->close();

@@ -8,7 +8,7 @@ if ($action === 'approve_feedback' || $action === 'reject_feedback') {
         if ($is_ajax) {
             echo json_encode(['success' => false, 'error' => 'Access denied. Admin login required.']);
         } else {
-            handleResponse('Access denied. Admin login required.', false, '../dashboard.php');
+            handleResponse('Access denied. Admin login required.', false, '../index.php?view=dashboard');
         }
         exit();
     }

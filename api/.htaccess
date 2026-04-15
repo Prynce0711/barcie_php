@@ -1,0 +1,6 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Route legacy direct endpoint calls through the API front controller.
+    RewriteRule ^(?!index\.php$)([A-Za-z0-9_-]+)\.php$ index.php?endpoint=$1 [QSA,L,NC]
+</IfModule>

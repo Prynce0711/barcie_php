@@ -1,4 +1,4 @@
-﻿// showConfirmModal is provided by components/Popup/popup-manager.js (window.showConfirmModal = window.showConfirm)
+// showConfirmModal is provided by components/Popup/popup-manager.js (window.showConfirmModal = window.showConfirm)
 
 // Booking Management Functions
 async function updateBookingStatus(bookingId, newStatus) {
@@ -55,7 +55,7 @@ async function updateBookingStatus(bookingId, newStatus) {
     formData.append("admin_action", action);
 
     // Send AJAX request
-    const response = await fetch("database/user_auth.php", {
+    const response = await fetch("database/index.php?endpoint=user_auth", {
       method: "POST",
       headers: {
         "X-Requested-With": "XMLHttpRequest",
@@ -138,3 +138,4 @@ async function updateBookingStatus(bookingId, newStatus) {
 }
 
 // Discount Management Function (SEPARATE from booking approval)
+

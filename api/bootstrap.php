@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Manila');
 // Common bootstrap for BarCIE API endpoints
 
 // Start output buffering to prevent stray output
-ob_start();
+require_once __DIR__ . '/../components/Login/remember_me.php';
 
 // Error handling: convert fatal errors to JSON
 function api_handle_fatal_error() {
@@ -74,6 +74,12 @@ if (!isset($conn) || $conn->connect_error) {
     json_error('Database connection failed', 500, [
         'db_error' => isset($conn) ? $conn->connect_error : 'not initialized'
     ]);
+}
+
+require_once __DIR__ . '/../components/Login/remember_me.php';
+
+if ((empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) && isset($conn) && $conn instanceof mysqli) {
+    remember_me_restore_session($conn);
 }
 
 // Utility: ensure items table exists (lightweight check)

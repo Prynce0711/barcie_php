@@ -11,6 +11,13 @@
 session_start();
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/../database/db_connect.php';
+require_once __DIR__ . '/../components/Login/remember_me.php';
+
+if ((empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) && isset($conn) && $conn instanceof mysqli) {
+    remember_me_restore_session($conn);
+}
+
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     echo json_encode([
@@ -19,8 +26,6 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     ]);
     exit;
 }
-
-require_once __DIR__ . '/../database/db_connect.php';
 
 // Check if migration has been run by checking for required tables
 $migration_check = $conn->query("SHOW TABLES LIKE 'admin_activity_log'");

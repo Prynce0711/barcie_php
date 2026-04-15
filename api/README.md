@@ -2,6 +2,18 @@
 
 This directory contains all backend API endpoints for the BarCIE International Center system. These endpoints handle data operations, business logic, and communication between the frontend and database.
 
+## Single Entry Point
+
+The API now supports a front-controller pattern through `api/index.php`.
+
+Examples:
+
+- `api/index.php?endpoint=items`
+- `api/index.php?endpoint=GetBookingDetails&id=123`
+- `api/index.php?endpoint=news&action=fetch`
+
+Legacy paths like `api/items.php` and `api/GetBookingDetails.php` continue to work through rewrite rules in `api/.htaccess`.
+
 ## 📁 API Structure
 
 All API endpoints follow RESTful principles and return JSON responses.
