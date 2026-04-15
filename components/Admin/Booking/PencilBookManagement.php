@@ -282,7 +282,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
 
   // Pencil Booking Management Functions
   function viewPencilBookingDetails(bookingId) {
-    fetch(`database/user_auth.php?action=get_pencil_booking_details&id=${bookingId}`)
+    fetch(`database/index.php?endpoint=user_auth&action=get_pencil_booking_details&id=${bookingId}`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
@@ -371,7 +371,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
     formData.append('booking_id', bookingId);
     formData.append('status', newStatus);
 
-    fetch('database/user_auth.php', {
+    fetch('database/index.php?endpoint=user_auth', {
       method: 'POST',
       body: formData
     })

@@ -9,10 +9,15 @@ date_default_timezone_set('Asia/Manila');
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../database/db_connect.php';
+require_once __DIR__ . '/../components/Login/remember_me.php';
 
 // Ensure session is active (some entry points don't start session)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
+}
+
+if (!isset($_SESSION['admin_id']) && isset($conn) && $conn instanceof mysqli) {
+    remember_me_restore_session($conn);
 }
 
 // Check if admin is logged in

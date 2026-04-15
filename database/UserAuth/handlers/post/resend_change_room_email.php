@@ -92,7 +92,7 @@ if ($action === 'resend_change_room_email') {
     $bookingId = isset($_POST['booking_id']) ? (int) $_POST['booking_id'] : 0;
 
     if ($bookingId <= 0) {
-        handleResponse('Invalid booking ID.', false, '../dashboard.php#bookings-section');
+        handleResponse('Invalid booking ID.', false, '../index.php?view=dashboard#bookings-section');
     }
 
     try {
@@ -161,12 +161,12 @@ if ($action === 'resend_change_room_email') {
 
         if ($sent) {
             error_log('Resent change room email for booking #' . $bookingId . ' to ' . $guestEmail);
-            handleResponse('Change room email resent successfully to ' . $guestEmail, true, '../dashboard.php#bookings-section');
+            handleResponse('Change room email resent successfully to ' . $guestEmail, true, '../index.php?view=dashboard#bookings-section');
         } else {
             throw new Exception('Failed to send email. Check email configuration.');
         }
     } catch (Throwable $e) {
         error_log('resend_change_room_email error: ' . $e->getMessage());
-        handleResponse('Failed to resend email: ' . $e->getMessage(), false, '../dashboard.php#bookings-section');
+        handleResponse('Failed to resend email: ' . $e->getMessage(), false, '../index.php?view=dashboard#bookings-section');
     }
 }

@@ -1,4 +1,4 @@
-﻿function addTableSorting(table) {
+function addTableSorting(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((header, index) => {
     if (!header.classList.contains("no-sort")) {
@@ -114,7 +114,7 @@ function getOrCreateToastContainer() {
 // Item Management Functions
 async function loadItems() {
   try {
-    const res = await fetch("database/fetch_items.php");
+    const res = await fetch("database/index.php?endpoint=fetch_items");
     const items = await res.json();
     const container = document.getElementById("cards-grid");
     if (container) {
@@ -153,7 +153,7 @@ async function loadItems() {
 
             </p>
             <p class="card-text mb-2">
-              <i class="fas fa-tag me-2"></i>Price: â‚±${item.price}${
+              <i class="fas fa-tag me-2"></i>Price: ₱${item.price}${
                 item.item_type === "room" ? "/night" : "/day"
               }
             </p>
@@ -187,3 +187,4 @@ async function loadItems() {
 }
 
 // Filter Items by Type
+

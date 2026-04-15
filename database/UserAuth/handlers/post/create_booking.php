@@ -61,7 +61,7 @@ if ($action === 'create_booking') {
 
     $is_bank_transfer = in_array($payment_method, ['bank', 'bank_transfer', 'bank transfer'], true);
     if ($is_bank_transfer && $payment_proof_path === '') {
-        handleResponse('Please upload your payment receipt when choosing Bank Transfer.', false, '../Guest.php');
+        handleResponse('Please upload your payment receipt when choosing Bank Transfer.', false, '../index.php?view=guest');
     }
 
     // Handle file upload for ID upload (separate from discount proof)
@@ -82,7 +82,7 @@ if ($action === 'create_booking') {
     }
     // Validate room/facility selection
     if ($room_id <= 0) {
-        handleResponse("Please select a room or facility.", false, '../Guest.php');
+        handleResponse("Please select a room or facility.", false, '../index.php?view=guest');
     }
 
     // Get room/facility details for validation and details
@@ -94,7 +94,7 @@ if ($action === 'create_booking') {
     $room_stmt->close();
 
     if (!$room_data) {
-        handleResponse("Selected room/facility not found.", false, '../Guest.php');
+        handleResponse("Selected room/facility not found.", false, '../index.php?view=guest');
     }
 
     // Note: Room status check removed - availability is determined by date conflicts only
@@ -157,11 +157,11 @@ if ($action === 'create_booking') {
 
         // Validate dates
         if (empty($checkin) || empty($checkout)) {
-            handleResponse("Please provide check-in and check-out dates.", false, '../Guest.php');
+            handleResponse("Please provide check-in and check-out dates.", false, '../index.php?view=guest');
         }
 
         if (strtotime($checkin) >= strtotime($checkout)) {
-            handleResponse("Check-out date must be after check-in date.", false, '../Guest.php');
+            handleResponse("Check-out date must be after check-in date.", false, '../index.php?view=guest');
         }
 
         // Check for double booking - only conflicts if date ranges actually overlap (not just touching)
@@ -216,13 +216,13 @@ if ($action === 'create_booking') {
 
                         $auto_transfer_note = 'Requested ' . $requested_label . ' was already booked for your selected dates. We automatically transferred your reservation to ' . $assigned_label . '.';
                     } else {
-                        handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates and no matching alternative is currently available.", false, '../Guest.php');
+                        handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates and no matching alternative is currently available.", false, '../index.php?view=guest');
                     }
                 } else {
-                    handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../Guest.php');
+                    handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../index.php?view=guest');
                 }
             } else {
-                handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../Guest.php');
+                handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already booked for the requested dates.", false, '../index.php?view=guest');
             }
         }
         $conflict_stmt->close();
@@ -237,7 +237,7 @@ if ($action === 'create_booking') {
                 $pencil_conflict_result = $pencil_conflict->get_result();
                 if ($pencil_conflict_result && $pencil_conflict_result->num_rows > 0) {
                     $pencil_conflict->close();
-                    handleResponse("Cannot convert pencil booking: another draft or confirmed pencil booking overlaps the requested dates.", false, '../Guest.php');
+                    handleResponse("Cannot convert pencil booking: another draft or confirmed pencil booking overlaps the requested dates.", false, '../index.php?view=guest');
                 }
                 $pencil_conflict->close();
             } catch (Exception $e) {
@@ -248,7 +248,7 @@ if ($action === 'create_booking') {
         // Validate occupancy with detailed error message
         if ($occupants > $room_data['capacity']) {
             $error_msg = "⚠️ CAPACITY EXCEEDED: The number of guests (" . $occupants . ") exceeds the maximum allowed capacity for " . $room_data['name'] . ". Maximum capacity: " . $room_data['capacity'] . " persons. Please select a larger room or reduce the number of occupants.";
-            handleResponse($error_msg, false, '../Guest.php');
+            handleResponse($error_msg, false, '../index.php?view=guest');
         }
 
         // Add discount info to details and set discount_status
@@ -410,17 +410,17 @@ if ($action === 'create_booking') {
                     $success_message .= ". " . $auto_transfer_note;
                 }
 
-                handleResponse($success_message, true, '../Guest.php');
+                handleResponse($success_message, true, '../index.php?view=guest');
             } else {
-                handleResponse("Error saving reservation: " . $stmt->error, false, '../Guest.php');
+                handleResponse("Error saving reservation: " . $stmt->error, false, '../index.php?view=guest');
                 error_log("Booking insert error: " . $stmt->error);
             }
             $stmt->close();
         } catch (mysqli_sql_exception $e) {
-            handleResponse("Database error: " . $e->getMessage(), false, '../Guest.php');
+            handleResponse("Database error: " . $e->getMessage(), false, '../index.php?view=guest');
             error_log("Booking creation exception: " . $e->getMessage());
         } catch (Exception $e) {
-            handleResponse("Unexpected error: " . $e->getMessage(), false, '../Guest.php');
+            handleResponse("Unexpected error: " . $e->getMessage(), false, '../index.php?view=guest');
             error_log("Booking creation general exception: " . $e->getMessage());
         }
 
@@ -437,12 +437,12 @@ if ($action === 'create_booking') {
 
         // Validate facility type for pencil booking
         if ($room_data['item_type'] !== 'facility') {
-            handleResponse("Pencil bookings are only available for facilities/function halls.", false, '../Guest.php');
+            handleResponse("Pencil bookings are only available for facilities/function halls.", false, '../index.php?view=guest');
         }
 
         // Validate pax capacity
         if ($pax > $room_data['capacity']) {
-            handleResponse("Number of guests (" . $pax . ") exceeds facility capacity (" . $room_data['capacity'] . ").", false, '../Guest.php');
+            handleResponse("Number of guests (" . $pax . ") exceeds facility capacity (" . $room_data['capacity'] . ").", false, '../index.php?view=guest');
         }
 
         // Check for conflicts on the same date
@@ -454,7 +454,7 @@ if ($action === 'create_booking') {
 
             if ($conflict_result->num_rows > 0) {
                 $conflict_stmt->close();
-                handleResponse("Sorry, the selected facility is already booked for " . $pencil_date . ".", false, '../Guest.php');
+                handleResponse("Sorry, the selected facility is already booked for " . $pencil_date . ".", false, '../index.php?view=guest');
             }
             $conflict_stmt->close();
         }
@@ -482,13 +482,13 @@ if ($action === 'create_booking') {
                     send_smtp_mail($contact_number, $simplePencilTemplate['subject'], $message);
                 }
 
-                handleResponse("Pencil booking saved for " . $room_data['name'] . " on " . $pencil_date, true, '../Guest.php');
+                handleResponse("Pencil booking saved for " . $room_data['name'] . " on " . $pencil_date, true, '../index.php?view=guest');
             } else {
-                handleResponse("Error: " . $stmt->error, false, '../Guest.php');
+                handleResponse("Error: " . $stmt->error, false, '../index.php?view=guest');
             }
             $stmt->close();
         } catch (mysqli_sql_exception $e) {
-            handleResponse("Database error: " . $e->getMessage(), false, '../Guest.php');
+            handleResponse("Database error: " . $e->getMessage(), false, '../index.php?view=guest');
         }
     } elseif ($type === 'pencil_booking') {
         // PENCIL BOOKING - Draft Reservation with 2-week confirmation period
@@ -506,16 +506,16 @@ if ($action === 'create_booking') {
 
         // Validate terms acknowledgment
         if (!$terms_acknowledged) {
-            handleResponse("You must acknowledge the two-week policy to proceed with pencil booking.", false, '../Guest.php');
+            handleResponse("You must acknowledge the two-week policy to proceed with pencil booking.", false, '../index.php?view=guest');
         }
 
         // Validate dates
         if (empty($checkin) || empty($checkout)) {
-            handleResponse("Please provide check-in and check-out dates.", false, '../Guest.php');
+            handleResponse("Please provide check-in and check-out dates.", false, '../index.php?view=guest');
         }
 
         if (strtotime($checkin) >= strtotime($checkout)) {
-            handleResponse("Check-out date must be after check-in date.", false, '../Guest.php');
+            handleResponse("Check-out date must be after check-in date.", false, '../index.php?view=guest');
         }
 
         // Check for double booking - only conflicts if date ranges actually overlap (not just touching)
@@ -527,14 +527,14 @@ if ($action === 'create_booking') {
 
         if ($conflict_result->num_rows > 0) {
             $conflict_stmt->close();
-            handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already pencil booked for the requested dates.", false, '../Guest.php');
+            handleResponse("Sorry, the selected " . $room_data['item_type'] . " is already pencil booked for the requested dates.", false, '../index.php?view=guest');
         }
         $conflict_stmt->close();
 
         // Validate occupancy with detailed error message
         if ($occupants > $room_data['capacity']) {
             $error_msg = "⚠️ CAPACITY EXCEEDED: The number of guests (" . $occupants . ") exceeds the maximum allowed capacity for " . $room_data['name'] . ". Maximum capacity: " . $room_data['capacity'] . " persons. Please select a larger room or reduce the number of occupants.";
-            handleResponse($error_msg, false, '../Guest.php');
+            handleResponse($error_msg, false, '../index.php?view=guest');
         }
 
         // Generate receipt number
@@ -703,21 +703,21 @@ if ($action === 'create_booking') {
                     exit();
                 }
 
-                handleResponse("Draft reservation (pencil booking) saved successfully! Receipt number: $receipt_no. Please confirm within 14 days to fully secure your reservation.", true, '../Guest.php');
+                handleResponse("Draft reservation (pencil booking) saved successfully! Receipt number: $receipt_no. Please confirm within 14 days to fully secure your reservation.", true, '../index.php?view=guest');
             } else {
-                handleResponse("Error saving pencil booking: " . $insert_stmt->error, false, '../Guest.php');
+                handleResponse("Error saving pencil booking: " . $insert_stmt->error, false, '../index.php?view=guest');
                 error_log("Pencil booking insert error: " . $insert_stmt->error);
             }
             $insert_stmt->close();
         } catch (mysqli_sql_exception $e) {
-            handleResponse("Database error: " . $e->getMessage(), false, '../Guest.php');
+            handleResponse("Database error: " . $e->getMessage(), false, '../index.php?view=guest');
             error_log("Pencil booking creation exception: " . $e->getMessage());
         } catch (Exception $e) {
-            handleResponse("Unexpected error: " . $e->getMessage(), false, '../Guest.php');
+            handleResponse("Unexpected error: " . $e->getMessage(), false, '../index.php?view=guest');
             error_log("Pencil booking creation general exception: " . $e->getMessage());
         }
     } else {
-        handleResponse("Unknown booking type.", false, '../Guest.php');
+        handleResponse("Unknown booking type.", false, '../index.php?view=guest');
     }
 }
 

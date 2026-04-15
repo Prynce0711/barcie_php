@@ -1,9 +1,33 @@
+﻿<?php
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+require_once dirname(__DIR__, 2) . '/database/db_connect.php';
+require_once __DIR__ . '/remember_me.php';
+
+if (
+  (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true)
+  && isset($conn)
+  && $conn instanceof mysqli
+) {
+  remember_me_restore_session($conn);
+}
+
+if (!empty($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+  header('Location: index.php?view=dashboard');
+  exit;
+}
+?>
 <!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script>
+    window.APP_BASE_PATH = <?php echo json_encode(defined('APP_BASE_PATH') ? APP_BASE_PATH : ''); ?>;
+  </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
@@ -148,6 +172,30 @@
       padding-right: 45px;
     }
 
+    .form-check {
+      margin-top: 10px;
+    }
+
+    .form-check-label {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9rem;
+    }
+
+    .form-check-input {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .form-check-input:checked {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+    }
+
+    .form-check-input:focus {
+      box-shadow: 0 0 0 0.2rem rgba(255, 221, 87, 0.25);
+      border-color: var(--accent-color);
+    }
+
     .alert {
       border-radius: 10px;
       margin-bottom: 20px;
@@ -205,13 +253,17 @@
           <i class="far fa-eye"></i>
         </button>
       </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="1" id="admin-remember-me" name="remember_me">
+        <label class="form-check-label" for="admin-remember-me">Remember me on this device</label>
+      </div>
       <button type="submit" class="btn-login">
         <i class="fas fa-sign-in-alt me-2"></i>Sign In
       </button>
     </form>
 
     <div class="back-link">
-      <a href="../../index.php">
+      <a href="index.php">
         <i class="fas fa-arrow-left me-1"></i>Back to Home
       </a>
     </div>
@@ -268,8 +320,10 @@
       const formData = new FormData(this);
       const submitButton = this.querySelector('button[type="submit"]');
       const errorDiv = document.getElementById('admin-login-error');
-      const projectRoot = getProjectRoot();
-      const loginEndpoint = `${projectRoot}/database/admin_login.php`;
+      const projectRoot = (typeof window.APP_BASE_PATH === 'string' && window.APP_BASE_PATH.trim() !== '')
+        ? window.APP_BASE_PATH.replace(/\/+$/, '')
+        : getProjectRoot();
+      const loginEndpoint = `${projectRoot}/database/index.php?endpoint=admin_login`;
 
       // Disable submit button
       submitButton.disabled = true;
@@ -292,7 +346,7 @@
         .then(data => {
           if (data.success) {
             // Success - redirect to dashboard
-            const redirectPath = (data.redirect || 'dashboard.php').replace(/^\/+/, '');
+            const redirectPath = (data.redirect || 'index.php?view=dashboard').replace(/^\/+/, '');
             window.location.href = `${projectRoot}/${redirectPath}`;
           } else {
             // Show error message

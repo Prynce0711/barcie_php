@@ -259,7 +259,7 @@ function updateBookingStatus(bookingId, newStatus) {
     // Create a form and submit it
     const form = document.createElement("form");
     form.method = "POST";
-    form.action = "database/user_auth.php";
+    form.action = "database/index.php?endpoint=user_auth";
     form.style.display = "none";
 
     const actionInput = document.createElement("input");
@@ -546,7 +546,7 @@ function resendChangeRoomEmail(bookingId) {
     // Create a form and submit it
     const form = document.createElement("form");
     form.method = "POST";
-    form.action = "database/user_auth.php";
+    form.action = "database/index.php?endpoint=user_auth";
     form.style.display = "none";
 
     const actionInput = document.createElement("input");
@@ -572,3 +572,4 @@ window.viewBookingDetails = viewBookingDetails;
 window.deleteBooking = deleteBooking;
 window.processDiscount = processDiscount;
 window.resendChangeRoomEmail = resendChangeRoomEmail;
+

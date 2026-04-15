@@ -150,7 +150,7 @@
           } catch (e) { /* ignore */ }
 
           const body = 'action=admin_update_discount&booking_id=' + encodeURIComponent(bookingId) + '&discount_action=' + encodeURIComponent(action);
-          fetch('database/user_auth.php', {
+          fetch('database/index.php?endpoint=user_auth', {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -407,7 +407,7 @@
               rejectBtn.disabled = true;
 
               const body = 'action=admin_update_discount&booking_id=' + encodeURIComponent(bookingId) + '&discount_action=' + encodeURIComponent(action);
-              fetch('database/user_auth.php', {
+              fetch('database/index.php?endpoint=user_auth', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {

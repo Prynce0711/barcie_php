@@ -178,7 +178,7 @@ if ($action === 'admin_update_booking') {
 
     $allowedStatuses = ['pending', 'approved', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'rejected', 'need to change room'];
     if ($bookingId <= 0 || $newStatus === '' || !in_array($newStatus, $allowedStatuses, true)) {
-        handleResponse('Invalid booking update request.', false, '../dashboard.php#bookings-section');
+        handleResponse('Invalid booking update request.', false, '../index.php?view=dashboard#bookings-section');
     }
 
     $autoRejectedRows = [];
@@ -371,7 +371,7 @@ if ($action === 'admin_update_booking') {
             $message .= ' Conflicting same-date bookings were marked as need to change room and guests were notified by email.';
         }
 
-        handleResponse($message, true, '../dashboard.php#bookings-section');
+        handleResponse($message, true, '../index.php?view=dashboard#bookings-section');
     } catch (Throwable $e) {
         try {
             $conn->rollback();
@@ -380,6 +380,6 @@ if ($action === 'admin_update_booking') {
         }
 
         error_log('admin_update_booking error: ' . $e->getMessage());
-        handleResponse('Failed to update booking status. ' . $e->getMessage(), false, '../dashboard.php#bookings-section');
+        handleResponse('Failed to update booking status. ' . $e->getMessage(), false, '../index.php?view=dashboard#bookings-section');
     }
 }

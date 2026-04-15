@@ -275,9 +275,8 @@
             activeLink.classList.add('active');
           }
 
-          if (window.location.hash !== '#' + sectionId) {
-            history.replaceState(null, '', '#' + sectionId);
-          }
+          const preservedUrl = window.location.pathname + (window.location.search || '');
+          history.replaceState(null, '', preservedUrl);
 
           sidebarDebug('Section switched successfully', { sectionId: sectionId });
 
@@ -351,7 +350,7 @@
   </div>
 
   <div class="mt-auto pt-4">
-    <a href="logout.php" class="btn btn-danger w-100 d-flex align-items-center justify-content-center">
+    <a href="index.php?view=logout" class="btn btn-danger w-100 d-flex align-items-center justify-content-center">
       <i class="fas fa-sign-out-alt me-2"></i>
       <span>Logout</span>
     </a>

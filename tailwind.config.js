@@ -2,10 +2,11 @@
 module.exports = {
   important: true,
   content: [
-    "./dashboard.php",
-    "./Components/Admin/**/*.{php,js}",
-    "./Components/Popup/**/*.php",
-    "./Components/Table/**/*.php",
+    "./index.php",
+    "./components/Admin/dashboard.php",
+    "./components/Admin/**/*.{php,js}",
+    "./components/Popup/**/*.php",
+    "./components/Table/**/*.php",
     "./assets/js/**/*.js",
   ],
   corePlugins: {

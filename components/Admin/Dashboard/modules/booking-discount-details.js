@@ -1,4 +1,4 @@
-﻿async function updateDiscountStatus(bookingId, discountAction) {
+async function updateDiscountStatus(bookingId, discountAction) {
   console.log("updateDiscountStatus called with:", bookingId, discountAction);
 
   if (!bookingId || !discountAction) {
@@ -38,7 +38,7 @@
     formData.append("discount_action", discountAction);
 
     // Send AJAX request
-    const response = await fetch("database/user_auth.php", {
+    const response = await fetch("database/index.php?endpoint=user_auth", {
       method: "POST",
       headers: {
         "X-Requested-With": "XMLHttpRequest",
@@ -162,3 +162,4 @@ function viewBookingDetails(bookingId) {
     modal.remove();
   }
 }
+

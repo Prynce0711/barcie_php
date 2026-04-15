@@ -4,6 +4,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/../components/Login/remember_me.php';
+
+if ((empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) && isset($conn) && $conn instanceof mysqli) {
+    remember_me_restore_session($conn);
+}
+
 function api_require_roles(array $allowed_roles) {
     header('Content-Type: application/json');
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -17,7 +23,7 @@ function api_require_roles(array $allowed_roles) {
     }
 }
 
-function page_require_roles(array $allowed_roles, $redirect = '../dashboard.php', $flash_message = 'Insufficient permissions') {
+function page_require_roles(array $allowed_roles, $redirect = '../index.php?view=dashboard', $flash_message = 'Insufficient permissions') {
     if (empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
         $_SESSION['error_message'] = 'Unauthorized - please login';
         header('Location: ' . $redirect);

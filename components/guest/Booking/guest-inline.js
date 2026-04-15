@@ -187,7 +187,7 @@ if (typeof window.showPencilSuccessModal !== "function") {
       const formData = new FormData(form);
       const urlEncodedData = new URLSearchParams(formData).toString();
       const isPencilBooking = buttonId === "pencilSubmitBtn";
-      fetch("database/user_auth.php", {
+      fetch("database/index.php?endpoint=user_auth", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -287,7 +287,7 @@ if (typeof window.showPencilSuccessModal !== "function") {
         submitFeedbackBtn.disabled = true;
         const formData = new FormData(this);
         const urlEncodedData = new URLSearchParams(formData).toString();
-        fetch("database/user_auth.php", {
+        fetch("database/index.php?endpoint=user_auth", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -358,3 +358,4 @@ if (typeof window.showPencilSuccessModal !== "function") {
     }
   });
 })();
+

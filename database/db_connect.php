@@ -1,6 +1,8 @@
 <?php
 // filepath: c:\xampp\htdocs\barcie_php\src\database\db_connect.php
 
+require_once __DIR__ . '/config.php';
+
 // Suppress error output for API responses
 error_reporting(0);
 ini_set('display_errors', 0);

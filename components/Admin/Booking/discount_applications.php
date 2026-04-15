@@ -431,7 +431,7 @@ document.addEventListener('click', function(e){
     } catch(e) { /* ignore */ }
 
     const body = 'action=admin_discount&booking_id=' + encodeURIComponent(bookingId) + '&discount_action=' + encodeURIComponent(action);
-    fetch('database/user_auth.php', {
+    fetch('database/index.php?endpoint=user_auth', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -627,3 +627,4 @@ function downloadDiscountsExcel() {
 .table-spinner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .table-spinner-overlay .spinner-border { width: 2.4rem; height: 2.4rem; }
 </style>
+
