@@ -1,4 +1,4 @@
-﻿function handleEditCancel(e) {
+function handleEditCancel(e) {
   e.preventDefault();
   console.log("Edit cancel clicked");
 
@@ -132,7 +132,7 @@ function setupBookingForms() {
 async function generateReceiptNumber() {
   try {
     const response = await fetch(
-      "database/user_auth.php?action=get_receipt_no",
+      "database/index.php?endpoint=user_auth&action=get_receipt_no",
     );
     const data = await response.json();
 
@@ -179,3 +179,4 @@ function generateFallbackReceiptNumber() {
 }
 
 // Chart.js Initialization
+

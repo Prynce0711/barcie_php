@@ -15,13 +15,17 @@
 
     // Find and activate the booking button in sidebar
     const bookingButton = document.querySelector(
-      "button[onclick*=\"showSection('booking')\"]",
+      ".sidebar-guest .sidebar-btn[data-section='booking']",
     );
     console.log("Booking button found:", bookingButton);
 
-    // Switch to booking section (correct section ID, don't save to sessionStorage)
+    // Switch to booking section and keep sidebar highlight/session state in sync.
     console.log("Switching to booking section...");
-    showSection("booking", bookingButton, false);
+    if (typeof showSection === "function") {
+      showSection("booking", bookingButton, true);
+    } else if (typeof window.__setGuestSidebarActive === "function") {
+      window.__setGuestSidebarActive("booking");
+    }
 
     // Pre-fill booking form with selected item
     setTimeout(() => {

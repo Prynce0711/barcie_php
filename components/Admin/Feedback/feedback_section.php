@@ -110,7 +110,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
 <script>
 	(function(){
 		// Admin-only comprehensive feedback UI with approval system
-		const apiUrl = 'database/user_auth.php?action=get_feedback_data';
+		const apiUrl = 'database/index.php?endpoint=user_auth&action=get_feedback_data';
 		const tableBody = document.querySelector('#feedbackTable tbody');
 		const ratingFilter = document.getElementById('feedbackRatingFilter');
 		const refreshBtn = document.getElementById('refreshFeedbackBtn');
@@ -242,4 +242,5 @@ include __DIR__ . '/../Shared/SectionHeader.php';
 
 	})();
 </script>
+
 

@@ -50,6 +50,7 @@ set_exception_handler(function ($exception) {
 
 try {
     include __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/../components/Login/remember_me.php';
 } catch (Exception $e) {
     error_log("[" . date('Y-m-d H:i:s') . "] DB Connection Exception: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Database connection failed', 'error' => $e->getMessage()]);
@@ -75,6 +76,8 @@ try {
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
+        $rememberMeRaw = strtolower(trim((string) ($_POST['remember_me'] ?? '')));
+        $rememberMe = in_array($rememberMeRaw, ['1', 'true', 'on', 'yes'], true);
 
         if (empty($username) || empty($password)) {
             $response['message'] = 'Please fill in all fields.';
@@ -138,11 +141,20 @@ try {
                 }
 
                 if ($passwordValid) {
+                    session_regenerate_id(true);
                     $_SESSION['admin_logged_in'] = true;
                     $_SESSION['admin_id'] = $id;
                     $_SESSION['admin_username'] = $username;
                     // Store role in session (fallback to 'staff' if null or DB doesn't have column)
                     $_SESSION['admin_role'] = ($hasRoleColumn && !empty($role)) ? $role : 'staff';
+
+                    if ($rememberMe) {
+                        if (!remember_me_issue_token($conn, (int) $id)) {
+                            error_log("[" . date('Y-m-d H:i:s') . "] Failed to issue remember-me token for admin ID: " . (int) $id);
+                        }
+                    } else {
+                        remember_me_forget_current($conn);
+                    }
 
                     error_log("[" . date('Y-m-d H:i:s') . "] Login successful for user: $username (ID: $id). Session ID: " . session_id());
 
@@ -160,7 +172,7 @@ try {
 
                     $response['success'] = true;
                     $response['message'] = 'Login successful.';
-                    $response['redirect'] = 'dashboard.php';
+                    $response['redirect'] = 'index.php?view=dashboard';
                 } else {
                     $response['message'] = 'Invalid password.';
                 }

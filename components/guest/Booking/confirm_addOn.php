@@ -354,22 +354,28 @@
    * - On confirm, appends add-on fields to the original form and submits
    */
   (function () {
-    // Get the base path dynamically from current page URL to handle any case/environment
-    const getBasePath = () => {
-      const path = window.location.pathname;
-      const match = path.match(/^(\/[^\/]+)\//); // Extract /folder_name/ from path
-      return match ? match[1] : '';
-    };
-    const BASE_PATH = getBasePath();
+    const BASE_PATH =
+      typeof window.APP_BASE_PATH === 'string' && window.APP_BASE_PATH.trim() !== ''
+        ? window.APP_BASE_PATH.replace(/\/+$/, '')
+        : '';
     const MAX_UPLOAD_MB = 10;
     const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
-    // Notification helper: prefer showToast if available, fallback to alert
+    // Notification helper: prefer popup notice; fallback to alert only when needed
     function notify(message, type = 'info') {
       try {
-        if (typeof showToast === 'function') return showToast(message, type);
+        if (typeof window.showToast === 'function') {
+          return window.showToast(message, type);
+        }
       } catch (e) { }
-      try { showToast(message, 'info'); } catch (e) { /* ignore */ }
+
+      try {
+        if (typeof window.alert === 'function') {
+          window.alert(String(message || 'Notification'));
+        }
+      } catch (e) { /* ignore */ }
+
+      return null;
     }
 
     // Clear all form data
@@ -676,7 +682,7 @@
       try {
         // Update URL without reload
         if (history && history.pushState) {
-          history.pushState(null, '', 'Guest.php#booking');
+          history.pushState(null, '', 'index.php?view=guest#booking');
         } else {
           location.hash = 'booking';
         }
@@ -1049,7 +1055,7 @@
     async function fetchItemById(id) {
       try {
         // Use the project-relative fetch path to be consistent with dashboard script
-        const res = await fetch('database/fetch_items.php');
+        const res = await fetch('database/index.php?endpoint=fetch_items');
         if (!res.ok) return null;
         const items = await res.json();
         return items.find(it => Number(it.id) === Number(id)) || null;
@@ -1299,79 +1305,69 @@
       modal.show();
     }
 
+    function collectReservationBookingData(form, options = {}) {
+      const bookingData = {
+        type: options.type || 'reservation',
+        room_id: form.querySelector('[name="room_id"]')?.value || '',
+        guest_name: form.querySelector('[name="guest_name"]')?.value || '',
+        contact: form.querySelector('[name="contact_number"]')?.value || '',
+        email: form.querySelector('[name="email"]')?.value || '',
+        checkin: form.querySelector('[name="checkin"]')?.value || '',
+        checkout: form.querySelector('[name="checkout"]')?.value || '',
+        occupants: form.querySelector('[name="occupants"]')?.value || ''
+      };
+
+      if (options.originalType) {
+        bookingData._originalType = options.originalType;
+      }
+
+      return bookingData;
+    }
+
+    function openPreviewFromForm(form, options = {}) {
+      if (!form) return;
+
+      const invalid = validateFormInline(form);
+      if (invalid) {
+        showInlineAlert(invalid.field, invalid.message);
+        return;
+      }
+
+      const bookingData = collectReservationBookingData(form, options);
+      showPreviewModal(form, bookingData);
+    }
+
     // Attach to reservation & pencil form submit
     function attachInterceptors() {
-      const resForm = document.getElementById('reservationForm');
+      const reservationForm = document.getElementById('reservationForm');
       const pencilForm = document.getElementById('pencilForm');
 
-      if (resForm) {
-        resForm.addEventListener('submit', function (e) {
+      if (reservationForm) {
+        reservationForm.addEventListener('submit', function (e) {
           e.preventDefault();
-          const form = e.target;
-          const invalid = validateFormInline(form);
-          if (invalid) {
-            showInlineAlert(invalid.field, invalid.message);
-            return;
-          }
-          const bookingData = {
-            type: 'reservation',
-            room_id: form.querySelector('[name="room_id"]').value,
-            guest_name: form.querySelector('[name="guest_name"]').value,
-            contact: form.querySelector('[name="contact_number"]').value,
-            email: form.querySelector('[name="email"]').value,
-            checkin: form.querySelector('[name="checkin"]').value,
-            checkout: form.querySelector('[name="checkout"]').value,
-            occupants: form.querySelector('[name="occupants"]').value
-          };
-          showPreviewModal(form, bookingData);
+          openPreviewFromForm(e.target);
         });
       }
 
       // Attach field listeners so inline errors clear as user types
-      try { attachFieldListeners(resForm); } catch (e) { }
+      try { attachFieldListeners(reservationForm); } catch (e) { }
 
-      // Also attach to the reservation button (in case button is type=button)
-      const reservationBtn = document.getElementById('reservationSubmitBtn');
-      if (reservationBtn) {
-        reservationBtn.addEventListener('click', function (e) {
+      // Also attach to the review button (button is type=button and does not submit by default)
+      const reviewBookingBtn = document.getElementById('reviewBookingBtn') || document.getElementById('reservationSubmitBtn');
+      if (reviewBookingBtn) {
+        reviewBookingBtn.addEventListener('click', function (e) {
           e.preventDefault();
-          const form = document.getElementById('reservationForm');
-          if (!form) return;
-          const invalid = validateFormInline(form);
-          if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
-          const bookingData = {
-            type: 'reservation',
-            room_id: form.querySelector('[name="room_id"]').value,
-            guest_name: form.querySelector('[name="guest_name"]').value,
-            contact: form.querySelector('[name="contact_number"]').value,
-            email: form.querySelector('[name="email"]').value,
-            checkin: form.querySelector('[name="checkin"]').value,
-            checkout: form.querySelector('[name="checkout"]').value,
-            occupants: form.querySelector('[name="occupants"]').value
-          };
-          showPreviewModal(form, bookingData);
+          openPreviewFromForm(document.getElementById('reservationForm'));
         });
       }
 
       if (pencilForm) {
         pencilForm.addEventListener('submit', function (e) {
           e.preventDefault();
-          const form = e.target;
-          const invalid = validateFormInline(form);
-          if (invalid) { showInlineAlert(invalid.field, invalid.message); return; }
-          // Pencil form now has same fields as reservation, just mark it as draft
-          const bookingData = {
+          openPreviewFromForm(e.target, {
             type: 'reservation',
-            _originalType: 'pencil',
-            room_id: form.querySelector('[name="room_id"]').value,
-            guest_name: form.querySelector('[name="guest_name"]').value,
-            contact: form.querySelector('[name="contact_number"]').value,
-            email: form.querySelector('[name="email"]').value,
-            checkin: form.querySelector('[name="checkin"]').value,
-            checkout: form.querySelector('[name="checkout"]').value,
-            occupants: form.querySelector('[name="occupants"]').value
-          };
-          showPreviewModal(form, bookingData);
+            originalType: 'pencil'
+          });
         });
       }
 
@@ -1400,7 +1396,7 @@
             const formData = new FormData(form);
 
             // Send the form data directly - use dynamic base path
-            const response = await fetch(BASE_PATH + '/database/user_auth.php', {
+            const response = await fetch((BASE_PATH || '') + '/database/index.php?endpoint=user_auth', {
               method: 'POST',
               body: formData,
               credentials: 'same-origin',
@@ -1721,7 +1717,7 @@
             // Get the form action URL properly - use dynamic base path
             const actionAttr = currentForm.getAttribute('action');
             // Use form action if specified, otherwise default to dynamic path
-            const targetUrl = actionAttr || (BASE_PATH + '/database/user_auth.php');
+            const targetUrl = actionAttr || ((BASE_PATH || '') + '/database/index.php?endpoint=user_auth');
 
             console.debug('Submitting booking to', targetUrl);
 

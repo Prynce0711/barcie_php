@@ -21,11 +21,13 @@ if (file_exists($autoloadFilesPath)) {
 if (file_exists($autoload) && $autoloadUsable) {
     require_once $autoload;
 
-    // Load .env if Dotenv is available
-    if (class_exists(\Dotenv\Dotenv::class)) {
+    // Load .env if Dotenv is available.
+    // Use string-based lookup so static analyzers do not require Dotenv at design time.
+    $dotenvClass = 'Dotenv\\Dotenv';
+    if (class_exists($dotenvClass)) {
         $root = dirname(__DIR__);
         try {
-            $dotenv = \Dotenv\Dotenv::createImmutable($root);
+            $dotenv = $dotenvClass::createImmutable($root);
             $dotenv->safeLoad();
         } catch (Exception $e) {
             error_log("Failed to load .env: " . $e->getMessage());

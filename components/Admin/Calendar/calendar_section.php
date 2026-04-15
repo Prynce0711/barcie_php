@@ -646,7 +646,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
     }
     if (action === 'edit') {
       // try to open a dashboard edit route if exists
-      const editUrl = 'dashboard.php?booking_id=' + encodeURIComponent(bookingId.replace('booking-', '')) + '&action=edit';
+      const editUrl = 'index.php?view=dashboard&booking_id=' + encodeURIComponent(bookingId.replace('booking-', '')) + '&action=edit';
       window.location.href = editUrl;
       return;
     }

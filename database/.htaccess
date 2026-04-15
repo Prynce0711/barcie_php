@@ -1,0 +1,6 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Route legacy direct endpoint calls through the database front controller.
+    RewriteRule ^(admin_login|user_auth|fetch_items|fetch_calendar_data)\.php$ index.php?endpoint=$1 [QSA,L,NC]
+</IfModule>

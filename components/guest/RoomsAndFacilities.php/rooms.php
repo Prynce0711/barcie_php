@@ -264,10 +264,46 @@
   }
 </style>
 
+<?php
+$roomsCount = 0;
+$facilitiesCount = 0;
+if (isset($conn) && $conn instanceof mysqli) {
+  $countResult = $conn->query("SELECT
+      SUM(
+        CASE
+          WHEN LOWER(TRIM(item_type)) IN ('room', 'rooms', 'rm', 'r') OR LOWER(TRIM(item_type)) LIKE '%room%'
+            THEN 1
+          ELSE 0
+        END
+      ) AS total_rooms,
+      SUM(
+        CASE
+          WHEN LOWER(TRIM(item_type)) IN ('facility', 'facilities', 'facilitys', 'fac', 'facil')
+            OR LOWER(TRIM(item_type)) LIKE '%facil%'
+            THEN 1
+          ELSE 0
+        END
+      ) AS total_facilities
+    FROM items");
+  if ($countResult) {
+    $row = $countResult->fetch_assoc();
+    $roomsCount = (int) ($row['total_rooms'] ?? 0);
+    $facilitiesCount = (int) ($row['total_facilities'] ?? 0);
+    $countResult->free();
+  }
+}
+?>
+
 <section id="rooms"
   class="content-section bg-white/95 border-2 border-[rgba(52,152,219,0.2)] p-[30px] mb-[30px] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.1)] relative z-[1]">
 
-  <h2 class="mb-3"><i class="fas fa-door-open me-2"></i>Rooms & Facilities</h2>
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <h2 class="mb-0"><i class="fas fa-door-open me-2"></i>Rooms & Facilities</h2>
+    <div class="d-flex gap-2">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2"><?php echo number_format($roomsCount); ?> Rooms</span>
+      <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2"><?php echo number_format($facilitiesCount); ?> Facilities</span>
+    </div>
+  </div>
 
   <!-- Filters Bar -->
   <div class="card mb-3 border-0 bg-light">

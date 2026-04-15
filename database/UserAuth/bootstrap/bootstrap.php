@@ -41,10 +41,32 @@ header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
-// Email helpers are now centralized under Components/Email.
-require_once __DIR__ . '/../../../Components/Email/email_template.php';
-require_once __DIR__ . '/../../../Components/Email/smtp_mailer.php';
-require_once __DIR__ . '/../../../Components/Email/template_builders.php';
+// Resolve email helper includes from known locations used in this codebase.
+$emailHelperCandidates = [
+    __DIR__ . '/../../../Email',
+    __DIR__ . '/../../../components/Email',
+    __DIR__ . '/../../../Components/Email'
+];
+
+$emailHelpersBase = null;
+foreach ($emailHelperCandidates as $candidate) {
+    if (
+        file_exists($candidate . '/email_template.php')
+        && file_exists($candidate . '/smtp_mailer.php')
+        && file_exists($candidate . '/template_builders.php')
+    ) {
+        $emailHelpersBase = $candidate;
+        break;
+    }
+}
+
+if ($emailHelpersBase === null) {
+    throw new RuntimeException('Email helper files were not found in expected locations.');
+}
+
+require_once $emailHelpersBase . '/email_template.php';
+require_once $emailHelpersBase . '/smtp_mailer.php';
+require_once $emailHelpersBase . '/template_builders.php';
 
 
 session_start();
@@ -96,6 +118,12 @@ try {
         // For regular page requests, show error
         die("Database connection error. Please try again later.");
     }
+}
+
+require_once __DIR__ . '/../../../components/Login/remember_me.php';
+
+if ((empty($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) && isset($conn) && $conn instanceof mysqli) {
+    remember_me_restore_session($conn);
 }
 
 // Helper function for redirect

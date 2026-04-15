@@ -200,7 +200,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
 			} catch (e) { /* ignore */ }
 
 			const body = 'action=admin_update_payment&booking_id=' + encodeURIComponent(bookingId) + '&payment_action=' + encodeURIComponent(action);
-			fetch('database/user_auth.php', {
+			fetch('database/index.php?endpoint=user_auth', {
 				method: 'POST',
 				credentials: 'same-origin',
 				headers: {
@@ -433,7 +433,7 @@ ${'-'.repeat(80)}
 			if (!bookingId) return;
 
 			
-			fetch('database/user_auth.php', {
+			fetch('database/index.php?endpoint=user_auth', {
 				method: 'POST',
 				credentials: 'same-origin',
 				headers: {

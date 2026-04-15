@@ -5,6 +5,11 @@ date_default_timezone_set('Asia/Manila');
 
 session_start();
 require __DIR__ . '/../../database/db_connect.php';
+require_once __DIR__ . '/../../components/Login/remember_me.php';
+
+if (!isset($_SESSION['admin_id']) && isset($conn) && $conn instanceof mysqli) {
+  remember_me_restore_session($conn);
+}
 
 if (!isset($_SESSION['admin_id'])) {
   error_log("[" . date('Y-m-d H:i:s') . "] Dashboard access denied. Session ID: " . session_id() . ". Session data: " . print_r($_SESSION, true));
@@ -59,21 +64,9 @@ function project_file_path_from_relative($relativePath)
 
 function admin_dashboard_url($section = '')
 {
-  $script = str_replace('\\', '/', (string) ($_SERVER['PHP_SELF'] ?? ''));
-  $base = str_replace('\\', '/', dirname($script));
-  $base = rtrim($base, '/');
+  $base = defined('APP_BASE_PATH') ? rtrim((string) APP_BASE_PATH, '/') : '';
 
-  if (preg_match('#/components/admin$#i', $base)) {
-    $base = dirname(dirname($base));
-    $base = str_replace('\\', '/', $base);
-    $base = rtrim($base, '/');
-  }
-
-  if ($base === '' || $base === '.') {
-    $base = '';
-  }
-
-  $url = $base . '/dashboard.php';
+  $url = ($base !== '' ? $base : '') . '/index.php?view=dashboard';
   if (!empty($section)) {
     $url .= '#' . ltrim((string) $section, '#');
   }
