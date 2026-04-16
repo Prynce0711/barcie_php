@@ -165,18 +165,20 @@
         <script>
           // Add-ons repeater script
           (function () {
-            var modal = document.getElementById('addItemModal');
-            if (!modal) return;
-            var form = modal.querySelector('form');
-            var repeater = modal.querySelector('#addonsRepeater');
-            var addBtn = modal.querySelector('#addAddonBtn');
-            var hiddenAddonsInput = form ? form.querySelector('input[name="addons_json"]') : null;
+            function initAddonsForModal(modal) {
+              if (!modal || modal.dataset.addonsInit === '1') return;
+              modal.dataset.addonsInit = '1';
 
-            function createAddonRow(addon) {
-              addon = addon || { name: '', price: '', type: 'Per Event' };
-              const row = document.createElement('div');
-              row.className = 'd-flex gap-2 align-items-center mb-2 addon-row';
-              row.innerHTML = `
+              var form = modal.querySelector('form');
+              var repeater = modal.querySelector('#addonsRepeater');
+              var addBtn = modal.querySelector('#addAddonBtn');
+              var hiddenAddonsInput = form ? form.querySelector('input[name="addons_json"]') : null;
+
+              function createAddonRow(addon) {
+                addon = addon || { name: '', price: '', type: 'Per Event' };
+                const row = document.createElement('div');
+                row.className = 'd-flex gap-2 align-items-center mb-2 addon-row';
+                row.innerHTML = `
                     <input type="text" class="form-control form-control-sm addon-name" placeholder="Add-on name (e.g. Breakfast)" value="${addon.name}">
                     <input type="number" min="0" step="1" class="form-control form-control-sm addon-price" placeholder="Price" value="${addon.price}">
                     <select class="form-select form-select-sm addon-type">
@@ -186,39 +188,41 @@
                     </select>
                     <button type="button" class="btn btn-sm btn-danger remove-addon-btn"><i class="fas fa-trash"></i></button>
                   `;
-              row.querySelector('.remove-addon-btn').addEventListener('click', () => { row.remove(); updateHidden(); });
-              row.addEventListener('input', updateHidden);
-              return row;
-            }
+                row.querySelector('.remove-addon-btn').addEventListener('click', () => { row.remove(); updateHidden(); });
+                row.addEventListener('input', updateHidden);
+                return row;
+              }
 
-            function updateHidden() {
-              if (!repeater || !hiddenAddonsInput) return;
-              const rows = repeater.querySelectorAll('.addon-row');
-              const addons = [];
-              rows.forEach(r => {
-                const name = r.querySelector('.addon-name').value.trim();
-                const price = r.querySelector('.addon-price').value.trim();
-                const type = r.querySelector('.addon-type').value;
-                if (name !== '') addons.push({ name, price: Number(price || 0), type });
+              function updateHidden() {
+                if (!repeater || !hiddenAddonsInput) return;
+                const rows = repeater.querySelectorAll('.addon-row');
+                const addons = [];
+                rows.forEach(r => {
+                  const name = r.querySelector('.addon-name').value.trim();
+                  const price = r.querySelector('.addon-price').value.trim();
+                  const type = r.querySelector('.addon-type').value;
+                  if (name !== '') addons.push({ name, price: Number(price || 0), type });
+                });
+                hiddenAddonsInput.value = JSON.stringify(addons);
+              }
+
+              if (addBtn) addBtn.addEventListener('click', function () {
+                const r = createAddonRow();
+                if (!repeater) return;
+                repeater.appendChild(r);
+                r.querySelector('.addon-name').focus();
+                updateHidden();
               });
-              hiddenAddonsInput.value = JSON.stringify(addons);
-            }
 
-            if (addBtn) addBtn.addEventListener('click', function () {
-              const r = createAddonRow();
-              if (!repeater) return;
-              repeater.appendChild(r);
-              r.querySelector('.addon-name').focus();
+              // Ensure hidden input is updated before submit
+              if (form) {
+                form.addEventListener('submit', function () { updateHidden(); });
+              }
+
               updateHidden();
-            });
-
-            // Ensure hidden input is updated before submit
-            if (form) {
-              form.addEventListener('submit', function () { updateHidden(); });
             }
 
-            // If modal has data-addons attribute (editing), prefill
-            updateHidden();
+            document.querySelectorAll('#addItemModal').forEach(initAddonsForModal);
           })();
 
           // Move modal to document.body to avoid ancestor clipping/stacking issues

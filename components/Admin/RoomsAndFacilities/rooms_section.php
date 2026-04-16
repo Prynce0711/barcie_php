@@ -66,7 +66,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
   })();
 </script>
 <script>
-  // Role-based access control for Rooms & Facilities
+  // Role-based access contr ol for Rooms & Facilities
   (function () {
     const currentRole = (window.currentAdmin && window.currentAdmin.role) ? window.currentAdmin.role : 'staff';
     const addBtn = document.getElementById('add-room-button-container');
