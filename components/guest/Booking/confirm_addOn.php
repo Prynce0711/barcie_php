@@ -944,21 +944,40 @@
 
       return null;
     }
+    function normalizeAddonPricing(value) {
+      const normalized = String(value || 'per_event').toLowerCase().replace(/[\s-]+/g, '_');
+      if (normalized === 'per_person' || normalized === 'per_night' || normalized === 'per_event') return normalized;
+      if (normalized === 'person' || normalized === 'per_pax' || normalized === 'pax') return 'per_person';
+      if (normalized === 'night' || normalized === 'daily') return 'per_night';
+      return 'per_event';
+    }
+
     // Build add-ons UI
     function renderAddons() {
+      if (!addonsList) return;
+
       addonsList.innerHTML = '';
       const list = (currentItem && Array.isArray(currentItem.addons) && currentItem.addons.length) ? currentItem.addons : DEFAULT_ADDONS;
       AVAILABLE_ADDONS = list;
 
       list.forEach((addon, idx) => {
-        const aid = addon.id ? addon.id : ('addon_' + idx + '_' + addon.label.replace(/\s+/g, '_').toLowerCase());
-        const price = Number(addon.price || 0);
-        const pricing = addon.pricing || 'per_event';
+        const addonObj = (addon && typeof addon === 'object') ? addon : {};
+        const labelSource = addonObj.label || addonObj.name || addonObj.title || (typeof addon === 'string' ? addon : 'Add-on');
+        const addonLabel = String(labelSource || 'Add-on').trim() || 'Add-on';
+
+        const rawId = addonObj.id
+          ? String(addonObj.id)
+          : ('addon_' + idx + '_' + addonLabel.toLowerCase());
+        const aid = rawId.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || ('addon_' + idx);
+
+        const price = Number(addonObj.price ?? addonObj.amount ?? 0) || 0;
+        const pricing = normalizeAddonPricing(addonObj.pricing || addonObj.type || addonObj.billing || addonObj.rate_type || 'per_event');
+
         const wrapper = document.createElement('div');
         wrapper.className = 'form-check';
         wrapper.innerHTML = `
         <input class="form-check-input addon-checkbox" type="checkbox" value="${aid}" id="${aid}" data-price="${price}" data-pricing="${pricing}">
-        <label class="form-check-label" for="${aid}">${escapeHtml(addon.label || addon.name || 'Add-on')} — ₱${price}</label>
+        <label class="form-check-label" for="${aid}">${escapeHtml(addonLabel)} — ₱${price}</label>
         <div class="mt-1" style="display:none;"><small class="text-muted addon-qty-text">Quantity: <input type="number" min="1" value="1" class="addon-qty form-control form-control-sm" style="width:80px; display:inline-block; margin-left:8px;"></small></div>
       `;
         addonsList.appendChild(wrapper);
@@ -975,9 +994,12 @@
       });
 
       // qty change
-      addonsList.addEventListener('input', e => {
-        if (e.target && e.target.classList.contains('addon-qty')) recalcTotal();
-      });
+      if (!addonsList.dataset.qtyListenerBound) {
+        addonsList.addEventListener('input', e => {
+          if (e.target && e.target.classList.contains('addon-qty')) recalcTotal();
+        });
+        addonsList.dataset.qtyListenerBound = '1';
+      }
     }
 
     // Calculate nights between two date inputs (reservation)
