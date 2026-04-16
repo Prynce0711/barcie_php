@@ -1053,16 +1053,44 @@
 
     // Helper: find room data from server
     async function fetchItemById(id) {
-      try {
-        // Use the project-relative fetch path to be consistent with dashboard script
-        const res = await fetch('database/index.php?endpoint=fetch_items');
-        if (!res.ok) return null;
-        const items = await res.json();
-        return items.find(it => Number(it.id) === Number(id)) || null;
-      } catch (err) {
-        console.error('Failed to fetch items', err);
-        return null;
+      if (!id) return null;
+
+      const endpoint = '/database/index.php?endpoint=fetch_items';
+      const base = (BASE_PATH || '').replace(/\/+$/, '');
+      const candidates = [];
+
+      if (base) {
+        candidates.push(base + endpoint);
       }
+      candidates.push(endpoint);
+      candidates.push('database/index.php?endpoint=fetch_items');
+
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, {
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+
+          if (!res.ok) continue;
+
+          const payload = await res.json();
+          const items = Array.isArray(payload)
+            ? payload
+            : (Array.isArray(payload?.items) ? payload.items : []);
+
+          const matched = items.find(it => Number(it.id) === Number(id));
+          if (matched) return matched;
+        } catch (err) {
+          console.warn('Failed to fetch items from', url, err);
+        }
+      }
+
+      console.error('Failed to resolve room/facility details for preview', { roomId: id, basePath: BASE_PATH });
+      return null;
     }
 
     // Build preview HTML
@@ -1249,7 +1277,15 @@
       // fetch item data
       currentItem = await fetchItemById(bookingData.room_id);
       if (!currentItem) {
-        previewDetails.innerHTML = '<div class="alert alert-danger">Unable to load room/facility details. Please try again.</div>';
+        previewDetails.innerHTML = '<div class="alert alert-danger mb-0">Unable to load room/facility details. Please refresh the page and try again.</div>';
+
+        if (typeof bootstrap === 'undefined' || !modalEl) {
+          notify('Unable to open booking preview modal. Please refresh and try again.', 'error');
+          return;
+        }
+
+        const modalWithError = new bootstrap.Modal(modalEl);
+        modalWithError.show();
         return;
       }
 
@@ -1301,6 +1337,11 @@
       } catch (err) { /* ignore */ }
 
       // show bootstrap modal
+      if (typeof bootstrap === 'undefined' || !modalEl) {
+        notify('Booking preview is currently unavailable. Please refresh and try again.', 'error');
+        return;
+      }
+
       const modal = new bootstrap.Modal(modalEl);
       modal.show();
     }
