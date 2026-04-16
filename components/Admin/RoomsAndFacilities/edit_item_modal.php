@@ -526,6 +526,7 @@
 
       const addonRows = addonsContainerInline.querySelectorAll('.addon-row');
       console.log('Found', addonRows.length, 'add-ons for item:', itemId);
+      let loadedCount = 0;
 
       addonRows.forEach(row => {
         const nameInput = row.querySelector('[name="addons[name][]"]');
@@ -538,11 +539,12 @@
 
         if (name) {
           addAddonCard(name, price, type);
+          loadedCount += 1;
         }
       });
 
       // Show message if no add-ons
-      if (addonRows.length === 0) {
+      if (loadedCount === 0) {
         addonsContainer.innerHTML = '<div class="text-muted text-center py-3"><i class="fas fa-info-circle me-2"></i>No add-ons yet. Click "Add Add-on" to create one.</div>';
       }
     }

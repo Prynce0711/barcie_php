@@ -214,10 +214,52 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
       $addons_json = null;
       if (!empty($_POST['addons_json'])) {
-
         $tmp = json_decode($_POST['addons_json'], true);
-        if (json_last_error() === JSON_ERROR_NONE) {
-          $addons_json = json_encode($tmp);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) {
+          $normalized_addons = [];
+          foreach ($tmp as $addon) {
+            if (!is_array($addon)) {
+              continue;
+            }
+
+            $name = trim((string) ($addon['name'] ?? $addon['label'] ?? $addon['title'] ?? ''));
+            if ($name === '') {
+              continue;
+            }
+
+            $raw_price = $addon['price'] ?? $addon['amount'] ?? '';
+            if (is_string($raw_price)) {
+              $raw_price = preg_replace('/[^0-9.\-]/', '', $raw_price);
+            }
+            $price = ($raw_price === '' || $raw_price === null) ? 0 : (float) $raw_price;
+
+            $raw_type = strtolower(trim((string) ($addon['type'] ?? $addon['pricing'] ?? $addon['billing'] ?? 'Per Event')));
+            $type_map = [
+              'per event' => 'Per Event',
+              'per_event' => 'Per Event',
+              'per day' => 'Per Day',
+              'per_day' => 'Per Day',
+              'per night' => 'Per Night',
+              'per_night' => 'Per Night',
+              'per person' => 'Per Person',
+              'per_person' => 'Per Person'
+            ];
+            $type = $type_map[$raw_type] ?? 'Per Event';
+
+            $normalized_addons[] = [
+              'name' => $name,
+              'price' => $price,
+              'type' => $type
+            ];
+
+            if (count($normalized_addons) >= 10) {
+              break;
+            }
+          }
+
+          if (!empty($normalized_addons)) {
+            $addons_json = json_encode($normalized_addons);
+          }
         } else {
           error_log('Invalid addons_json supplied in update: ' . $_POST['addons_json']);
         }
@@ -1021,8 +1063,51 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $addons_json = null;
     if (!empty($_POST['addons_json'])) {
       $tmp = json_decode($_POST['addons_json'], true);
-      if (json_last_error() === JSON_ERROR_NONE) {
-        $addons_json = json_encode($tmp);
+      if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) {
+        $normalized_addons = [];
+        foreach ($tmp as $addon) {
+          if (!is_array($addon)) {
+            continue;
+          }
+
+          $name = trim((string) ($addon['name'] ?? $addon['label'] ?? $addon['title'] ?? ''));
+          if ($name === '') {
+            continue;
+          }
+
+          $raw_price = $addon['price'] ?? $addon['amount'] ?? '';
+          if (is_string($raw_price)) {
+            $raw_price = preg_replace('/[^0-9.\-]/', '', $raw_price);
+          }
+          $price = ($raw_price === '' || $raw_price === null) ? 0 : (float) $raw_price;
+
+          $raw_type = strtolower(trim((string) ($addon['type'] ?? $addon['pricing'] ?? $addon['billing'] ?? 'Per Event')));
+          $type_map = [
+            'per event' => 'Per Event',
+            'per_event' => 'Per Event',
+            'per day' => 'Per Day',
+            'per_day' => 'Per Day',
+            'per night' => 'Per Night',
+            'per_night' => 'Per Night',
+            'per person' => 'Per Person',
+            'per_person' => 'Per Person'
+          ];
+          $type = $type_map[$raw_type] ?? 'Per Event';
+
+          $normalized_addons[] = [
+            'name' => $name,
+            'price' => $price,
+            'type' => $type
+          ];
+
+          if (count($normalized_addons) >= 10) {
+            break;
+          }
+        }
+
+        if (!empty($normalized_addons)) {
+          $addons_json = json_encode($normalized_addons);
+        }
       } else {
         error_log('Invalid addons_json supplied in add: ' . $_POST['addons_json']);
       }

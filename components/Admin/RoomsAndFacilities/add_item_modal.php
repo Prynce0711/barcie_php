@@ -5,14 +5,14 @@
     max-width: 800px;
     margin: 1.75rem auto;
   }
-  
+
   #addItemModal .modal-content {
     max-height: 85vh;
     display: flex;
     flex-direction: column;
     border-radius: 10px;
   }
-  
+
   #addItemModal .modal-header {
     flex-shrink: 0;
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -20,11 +20,11 @@
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
   }
-  
+
   #addItemModal .modal-header .btn-close {
     filter: brightness(0) invert(1);
   }
-  
+
   #addItemModal .modal-body {
     flex: 1 1 auto;
     max-height: calc(85vh - 140px);
@@ -32,42 +32,42 @@
     overflow-x: hidden;
     padding: 1.5rem;
   }
-  
+
   #addItemModal .modal-footer {
     flex-shrink: 0;
     border-top: 1px solid #dee2e6;
   }
-  
+
   /* Custom scrollbar for Add Item Modal */
   #addItemModal .modal-body::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   #addItemModal .modal-body::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
   }
-  
+
   #addItemModal .modal-body::-webkit-scrollbar-thumb {
     background: #3b82f6;
     border-radius: 4px;
   }
-  
+
   #addItemModal .modal-body::-webkit-scrollbar-thumb:hover {
     background: #2563eb;
   }
-  
+
   /* Ensure modal is centered and accessible */
   #addItemModal.modal {
     overflow-y: auto;
   }
-  
+
   /* Responsive adjustments */
   @media (max-height: 700px) {
     #addItemModal .modal-content {
       max-height: 95vh;
     }
-    
+
     #addItemModal .modal-body {
       max-height: calc(95vh - 140px);
     }
@@ -82,6 +82,7 @@
     right: 0;
     bottom: 0;
   }
+
   .modal-backdrop {
     z-index: 19990 !important;
   }
@@ -110,7 +111,8 @@
               <button type="button" id="addAddonBtn" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-plus me-1"></i>Add Add-on
               </button>
-              <div class="form-text">Define add-ons specific to this room/facility (e.g. Breakfast, Extra Bed). These will be offered to guests during booking.</div>
+              <div class="form-text">Define add-ons specific to this room/facility (e.g. Breakfast, Extra Bed). These
+                will be offered to guests during booking.</div>
             </div>
             <input type="hidden" name="addons_json" id="addons_json" value="">
           </div>
@@ -137,7 +139,8 @@
 
             <div class="col-12 mb-3">
               <label class="form-label">Description</label>
-              <textarea class="form-control" name="description" rows="3" placeholder="Brief description of the room or facility"></textarea>
+              <textarea class="form-control" name="description" rows="3"
+                placeholder="Brief description of the room or facility"></textarea>
             </div>
 
             <div class="col-md-6 mb-3">
@@ -159,119 +162,123 @@
           </div>
         </div>
 
-            <script>
-              // Add-ons repeater script
-              (function(){
-                function createAddonRow(addon) {
-                  addon = addon || {label:'', price:'', pricing:'per_event'};
-                  const row = document.createElement('div');
-                  row.className = 'd-flex gap-2 align-items-center mb-2 addon-row';
-                  row.innerHTML = `
-                    <input type="text" class="form-control form-control-sm addon-label" placeholder="Add-on name (e.g. Breakfast)" value="${addon.label}">
+        <script>
+          // Add-ons repeater script
+          (function () {
+            var modal = document.getElementById('addItemModal');
+            if (!modal) return;
+            var form = modal.querySelector('form');
+            var repeater = modal.querySelector('#addonsRepeater');
+            var addBtn = modal.querySelector('#addAddonBtn');
+            var hiddenAddonsInput = form ? form.querySelector('input[name="addons_json"]') : null;
+
+            function createAddonRow(addon) {
+              addon = addon || { name: '', price: '', type: 'Per Event' };
+              const row = document.createElement('div');
+              row.className = 'd-flex gap-2 align-items-center mb-2 addon-row';
+              row.innerHTML = `
+                    <input type="text" class="form-control form-control-sm addon-name" placeholder="Add-on name (e.g. Breakfast)" value="${addon.name}">
                     <input type="number" min="0" step="1" class="form-control form-control-sm addon-price" placeholder="Price" value="${addon.price}">
-                    <select class="form-select form-select-sm addon-pricing">
-                      <option value="per_person" ${addon.pricing==='per_person'?'selected':''}>Per Person</option>
-                      <option value="per_night" ${addon.pricing==='per_night'?'selected':''}>Per Night</option>
-                      <option value="per_event" ${addon.pricing==='per_event'?'selected':''}>Per Event</option>
+                    <select class="form-select form-select-sm addon-type">
+                      <option value="Per Event" ${addon.type === 'Per Event' ? 'selected' : ''}>Per Event</option>
+                      <option value="Per Day" ${addon.type === 'Per Day' ? 'selected' : ''}>Per Day</option>
+                      <option value="Per Night" ${addon.type === 'Per Night' ? 'selected' : ''}>Per Night</option>
                     </select>
                     <button type="button" class="btn btn-sm btn-danger remove-addon-btn"><i class="fas fa-trash"></i></button>
                   `;
-                  row.querySelector('.remove-addon-btn').addEventListener('click', () => { row.remove(); updateHidden(); });
-                  return row;
+              row.querySelector('.remove-addon-btn').addEventListener('click', () => { row.remove(); updateHidden(); });
+              row.addEventListener('input', updateHidden);
+              return row;
+            }
+
+            function updateHidden() {
+              if (!repeater || !hiddenAddonsInput) return;
+              const rows = repeater.querySelectorAll('.addon-row');
+              const addons = [];
+              rows.forEach(r => {
+                const name = r.querySelector('.addon-name').value.trim();
+                const price = r.querySelector('.addon-price').value.trim();
+                const type = r.querySelector('.addon-type').value;
+                if (name !== '') addons.push({ name, price: Number(price || 0), type });
+              });
+              hiddenAddonsInput.value = JSON.stringify(addons);
+            }
+
+            if (addBtn) addBtn.addEventListener('click', function () {
+              const r = createAddonRow();
+              if (!repeater) return;
+              repeater.appendChild(r);
+              r.querySelector('.addon-name').focus();
+              updateHidden();
+            });
+
+            // Ensure hidden input is updated before submit
+            if (form) {
+              form.addEventListener('submit', function () { updateHidden(); });
+            }
+
+            // If modal has data-addons attribute (editing), prefill
+            updateHidden();
+          })();
+
+          // Move modal to document.body to avoid ancestor clipping/stacking issues
+          (function () {
+            function moveModal() {
+              var modal = document.getElementById('addItemModal');
+              if (!modal) return;
+              if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+              }
+            }
+
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', moveModal);
+            } else {
+              moveModal();
+            }
+
+            // In case the modal is re-inserted later, keep observing and move if needed
+            var observer = new MutationObserver(function () {
+              moveModal();
+            });
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+          })();
+
+          // Image preview for multiple images
+          document.addEventListener('DOMContentLoaded', function () {
+            const imageInput = document.getElementById('roomImages');
+            const previewContainer = document.getElementById('imagePreviewContainer');
+
+            if (imageInput) {
+              imageInput.addEventListener('change', function (e) {
+                previewContainer.innerHTML = '';
+                const files = e.target.files;
+
+                if (files.length > 10) {
+                  showToast('Maximum 10 images allowed', 'warning');
+                  imageInput.value = '';
+                  return;
                 }
 
-                function updateHidden(){
-                  const rows = document.querySelectorAll('#addonsRepeater .addon-row');
-                  const addons = [];
-                  rows.forEach(r => {
-                    const label = r.querySelector('.addon-label').value.trim();
-                    const price = r.querySelector('.addon-price').value.trim();
-                    const pricing = r.querySelector('.addon-pricing').value;
-                    if (label !== '') addons.push({label, price: Number(price||0), pricing});
-                  });
-                  document.getElementById('addons_json').value = JSON.stringify(addons);
-                }
-
-                document.getElementById('addAddonBtn').addEventListener('click', function(){
-                  const r = createAddonRow();
-                  document.getElementById('addonsRepeater').appendChild(r);
-                  r.querySelector('.addon-label').focus();
-                  r.addEventListener('input', updateHidden);
-                  updateHidden();
-                });
-
-                // Ensure hidden input is updated before submit
-                var form = document.querySelector('#addItemModal form');
-                if (form) {
-                  form.addEventListener('submit', function(){ updateHidden(); });
-                }
-
-                // If modal has data-addons attribute (editing), prefill
-                document.addEventListener('DOMContentLoaded', function(){
-                  const pre = document.getElementById('addonsRepeater');
-                  if (!pre) return;
-                  // nothing prefilled by default; admin can add
-                });
-              })();
-
-              // Move modal to document.body to avoid ancestor clipping/stacking issues
-              (function () {
-                function moveModal() {
-                  var modal = document.getElementById('addItemModal');
-                  if (!modal) return;
-                  if (modal.parentNode !== document.body) {
-                    document.body.appendChild(modal);
-                  }
-                }
-
-                if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', moveModal);
-                } else {
-                  moveModal();
-                }
-
-                // In case the modal is re-inserted later, keep observing and move if needed
-                var observer = new MutationObserver(function() {
-                  moveModal();
-                });
-                observer.observe(document.documentElement, { childList: true, subtree: true });
-              })();
-
-              // Image preview for multiple images
-              document.addEventListener('DOMContentLoaded', function() {
-                const imageInput = document.getElementById('roomImages');
-                const previewContainer = document.getElementById('imagePreviewContainer');
-                
-                if (imageInput) {
-                  imageInput.addEventListener('change', function(e) {
-                    previewContainer.innerHTML = '';
-                    const files = e.target.files;
-                    
-                    if (files.length > 10) {
-                      showToast('Maximum 10 images allowed', 'warning');
-                      imageInput.value = '';
-                      return;
-                    }
-                    
-                    Array.from(files).forEach((file, index) => {
-                      const reader = new FileReader();
-                      reader.onload = function(event) {
-                        const previewDiv = document.createElement('div');
-                        previewDiv.className = 'position-relative';
-                        previewDiv.style.width = '80px';
-                        previewDiv.style.height = '80px';
-                        previewDiv.innerHTML = `
+                Array.from(files).forEach((file, index) => {
+                  const reader = new FileReader();
+                  reader.onload = function (event) {
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'position-relative';
+                    previewDiv.style.width = '80px';
+                    previewDiv.style.height = '80px';
+                    previewDiv.innerHTML = `
                           <img src="${event.target.result}" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
                           <span class="badge bg-primary position-absolute top-0 start-0 m-1">${index + 1}</span>
                         `;
-                        previewContainer.appendChild(previewDiv);
-                      };
-                      reader.readAsDataURL(file);
-                    });
-                  }); 
-                }
+                    previewContainer.appendChild(previewDiv);
+                  };
+                  reader.readAsDataURL(file);
+                });
               });
-            </script>
+            }
+          });
+        </script>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="fas fa-times me-1"></i>Cancel
