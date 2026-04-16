@@ -4,7 +4,7 @@ require_once __DIR__ . '/../item_actions.php';
 $res = $conn->query("SELECT * FROM items ORDER BY item_type, created_at DESC");
 while ($item = $res->fetch_assoc()):
   $projectRoot = realpath(__DIR__ . '/../../..');
-  $normalizeImagePath = function($path) {
+  $normalizeImagePath = function ($path) {
     $path = str_replace('\\', '/', trim((string) $path));
     $path = ltrim($path, '/');
     if ($path !== '' && !str_contains($path, '/') && preg_match('/\.(jpe?g|png|gif|webp|bmp|svg)$/i', $path)) {
@@ -12,9 +12,11 @@ while ($item = $res->fetch_assoc()):
     }
     return $path;
   };
-  $isValidImagePath = function($path) use ($projectRoot) {
-    if (!is_string($path) || $path === '') return false;
-    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) return true;
+  $isValidImagePath = function ($path) use ($projectRoot) {
+    if (!is_string($path) || $path === '')
+      return false;
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://'))
+      return true;
     return $projectRoot && file_exists($projectRoot . '/' . ltrim($path, '/'));
   };
   // Prepare images array for data attribute
@@ -143,8 +145,14 @@ while ($item = $res->fetch_assoc()):
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 room-action-buttons">
-          <?php $editOnclick = 'openEditModal(' . $item['id'] . ')'; $editDataId = $item['id']; $editClass = 'btn-outline-primary flex-fill'; include __DIR__ . '/../../ActionButton/Edit.php'; ?>
-          <?php $deleteOnclick = 'confirmDeleteItem(' . (int) $item['id'] . ', ' . json_encode((string) $item['name']) . ')'; $deleteDataId = $item['id']; $deleteItemName = $item['name']; include __DIR__ . '/../../ActionButton/Delete.php'; ?>
+          <?php $editOnclick = 'openEditModal(' . $item['id'] . ')';
+          $editDataId = $item['id'];
+          $editClass = 'btn-outline-primary flex-fill';
+          include __DIR__ . '/../../ActionButton/Edit.php'; ?>
+          <?php $deleteOnclick = 'confirmDeleteItem(' . (int) $item['id'] . ', ' . json_encode((string) $item['name']) . ')';
+          $deleteDataId = $item['id'];
+          $deleteItemName = $item['name'];
+          include __DIR__ . '/../../ActionButton/Delete.php'; ?>
         </div>
         <script>
           // Hide edit/delete buttons for staff
@@ -231,10 +239,21 @@ while ($item = $res->fetch_assoc()):
                     if (is_string($a)) {
                       $addons[] = ['name' => $a, 'price' => '', 'type' => 'Per Event'];
                     } elseif (is_array($a)) {
+                      $rawType = strtolower((string) ($a['type'] ?? $a['pricing'] ?? $a['billing'] ?? 'Per Event'));
+                      $typeMap = [
+                        'per event' => 'Per Event',
+                        'per_event' => 'Per Event',
+                        'per day' => 'Per Day',
+                        'per_day' => 'Per Day',
+                        'per night' => 'Per Night',
+                        'per_night' => 'Per Night',
+                        'per person' => 'Per Person',
+                        'per_person' => 'Per Person'
+                      ];
                       $addons[] = [
-                        'name' => $a['name'] ?? $a['title'] ?? '',
+                        'name' => $a['name'] ?? $a['label'] ?? $a['title'] ?? '',
                         'price' => isset($a['price']) ? $a['price'] : ($a['amount'] ?? ''),
-                        'type' => $a['type'] ?? ($a['billing'] ?? 'Per Event')
+                        'type' => $typeMap[$rawType] ?? 'Per Event'
                       ];
                     }
                   }
@@ -536,39 +555,39 @@ while ($item = $res->fetch_assoc()):
   <input type="hidden" name="id" id="deleteItemId" value="">
 </form>
 <script>
-window.confirmDeleteItem = async function(itemId, itemName) {
-  let confirmed = false;
-  const safeName = String(itemName || 'this item');
+  window.confirmDeleteItem = async function (itemId, itemName) {
+    let confirmed = false;
+    const safeName = String(itemName || 'this item');
 
-  if (typeof window.showConfirm === 'function') {
-    try {
-      confirmed = await window.showConfirm(
-        'Are you sure you want to delete <strong>' + safeName + '</strong>?<br><small class="text-muted">This action cannot be undone.</small>',
-        { title: 'Confirm Deletion', confirmText: 'Delete', confirmClass: 'btn-danger', cancelText: 'Cancel', allowHtml: true }
-      );
-    } catch (e) {
+    if (typeof window.showConfirm === 'function') {
+      try {
+        confirmed = await window.showConfirm(
+          'Are you sure you want to delete <strong>' + safeName + '</strong>?<br><small class="text-muted">This action cannot be undone.</small>',
+          { title: 'Confirm Deletion', confirmText: 'Delete', confirmClass: 'btn-danger', cancelText: 'Cancel', allowHtml: true }
+        );
+      } catch (e) {
+        confirmed = window.confirm('Delete ' + safeName + '? This action cannot be undone.');
+      }
+    } else {
       confirmed = window.confirm('Delete ' + safeName + '? This action cannot be undone.');
     }
-  } else {
-    confirmed = window.confirm('Delete ' + safeName + '? This action cannot be undone.');
-  }
 
-  if (!confirmed) {
-    return;
-  }
+    if (!confirmed) {
+      return;
+    }
 
-  const idInput = document.getElementById('deleteItemId');
-  const form = document.getElementById('deleteItemForm');
-  if (!idInput || !form) {
-    return;
-  }
+    const idInput = document.getElementById('deleteItemId');
+    const form = document.getElementById('deleteItemForm');
+    if (!idInput || !form) {
+      return;
+    }
 
-  idInput.value = String(itemId);
-  if (typeof window.showLoadingPopup === 'function') {
-    window.showLoadingPopup('Deleting item...');
-  }
-  form.submit();
-};
+    idInput.value = String(itemId);
+    if (typeof window.showLoadingPopup === 'function') {
+      window.showLoadingPopup('Deleting item...');
+    }
+    form.submit();
+  };
 </script>
 
 <!-- Image Viewer Modal -->
