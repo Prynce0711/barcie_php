@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/../item_actions.php';
 
+$defaultLogo = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
+
 $res = $conn->query("SELECT * FROM items ORDER BY item_type, created_at DESC");
 while ($item = $res->fetch_assoc()):
   $projectRoot = realpath(__DIR__ . '/../../..');
@@ -53,7 +57,7 @@ while ($item = $res->fetch_assoc()):
         }
         // Final fallback to logo
         if (empty($images)) {
-          $images = ['public/images/imageBg/barcie_logo.jpg'];
+          $images = [$defaultLogo];
         }
 
         // Prepare web paths
@@ -69,7 +73,7 @@ while ($item = $res->fetch_assoc()):
           }
         }
         if (empty($webImages)) {
-          $webImages[] = 'public/images/imageBg/barcie_logo.jpg';
+          $webImages[] = $defaultLogo;
         }
         ?>
 

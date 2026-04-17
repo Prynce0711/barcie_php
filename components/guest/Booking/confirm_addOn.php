@@ -1,6 +1,10 @@
 <?php
 // Modal and client-side logic to preview booking details and select add-ons
 // This file is intended to be included on the Guest booking page (booking.php)
+
+$policyLogoUrl = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
 ?>
 
 <!-- QRCode.js Library for generating QR codes -->
@@ -129,8 +133,9 @@
       <div class="modal-body">
         <div class="text-center mb-4">
           <div class="policy-header-image mb-3">
-            <img src="public/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo" class="img-fluid"
-              style="max-width: 200px; height: auto;" onerror="this.style.display='none'">
+            <img src="<?php echo htmlspecialchars($policyLogoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="BarCIE Logo"
+              class="img-fluid" style="max-width: 200px; height: auto;"
+              onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || '<?php echo htmlspecialchars($policyLogoUrl, ENT_QUOTES, 'UTF-8'); ?>');">
           </div>
           <h4 class="text-primary fw-bold">
             <i class="fas fa-building me-2"></i>
