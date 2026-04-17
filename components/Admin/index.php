@@ -216,6 +216,28 @@ if (!defined('APP_BASE_PATH')) {
   define('APP_BASE_PATH', $appBasePath);
 }
 
+$documentRootRealPath = $documentRoot !== '' ? realpath($documentRoot) : false;
+$projectPublicRealPath = realpath($projectRoot . DIRECTORY_SEPARATOR . 'public');
+$isPublicDocumentRoot =
+  $documentRootRealPath !== false &&
+  $projectPublicRealPath !== false &&
+  strcasecmp(str_replace('\\', '/', $documentRootRealPath), str_replace('\\', '/', $projectPublicRealPath)) === 0;
+
+$primaryLogoAssetPath = $isPublicDocumentRoot
+  ? 'images/imageBg/barcie_logo.jpg'
+  : 'public/images/imageBg/barcie_logo.jpg';
+$secondaryLogoAssetPath = $isPublicDocumentRoot
+  ? 'public/images/imageBg/barcie_logo.jpg'
+  : 'images/imageBg/barcie_logo.jpg';
+
+if (!defined('BARCIE_LOGO_URL')) {
+  define('BARCIE_LOGO_URL', $projectAssetUrl($primaryLogoAssetPath));
+}
+
+if (!defined('BARCIE_LOGO_ALT_URL')) {
+  define('BARCIE_LOGO_ALT_URL', $projectAssetUrl($secondaryLogoAssetPath));
+}
+
 // Include data processing logic
 $dataProcessingPath = $resolveProjectFile('Components/Admin/data_processing.php');
 if ($dataProcessingPath === '') {
@@ -750,6 +772,8 @@ require $dataProcessingPath;
       <script>
         window.APP_BASE_PATH = <?php echo json_encode(APP_BASE_PATH); ?>;
         window.__ADMIN_ASSET_VERSION = <?php echo json_encode($adminNavAssetVersion); ?>;
+        window.BARCIE_LOGO_URL = <?php echo json_encode(defined('BARCIE_LOGO_URL') ? BARCIE_LOGO_URL : $projectAssetUrl('public/images/imageBg/barcie_logo.jpg')); ?>;
+        window.BARCIE_LOGO_ALT_URL = <?php echo json_encode(defined('BARCIE_LOGO_ALT_URL') ? BARCIE_LOGO_ALT_URL : $projectAssetUrl('images/imageBg/barcie_logo.jpg')); ?>;
       </script>
 
       <!-- Dashboard JavaScript files -->

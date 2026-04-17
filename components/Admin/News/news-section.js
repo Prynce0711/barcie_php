@@ -8,6 +8,8 @@
 
   let currentNewsData = [];
   let editingNewsId = null;
+  const defaultLogoUrl =
+    window.BARCIE_LOGO_URL || "public/images/imageBg/barcie_logo.jpg";
 
   function ensureNewsModalsInBody() {
     ["newsModal", "viewNewsModal"].forEach((id) => {
@@ -137,7 +139,9 @@
 
     const imageHtml = news.image_path
       ? `<img src="${escapeHtml(news.image_path)}" class="card-img-top news-card-image" 
-                  alt="${escapeHtml(news.title)}" onerror="this.src='public/images/imageBg/barcie_logo.jpg'">`
+                  alt="${escapeHtml(news.title)}" onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || '${escapeHtml(
+                    defaultLogoUrl,
+                  )}')">`
       : "";
 
     const excerpt =

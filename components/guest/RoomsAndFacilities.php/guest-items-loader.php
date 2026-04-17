@@ -7,7 +7,7 @@
         <!-- Image section -->
         <div class="card-image relative cursor-pointer bg-slate-100">
             <img class="room-card-img h-52 w-full object-cover" src="" alt=""
-                onerror="this.onerror=null;this.src='public/images/imageBg/barcie_logo.jpg';">
+                onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || 'public/images/imageBg/barcie_logo.jpg');">
             <!-- Multi-image count badge (hidden until JS shows it) -->
             <div
                 class="image-count-badge absolute right-2.5 top-2.5 hidden items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-xs text-white">
@@ -177,9 +177,9 @@
                     catch (e) { console.warn("Failed to parse images for item:", item.id); images = []; }
                 }
                 if (!images.length && item.image?.trim()) images = [item.image];
-                if (!images.length) images = ["public/images/imageBg/barcie_logo.jpg"];
+                if (!images.length) images = [window.BARCIE_LOGO_URL || "public/images/imageBg/barcie_logo.jpg"];
                 images = images.map(img => {
-                    if (!img?.trim()) return "public/images/imageBg/barcie_logo.jpg";
+                    if (!img?.trim()) return window.BARCIE_LOGO_URL || "public/images/imageBg/barcie_logo.jpg";
                     if (/^https?:\/\//.test(img)) return img;
                     return img.replace(/^\/+/, "");
                 });

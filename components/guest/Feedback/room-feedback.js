@@ -8,6 +8,8 @@ let currentRoomForFeedback = null;
 let roomReviewsCache = {};
 // Google Sign-In state
 let googleUser = null;
+const fallbackRoomImage =
+  window.BARCIE_LOGO_URL || "public/images/imageBg/barcie_logo.jpg";
 
 // Google Sign-In Callback
 function handleGoogleSignIn(response) {
@@ -421,10 +423,7 @@ function openRoomDetailsModal(roomId) {
 
         // Set image
         const images = item.images ? JSON.parse(item.images) : [];
-        const imageSrc =
-          images.length > 0
-            ? images[0]
-            : "public/images/imageBg/barcie_logo.jpg";
+        const imageSrc = images.length > 0 ? images[0] : fallbackRoomImage;
         document.getElementById("modalRoomImage").src = imageSrc;
         document.getElementById("modalRoomImage").alt = item.name;
 

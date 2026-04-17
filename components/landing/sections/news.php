@@ -1,7 +1,12 @@
 <?php
 $basePath = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
 $newsApiUrl = ($basePath !== '' ? $basePath : '') . '/api/news.php';
-$defaultNewsImage = ($basePath !== '' ? $basePath : '') . '/public/images/imageBg/barcie_logo.jpg';
+$defaultNewsImage = defined('BARCIE_LOGO_URL')
+    ? (string) BARCIE_LOGO_URL
+    : (($basePath !== '' ? $basePath : '') . '/public/images/imageBg/barcie_logo.jpg');
+$defaultNewsImageAlt = defined('BARCIE_LOGO_ALT_URL')
+    ? (string) BARCIE_LOGO_ALT_URL
+    : (($basePath !== '' ? $basePath : '') . '/images/imageBg/barcie_logo.jpg');
 ?>
 
 <!-- News & Updates Section -->
@@ -54,6 +59,7 @@ $defaultNewsImage = ($basePath !== '' ? $basePath : '') . '/public/images/imageB
 
         const NEWS_API_URL = <?php echo json_encode($newsApiUrl); ?>;
         const DEFAULT_NEWS_IMAGE = <?php echo json_encode($defaultNewsImage); ?>;
+        const DEFAULT_NEWS_IMAGE_ALT = <?php echo json_encode($defaultNewsImageAlt); ?>;
 
         let currentPage = 1;
         let newsPerPage = 6;
@@ -136,7 +142,7 @@ $defaultNewsImage = ($basePath !== '' ? $basePath : '') . '/public/images/imageB
                         <img src="${escapeHtml(imageUrl)}" 
                              class="card-img-top" 
                              alt="${escapeHtml(news.title)}"
-                                onerror="this.src='${escapeHtml(DEFAULT_NEWS_IMAGE)}'">
+                                onerror="this.onerror=null;this.src='${escapeHtml(DEFAULT_NEWS_IMAGE_ALT)}'">
                         <div class="news-date-badge">
                             <span class="date-day">${new Date(news.published_date || news.created_at).getDate()}</span>
                             <span class="date-month">${new Date(news.published_date || news.created_at).toLocaleDateString('en-US', { month: 'short' })}</span>

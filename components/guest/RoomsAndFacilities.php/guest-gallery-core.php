@@ -114,7 +114,11 @@
       thumbImg.src = img;
       thumbImg.style.cssText = "width: 100%; height: 100%; object-fit: cover;";
       thumbImg.onerror = function () {
-        this.src = "public/images/imageBg/barcie_logo.jpg";
+        this.onerror = null;
+        this.src =
+          window.BARCIE_LOGO_ALT_URL ||
+          window.BARCIE_LOGO_URL ||
+          "public/images/imageBg/barcie_logo.jpg";
       };
 
       thumb.appendChild(thumbImg);

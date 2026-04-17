@@ -96,13 +96,13 @@
         }
 
         if (images.length === 0) {
-          images = ["public/images/imageBg/barcie_logo.jpg"];
+          images = [window.BARCIE_LOGO_URL || "public/images/imageBg/barcie_logo.jpg"];
         }
 
 
         images = images.map((img) => {
           if (typeof img !== "string" || img.trim() === "")
-            return "public/images/imageBg/barcie_logo.jpg";
+            return window.BARCIE_LOGO_URL || "public/images/imageBg/barcie_logo.jpg";
           if (img.startsWith("http://") || img.startsWith("https://")) return img;
 
           return img.replace(/^\/+/, "");
@@ -139,7 +139,7 @@
         <div class="card-image position-relative" style="cursor: pointer;" data-item-id="${item.id}">
           <img src="${previewImage}" class="room-card-img" 
             style="width:100%;height:200px;object-fit:cover;border-radius:15px 15px 0 0;" 
-            onerror="this.onerror=null; this.src='public/images/imageBg/barcie_logo.jpg';"
+            onerror="this.onerror=null; this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || 'public/images/imageBg/barcie_logo.jpg');"
             alt="${item.name}">
           ${images.length > 1
             ? `

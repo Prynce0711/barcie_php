@@ -1,8 +1,14 @@
+<?php
+$logoUrl = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
+?>
 <footer class="footer border-top py-3 bg-light">
   <div
     class="container-fluid d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 small text-muted">
     <div class="d-flex align-items-center gap-2">
-      <img src="public/images/imageBg/barcie_logo.jpg" alt="Barcie" width="28" height="28" class="rounded-circle">
+      <img src="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Barcie" width="28" height="28"
+        class="rounded-circle">
       <span class="fw-semibold text-dark">Hotel Management Management</span>
       <span class="text-secondary">© <?php echo date('Y'); ?> Barcie</span>
     </div>

@@ -1,3 +1,8 @@
+<?php
+$landingHeroLogo = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
+?>
 <!-- Hero Section -->
 <section id="home" class="hero-section">
   <!-- Animated Background Elements -->
@@ -40,7 +45,9 @@
       <div class="col-lg-6" data-aos="fade-left">
         <div class="hero-image-wrapper">
           <div class="glass-card p-4 hero-logo-card">
-            <img src="public/images/imageBg/barcie_logo.jpg" alt="BarCIE Hotel" class="img-fluid rounded-3 shadow-lg">
+            <img src="<?php echo htmlspecialchars($landingHeroLogo, ENT_QUOTES, 'UTF-8'); ?>" alt="BarCIE Hotel"
+              class="img-fluid rounded-3 shadow-lg"
+              onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || '<?php echo htmlspecialchars($landingHeroLogo, ENT_QUOTES, 'UTF-8'); ?>');">
           </div>
         </div>
       </div>
