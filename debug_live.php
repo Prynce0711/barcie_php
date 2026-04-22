@@ -281,12 +281,24 @@ try {
     <div class="test <?php
     $env_file = __DIR__ . '/.env';
     $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
-    echo ($vendor_exists && file_exists($env_file)) ? 'success' : 'warning';
+    $smtp_host_env = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? '');
+    $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? '');
+    $smtp_port_env = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? '');
+    $from_email_env = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? '');
+    $env_file_exists = file_exists($env_file);
+    $env_runtime_present = !empty($smtp_host_env) || !empty($smtp_user_env) || !empty($smtp_port_env) || !empty($from_email_env);
+    echo ($vendor_exists && ($env_file_exists || $env_runtime_present)) ? 'success' : 'warning';
     ?>">
         <h2>📧 Email Configuration</h2>
         <?php
         $env_file = __DIR__ . '/.env';
         $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
+        $smtp_host_env = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? '');
+        $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? '');
+        $smtp_port_env = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? '');
+        $from_email_env = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? '');
+        $env_file_exists = file_exists($env_file);
+        $env_runtime_present = !empty($smtp_host_env) || !empty($smtp_user_env) || !empty($smtp_port_env) || !empty($from_email_env);
 
         echo '<p><strong>Vendor/Autoload:</strong> ';
         echo '<span class="status ' . ($vendor_exists ? 'ok' : 'fail') . '">';
@@ -294,18 +306,23 @@ try {
         echo '</span></p>';
 
         echo '<p><strong>.env File:</strong> ';
-        echo '<span class="status ' . (file_exists($env_file) ? 'ok' : 'fail') . '">';
-        echo file_exists($env_file) ? 'EXISTS' : 'MISSING';
+        echo '<span class="status ' . ($env_file_exists ? 'ok' : 'fail') . '">';
+        echo $env_file_exists ? 'EXISTS' : 'MISSING';
         echo '</span></p>';
 
-        if ($vendor_exists && file_exists($env_file)) {
+        echo '<p><strong>Server ENV:</strong> ';
+        echo '<span class="status ' . ($env_runtime_present ? 'ok' : 'fail') . '">';
+        echo $env_runtime_present ? 'DETECTED' : 'NOT DETECTED';
+        echo '</span></p>';
+
+        if ($vendor_exists) {
             require __DIR__ . '/vendor/autoload.php';
 
             try {
                 $mc = [];
                 $tail = '';
                 $dotenvClass = 'Dotenv\\Dotenv';
-                if (class_exists($dotenvClass)) {
+                if ($env_file_exists && class_exists($dotenvClass)) {
                     $dotenv = $dotenvClass::createImmutable(__DIR__);
                     $dotenv->safeLoad();
                 }
