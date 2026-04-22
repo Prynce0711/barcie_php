@@ -281,19 +281,24 @@ try {
     <div class="test <?php
     $env_file = __DIR__ . '/.env';
     $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
+    // Check all known env-var name variants (SMTP_USER is used in .env, SMTP_USERNAME in some envs)
     $smtp_host_env = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? '');
     $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? ''));
     $smtp_pass_env = getenv('SMTP_PASSWORD') ?: ($_ENV['SMTP_PASSWORD'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? ''));
     $smtp_port_env = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? '');
     $from_email_env = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? '');
     $env_file_exists = file_exists($env_file);
+    // Vendor + (.env file OR at least one env var OR mail_config has hardcoded fallbacks) = success
     $env_runtime_present = !empty($smtp_host_env) || !empty($smtp_user_env) || !empty($smtp_pass_env) || !empty($smtp_port_env) || !empty($from_email_env);
-    echo ($vendor_exists && ($env_file_exists || $env_runtime_present)) ? 'success' : 'warning';
+    $mail_config_path_check = __DIR__ . '/database/mail_config.php';
+    $has_hardcoded_fallback = file_exists($mail_config_path_check); // mail_config.php has built-in fallbacks
+    echo ($vendor_exists && ($env_file_exists || $env_runtime_present || $has_hardcoded_fallback)) ? 'success' : 'warning';
     ?>">
         <h2>📧 Email Configuration</h2>
         <?php
         $env_file = __DIR__ . '/.env';
         $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
+        // Check all known env-var name variants (SMTP_USER is used in .env, SMTP_USERNAME in some envs)
         $smtp_host_env = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? '');
         $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? ''));
         $smtp_pass_env = getenv('SMTP_PASSWORD') ?: ($_ENV['SMTP_PASSWORD'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? ''));
@@ -309,12 +314,12 @@ try {
 
         echo '<p><strong>.env File:</strong> ';
         echo '<span class="status ' . ($env_file_exists ? 'ok' : 'fail') . '">';
-        echo $env_file_exists ? 'EXISTS' : 'MISSING';
+        echo $env_file_exists ? 'EXISTS' : 'MISSING (using built-in fallbacks)';
         echo '</span></p>';
 
         echo '<p><strong>Server ENV:</strong> ';
         echo '<span class="status ' . ($env_runtime_present ? 'ok' : 'fail') . '">';
-        echo $env_runtime_present ? 'DETECTED' : 'NOT DETECTED';
+        echo $env_runtime_present ? 'DETECTED' : 'NOT DETECTED (mail_config fallbacks will be used)';
         echo '</span></p>';
 
         if ($vendor_exists) {
@@ -329,12 +334,20 @@ try {
                     $dotenv->safeLoad();
                 }
 
-                $smtp_host = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? getenv('MAIL_HOST') ?: ($_ENV['MAIL_HOST'] ?? 'NOT SET'));
-                $smtp_user = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? 'NOT SET'));
-                $smtp_port = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? 'NOT SET');
-                $from_email = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? 'NOT SET');
+                // Load the resolved config (includes hardcoded fallbacks) from mail_config.php
+                $mc_resolved = [];
+                $mail_config_path_early = __DIR__ . '/database/mail_config.php';
+                if (file_exists($mail_config_path_early)) {
+                    $mc_resolved = @include $mail_config_path_early;
+                    if (!is_array($mc_resolved)) $mc_resolved = [];
+                }
 
-                echo '<p><strong>SMTP Host (ENV):</strong> ' . htmlspecialchars($smtp_host) . '</p>';
+                $smtp_host  = !empty($mc_resolved['host'])     ? $mc_resolved['host']     : 'NOT SET';
+                $smtp_user  = !empty($mc_resolved['username']) ? $mc_resolved['username'] : 'NOT SET';
+                $smtp_port  = !empty($mc_resolved['port'])     ? (string)$mc_resolved['port'] : 'NOT SET';
+                $from_email = !empty($mc_resolved['from_email']) ? $mc_resolved['from_email'] : 'NOT SET';
+
+                echo '<p><strong>SMTP Host:</strong> ' . htmlspecialchars($smtp_host) . '</p>';
                 echo '<p><strong>SMTP Username:</strong> ' . htmlspecialchars($smtp_user) . '</p>';
                 // Display masked mail configuration and recent PHPMailer debug log (safe for admins)
                 echo '<div style="margin-top:12px;">';
