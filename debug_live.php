@@ -282,11 +282,12 @@ try {
     $env_file = __DIR__ . '/.env';
     $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
     $smtp_host_env = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? '');
-    $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? '');
+    $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? ''));
+    $smtp_pass_env = getenv('SMTP_PASSWORD') ?: ($_ENV['SMTP_PASSWORD'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? ''));
     $smtp_port_env = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? '');
     $from_email_env = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? '');
     $env_file_exists = file_exists($env_file);
-    $env_runtime_present = !empty($smtp_host_env) || !empty($smtp_user_env) || !empty($smtp_port_env) || !empty($from_email_env);
+    $env_runtime_present = !empty($smtp_host_env) || !empty($smtp_user_env) || !empty($smtp_pass_env) || !empty($smtp_port_env) || !empty($from_email_env);
     echo ($vendor_exists && ($env_file_exists || $env_runtime_present)) ? 'success' : 'warning';
     ?>">
         <h2>📧 Email Configuration</h2>
@@ -294,11 +295,12 @@ try {
         $env_file = __DIR__ . '/.env';
         $vendor_exists = file_exists(__DIR__ . '/vendor/autoload.php');
         $smtp_host_env = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? '');
-        $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? '');
+        $smtp_user_env = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? ''));
+        $smtp_pass_env = getenv('SMTP_PASSWORD') ?: ($_ENV['SMTP_PASSWORD'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? ''));
         $smtp_port_env = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? '');
         $from_email_env = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? '');
         $env_file_exists = file_exists($env_file);
-        $env_runtime_present = !empty($smtp_host_env) || !empty($smtp_user_env) || !empty($smtp_port_env) || !empty($from_email_env);
+        $env_runtime_present = !empty($smtp_host_env) || !empty($smtp_user_env) || !empty($smtp_pass_env) || !empty($smtp_port_env) || !empty($from_email_env);
 
         echo '<p><strong>Vendor/Autoload:</strong> ';
         echo '<span class="status ' . ($vendor_exists ? 'ok' : 'fail') . '">';
@@ -328,7 +330,7 @@ try {
                 }
 
                 $smtp_host = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? 'NOT SET');
-                $smtp_user = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? 'NOT SET');
+                $smtp_user = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? 'NOT SET'));
                 $smtp_port = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? 'NOT SET');
                 $from_email = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? 'NOT SET');
 
@@ -427,7 +429,7 @@ try {
                 echo '<p><strong>SMTP Port:</strong> ' . htmlspecialchars($smtp_port) . '</p>';
                 echo '<p><strong>From Email:</strong> ' . htmlspecialchars($from_email) . '</p>';
 
-                $smtp_password = getenv('SMTP_PASSWORD') ?: ($_ENV['SMTP_PASSWORD'] ?? '');
+                $smtp_password = getenv('SMTP_PASSWORD') ?: ($_ENV['SMTP_PASSWORD'] ?? getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? ''));
                 echo '<p><strong>SMTP Password:</strong> ';
                 echo '<span class="status ' . (!empty($smtp_password) ? 'ok' : 'fail') . '">';
                 echo !empty($smtp_password) ? 'SET (' . str_repeat('*', 10) . ')' : 'NOT SET';
