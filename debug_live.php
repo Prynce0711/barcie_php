@@ -329,12 +329,12 @@ try {
                     $dotenv->safeLoad();
                 }
 
-                $smtp_host = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? 'NOT SET');
+                $smtp_host = getenv('SMTP_HOST') ?: ($_ENV['SMTP_HOST'] ?? getenv('MAIL_HOST') ?: ($_ENV['MAIL_HOST'] ?? 'NOT SET'));
                 $smtp_user = getenv('SMTP_USERNAME') ?: ($_ENV['SMTP_USERNAME'] ?? getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? 'NOT SET'));
                 $smtp_port = getenv('SMTP_PORT') ?: ($_ENV['SMTP_PORT'] ?? 'NOT SET');
                 $from_email = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? 'NOT SET');
 
-                echo '<p><strong>SMTP Host:</strong> ' . htmlspecialchars($smtp_host) . '</p>';
+                echo '<p><strong>SMTP Host (ENV):</strong> ' . htmlspecialchars($smtp_host) . '</p>';
                 echo '<p><strong>SMTP Username:</strong> ' . htmlspecialchars($smtp_user) . '</p>';
                 // Display masked mail configuration and recent PHPMailer debug log (safe for admins)
                 echo '<div style="margin-top:12px;">';
@@ -344,6 +344,9 @@ try {
                         $mc = @include $mail_config_path;
                         if (is_array($mc)) {
                             $masked_mc = $mc;
+                            if (!empty($mc['host'])) {
+                                echo '<p><strong>SMTP Host (Resolved):</strong> ' . htmlspecialchars((string) $mc['host']) . '</p>';
+                            }
                             if (!empty($masked_mc['password'])) {
                                 $masked_mc['password'] = str_repeat('*', 8) . ' (masked)';
                             }
