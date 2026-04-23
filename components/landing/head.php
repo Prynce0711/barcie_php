@@ -17,6 +17,8 @@
   ?>
   <script>
     window.APP_BASE_PATH = <?php echo json_encode(defined('APP_BASE_PATH') ? APP_BASE_PATH : ''); ?>;
+    window.BARCIE_LOGO_URL = <?php echo json_encode(defined('BARCIE_LOGO_URL') ? BARCIE_LOGO_URL : $assetUrl('public/images/imageBg/barcie_logo.jpg')); ?>;
+    window.BARCIE_LOGO_ALT_URL = <?php echo json_encode(defined('BARCIE_LOGO_ALT_URL') ? BARCIE_LOGO_ALT_URL : $assetUrl('images/imageBg/barcie_logo.jpg')); ?>;
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -24,8 +26,12 @@
     href="<?php echo htmlspecialchars($assetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
   <link rel="shortcut icon" type="image/x-icon"
     href="<?php echo htmlspecialchars($assetUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
-  <link rel="apple-touch-icon"
-    href="<?php echo htmlspecialchars($assetUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+  <?php
+  $landingLogoUrl = defined('BARCIE_LOGO_URL')
+    ? (string) BARCIE_LOGO_URL
+    : $assetUrl('public/images/imageBg/barcie_logo.jpg');
+  ?>
+  <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($landingLogoUrl, ENT_QUOTES, 'UTF-8'); ?>">
   <title>BarCIE International Center - Your Gateway to Hospitality Excellence</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">

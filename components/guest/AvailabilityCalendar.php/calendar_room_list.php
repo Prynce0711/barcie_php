@@ -88,7 +88,8 @@
       function hideSpinner() { try { spinner.style.display = 'none'; } catch (e) { } }
 
       function choosePreviewImage(item) {
-        const defaultImg = 'public/images/imageBg/barcie_logo.jpg';
+        const defaultImg =
+          window.BARCIE_LOGO_URL || 'public/images/imageBg/barcie_logo.jpg';
 
         function normalize(path) {
           if (!path) return null;
@@ -191,7 +192,7 @@
                 <div class="col-auto">
                   <img src="${preview}" alt="${item.name}" 
                        style="width:120px;height:90px;object-fit:cover;border-radius:8px;" 
-                       onerror="this.src='public/images/imageBg/barcie_logo.jpg';">
+                       onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || 'public/images/imageBg/barcie_logo.jpg');">
                 </div>
                 <div class="col">
                   <div class="d-flex justify-content-between align-items-start">

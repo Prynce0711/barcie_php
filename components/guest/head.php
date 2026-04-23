@@ -1,10 +1,17 @@
-<?php date_default_timezone_set('Asia/Manila'); ?>
+<?php
+date_default_timezone_set('Asia/Manila');
+$basePath = defined('APP_BASE_PATH') ? rtrim((string) APP_BASE_PATH, '/') : '';
+$faviconUrl = ($basePath !== '' ? $basePath : '') . '/favicon.ico';
+$logoUrl = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : (($basePath !== '' ? $basePath : '') . '/public/images/imageBg/barcie_logo.jpg');
+?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="user-id" content="<?php echo $user_id; ?>">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="public/images/imageBg/barcie_logo.jpg">
+<link rel="icon" type="image/x-icon" href="<?php echo htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="shortcut icon" type="image/x-icon" href="<?php echo htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="apple-touch-icon" href="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8'); ?>">
 <title>Guest Portal</title>
 <!-- Bootstrap CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">

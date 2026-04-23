@@ -75,11 +75,29 @@ $assetUrl = static function (string $path): string {
   return (APP_BASE_PATH !== '' ? APP_BASE_PATH : '') . '/' . $normalizedPath;
 };
 
-$componentAssetPath = static function (string $relativePath) use (
-  $componentsRoot,
-  $projectRoot,
-  $resolveCaseInsensitivePath
-): string {
+$documentRootRealPath = $documentRoot !== '' ? realpath($documentRoot) : false;
+$projectPublicRealPath = realpath($projectRoot . DIRECTORY_SEPARATOR . 'public');
+$isPublicDocumentRoot =
+  $documentRootRealPath !== false &&
+  $projectPublicRealPath !== false &&
+  strcasecmp(str_replace('\\', '/', $documentRootRealPath), str_replace('\\', '/', $projectPublicRealPath)) === 0;
+
+$primaryLogoAssetPath = $isPublicDocumentRoot
+  ? 'images/imageBg/barcie_logo.jpg'
+  : 'public/images/imageBg/barcie_logo.jpg';
+$secondaryLogoAssetPath = $isPublicDocumentRoot
+  ? 'public/images/imageBg/barcie_logo.jpg'
+  : 'images/imageBg/barcie_logo.jpg';
+
+if (!defined('BARCIE_LOGO_URL')) {
+  define('BARCIE_LOGO_URL', $assetUrl($primaryLogoAssetPath));
+}
+
+if (!defined('BARCIE_LOGO_ALT_URL')) {
+  define('BARCIE_LOGO_ALT_URL', $assetUrl($secondaryLogoAssetPath));
+}
+
+$componentAssetPath = static function (string $relativePath) use ($componentsRoot, $projectRoot, $resolveCaseInsensitivePath): string {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
   $directPath = $componentsRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
 
@@ -110,12 +128,7 @@ $componentAssetUrl = static function (string $relativePath) use ($assetUrl, $com
   return $assetUrl($componentAssetPath($relativePath));
 };
 
-$includeComponent = static function (string $relativePath) use (
-  $componentsRoot,
-  $resolveCaseInsensitivePath,
-  $assetUrl,
-  $componentAssetUrl
-): void {
+$includeComponent = static function (string $relativePath) use ($componentsRoot, $resolveCaseInsensitivePath, $assetUrl, $componentAssetUrl): void {
   $normalizedRelativePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($relativePath, '/\\'));
   $directPath = $componentsRoot . DIRECTORY_SEPARATOR . $normalizedRelativePath;
 

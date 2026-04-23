@@ -5,7 +5,10 @@ window.addEventListener("load", function () {
     img.addEventListener("error", function () {
       if (!this.classList.contains("error-handled")) {
         this.classList.add("error-handled");
-        this.src = "public/images/imageBg/barcie_logo.jpg";
+        this.src =
+          window.BARCIE_LOGO_ALT_URL ||
+          window.BARCIE_LOGO_URL ||
+          "public/images/imageBg/barcie_logo.jpg";
         this.alt = "Image not available";
         this.style.opacity = "0.7";
         console.warn(
