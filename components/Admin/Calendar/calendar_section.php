@@ -195,7 +195,9 @@ include __DIR__ . '/../Shared/SectionHeader.php';
                         room_number ASC, name ASC";
   $items_result = $conn->query($items_query);
   $project_root = dirname(__DIR__, 3);
-  $default_preview = 'public/images/imageBg/barcie_logo.jpg';
+  $default_preview = defined('BARCIE_LOGO_URL')
+    ? (string) BARCIE_LOGO_URL
+    : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
   if ($items_result && $items_result->num_rows > 0) {
     while ($item = $items_result->fetch_assoc()) {
       $iname = $item['name'] ? addslashes($item['name']) : 'Unnamed';
@@ -343,7 +345,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
 
   // Choose best preview image for a room/facility item
   function chooseAdminPreviewImage(item) {
-    var defaultImg = 'public/images/imageBg/barcie_logo.jpg';
+    var defaultImg = window.BARCIE_LOGO_URL || <?php echo json_encode($default_preview); ?>;
     function normalize(path) {
       if (!path || typeof path !== 'string') return null;
       path = path.trim();
@@ -445,7 +447,7 @@ include __DIR__ . '/../Shared/SectionHeader.php';
         '      <div class="col-auto">' +
         '        <img src="' + preview + '" alt="' + item.name + '" ' +
         '             style="width:120px;height:90px;object-fit:cover;border-radius:8px;" ' +
-        '             onerror="this.src=\'public/images/imageBg/barcie_logo.jpg\';">' +
+        '             onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || \'public/images/imageBg/barcie_logo.jpg\');">' +
         '      </div>' +
         '      <div class="col">' +
         '        <div class="d-flex justify-content-between align-items-start">' +

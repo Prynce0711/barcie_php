@@ -106,6 +106,37 @@ $appBasePath = $scriptDirName === '' ? '' : '/' . $scriptDirName;
 $componentBaseUrl = ($appBasePath !== '' ? $appBasePath : '') . '/' . basename($componentRoot);
 $apiBaseUrl = ($appBasePath !== '' ? $appBasePath : '') . '/api';
 
+if (!defined('APP_BASE_PATH')) {
+	define('APP_BASE_PATH', $appBasePath);
+}
+
+$documentRootRealPath = $documentRoot !== '' ? realpath($documentRoot) : false;
+$projectPublicRealPath = realpath($projectRoot . DIRECTORY_SEPARATOR . 'public');
+$isPublicDocumentRoot =
+	$documentRootRealPath !== false &&
+	$projectPublicRealPath !== false &&
+	strcasecmp(str_replace('\\', '/', $documentRootRealPath), str_replace('\\', '/', $projectPublicRealPath)) === 0;
+
+$buildGuestAssetUrl = static function (string $relativePath) use ($appBasePath): string {
+	$normalizedRelativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+	return ($appBasePath !== '' ? $appBasePath : '') . '/' . $normalizedRelativePath;
+};
+
+$primaryLogoAssetPath = $isPublicDocumentRoot
+	? 'images/imageBg/barcie_logo.jpg'
+	: 'public/images/imageBg/barcie_logo.jpg';
+$secondaryLogoAssetPath = $isPublicDocumentRoot
+	? 'public/images/imageBg/barcie_logo.jpg'
+	: 'images/imageBg/barcie_logo.jpg';
+
+if (!defined('BARCIE_LOGO_URL')) {
+	define('BARCIE_LOGO_URL', $buildGuestAssetUrl($primaryLogoAssetPath));
+}
+
+if (!defined('BARCIE_LOGO_ALT_URL')) {
+	define('BARCIE_LOGO_ALT_URL', $buildGuestAssetUrl($secondaryLogoAssetPath));
+}
+
 if (!defined('GUEST_ASSET_BASE_PATH')) {
 	define('GUEST_ASSET_BASE_PATH', $appBasePath);
 }
@@ -260,6 +291,8 @@ if ($pencil_conversion_script_path !== '' && is_readable($pencil_conversion_scri
 	} ?>
 	<script>
 		window.APP_BASE_PATH = <?php echo json_encode(defined('APP_BASE_PATH') ? APP_BASE_PATH : ''); ?>;
+		window.BARCIE_LOGO_URL = <?php echo json_encode(defined('BARCIE_LOGO_URL') ? BARCIE_LOGO_URL : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg')); ?>;
+		window.BARCIE_LOGO_ALT_URL = <?php echo json_encode(defined('BARCIE_LOGO_ALT_URL') ? BARCIE_LOGO_ALT_URL : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/images/imageBg/barcie_logo.jpg')); ?>;
 	</script>
 	<script>
 		// expose minimal globals used by guest-bootstrap.js if needed

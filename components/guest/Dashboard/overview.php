@@ -1,3 +1,8 @@
+<?php
+$heroLogoUrl = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
+?>
 <style>
   /* Overview scoped styles */
   .hero-carousel-wrapper {
@@ -153,7 +158,9 @@
           <div class="hero-content" style="max-width: 900px;">
             <!-- BarCIE Logo -->
             <div class="mb-4 d-flex justify-content-center align-items-center">
-              <img src="public/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo" class="hero-logo"
+              <img src="<?php echo htmlspecialchars($heroLogoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="BarCIE Logo"
+                class="hero-logo"
+                onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || '<?php echo htmlspecialchars($heroLogoUrl, ENT_QUOTES, 'UTF-8'); ?>');"
                 style="height: 120px; width: auto; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.5);">
             </div>
 

@@ -89,14 +89,16 @@ if (!function_exists('env')) {
     }
 }
 
-// Normalize accepted environment variable names to be forgiving
-$smtp_host = env('SMTP_HOST', env('MAIL_HOST', 'smtp.gmail.com'));
-$smtp_username = env('SMTP_USERNAME', env('SMTP_USER', env('MAIL_USER', '')));
-$smtp_password = env('SMTP_PASSWORD', env('SMTP_PASS', env('MAIL_PASS', '')));
-$smtp_secure = strtolower(env('SMTP_SECURE', env('MAIL_SECURE', 'tls')));
-$smtp_port = (int) env('SMTP_PORT', env('MAIL_PORT', 587));
-$from_email = env('FROM_EMAIL', env('MAIL_USER', 'barcieinternationalcenter@gmail.com'));
-$from_name = env('FROM_NAME', env('MAIL_NAME', 'BarCIE International Center'));
+// Normalize accepted environment variable names to be forgiving.
+// Hardcoded production fallbacks are used when no .env file exists AND
+// the server/container does not inject the env vars at runtime.
+$smtp_host     = env('SMTP_HOST',     env('MAIL_HOST',    'smtp.gmail.com'));
+$smtp_username = env('SMTP_USERNAME', env('SMTP_USER',    env('MAIL_USER', 'barcieinternationalcenter.web@gmail.com')));
+$smtp_password = env('SMTP_PASSWORD', env('SMTP_PASS',    env('MAIL_PASS', 'mhtmuqvjqepkujff')));
+$smtp_secure   = strtolower(env('SMTP_SECURE', env('MAIL_SECURE', 'tls')));
+$smtp_port     = (int) env('SMTP_PORT', env('MAIL_PORT', 587));
+$from_email    = env('FROM_EMAIL',    env('MAIL_FROM',   'barcieinternationalcenter@gmail.com'));
+$from_name     = env('FROM_NAME',     env('MAIL_NAME',   'BarCIE International Center'));
 
 // Optional: allow falling back to PHP's mail() if SMTP repeatedly fails
 $use_php_mail = filter_var(env('USE_PHP_MAIL', 'false'), FILTER_VALIDATE_BOOLEAN);

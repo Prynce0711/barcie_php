@@ -52,6 +52,17 @@ $toAppUrl = static function (string $relativePath) use ($appBasePath): string {
   return ($appBasePath !== '' ? $appBasePath : '') . '/' . $normalizedRelativePath;
 };
 
+$documentRootRealPath = $documentRoot !== '' ? realpath($documentRoot) : false;
+$projectPublicRealPath = realpath($projectRoot . DIRECTORY_SEPARATOR . 'public');
+$isPublicDocumentRoot =
+  $documentRootRealPath !== false &&
+  $projectPublicRealPath !== false &&
+  strcasecmp(str_replace('\\', '/', $documentRootRealPath), str_replace('\\', '/', $projectPublicRealPath)) === 0;
+$logoRelativePath = $isPublicDocumentRoot
+  ? 'images/imageBg/barcie_logo.jpg'
+  : 'public/images/imageBg/barcie_logo.jpg';
+$logoUrl = $toAppUrl($logoRelativePath);
+
 // Drop a file into uploads/login/ with one of these names to override the fallback image.
 $loginBackgroundCandidates = [
   'uploads/login/login-background.jpg',
@@ -89,20 +100,25 @@ if ($loginBackgroundUrl !== '') {
     window.APP_BASE_PATH = <?php echo json_encode(defined('APP_BASE_PATH') ? APP_BASE_PATH : ''); ?>;
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/x-icon" href="<?php echo htmlspecialchars($toAppUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
-  <link rel="shortcut icon" type="image/x-icon" href="<?php echo htmlspecialchars($toAppUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
-  <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($toAppUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="icon" type="image/x-icon"
+    href="<?php echo htmlspecialchars($toAppUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="shortcut icon" type="image/x-icon"
+    href="<?php echo htmlspecialchars($toAppUrl('favicon.ico'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8'); ?>">
   <title>BarCIE Admin Login - Secure Access Portal</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-[#1e3c72] to-[#2a5298] bg-cover bg-center bg-no-repeat bg-fixed px-4 py-6 font-sans sm:px-5 sm:py-8 flex items-center justify-center"
-  <?php if ($loginBackgroundStyle !== ''): ?>style="<?php echo htmlspecialchars($loginBackgroundStyle, ENT_QUOTES, 'UTF-8'); ?>"<?php endif; ?>>
+<body
+  class="min-h-screen bg-gradient-to-br from-[#1e3c72] to-[#2a5298] bg-cover bg-center bg-no-repeat bg-fixed px-4 py-6 font-sans sm:px-5 sm:py-8 flex items-center justify-center"
+  <?php if ($loginBackgroundStyle !== ''): ?>style="<?php echo htmlspecialchars($loginBackgroundStyle, ENT_QUOTES, 'UTF-8'); ?>" <?php endif; ?>>
   <main class="w-full max-w-md">
-    <div class="w-full rounded-3xl border border-white/20 bg-white/10 p-6 shadow-2xl shadow-slate-900/40 backdrop-blur-xl sm:p-8 md:p-10">
+    <div
+      class="w-full rounded-3xl border border-white/20 bg-white/10 p-6 shadow-2xl shadow-slate-900/40 backdrop-blur-xl sm:p-8 md:p-10">
       <div class="mb-5 flex justify-center">
         <div class="h-20 w-20 overflow-hidden rounded-full">
-          <img src="<?php echo htmlspecialchars($toAppUrl('public/images/imageBg/barcie_logo.jpg'), ENT_QUOTES, 'UTF-8'); ?>" alt="BarCIE Logo" class="h-full w-full object-cover">
+          <img src="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="BarCIE Logo"
+            class="h-full w-full object-cover">
         </div>
       </div>
 
@@ -131,7 +147,8 @@ if ($loginBackgroundUrl !== '') {
       ?>
 
       <div class="mt-6 text-center">
-        <a href="<?php echo htmlspecialchars($toAppUrl('index.php'), ENT_QUOTES, 'UTF-8'); ?>" class="font-medium text-amber-300 transition hover:text-amber-200">
+        <a href="<?php echo htmlspecialchars($toAppUrl('index.php'), ENT_QUOTES, 'UTF-8'); ?>"
+          class="font-medium text-amber-300 transition hover:text-amber-200">
           <i class="fas fa-arrow-left mr-1"></i>Back to Home
         </a>
       </div>

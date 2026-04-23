@@ -9,6 +9,10 @@ if ($result) {
   }
   $result->free();
 }
+
+$partnerFallbackLogo = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
 ?>
 <section id="event-stylists" class="partners-section section-padding">
   <div class="container">
@@ -20,8 +24,9 @@ if ($result) {
           <div class="card glass-card h-100">
             <div class="partner-logo-wrap">
               <img
-                src="<?php echo htmlspecialchars($partner['image_path'] ?: 'public/images/imageBg/barcie_logo.jpg'); ?>"
-                class="card-img-top" alt="<?php echo htmlspecialchars($partner['name']); ?>">
+                src="<?php echo htmlspecialchars($partner['image_path'] ?: $partnerFallbackLogo, ENT_QUOTES, 'UTF-8'); ?>"
+                class="card-img-top" alt="<?php echo htmlspecialchars($partner['name']); ?>"
+                onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || '<?php echo htmlspecialchars($partnerFallbackLogo, ENT_QUOTES, 'UTF-8'); ?>');">
             </div>
             <div class="card-body">
               <h5 class="card-title partner-title">

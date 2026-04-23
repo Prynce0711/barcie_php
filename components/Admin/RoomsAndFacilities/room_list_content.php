@@ -173,12 +173,14 @@ if ($items_result && $items_result->num_rows > 0) {
 
               // Normalize web path and check file existence
               $projectRoot = realpath(__DIR__ . '/../../..');
-              $webImage = 'public/images/imageBg/barcie_logo.jpg';
+              $webImage = defined('BARCIE_LOGO_URL')
+                ? (string) BARCIE_LOGO_URL
+                : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
               if (!empty($firstImage)) {
                 if (str_starts_with($firstImage, 'http')) {
                   $webImage = $firstImage;
                 } else {
-                  $normalizedFirst = str_replace('\\', '/', ltrim(trim((string)$firstImage), '/'));
+                  $normalizedFirst = str_replace('\\', '/', ltrim(trim((string) $firstImage), '/'));
                   if ($normalizedFirst !== '' && !str_contains($normalizedFirst, '/') && preg_match('/\.(jpe?g|png|gif|webp|bmp|svg)$/i', $normalizedFirst)) {
                     $normalizedFirst = 'uploads/' . $normalizedFirst;
                   }

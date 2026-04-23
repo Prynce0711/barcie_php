@@ -49,6 +49,11 @@ include __DIR__ . '/../Shared/SectionHeader.php';
             <div class="card-body">
                 <!-- News Cards Grid -->
                 <div id="newsGrid" class="row g-3">
+                    <?php
+                    $newsFallbackLogo = defined('BARCIE_LOGO_URL')
+                        ? (string) BARCIE_LOGO_URL
+                        : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
+                    ?>
                     <?php if (empty($news_items)): ?>
                         <div class="col-12 text-center py-5">
                             <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
@@ -64,13 +69,13 @@ include __DIR__ . '/../Shared/SectionHeader.php';
                                     <?php
                                     $newsImage = trim((string) ($news['image_path'] ?? ''));
                                     $newsImageAbs = $newsImage !== '' ? (__DIR__ . '/../../../' . ltrim($newsImage, '/\\')) : '';
-                                    $newsImageSafe = ($newsImage !== '' && file_exists($newsImageAbs)) ? $newsImage : 'public/images/imageBg/barcie_logo.jpg';
+                                    $newsImageSafe = ($newsImage !== '' && file_exists($newsImageAbs)) ? $newsImage : $newsFallbackLogo;
                                     ?>
                                     <?php if (!empty($newsImageSafe)): ?>
                                         <img src="<?php echo htmlspecialchars($newsImageSafe); ?>"
                                             class="card-img-top news-card-image"
                                             alt="<?php echo htmlspecialchars($news['title']); ?>"
-                                            onerror="this.onerror=null;this.src='public/images/imageBg/barcie_logo.jpg'">
+                                            onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || 'public/images/imageBg/barcie_logo.jpg')">
                                     <?php endif; ?>
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start mb-2">

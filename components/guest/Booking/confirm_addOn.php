@@ -1,6 +1,10 @@
 <?php
 // Modal and client-side logic to preview booking details and select add-ons
 // This file is intended to be included on the Guest booking page (booking.php)
+
+$policyLogoUrl = defined('BARCIE_LOGO_URL')
+  ? (string) BARCIE_LOGO_URL
+  : ((defined('APP_BASE_PATH') ? APP_BASE_PATH : '') . '/public/images/imageBg/barcie_logo.jpg');
 ?>
 
 <!-- QRCode.js Library for generating QR codes -->
@@ -129,8 +133,9 @@
       <div class="modal-body">
         <div class="text-center mb-4">
           <div class="policy-header-image mb-3">
-            <img src="public/images/imageBg/barcie_logo.jpg" alt="BarCIE Logo" class="img-fluid"
-              style="max-width: 200px; height: auto;" onerror="this.style.display='none'">
+            <img src="<?php echo htmlspecialchars($policyLogoUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="BarCIE Logo"
+              class="img-fluid" style="max-width: 200px; height: auto;"
+              onerror="this.onerror=null;this.src=(window.BARCIE_LOGO_ALT_URL || window.BARCIE_LOGO_URL || '<?php echo htmlspecialchars($policyLogoUrl, ENT_QUOTES, 'UTF-8'); ?>');">
           </div>
           <h4 class="text-primary fw-bold">
             <i class="fas fa-building me-2"></i>
@@ -944,21 +949,40 @@
 
       return null;
     }
+    function normalizeAddonPricing(value) {
+      const normalized = String(value || 'per_event').toLowerCase().replace(/[\s-]+/g, '_');
+      if (normalized === 'per_person' || normalized === 'per_night' || normalized === 'per_event') return normalized;
+      if (normalized === 'person' || normalized === 'per_pax' || normalized === 'pax') return 'per_person';
+      if (normalized === 'night' || normalized === 'daily') return 'per_night';
+      return 'per_event';
+    }
+
     // Build add-ons UI
     function renderAddons() {
+      if (!addonsList) return;
+
       addonsList.innerHTML = '';
       const list = (currentItem && Array.isArray(currentItem.addons) && currentItem.addons.length) ? currentItem.addons : DEFAULT_ADDONS;
       AVAILABLE_ADDONS = list;
 
       list.forEach((addon, idx) => {
-        const aid = addon.id ? addon.id : ('addon_' + idx + '_' + addon.label.replace(/\s+/g, '_').toLowerCase());
-        const price = Number(addon.price || 0);
-        const pricing = addon.pricing || 'per_event';
+        const addonObj = (addon && typeof addon === 'object') ? addon : {};
+        const labelSource = addonObj.label || addonObj.name || addonObj.title || (typeof addon === 'string' ? addon : 'Add-on');
+        const addonLabel = String(labelSource || 'Add-on').trim() || 'Add-on';
+
+        const rawId = addonObj.id
+          ? String(addonObj.id)
+          : ('addon_' + idx + '_' + addonLabel.toLowerCase());
+        const aid = rawId.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || ('addon_' + idx);
+
+        const price = Number(addonObj.price ?? addonObj.amount ?? 0) || 0;
+        const pricing = normalizeAddonPricing(addonObj.pricing || addonObj.type || addonObj.billing || addonObj.rate_type || 'per_event');
+
         const wrapper = document.createElement('div');
         wrapper.className = 'form-check';
         wrapper.innerHTML = `
         <input class="form-check-input addon-checkbox" type="checkbox" value="${aid}" id="${aid}" data-price="${price}" data-pricing="${pricing}">
-        <label class="form-check-label" for="${aid}">${escapeHtml(addon.label || addon.name || 'Add-on')} — ₱${price}</label>
+        <label class="form-check-label" for="${aid}">${escapeHtml(addonLabel)} — ₱${price}</label>
         <div class="mt-1" style="display:none;"><small class="text-muted addon-qty-text">Quantity: <input type="number" min="1" value="1" class="addon-qty form-control form-control-sm" style="width:80px; display:inline-block; margin-left:8px;"></small></div>
       `;
         addonsList.appendChild(wrapper);
@@ -975,9 +999,12 @@
       });
 
       // qty change
-      addonsList.addEventListener('input', e => {
-        if (e.target && e.target.classList.contains('addon-qty')) recalcTotal();
-      });
+      if (!addonsList.dataset.qtyListenerBound) {
+        addonsList.addEventListener('input', e => {
+          if (e.target && e.target.classList.contains('addon-qty')) recalcTotal();
+        });
+        addonsList.dataset.qtyListenerBound = '1';
+      }
     }
 
     // Calculate nights between two date inputs (reservation)
@@ -1053,16 +1080,44 @@
 
     // Helper: find room data from server
     async function fetchItemById(id) {
-      try {
-        // Use the project-relative fetch path to be consistent with dashboard script
-        const res = await fetch('database/index.php?endpoint=fetch_items');
-        if (!res.ok) return null;
-        const items = await res.json();
-        return items.find(it => Number(it.id) === Number(id)) || null;
-      } catch (err) {
-        console.error('Failed to fetch items', err);
-        return null;
+      if (!id) return null;
+
+      const endpoint = '/database/index.php?endpoint=fetch_items';
+      const base = (BASE_PATH || '').replace(/\/+$/, '');
+      const candidates = [];
+
+      if (base) {
+        candidates.push(base + endpoint);
       }
+      candidates.push(endpoint);
+      candidates.push('database/index.php?endpoint=fetch_items');
+
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, {
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+
+          if (!res.ok) continue;
+
+          const payload = await res.json();
+          const items = Array.isArray(payload)
+            ? payload
+            : (Array.isArray(payload?.items) ? payload.items : []);
+
+          const matched = items.find(it => Number(it.id) === Number(id));
+          if (matched) return matched;
+        } catch (err) {
+          console.warn('Failed to fetch items from', url, err);
+        }
+      }
+
+      console.error('Failed to resolve room/facility details for preview', { roomId: id, basePath: BASE_PATH });
+      return null;
     }
 
     // Build preview HTML
@@ -1249,7 +1304,15 @@
       // fetch item data
       currentItem = await fetchItemById(bookingData.room_id);
       if (!currentItem) {
-        previewDetails.innerHTML = '<div class="alert alert-danger">Unable to load room/facility details. Please try again.</div>';
+        previewDetails.innerHTML = '<div class="alert alert-danger mb-0">Unable to load room/facility details. Please refresh the page and try again.</div>';
+
+        if (typeof bootstrap === 'undefined' || !modalEl) {
+          notify('Unable to open booking preview modal. Please refresh and try again.', 'error');
+          return;
+        }
+
+        const modalWithError = new bootstrap.Modal(modalEl);
+        modalWithError.show();
         return;
       }
 
@@ -1301,6 +1364,11 @@
       } catch (err) { /* ignore */ }
 
       // show bootstrap modal
+      if (typeof bootstrap === 'undefined' || !modalEl) {
+        notify('Booking preview is currently unavailable. Please refresh and try again.', 'error');
+        return;
+      }
+
       const modal = new bootstrap.Modal(modalEl);
       modal.show();
     }
