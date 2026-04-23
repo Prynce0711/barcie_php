@@ -90,12 +90,25 @@ if ($missing !== []) {
     exit;
 }
 
-$smtpMailerPath = __DIR__ . '/../Components/Email/smtp_mailer.php';
-if (!file_exists($smtpMailerPath)) {
+$smtpMailerCandidates = [
+    __DIR__ . '/../components/Email/smtp_mailer.php',
+    __DIR__ . '/../Components/Email/smtp_mailer.php',
+    __DIR__ . '/../Email/smtp_mailer.php',
+];
+
+$smtpMailerPath = null;
+foreach ($smtpMailerCandidates as $candidate) {
+    if (file_exists($candidate)) {
+        $smtpMailerPath = $candidate;
+        break;
+    }
+}
+
+if ($smtpMailerPath === null) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'SMTP mailer file is missing at Components/Email/smtp_mailer.php.',
+        'message' => 'SMTP mailer file is missing. Checked: components/Email/smtp_mailer.php, Components/Email/smtp_mailer.php, Email/smtp_mailer.php.',
     ]);
     exit;
 }
