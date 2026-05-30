@@ -24,6 +24,7 @@ uploads/items/*
 # Local environment files
 .env.local
 .env
+node_modules
 
 # Tailwind CSS build output
 dist/
